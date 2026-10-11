@@ -15,7 +15,8 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { path: '/map', label: 'Service Map', shortLabel: 'Map', icon: 'map' },
   { path: '/registry', label: 'Service Registry', shortLabel: 'Registry', icon: 'registry' },
   { path: '/dependencies', label: 'Dependencies', shortLabel: 'Deps', icon: 'dependencies' },
-  { path: '/events', label: 'Events & Traffic', shortLabel: 'Events', icon: 'events' },
+  { path: '/events', label: 'Events', shortLabel: 'Events', icon: 'events' },
+  { path: '/simulation', label: 'Simulation', shortLabel: 'Sim', icon: 'simulation' },
   { path: '/infrastructure', label: 'Infrastructure', shortLabel: 'Infra', icon: 'infrastructure' },
   { path: '/settings', label: 'Settings', shortLabel: 'Settings', icon: 'settings' },
 ];

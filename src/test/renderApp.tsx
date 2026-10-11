@@ -28,6 +28,7 @@ export function resetUiStore() {
     neighborhood: null,
     asOf: null,
     galaxyScope: [],
+    eventHighlight: null,
     motionPaused: false,
   });
   useSimulationStore.setState({ sim: null, running: false, speed: 'normal' });

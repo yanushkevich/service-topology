@@ -168,6 +168,30 @@ export interface CommunicationRelationship {
   updatedAt: string;
 }
 
+/** Resource types that can carry event types (ADR-014). */
+export const EVENT_CHANNEL_TYPES: ReadonlySet<ResourceType> = new Set<ResourceType>(['topic', 'queue', 'exchange']);
+
+/**
+ * A logical message contract (e.g. `OrderPlaced`), environment-independent like a ServiceDefinition
+ * (ADR-014). It annotates existing communication and never creates any: in each environment it
+ * resolves to the channel there and to the producer/consumer instances' relationships with it.
+ */
+export interface EventType {
+  id: EntityId;
+  name: string;
+  description?: string;
+  schemaVersion?: string;
+  owner?: string;
+  team?: string;
+  /** Topic, queue, or exchange resources carrying the event; at most one per environment. */
+  channelResourceIds: EntityId[];
+  /** Service definitions that publish the event. */
+  producerServiceIds: EntityId[];
+  /** Service definitions that consume the event. */
+  consumerServiceIds: EntityId[];
+  metadata?: Record<string, unknown>;
+}
+
 /** Everything a repository returns. Plain serializable data. */
 export interface TopologyData {
   environments: EnvironmentRecord[];
@@ -175,6 +199,8 @@ export interface TopologyData {
   serviceInstances: ServiceInstance[];
   resources: InfrastructureResource[];
   relationships: CommunicationRelationship[];
+  /** Optional (additive within v1, ADR-014). Absent means no event catalog is modeled. */
+  eventTypes?: EventType[];
 }
 
 export const ENTITY_KINDS = [

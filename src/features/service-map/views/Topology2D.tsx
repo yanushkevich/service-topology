@@ -11,6 +11,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/base.css';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEventHighlight } from '../../event-catalog/useEventHighlight';
 import { useTopology } from '../../../data/topologyContext';
 import { buildRegistryRows, hasActiveFilters, inEnvironment } from '../../../domain/registry';
 import type { TopologyIndex } from '../../../domain/topologyIndex';
@@ -158,9 +159,10 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
     if (tooMany || !laidOut) return null;
     return laidOut.key === layoutKey ? { ...laidOut, graph } : laidOut;
   }, [tooMany, laidOut, layoutKey, graph]);
+  const eventReach = useEventHighlight(index)?.reach ?? null;
   const highlight = useMemo(
-    () => (shown ? computeHighlight(index, shown.graph, selection, highlightMode) : null),
-    [index, shown, selection, highlightMode],
+    () => (shown ? computeHighlight(index, shown.graph, selection, highlightMode, eventReach) : null),
+    [index, shown, selection, highlightMode, eventReach],
   );
   const derivedNodes = useMemo(
     () => (shown && highlight ? toFlowNodes(shown.graph, shown.result, highlight, manual[mode]) : []),

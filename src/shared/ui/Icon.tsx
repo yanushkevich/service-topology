@@ -20,6 +20,7 @@ const PATHS = {
   ),
   dependencies: <path d="M3 3v6a3 3 0 003 3h7M10.5 9.5L13 12l-2.5 2.5" />,
   events: <path d="M9 1.5L3.5 9H8l-1 5.5L12.5 7H8z" />,
+  simulation: <path d="M1.5 8h3l2-4.5 3 9 2-4.5h3" />,
   settings: (
     <>
       <circle cx="8" cy="8" r="2.2" />

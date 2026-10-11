@@ -46,6 +46,7 @@ export function parseSnapshot(value: unknown): TopologySnapshot | null {
   for (const key of ['environments', 'serviceDefinitions', 'serviceInstances', 'resources', 'relationships']) {
     if (!Array.isArray(data[key])) return null;
   }
+  if (data.eventTypes !== undefined && !Array.isArray(data.eventTypes)) return null;
   const topology = data as unknown as TopologyData;
   if (validateTopology(topology).some((issue) => issue.severity === 'error')) return null;
   return { schemaVersion: SNAPSHOT_SCHEMA_VERSION, id, label, takenAt, source, isSimulated, data: topology };

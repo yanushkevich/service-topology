@@ -13,7 +13,7 @@ import { StatusShape } from '../../shared/ui/StatusShape';
 import { TypeGlyph } from '../../shared/ui/TypeGlyph';
 import { useSimulationStore } from '../../state/simulationStore';
 import { useUiStore } from '../../state/uiStore';
-import { describeEvent } from '../events/describeEvent';
+import { describeEvent } from '../simulation/describeEvent';
 import { Card, Note, PageShell } from '../pages/PageShell';
 
 const HEALTH_ORDER: HealthStatus[] = ['unavailable', 'degraded', 'unknown', 'healthy'];
@@ -162,7 +162,7 @@ function OverviewContent({ index }: { index: TopologyIndex }) {
               </p>
               <h3 className={`m-0 mt-1 ${kickerClass}`}>Recent simulated events</h3>
               {sim.events.length === 0 ? (
-                <Note>No simulated events yet. Inject a failure from the inspector or the Events & Traffic page.</Note>
+                <Note>No simulated events yet. Inject a failure from the inspector or the Simulation page.</Note>
               ) : (
                 <ol className="m-0 list-none p-0" aria-label="Recent simulated events">
                   {[...sim.events]
@@ -176,8 +176,8 @@ function OverviewContent({ index }: { index: TopologyIndex }) {
                     ))}
                 </ol>
               )}
-              <button type="button" className={`${buttonClass('secondary')} self-start`} onClick={() => navigate({ pathname: '/events', search })}>
-                Open Events & Traffic
+              <button type="button" className={`${buttonClass('secondary')} self-start`} onClick={() => navigate({ pathname: '/simulation', search })}>
+                Open Simulation
               </button>
             </div>
           ) : (

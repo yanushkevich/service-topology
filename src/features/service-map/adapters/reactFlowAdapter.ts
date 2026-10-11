@@ -1,6 +1,6 @@
 import type { Edge, Node, XYPosition } from '@xyflow/react';
 import type { TopologyIndex } from '../../../domain/topologyIndex';
-import { reachFrom, type HighlightMode } from '../../../domain/traversal';
+import { reachFrom, type HighlightMode, type Reach } from '../../../domain/traversal';
 import type { EntityRef } from '../../../domain/types';
 import type { LayoutResult } from '../layout/GraphLayoutService';
 import type { GraphEdge, GraphGroup, GraphNode, TopologyGraph } from '../graph/topologyGraph';
@@ -58,8 +58,18 @@ export function computeHighlight(
   graph: TopologyGraph,
   selection: EntityRef | null,
   mode: HighlightMode,
+  /** Event-flow highlight (ADR-014), used only when nothing is selected. */
+  eventReach: Reach | null = null,
 ): HighlightState {
   const empty: HighlightState = { selectedIds: new Set(), nodeIds: new Set(), edgeIds: new Set(), active: false };
+  if (!selection && eventReach) {
+    return {
+      selectedIds: new Set(),
+      nodeIds: new Set(graph.nodes.filter((n) => n.memberIds.some((id) => eventReach.entityIds.has(id))).map((n) => n.id)),
+      edgeIds: new Set(graph.edges.filter((e) => e.relationshipIds.some((id) => eventReach.relationshipIds.has(id))).map((e) => e.id)),
+      active: true,
+    };
+  }
   if (!selection) return empty;
 
   const nodeFor = (entityId: string) => graph.nodes.find((n) => n.memberIds.includes(entityId) || n.id === entityId);

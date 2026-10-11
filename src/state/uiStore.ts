@@ -38,6 +38,8 @@ interface UiState {
    * only (serializable, URL-encoded); camera state stays in the renderer.
    */
   galaxyScope: readonly EntityId[];
+  /** Event type whose flow the map emphasizes when nothing is selected (ADR-014). */
+  eventHighlight: EntityId | null;
   /** Global pause for decorative/traffic animation (camera controls stay usable). */
   motionPaused: boolean;
   setTheme: (theme: Theme) => void;
@@ -54,6 +56,7 @@ interface UiState {
   /** Keep the first `depth` levels (0 = overview). */
   exitScopeTo: (depth: number) => void;
   setMotionPaused: (paused: boolean) => void;
+  setEventHighlight: (eventTypeId: EntityId | null) => void;
 }
 
 export interface Neighborhood {
@@ -76,6 +79,7 @@ export const useUiStore = create<UiState>()((set) => ({
   neighborhood: null,
   asOf: null,
   galaxyScope: [],
+  eventHighlight: null,
   motionPaused: false,
   // Effective theme only; the user's choice (incl. "system") lives in preferences.
   setTheme: (theme) => set({ theme }),
@@ -92,6 +96,7 @@ export const useUiStore = create<UiState>()((set) => ({
     set((state) => (state.galaxyScope.at(-1) === entityId ? {} : { galaxyScope: [...state.galaxyScope, entityId] })),
   exitScopeTo: (depth) => set((state) => ({ galaxyScope: state.galaxyScope.slice(0, Math.max(0, depth)) })),
   setMotionPaused: (motionPaused) => set({ motionPaused }),
+  setEventHighlight: (eventHighlight) => set({ eventHighlight }),
 }));
 
 /** Toggle membership of a value in a filter list. */

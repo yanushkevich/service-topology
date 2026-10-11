@@ -111,16 +111,16 @@ function SimulationChip({ search }: { search: string }) {
   const failures = sim.failures.length;
   return (
     <Link
-      to={{ pathname: '/events', search }}
+      to={{ pathname: '/simulation', search }}
       className="inline-flex h-7.5 items-center gap-1.5 rounded-full border border-dashed border-warn px-2.5 text-sm whitespace-nowrap text-warn-fg no-underline hover:bg-warn/10"
-      title="Simulated clock and status. Open Events & Traffic"
+      title="Simulated clock and status. Open Simulation"
     >
       {/* Visible text first, so the accessible name contains it (WCAG 2.5.3). */}
       <span aria-hidden="true">{running ? '▶' : '❚❚'}</span>
       <span>Simulated</span>
       <span className="font-mono">{formatClock(sim.clock)}</span>
       {failures > 0 && <span className="font-mono">· {failures} failing</span>}
-      <span className="sr-only">, simulation {running ? 'running' : 'paused'}. Open Events &amp; Traffic</span>
+      <span className="sr-only">, simulation {running ? 'running' : 'paused'}. Open Simulation</span>
     </Link>
   );
 }

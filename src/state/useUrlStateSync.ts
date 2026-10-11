@@ -16,6 +16,7 @@ function fromStore(state: UiState): TopologyUrlState {
     neighborhood: state.neighborhood,
     asOf: state.asOf,
     galaxyScope: state.galaxyScope,
+    eventHighlight: state.eventHighlight,
   };
 }
 
@@ -30,6 +31,7 @@ function applyToStore(url: TopologyUrlState) {
     neighborhood: url.neighborhood,
     asOf: url.asOf,
     galaxyScope: url.galaxyScope,
+    eventHighlight: url.eventHighlight,
   }));
 }
 

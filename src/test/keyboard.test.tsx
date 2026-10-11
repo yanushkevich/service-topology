@@ -63,7 +63,7 @@ describe('keyboard access', () => {
 
   it('injects a simulated failure using only the keyboard', async () => {
     const user = userEvent.setup();
-    renderApp('/events');
+    renderApp('/simulation');
     const target = await screen.findByLabelText('Fail');
     target.focus();
     await user.selectOptions(target, 'ledger-service.production');
@@ -77,7 +77,7 @@ describe('keyboard access', () => {
   });
 
   it('titles each page by section', async () => {
-    renderApp('/events');
-    await waitFor(() => expect(document.title).toBe('Events & Traffic · Orrery'));
+    renderApp('/simulation');
+    await waitFor(() => expect(document.title).toBe('Simulation · Orrery'));
   });
 });

@@ -10,6 +10,7 @@ import { LAYOUT_MODES, NEIGHBORHOOD_DEPTHS, SERVICE_MAP_VIEWS, type LayoutMode, 
  *    &q=pay&provider=aws,gcp&health=degraded&kind=messaging&hl=upstream&nh=ledger-service.production~2
  *    &asof=fixture-0600   (optional; added in Milestone 3, backward compatible with v1)
  *    &scope=aws-acct-commerce-prod&scope=eks-commerce-prod   (3D explore path, repeated; Milestone 4)
+ *    &ev=event-order-placed   (event-flow highlight on the map; Milestone 7)
  *
  * Defaults are omitted (except `v` and `env`). Decoding is tolerant: unknown or malformed values are
  * dropped and reported, never thrown. Entity IDs are passed through; the UI reports unknown ones.
@@ -30,6 +31,8 @@ export interface TopologyUrlState {
   asOf: string | null;
   /** 3D explore path (outermost first). */
   galaxyScope: readonly string[];
+  /** Event type whose flow the map highlights (ADR-014), or null. */
+  eventHighlight: string | null;
 }
 
 export const DEFAULT_URL_STATE: TopologyUrlState = {
@@ -42,6 +45,7 @@ export const DEFAULT_URL_STATE: TopologyUrlState = {
   neighborhood: null,
   asOf: null,
   galaxyScope: [],
+  eventHighlight: null,
 };
 
 const LIST_SEPARATOR = ',';
@@ -64,6 +68,7 @@ export function encodeUrlState(state: TopologyUrlState): string {
   if (state.neighborhood) params.set('nh', `${state.neighborhood.centerId}${DEPTH_SEPARATOR}${state.neighborhood.depth}`);
   if (state.asOf) params.set('asof', state.asOf);
   for (const id of state.galaxyScope) params.append('scope', id);
+  if (state.eventHighlight) params.set('ev', state.eventHighlight);
   return params.toString();
 }
 
@@ -143,6 +148,7 @@ export function decodeUrlState(search: string): DecodeResult {
       neighborhood,
       asOf: params.get('asof') || null,
       galaxyScope: params.getAll('scope').filter(Boolean),
+      eventHighlight: params.get('ev') || null,
     },
   };
 }

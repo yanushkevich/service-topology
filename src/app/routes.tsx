@@ -5,7 +5,8 @@ import { RouteError } from '../layouts/RouteError';
 import { ServiceMapPage } from '../features/service-map/ServiceMapPage';
 import { NotFoundPage } from '../features/placeholders/NotFoundPage';
 import { RegistryPage } from '../features/service-registry/RegistryPage';
-import { EventsPage } from '../features/events/EventsPage';
+import { SimulationPage } from '../features/simulation/SimulationPage';
+import { EventsPage } from '../features/event-catalog/EventsPage';
 import { OverviewPage } from '../features/overview/OverviewPage';
 import { DependenciesPage } from '../features/dependencies/DependenciesPage';
 import { InfrastructurePage } from '../features/infrastructure/InfrastructurePage';
@@ -23,6 +24,8 @@ export const routes: RouteObject[] = [
       { path: 'registry', element: <RegistryPage /> },
       { path: 'dependencies', element: <DependenciesPage /> },
       { path: 'events', element: <EventsPage /> },
+      { path: 'events/:eventTypeId', element: <EventsPage /> },
+      { path: 'simulation', element: <SimulationPage /> },
       { path: 'infrastructure', element: <InfrastructurePage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: '*', element: <NotFoundPage /> },

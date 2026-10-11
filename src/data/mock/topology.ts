@@ -1,4 +1,5 @@
 import type {
+  EventType,
   CommunicationPattern,
   CommunicationRelationship,
   EnvironmentRecord,
@@ -335,10 +336,29 @@ const relationships: CommunicationRelationship[] = [
   rel('order-service.development', 'catalog-service.development', 'grpc', 'synchronous'),
 ];
 
+/**
+ * Event types (ADR-014): logical contracts on the channels above. Producers and consumers match the
+ * messaging relationships exactly; definitions without an instance in an environment are simply not
+ * deployed there (e.g. Notification Service in staging).
+ */
+const ORDERS = ['topic-orders-events-prod', 'topic-orders-events-staging'];
+const eventTypes: EventType[] = [
+  { id: 'event-order-placed', name: 'OrderPlaced', description: 'Emitted when a customer order is accepted and awaiting payment.', schemaVersion: 'v3', owner: 'Commerce', team: 'Orders', channelResourceIds: ORDERS, producerServiceIds: ['order-service'], consumerServiceIds: ['inventory-service', 'notification-service'] },
+  { id: 'event-order-cancelled', name: 'OrderCancelled', description: 'Emitted when an order is cancelled before fulfilment.', schemaVersion: 'v2', owner: 'Commerce', team: 'Orders', channelResourceIds: ORDERS, producerServiceIds: ['order-service'], consumerServiceIds: ['inventory-service'] },
+  { id: 'event-order-shipped', name: 'OrderShipped', description: 'Emitted when an order leaves the warehouse.', schemaVersion: 'v1', owner: 'Commerce', team: 'Orders', channelResourceIds: ORDERS, producerServiceIds: ['order-service'], consumerServiceIds: ['notification-service'] },
+  { id: 'event-stock-level-changed', name: 'StockLevelChanged', description: 'Emitted when available stock for an item changes.', schemaVersion: 'v2', owner: 'Commerce', team: 'Fulfilment', channelResourceIds: ['topic-inventory-updates-prod'], producerServiceIds: ['inventory-service'], consumerServiceIds: ['catalog-service'] },
+  { id: 'event-stock-reserved', name: 'StockReserved', description: 'Emitted when stock is held against an open order.', schemaVersion: 'v1', owner: 'Commerce', team: 'Fulfilment', channelResourceIds: ['topic-inventory-updates-prod'], producerServiceIds: ['inventory-service'], consumerServiceIds: ['catalog-service'] },
+  { id: 'event-payment-captured', name: 'PaymentCaptured', description: 'Emitted when funds are captured for an order.', schemaVersion: 'v4', owner: 'Payments', team: 'Payments', channelResourceIds: ['topic-payments-events-prod'], producerServiceIds: ['payment-service'], consumerServiceIds: ['ledger-service'] },
+  { id: 'event-payment-failed', name: 'PaymentFailed', description: 'Emitted when a capture attempt is declined or errors. No consumer is modeled yet.', schemaVersion: 'v2', owner: 'Payments', team: 'Payments', channelResourceIds: ['topic-payments-events-prod'], producerServiceIds: ['payment-service'], consumerServiceIds: [] },
+  { id: 'event-refund-issued', name: 'RefundIssued', description: 'Emitted when a refund is sent back to the customer.', schemaVersion: 'v1', owner: 'Payments', team: 'Payments', channelResourceIds: ['topic-payments-events-prod'], producerServiceIds: ['payment-service'], consumerServiceIds: ['ledger-service'] },
+  { id: 'event-notification-requested', name: 'NotificationRequested', description: 'Published when a customer message is ready for delivery; routed to the email queue.', schemaVersion: 'v1', owner: 'Commerce', team: 'Engagement', channelResourceIds: ['exchange-notifications-prod'], producerServiceIds: ['notification-service'], consumerServiceIds: ['email-dispatcher'], metadata: { routingKey: 'notify.email.order' } },
+];
+
 export const mockTopology: TopologyData = {
   environments,
   serviceDefinitions,
   serviceInstances,
   resources,
   relationships,
+  eventTypes,
 };

@@ -16,7 +16,7 @@ import { useUiStore } from '../../state/uiStore';
 import { InspectorPanel } from '../inspector/InspectorPanel';
 import { describeEvent, formatClock } from './describeEvent';
 
-export function EventsPage() {
+export function SimulationPage() {
   const topology = useTopology();
   const sim = useSimulationStore((s) => s.sim);
   // Names and options come from the simulation baseline, which stays stable while browsing history.
@@ -26,7 +26,7 @@ export function EventsPage() {
     <div className="absolute inset-0 flex max-md:flex-col">
       <div className="flex min-w-0 flex-1 flex-col gap-3.5 overflow-auto px-5 pt-[18px] pb-8">
         <div className="flex flex-wrap items-center gap-2.5">
-          <h1 className="m-0 text-xl font-semibold">Events & Traffic</h1>
+          <h1 className="m-0 text-xl font-semibold">Simulation</h1>
           {topology.status === 'ready' && <DataSourceTag sourceLabel={topology.sourceLabel} isMock={topology.isMock} />}
         </div>
         {topology.status !== 'ready' || !sim || !baselineIndex ? (

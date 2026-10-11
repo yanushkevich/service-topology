@@ -34,7 +34,7 @@ describe('simulation across views', () => {
     expect(await screen.findByLabelText(/^Order Service, api, health degraded/)).toBeInTheDocument();
 
     // Event log: root event and the explained propagation, labeled simulated.
-    await act(() => router.navigate({ pathname: '/events', search: router.state.location.search }));
+    await act(() => router.navigate({ pathname: '/simulation', search: router.state.location.search }));
     const log = await screen.findByRole('list', { name: 'Simulated events, newest first' });
     expect(within(log).getByText('Payment Service: simulated failure, Healthy → Unavailable')).toBeInTheDocument();
     expect(within(log).getByText('Caused by Payment Service over HTTPS (synchronous). Rule: Synchronous dependency.')).toBeInTheDocument();
@@ -43,7 +43,7 @@ describe('simulation across views', () => {
 
   it('injects from the Events page with scheduled recovery, and steps the simulated clock', async () => {
     const user = userEvent.setup();
-    renderApp('/events');
+    renderApp('/simulation');
     await simReady();
     await user.selectOptions(await screen.findByLabelText('Fail'), 'rds-orders-prod');
     await user.selectOptions(screen.getByLabelText('Auto-recover'), '30 s');
@@ -77,7 +77,7 @@ describe('history', () => {
 
   it('browses a snapshot read-only without changing current or simulated state', async () => {
     const user = userEvent.setup();
-    const router = renderApp('/events');
+    const router = renderApp('/simulation');
     await simReady();
     act(() => useSimulationStore.getState().inject('payment-service.production', 'unavailable'));
     const simBefore = useSimulationStore.getState().sim;
@@ -112,7 +112,7 @@ describe('history', () => {
 
   it('compares a snapshot with the current simulated state', async () => {
     const user = userEvent.setup();
-    renderApp('/events');
+    renderApp('/simulation');
     await simReady();
     await screen.findByRole('list', { name: 'Snapshots' });
     await user.selectOptions(screen.getByLabelText('From'), 'fixture-0600');
@@ -127,7 +127,7 @@ describe('history', () => {
 
   it('captures the current simulated state as a snapshot', async () => {
     const user = userEvent.setup();
-    renderApp('/events');
+    renderApp('/simulation');
     await simReady();
     await screen.findByRole('list', { name: 'Snapshots' });
     await user.click(screen.getByRole('button', { name: 'Capture current state' }));
@@ -146,19 +146,19 @@ describe('history', () => {
 describe('labeling', () => {
   beforeEach(resetUiStore);
 
-  it.each(['/events', '/map', '/registry'])('%s never describes mock data as live telemetry', async (path) => {
+  it.each(['/simulation', '/map', '/registry'])('%s never describes mock data as live telemetry', async (path) => {
     renderApp(path);
     await simReady();
     await screen.findByRole('link', { name: /Simulated\s*.*simulation paused/ });
     expect(document.body.textContent).not.toMatch(/\blive\b/i);
   });
 
-  it('shows simulation status in the header and links to Events & Traffic', async () => {
+  it('shows simulation status in the header and links to Simulation', async () => {
     const router = renderApp('/map');
     await simReady();
     act(() => useSimulationStore.getState().inject('ext-card-processor', 'unavailable'));
     const chip = await screen.findByRole('link', { name: /Simulated\s*08:45:00 UTC.*1 failing.*simulation paused/ });
     fireEvent.click(chip);
-    expect(router.state.location.pathname).toBe('/events');
+    expect(router.state.location.pathname).toBe('/simulation');
   });
 });

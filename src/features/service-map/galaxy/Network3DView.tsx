@@ -1,6 +1,7 @@
 import { Canvas } from '@react-three/fiber';
 import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
+import { useEventHighlight } from '../../event-catalog/useEventHighlight';
 import { useTopology } from '../../../data/topologyContext';
 import type { TopologyIndex } from '../../../domain/topologyIndex';
 import { HIGHLIGHT_MODES, type HighlightMode } from '../../../domain/traversal';
@@ -146,9 +147,10 @@ function GalaxyExperience({ index }: { index: TopologyIndex }) {
     [index, environmentId, filters, path, neighborhood],
   );
   const layout = useMemo(() => layoutGalaxy(model), [model]);
+  const eventReach = useEventHighlight(index)?.reach ?? null;
   const scene = useMemo(
-    () => buildScene(index, model, layout, { selection, highlightMode, labelMode }),
-    [index, model, layout, selection, highlightMode, labelMode],
+    () => buildScene(index, model, layout, { selection, highlightMode, labelMode, eventReach }),
+    [index, model, layout, selection, highlightMode, labelMode, eventReach],
   );
   const policy = motionPolicy({ reducedMotion, paused: motionPaused, particlesEnabled: particlesOn });
 

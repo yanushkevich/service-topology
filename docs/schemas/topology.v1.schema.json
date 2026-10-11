@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.test/schemas/topology.v1.schema.json",
   "title": "TopologyData v1",
-  "description": "Canonical topology payload: environments, logical service definitions, per-environment service instances, infrastructure resources (incl. Kafka topics and RabbitMQ queues/exchanges), and communication relationships. Mirrors src/domain/types.ts; referential integrity (IDs, parents, cycles, environments) is enforced by validateTopology (src/domain/validation.ts), which JSON Schema cannot express. Contract tests keep enums in sync with the code.",
+  "description": "Canonical topology payload: environments, logical service definitions, per-environment service instances, infrastructure resources (incl. Kafka topics and RabbitMQ queues/exchanges), communication relationships, and optional event types. Mirrors src/domain/types.ts; referential integrity (IDs, parents, cycles, environments) is enforced by validateTopology (src/domain/validation.ts), which JSON Schema cannot express. Contract tests keep enums in sync with the code.",
   "type": "object",
   "additionalProperties": false,
   "required": ["environments", "serviceDefinitions", "serviceInstances", "resources", "relationships"],
@@ -11,7 +11,12 @@
     "serviceDefinitions": { "type": "array", "items": { "$ref": "#/$defs/ServiceDefinition" } },
     "serviceInstances": { "type": "array", "items": { "$ref": "#/$defs/ServiceInstance" } },
     "resources": { "type": "array", "items": { "$ref": "#/$defs/InfrastructureResource" } },
-    "relationships": { "type": "array", "items": { "$ref": "#/$defs/CommunicationRelationship" } }
+    "relationships": { "type": "array", "items": { "$ref": "#/$defs/CommunicationRelationship" } },
+    "eventTypes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/EventType" },
+      "description": "Optional (added within v1, ADR-014). Logical event contracts carried on topics, queues, or exchanges."
+    }
   },
   "$defs": {
     "EntityId": {
@@ -110,6 +115,28 @@
         "team": { "type": "string" },
         "metrics": { "$ref": "#/$defs/Metrics" },
         "updatedAt": { "$ref": "#/$defs/Timestamp" },
+        "metadata": { "$ref": "#/$defs/Metadata" }
+      }
+    },
+    "EventType": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A logical message contract (e.g. OrderPlaced). Environment-independent; resolves per environment to its channel there and the producer/consumer instances' existing relationships. Consistency with relationships is enforced by validateTopology.",
+      "required": ["id", "name", "channelResourceIds", "producerServiceIds", "consumerServiceIds"],
+      "properties": {
+        "id": { "$ref": "#/$defs/EntityId" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "schemaVersion": { "type": "string" },
+        "owner": { "type": "string" },
+        "team": { "type": "string" },
+        "channelResourceIds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/EntityId" },
+          "description": "Topic, queue, or exchange resources; at most one per environment."
+        },
+        "producerServiceIds": { "type": "array", "items": { "$ref": "#/$defs/EntityId" }, "description": "ServiceDefinition IDs." },
+        "consumerServiceIds": { "type": "array", "items": { "$ref": "#/$defs/EntityId" }, "description": "ServiceDefinition IDs." },
         "metadata": { "$ref": "#/$defs/Metadata" }
       }
     },

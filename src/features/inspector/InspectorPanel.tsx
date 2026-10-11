@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { useTopology } from '../../data/topologyContext';
 import {
   endpointName,
@@ -242,6 +242,7 @@ function ResourceDetails({ index, resource }: { index: TopologyIndex; resource: 
           </Section>
         )}
 
+        <EventsCarried index={index} channelId={resource.id} />
         <MetricsSection metrics={resource.metrics} />
         <Relationships index={index} entityId={resource.id} />
         <Metadata metadata={resource.metadata} />
@@ -399,6 +400,30 @@ function Field({ label, mono, children }: { label: string; mono?: boolean; child
       <dt className="text-[10px] tracking-[0.07em] text-fg-3 uppercase">{label}</dt>
       <dd className={`m-0 mt-0.5 text-[12.5px] wrap-anywhere ${mono ? 'font-mono' : ''}`}>{children}</dd>
     </div>
+  );
+}
+
+/** Event types this topic/queue/exchange carries (ADR-014), each linking to the catalog. */
+function EventsCarried({ index, channelId }: { index: TopologyIndex; channelId: EntityId }) {
+  const { search } = useLocation();
+  const events = index.eventTypesByChannel.get(channelId) ?? [];
+  if (events.length === 0) return null;
+  return (
+    <Section title="Events carried" count={events.length}>
+      <ul className="m-0 list-none p-0">
+        {events.map((e) => (
+          <li key={e.id}>
+            <Link
+              to={{ pathname: `/events/${encodeURIComponent(e.id)}`, search }}
+              className="flex min-h-[34px] items-center gap-[9px] rounded-md px-2 text-[12.5px] hover:bg-surface-3"
+            >
+              <span className="min-w-0 flex-1 truncate font-mono">{e.name}</span>
+              {e.schemaVersion && <span className="font-mono text-[10px] text-fg-3">{e.schemaVersion}</span>}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Section>
   );
 }
 

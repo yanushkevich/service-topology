@@ -1,5 +1,5 @@
 import type { TopologyIndex } from '../../../domain/topologyIndex';
-import { reachFrom, type HighlightMode } from '../../../domain/traversal';
+import { reachFrom, type HighlightMode, type Reach } from '../../../domain/traversal';
 import type { EntityRef, HealthStatus, RelationshipStatus } from '../../../domain/types';
 import type { EdgeKind } from '../../../shared/mappings';
 import type { GalaxyLayout, RingLayout, Vec3 } from './layout3d';
@@ -71,6 +71,8 @@ export interface SceneOptions {
   selection: EntityRef | null;
   highlightMode: HighlightMode;
   labelMode: LabelMode;
+  /** Event-flow highlight (ADR-014), used only when nothing is selected. */
+  eventReach?: Reach | null;
 }
 
 /** Below this many nodes every label is shown in auto mode. */
@@ -160,7 +162,12 @@ export function buildScene(index: TopologyIndex, model: GalaxyScopeModel, layout
     highlightedEdges.add(selectedEdge.id);
     highlightedNodes.add(selectedEdge.source).add(selectedEdge.target);
   }
-  const highlightActive = Boolean(selectedNode || selectedEdge);
+  const eventReach = !options.selection ? options.eventReach : null;
+  if (eventReach) {
+    for (const n of model.nodes) if (n.memberIds.some((id) => eventReach.entityIds.has(id))) highlightedNodes.add(n.id);
+    for (const e of model.edges) if (e.relationshipIds.some((id) => eventReach.relationshipIds.has(id))) highlightedEdges.add(e.id);
+  }
+  const highlightActive = Boolean(selectedNode || selectedEdge || eventReach);
   const emphasisOf = (id: string, isSelected: boolean, set: Set<string>): SceneEmphasis =>
     isSelected ? 'selected' : !highlightActive ? 'none' : set.has(id) ? 'highlighted' : 'dimmed';
 

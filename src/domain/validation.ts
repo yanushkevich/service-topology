@@ -1,5 +1,6 @@
+import { resolveEventFlow, type EventFlowParticipant } from './eventFlow';
 import { buildTopologyIndex, environmentOf } from './topologyIndex';
-import { CONTAINMENT_ONLY_RESOURCE_TYPES, type EntityId, type TopologyData } from './types';
+import { CONTAINMENT_ONLY_RESOURCE_TYPES, EVENT_CHANNEL_TYPES, type EntityId, type TopologyData } from './types';
 
 export type ValidationSeverity = 'error' | 'warning';
 
@@ -17,7 +18,12 @@ export type ValidationCode =
   | 'environment-mismatch'
   | 'environment-conflict'
   | 'cross-environment-relationship'
-  | 'invalid-binding-target';
+  | 'invalid-binding-target'
+  | 'missing-event-channel'
+  | 'invalid-event-channel'
+  | 'duplicate-event-channel-environment'
+  | 'missing-event-service'
+  | 'event-flow-missing-relationship';
 
 export interface ValidationIssue {
   severity: ValidationSeverity;
@@ -43,6 +49,7 @@ export function validateTopology(data: TopologyData): ValidationIssue[] {
     ...data.serviceInstances,
     ...data.resources,
     ...data.relationships,
+    ...(data.eventTypes ?? []),
   ];
   for (const { id } of all) {
     if (id.trim() === '') error('empty-id', id, 'Entity has an empty ID');
@@ -151,6 +158,55 @@ export function validateTopology(data: TopologyData): ValidationIssue[] {
         id,
         `Relationship crosses environments ("${sourceEnvironment}" → "${targetEnvironment}")`,
       );
+    }
+  }
+
+  // Event types (ADR-014) annotate existing messaging; they must agree with the relationships.
+  for (const eventType of data.eventTypes ?? []) {
+    const channelEnvironments = new Map<string, EntityId>();
+    for (const channelId of eventType.channelResourceIds) {
+      const channel = index.resources.get(channelId);
+      if (!channel) {
+        error('missing-event-channel', eventType.id, `Event type references unknown channel "${channelId}"`);
+        continue;
+      }
+      if (!EVENT_CHANNEL_TYPES.has(channel.type)) {
+        error('invalid-event-channel', eventType.id, `Channel "${channelId}" is a ${channel.type}, not a topic, queue, or exchange`);
+        continue;
+      }
+      const key = environmentOf(index, channelId) ?? '(environment-independent)';
+      const other = channelEnvironments.get(key);
+      if (other !== undefined || (channelEnvironments.size > 0 && (key === '(environment-independent)' || channelEnvironments.has('(environment-independent)')))) {
+        error(
+          'duplicate-event-channel-environment',
+          eventType.id,
+          `Event type has more than one channel for ${key === '(environment-independent)' ? 'all environments' : `environment "${key}"`}`,
+        );
+        continue;
+      }
+      channelEnvironments.set(key, channelId);
+    }
+    for (const serviceId of [...eventType.producerServiceIds, ...eventType.consumerServiceIds]) {
+      if (!index.definitions.has(serviceId)) {
+        error('missing-event-service', eventType.id, `Event type references unknown service definition "${serviceId}"`);
+      }
+    }
+    for (const [key, channelId] of channelEnvironments) {
+      const flow = resolveEventFlow(index, eventType, key === '(environment-independent)' ? '' : key);
+      if (!flow || flow.channelId !== channelId) continue;
+      const check = (participants: EventFlowParticipant[], role: string) => {
+        for (const p of participants) {
+          if (p.instanceId && p.relationshipIds.length === 0 && index.definitions.has(p.serviceDefinitionId)) {
+            error(
+              'event-flow-missing-relationship',
+              eventType.id,
+              `"${p.instanceId}" is a ${role} of "${eventType.name}" but has no relationship ${role === 'producer' ? 'to' : 'from'} "${channelId}"`,
+            );
+          }
+        }
+      };
+      check(flow.producers, 'producer');
+      check(flow.consumers, 'consumer');
     }
   }
 

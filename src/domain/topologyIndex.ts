@@ -5,6 +5,7 @@ import type {
   EntityKind,
   EntityRef,
   EnvironmentRecord,
+  EventType,
   InfrastructureResource,
   ServiceDefinition,
   ServiceInstance,
@@ -19,6 +20,9 @@ export interface TopologyIndex {
   instances: ReadonlyMap<EntityId, ServiceInstance>;
   resources: ReadonlyMap<EntityId, InfrastructureResource>;
   relationships: ReadonlyMap<EntityId, CommunicationRelationship>;
+  eventTypes: ReadonlyMap<EntityId, EventType>;
+  /** Event types keyed by each channel resource that carries them. */
+  eventTypesByChannel: ReadonlyMap<EntityId, readonly EventType[]>;
   instancesByDefinition: ReadonlyMap<EntityId, readonly ServiceInstance[]>;
   instancesByResource: ReadonlyMap<EntityId, readonly ServiceInstance[]>;
   childResources: ReadonlyMap<EntityId, readonly InfrastructureResource[]>;
@@ -44,6 +48,12 @@ function groupBy<T>(items: readonly T[], key: (item: T) => EntityId | undefined)
   return groups;
 }
 
+function groupByMany<T>(items: readonly T[], keys: (item: T) => readonly EntityId[]): Map<EntityId, T[]> {
+  const groups = new Map<EntityId, T[]>();
+  for (const item of items) for (const k of new Set(keys(item))) groups.set(k, [...(groups.get(k) ?? []), item]);
+  return groups;
+}
+
 export function buildTopologyIndex(data: TopologyData): TopologyIndex {
   return {
     data,
@@ -52,6 +62,8 @@ export function buildTopologyIndex(data: TopologyData): TopologyIndex {
     instances: byId(data.serviceInstances),
     resources: byId(data.resources),
     relationships: byId(data.relationships),
+    eventTypes: byId(data.eventTypes ?? []),
+    eventTypesByChannel: groupByMany(data.eventTypes ?? [], (e) => e.channelResourceIds),
     instancesByDefinition: groupBy(data.serviceInstances, (i) => i.serviceDefinitionId),
     instancesByResource: groupBy(data.serviceInstances, (i) => i.resourceId),
     childResources: groupBy(data.resources, (r) => r.parentResourceId),

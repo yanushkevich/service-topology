@@ -67,7 +67,7 @@ describe('accessibility audit (axe-core)', () => {
 
   it('events & traffic with a simulated failure and history comparison', async () => {
     const user = userEvent.setup();
-    renderApp('/events');
+    renderApp('/simulation');
     await screen.findByRole('list', { name: 'Snapshots' });
     act(() => useSimulationStore.getState().inject('payment-service.production', 'unavailable'));
     await user.click(screen.getByRole('button', { name: 'Compare' }));
@@ -86,9 +86,17 @@ describe('accessibility audit (axe-core)', () => {
     ['/dependencies?v=1&env=production&sel=service-instance:order-service.production', /^Upstream/],
     ['/infrastructure', 'Containment'],
     ['/settings', 'Appearance'],
+    ['/events/event-notification-requested', 'NotificationRequested'],
   ])('section page %s', async (path, section) => {
     renderApp(path);
     await screen.findByRole('heading', { level: 2, name: section });
+    expect(await audit()).toEqual([]);
+  });
+
+  it('service map with an event-flow highlight', async () => {
+    renderApp('/map?v=1&env=production&ev=event-order-placed');
+    await screen.findByLabelText(/^Order Service, api/);
+    await screen.findByText(/Event flow:/);
     expect(await audit()).toEqual([]);
   });
 

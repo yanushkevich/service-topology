@@ -121,7 +121,7 @@ function Analysis({ index, target, readOnly }: { index: TopologyIndex; target: E
   const t = info(target);
   const inject = () => {
     useSimulationStore.getState().inject(target, 'unavailable');
-    navigate({ pathname: '/events', search });
+    navigate({ pathname: '/simulation', search });
   };
   const neighborhoodOnMap = () => {
     const ui = useUiStore.getState();

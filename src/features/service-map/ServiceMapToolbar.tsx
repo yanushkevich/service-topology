@@ -1,5 +1,7 @@
 import { useUiStore, type LayoutMode, type ServiceMapView } from '../../state/uiStore';
 import { Icon, type IconName } from '../../shared/ui/Icon';
+import { useTopology } from '../../data/topologyContext';
+import { EventHighlightChip } from '../event-catalog/EventHighlightChip';
 
 const VIEW_OPTIONS: readonly { value: ServiceMapView; label: string; icon: IconName }[] = [
   { value: '2d', label: '2D Workbench', icon: 'view2d' },
@@ -16,9 +18,11 @@ export function ServiceMapToolbar() {
   const setActiveView = useUiStore((s) => s.setActiveView);
   const layoutMode = useUiStore((s) => s.layoutMode);
   const setLayoutMode = useUiStore((s) => s.setLayoutMode);
+  const topology = useTopology();
 
   return (
     <div className="flex min-h-[46px] flex-none flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-line bg-surface-1 px-3.5 py-1.5" role="toolbar" aria-label="Service map controls">
+      <EventHighlightChip index={topology.status === 'ready' ? topology.index : null} />
       <div className="ml-auto flex flex-wrap gap-2">
         {activeView === '2d' && (
           <div className="flex gap-0.5 rounded-[9px] border border-line bg-surface-2 p-[3px]" role="group" aria-label="Layout mode">
