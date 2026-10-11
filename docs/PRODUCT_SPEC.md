@@ -1,0 +1,224 @@
+# Product Specification — Service Topology and Registry Platform
+
+**Status:** Living specification  
+**Initial delivery:** Mock data and simulated telemetry; integration-ready architecture.
+
+## 1. Vision
+Build a polished interactive enterprise platform that helps engineers discover services, understand how they communicate, inspect their health, and explore dependencies. This is a cohesive application—not a static mockup or landing page.
+
+The first release uses realistic mock data and clearly labeled simulated events. Later integrations may include AWS, Azure, GCP, Kubernetes, Kafka, databases, APIs, and on-premises systems.
+
+## 2. Goals
+- Discover and search a normalized service inventory.
+- Explore service-to-service and infrastructure relationships.
+- Use 2D topology, 3D network, registry, and infrastructure views of the same ecosystem.
+- Inspect services and connections in context.
+- Filter by environment, provider, health, protocol, and communication pattern.
+- Explore upstream/downstream dependencies.
+- Simulate traffic, degradation, failure, and recovery.
+- Support future integrations without redesigning the core UI or domain model.
+
+## 3. Initial non-goals
+- Live cloud discovery, production telemetry, or real incident response.
+- Authentication-provider integration.
+- Implementing all provider integrations before the core product works.
+- A geographic globe as the default topology. Use geographic coordinates only for an explicitly geographic view when valid location data exists.
+- Presenting simulated information as real production data.
+
+## 4. Users and workflows
+Primary users are platform/SRE engineers, developers investigating dependencies, and architecture/operations teams.
+
+Core workflows:
+1. Open Service Map and understand the selected environment.
+2. Search for a service and focus it in the active view.
+3. Select a service or connection and inspect its details.
+4. Filter topology and registry using shared filters.
+5. Explore upstream/downstream dependencies.
+6. Switch between 2D, 3D, and Infrastructure views while preserving applicable context.
+7. Simulate health changes/failures and observe affected services.
+8. Find a service in the registry and navigate to it in the map.
+
+## 5. Application layout
+### Header
+Product identity, environment selector (Development/Staging/Production), global search, overall health, notifications, theme control, and user-menu placeholder.
+
+### Left navigation
+Overview, Service Map, Service Registry, Dependencies, Events & Traffic, Infrastructure, Settings. Service Map is the primary experience. Routes must not lead to broken pages; unfinished areas should be clearly labeled placeholders.
+
+### Service Map workspace
+Canvas toolbar, 2D/3D/Infrastructure switcher, shared filters, legend, layer controls, overlays, optional minimap, loading/empty/error states, and WebGL fallback.
+
+### Right inspector
+Show an empty state when nothing is selected. For services, show name, description, category, provider, environment, owner/team, version, health, endpoint/resource ID, dependencies, protocols, recent events, and clearly labeled simulated metrics. For connections, show source/target, protocol, pattern, direction, status, security metadata where available, simulated metrics, last activity, and topic/queue/endpoint context.
+
+## 6. Visualization requirements
+### 2D topology
+Use React Flow with custom nodes and edges. Support pan/zoom, drag, select, fit-to-view, search/focus, filters, connection selection, dependency highlighting, neighborhood exploration, optional labels, grouping/collapse where practical, and a minimap. Keep graph data derived from canonical domain entities and avoid unnecessary re-renders.
+
+### 3D galaxy network
+The secondary 3D experience is a rotatable, explorable galaxy of service and infrastructure nodes. Nodes are distinct luminous worlds; relationships are glowing curved paths; related systems form semantic constellations. Users can orbit, pan, zoom, focus a node, and explicitly **Explore inside** it to transition into its modeled child scope or local topology. Breadcrumbs and back/overview controls restore the previous scope and camera context. This is a graph-inspired galaxy, not a geographic globe.
+
+The authoritative interaction, visual, data-mapping, performance, and acceptance contract is `docs/3D_GALAXY_EXPERIENCE.md`. Implement it with Three.js via React Three Fiber and Drei, using stable canonical IDs and renderer adapters. Keep containment distinct from communication, show labels/status accessibly, and only animate traffic when backed by explicit observed or clearly labeled simulated data. Never fabricate an interior for a leaf entity. Lazy-load 3D; preserve shared selection/filter/environment state; support reduced motion, pause, cleanup, and graceful WebGL fallback. 2D remains the primary operational view and must not depend on WebGL.
+
+### Infrastructure view
+Group services by provider, environment, cluster, namespace, deployment boundary, or available infrastructure metadata. It can begin as a functional grouping view and evolve without changing the domain model.
+
+### Shared visual language
+Use centralized configurable mappings for category, provider, health, protocol, direction, selection, and hover. Provide a legend and accessible text/icon indicators; do not communicate status by color alone. Example protocol colors are conventions, not standards.
+
+## 7. Service and connection types
+Support REST, GraphQL, gRPC, WebSocket, Kafka, RabbitMQ, PostgreSQL, MySQL, MongoDB, Redis, AWS/Azure/GCP resources, Kubernetes, on-prem, SaaS, business apps, scheduled jobs, and event-driven workers.
+
+A service should have a stable ID, name, description, category/type, provider, environment, health, owner/team, version, metadata, and optional endpoint/resource IDs. A connection should have stable ID, source/target IDs, protocol, communication pattern, direction, status, and optional metrics/security/topic metadata. Define the actual TypeScript schema in the architecture/domain implementation; do not duplicate ad hoc types across components.
+
+## 8. Mock data and simulation
+Include at least 15 connected services across AWS, Azure, GCP, and on-premises, multiple environments, health states, and protocols. IDs must be stable and references valid. Keep repositories and simulation separate from renderers. Label all generated metrics/events as simulated. Support traffic/latency changes and health transitions, including failure and recovery.
+
+## 9. Visual design
+Premium, restrained enterprise tooling. Dark theme: deep charcoal/midnight surfaces, subtle grid/atmosphere, muted borders, readable labels, cyan/teal highlights, restrained glow. Light theme: warm white/light gray surfaces, neutral borders, dark typography, accessible status colors. Avoid excessive neon, gradients, glassmorphism, and clutter. Clarity takes priority over decoration.
+
+## 10. Technology expectations
+React + strict TypeScript, supported Vite, Three.js, React Three Fiber, Drei, React Flow, Zustand, React Router, GSAP, and CSS variables. Add GLSL tooling only when justified; Leva/Stats.js are development-only. Use mutually compatible pinned versions. For a new project, React 19 + R3F 9 is preferred only if selected dependencies support the combination.
+
+## 11. Quality attributes
+Strict TypeScript, accessibility, keyboard interactions, visible focus, reduced-motion support, error boundaries, loading/empty/error states, lazy-loaded 3D, sensible DPR limits, resource cleanup, stable React Flow identities, and no React state updates at animation-frame frequency. Support larger graphs with filters and neighborhood exploration.
+
+## 12. Initial acceptance criteria
+- Application starts and builds.
+- Navigation, themes, and view switching work.
+- At least 15 connected mock services span AWS/Azure/GCP/on-prem.
+- 2D topology uses canonical data and supports graph interactions.
+- Registry search/filter and registry-to-map navigation work.
+- Inspector shows selected service/connection details.
+- Interactive 3D uses the same domain and shared selection/filter contracts.
+- Infrastructure view groups using available metadata.
+- Applicable state persists across views.
+- Simulation updates the UI consistently and is clearly labeled.
+- Core domain, selectors, dependency traversal, and state synchronization are tested.
+- Checks pass or existing failures are documented.
+- Setup, architecture, and extension instructions exist.
+
+## 13. Definition of done
+A phase is complete only when its acceptance criteria pass, integration points work, existing features remain intact, checks are reported honestly, and documentation is updated. Do not automatically start the next phase.
+
+
+---
+
+# Revision 2 Addendum — Clarifications and Decisions
+
+**This addendum is authoritative where the original text above is ambiguous or conflicts with it.** The original text is retained for traceability; no original requirements have been deleted.
+
+## A. Stack completeness and layout engine
+
+The required frontend stack explicitly includes **React Flow** for 2D topology. Use a graph layout engine rather than relying on manually positioned nodes alone.
+
+- **Default layout engine:** ELK.js (`elkjs`) for hierarchical layouts, nested groups, and routing where its complexity is justified.
+- A lighter layout such as dagre may be used for a deliberately simpler graph mode, but the implementation must choose one default and document the reason. Do not install both without a concrete need.
+- Layout output must be deterministic for the same input and configuration.
+- The initial graph must have no overlapping service-node bounding boxes after auto-layout. Edge crossings should be minimized where practical and edge routing must remain readable.
+- Preserve user-pinned/manual positions when a layout mode supports them; document whether saved positions override automatic layout.
+
+The dependency list in the project foundation phase must include React Flow and the chosen layout engine at compatible, pinned versions. The 3D stack remains Three.js + React Three Fiber + Drei.
+
+## B. Delivery strategy and scope control
+
+Do not attempt to build every feature in one pass. The delivery order is defined by five product milestones:
+
+1. **Milestone 1 — Domain, mock data, and registry.**
+2. **Milestone 2 — 2D map and inspector.**
+3. **Milestone 3 — Simulation and failure propagation.**
+4. **Milestone 4 — 3D network view.**
+5. **Milestone 5 — Product polish and hardening.**
+
+The application shell and design tokens are enabling work inside Milestone 1, not a reason to build every navigation page in depth. Each milestone has its own acceptance criteria in `docs/milestones/`. The original phase prompts remain available as smaller implementation iterations and are retained unchanged for traceability. The milestone prompts are the recommended delivery-level workflow.
+
+## C. Infrastructure view definition
+
+For the initial release, **Infrastructure is a grouping/layout mode over the same canonical topology**, not a separate graph product or separate source of truth.
+
+It reuses the 2D node/edge components, selection, filters, and inspector. It applies grouping and layout by provider, environment, cluster, namespace, or deployment boundary. Do not build a separate infrastructure graph renderer until user research or product requirements demonstrate a need.
+
+Infrastructure grouping must be derived from explicit hierarchy and metadata; do not infer parent/child relationships from display names.
+
+## D. 3D is secondary to 2D
+
+The 2D map is the primary operational view and must reach its acceptance criteria before full 3D implementation begins. The 3D view is a secondary exploratory and presentation mode. It must not replace functionality that is clearer in 2D.
+
+3D success is measured by selection/filter parity, understandable grouping, readable labels at useful zoom levels, and stable performance—not visual spectacle alone. If a 3D interaction is ambiguous or less usable than 2D, provide a clear way back to 2D.
+
+## E. Scale targets
+
+Initial product targets (benchmark on a documented reference development machine/browser; record the actual test environment):
+
+- **Default supported interactive topology:** 250 visible service/resource nodes and 750 visible edges.
+- **Larger inventories:** up to 1,000 total entities should remain navigable through filtering, grouping, search, and neighborhood exploration; do not promise all 1,000 nodes rendered simultaneously at full detail.
+- **Performance goal:** common interactions such as selection and filter changes should remain responsive, with a target of under 100 ms for UI/state response excluding layout computation and browser/device variability. Record measured results rather than claiming a guarantee.
+- **Layout goal:** deterministic initial auto-layout with no overlapping node boxes for the sample data and the 250-node benchmark fixture. Layout runtime must be measured and documented.
+- **3D goal:** the initial 3D view is optimized for the default supported visible graph, not for rendering every entity in a 1,000-node inventory simultaneously.
+
+If performance misses the target, first use progressive rendering, viewport culling, grouping, edge reduction, memoization, and filtering. Reassess library choices only with benchmark evidence.
+
+## F. Explicit domain modeling decisions
+
+### Logical service vs deployed instance
+- `ServiceDefinition` represents a logical capability that can be deployed more than once.
+- `ServiceInstance` represents one deployment of that capability in exactly one environment.
+- Each instance belongs to one environment; the same logical definition can have instances in Development, Staging, and Production.
+- The initial registry may display instances as rows, with an optional grouping by logical service. Do not put a multi-valued environment array on an individual instance.
+
+### Kafka topics and queues
+- Kafka topics and RabbitMQ queues/exchanges are first-class resource entities when they participate in the topology.
+- Model producer-to-topic and topic-to-consumer relationships as explicit connections, so fan-in/fan-out and dependency paths are visible.
+- Connection metadata may still contain topic/queue names for convenience, but that field is not the canonical representation when a first-class topic/queue entity exists.
+- Keep resource type distinct from executable service type while allowing both to appear in topology.
+
+### Infrastructure hierarchy
+Represent infrastructure containment explicitly with stable resource IDs and parent references. The initial hierarchy supports provider/account or subscription/project, region where applicable, cluster, namespace, workload/service instance, and backing resources. Not every provider uses every level.
+
+- `InfrastructureResource` has a stable ID, type, display name, provider, and optional `parentResourceId`.
+- A Kubernetes namespace belongs to a cluster; workloads belong to a namespace; deployed service instances reference their workload or resource where known.
+- Validate that parent references exist and that containment has no cycles.
+- Do not encode hierarchy solely in string paths or labels.
+
+### Relationships
+Keep containment separate from runtime communication:
+- **Containment** answers “where does this run?”
+- **Communication** answers “what talks to what?”
+Do not render containment as traffic edges unless a view explicitly distinguishes the relationship type.
+
+## G. History, deep links, saved layouts, and API contract
+
+These are product requirements, implemented incrementally:
+
+1. **Topology history:** define a snapshot contract that can record a timestamped version of topology entities, relationships, health, and relevant metrics. The mock release should support deterministic snapshot fixtures and a simple “as of”/compare workflow if feasible. Real retention and event sourcing are out of scope until a backend is chosen.
+2. **URL deep links:** encode shareable view state in query parameters or a documented URL-state codec: active view, environment, selected entity ID/type, and supported filters. Avoid putting sensitive data in URLs. Browser back/forward should restore supported state.
+3. **Saved layouts:** persist node positions, grouping/collapse state, and relevant view preferences using a versioned `SavedLayout` schema. Begin with local persistence behind an interface; keep the contract replaceable by a backend. Never persist Three.js objects or React Flow runtime objects—store canonical IDs and serializable positions/options.
+4. **API contract:** document the frontend/backend boundary before real integrations. Use **OpenAPI 3.1** for future HTTP endpoints and JSON Schema for serializable domain payloads/snapshots/saved layouts. GraphQL may be added later if the backend explicitly chooses it; do not maintain conflicting hand-written schemas. Keep generated/validated types tied to the contract where practical.
+
+These capabilities should be added after the core domain/registry and 2D map work is stable; they must not delay the first usable 2D milestone.
+
+## H. Testable design quality
+
+Replace subjective terms such as “premium” or “polished” with observable criteria wherever practical:
+
+- Normal text meets WCAG 2.2 AA contrast of at least 4.5:1; large text at least 3:1.
+- Important non-text UI indicators and component boundaries meet at least 3:1 contrast against adjacent colors where WCAG requires it.
+- All interactive controls have accessible names, visible keyboard focus, and keyboard operation where applicable.
+- Initial auto-layout has no overlapping node bounding boxes in required fixtures.
+- Status is not conveyed by color alone.
+- Loading, empty, no-results, error, and WebGL-unavailable states are testable.
+- Theme changes do not remove focus indicators or reduce required contrast.
+- Animation honors reduced-motion preference and can be paused where continuous motion is present.
+
+## I. Product differentiation
+
+The product should not claim to replace established products such as Backstage, Datadog Service Map, Dynatrace, or Kiali without evidence. The initial differentiator to validate is:
+
+**A mock-first, integration-ready, cross-environment topology workbench that combines a normalized service registry, explainable dependency/failure simulation, synchronized 2D and optional 3D exploration, and shareable topology context across cloud and on-premises systems.**
+
+This is a positioning hypothesis, not a proven market advantage. Before treating it as a commercial differentiator, compare target users and workflows against existing tools, interview users, and document which unmet need is distinct. Avoid duplicating a full service catalog, APM suite, or Kubernetes-specific dashboard in the initial scope.
+
+
+## E. 3D galaxy interaction contract
+
+The galaxy view is more than a rotatable overview: it supports hierarchical exploration into modeled service/resource contents, a clear breadcrumb path, and return to overview. See `docs/3D_GALAXY_EXPERIENCE.md` for the complete specification and test checklist. These requirements refine the 3D view without changing the milestone order or making 3D a prerequisite for 2D.

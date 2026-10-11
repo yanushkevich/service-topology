@@ -1,0 +1,918 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Orrery — topology workbench and galaxy</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#05070d}
+a{color:#8fd8ff}a:hover{color:#c5ecff}
+sc-for,sc-if{display:contents}
+.app{--b1:#090d17;--b2:#0e1321;--b3:#151b2d;--ln:#1e2640;--ln2:#2b3558;--tx:#e7ecf8;--t2:#a7b1ca;--t3:#7f8cab;--ice:#a9c8ff;--in:#7d8bff;--vi:#a78bfa;--ok:#3dd6b0;--wa:#f5b454;--cr:#ff7b7b;font-family:'Geist',system-ui,sans-serif;color:var(--tx);font-size:13px;line-height:1.4}
+.app *{box-sizing:border-box}
+.app button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:left}
+.app button:focus-visible,.app input:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.mono{font-family:'Geist Mono',ui-monospace,monospace}
+.ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
+[data-tip]{position:relative}
+[data-tip]:hover::after,[data-tip]:focus-visible::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);white-space:nowrap;background:#1b2238;border:1px solid var(--ln2);color:var(--tx);font-size:11px;font-weight:400;padding:4px 8px;border-radius:6px;z-index:60;pointer-events:none}
+.tr[data-tip]:hover::after,.tr[data-tip]:focus-visible::after{left:calc(100% + 8px);bottom:auto;top:50%;transform:translateY(-50%)}
+.td[data-tip]:hover::after,.td[data-tip]:focus-visible::after{bottom:auto;top:calc(100% + 8px)}
+.nv{width:56px;padding:9px 0 7px;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--t3);font-size:9.5px;letter-spacing:.02em;text-align:center}
+.app .nv{text-align:center}
+.nv:hover{color:var(--tx);background:var(--b3)}
+.nv.on{color:var(--cy);background:rgba(95,225,255,.09);box-shadow:inset 0 0 0 1px rgba(95,225,255,.22)}
+.hb{height:32px;padding:0 10px;border-radius:8px;border:1px solid var(--ln);background:var(--b2);display:flex;align-items:center;gap:8px;color:var(--t2);white-space:nowrap}
+.app .hb{border:1px solid var(--ln)}
+.hb:hover{color:var(--tx);border-color:var(--ln2)}
+.hb.on{color:var(--cy);border-color:rgba(95,225,255,.4)}
+.tb{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;color:var(--t2)}
+.tb:hover{background:var(--b3);color:var(--tx)}
+.tb.on{color:var(--cy);background:rgba(95,225,255,.1)}
+.seg{display:flex;padding:3px;gap:2px;border-radius:9px;background:var(--b2);border:1px solid var(--ln)}
+.sg{height:26px;padding:0 11px;border-radius:6px;color:var(--t2);font-size:12px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.sg:hover{color:var(--tx)}
+.sg.on{background:#1c2540;color:var(--tx);box-shadow:inset 0 0 0 1px var(--ln2)}
+.sg.on .ic{color:var(--cy)}
+.chip{height:26px;padding:0 10px;border-radius:13px;font-size:12px;color:var(--t2);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.app .chip{border:1px solid var(--ln2)}
+.chip:hover{color:var(--tx)}
+.chip.on{color:var(--tx);background:rgba(125,139,255,.18)}
+.app .chip.on{border-color:var(--in)}
+.pri{height:32px;padding:0 13px;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.app .pri{background:var(--cy);color:#04121a}
+.pri:hover{filter:brightness(1.1)}
+.sec{height:32px;padding:0 12px;border-radius:8px;display:inline-flex;align-items:center;gap:7px;color:var(--tx);white-space:nowrap}
+.app .sec{border:1px solid var(--ln2)}
+.sec:hover{background:var(--b3)}
+.float{background:rgba(13,18,32,.9);backdrop-filter:blur(10px);border:1px solid var(--ln);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.ov{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none}
+.p{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.e-dim{stroke:rgba(140,155,200,.14);stroke-width:1}
+.e-glow{stroke:rgba(95,200,255,.09);stroke-width:5}
+.e-base{stroke:rgba(150,190,255,.5);stroke-width:1}
+.e-hglow{stroke:rgba(95,225,255,.24);stroke-width:7}
+.e-hot{stroke:#c4f4ff;stroke-width:1.6}
+.a-base{fill:rgba(160,196,255,.8)}.a-hot{fill:#c4f4ff}.a-dim{fill:rgba(140,155,200,.22)}
+.r-dim{stroke:rgba(125,139,255,.24);stroke-width:1}
+.r-hot{stroke:rgba(95,225,255,.65);stroke-width:1.3}
+.r-shell{stroke:rgba(125,139,255,.16);stroke-width:1;stroke-dasharray:2 7}
+.spk{stroke:rgba(169,200,255,.17);stroke-width:1;stroke-dasharray:3 5}
+.spk-h{stroke:rgba(95,225,255,.6);stroke-width:1;stroke-dasharray:3 5}
+.star{stroke:#cfd9ff;stroke-width:1.4;opacity:.45}
+.star2{stroke:#fff;stroke-width:2.2;opacity:.8}
+.sh{display:inline-block;width:1em;height:1em;position:relative;flex:none}
+.sv{border-radius:50%;background:radial-gradient(circle at 34% 30%,#fff 0,#b9d0ff 16%,#5b78e6 55%,#1b2558 100%);box-shadow:0 0 .45em rgba(125,160,255,.5)}
+.gw{clip-path:polygon(25% 4%,75% 4%,100% 50%,75% 96%,25% 96%,0 50%);background:linear-gradient(140deg,#e9fcff,#5fe1ff 40%,#1583a8)}
+.db{width:.86em;border-radius:50%/20%;background:linear-gradient(180deg,#e4dcff 0 14%,#a78bfa 14% 36%,#4b3a99 36% 42%,#a78bfa 42% 64%,#4b3a99 64% 70%,#8f74ea 70%);box-shadow:0 0 .4em rgba(167,139,250,.45)}
+.ca{transform:rotate(45deg) scale(.74);border-radius:.14em;background:linear-gradient(135deg,#f0eaff,#a78bfa 45%,#3d2f85);box-shadow:0 0 .4em rgba(167,139,250,.45)}
+.tp{width:1.4em;height:.72em;border-radius:.36em;background:repeating-linear-gradient(90deg,#aab3ff 0 .2em,#2a2f6e .2em .28em);box-shadow:0 0 .4em rgba(125,139,255,.5)}
+.qu{width:1.4em;height:.72em;border-radius:.36em;border:.09em solid #aab3ff;background:linear-gradient(90deg,transparent 0 50%,#7d8bff 50% 64%,transparent 64% 72%,#7d8bff 72% 86%,transparent 86%)}
+.ex{border:.09em dashed #9aa6c4;border-radius:.16em;background:rgba(154,166,196,.14);transform:scale(.84)}
+.cl{border-radius:50%;border:.1em solid #8fa2ff;background:radial-gradient(circle,#dfe6ff 0 18%,transparent 22%)}
+.ns{border-radius:.24em;border:.1em dashed #8fa2ff;background:radial-gradient(circle,#c9d3ff 0 14%,transparent 18%)}
+.in{border-radius:50%;background:radial-gradient(circle at 35% 30%,#eaf2ff,#7f9df0 60%,#2a3a80);transform:scale(.8)}
+.np{border-radius:.16em;background:linear-gradient(135deg,#c5cee6,#5e6b8f);transform:scale(.72)}
+.st{flex:none;display:inline-block;width:15px;height:15px;font-size:10px;font-weight:700;line-height:15px;text-align:center;color:#06101a}
+.st.ok{border-radius:50%;background:var(--ok)}
+.st.warn{clip-path:polygon(50% 0,100% 100%,0 100%);background:var(--wa);line-height:19px}
+.st.crit{clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%);background:var(--cr)}
+.n2{position:absolute;left:0;top:0;width:176px;height:46px;display:flex;align-items:center;gap:8px;padding:0 10px 0 6px;border-radius:10px;background:#0f1526}
+.app .n2{border:1px solid var(--ln2)}
+.n2:hover{background:#151d34}
+.app .n2.sel{border-color:var(--cy);background:#121c33;box-shadow:0 0 0 1px var(--cy),0 0 26px rgba(95,225,255,.28)}
+.app .n2.mem{border-color:var(--in)}
+.app .n2.rel{border-color:#5a6aa8}
+.n2.dim{opacity:.26}
+.app .n2.warn{border-style:dashed;border-color:rgba(245,180,84,.7)}
+.app .n2.crit{border-style:double;border-width:3px;border-color:rgba(255,123,123,.75)}
+.shw{width:30px;display:grid;place-items:center;font-size:22px;flex:none}
+.nt{flex:1;min-width:0;display:flex;flex-direction:column}
+.nn{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm{font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.el{position:absolute;transform:translate(-50%,-50%);font-size:9.5px;padding:1px 6px;border-radius:8px;background:#0a0f1c;border:1px solid var(--ln2);color:var(--ice);white-space:nowrap;pointer-events:none}
+.gb{position:absolute;border-radius:16px;border:1px solid rgba(125,139,255,.3);background:rgba(125,139,255,.035)}
+.gb.nsb{border-style:dashed;border-radius:12px;border-color:rgba(169,200,255,.22);background:rgba(169,200,255,.03)}
+.gb.xb{border-style:dotted;border-color:rgba(154,166,196,.35);background:none}
+.gb.gsel{border-color:var(--cy);box-shadow:0 0 24px rgba(95,225,255,.15)}
+.gh{position:absolute;left:10px;top:7px;display:flex;align-items:center;gap:7px;font-size:11px;color:var(--t3);padding:3px 6px;border-radius:6px;white-space:nowrap}
+.gh b{color:var(--tx);font-weight:600;font-size:12px}
+.gh:hover{background:var(--b3)}
+.g3{position:absolute;transform:translate(-50%,-50%);display:grid;place-items:center;padding:.3em;line-height:0}
+.g3::before{content:'';position:absolute;left:50%;top:50%;width:2.3em;height:2.3em;margin:-1.15em;border-radius:50%;border:1px solid transparent}
+.g3:hover::before{border-color:rgba(169,200,255,.5)}
+.g3.sel::before{border-color:var(--cy);box-shadow:0 0 1.1em rgba(95,225,255,.45),inset 0 0 .7em rgba(95,225,255,.18);animation:halo 2.8s ease-in-out infinite}
+.g3.warn::after,.g3.crit::after{content:'';position:absolute;left:50%;top:50%;width:1.7em;height:1.7em;margin:-.85em;border-radius:50%;border:1.5px dashed var(--wa);opacity:.85}
+.g3.crit::after{border:3px double var(--cr)}
+.g3.core .sh{opacity:.92}
+.g3 .st{position:absolute;top:-5px;right:-7px;width:14px;height:14px;line-height:14px;font-size:9px}
+.g3 .st.warn{line-height:18px}
+.g3 .st.ok{display:none}
+.lb3{position:absolute;top:100%;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:11px;font-weight:500;line-height:1.25;color:var(--tx);text-shadow:0 1px 3px #000,0 0 8px #05070d;pointer-events:none;text-align:center;margin-top:3px}
+.lb3 i{display:block;font-style:normal;font-size:9.5px;font-weight:400;color:var(--t2);font-family:'Geist Mono',monospace}
+.g3.ext .lb3{color:var(--t2)}
+.pt{position:absolute;width:5px;height:5px;margin:-2.5px;border-radius:50%;background:#e9fbff;box-shadow:0 0 8px 2px rgba(95,225,255,.7);pointer-events:none}
+.shellfx{display:none;position:absolute;left:50%;top:50%;width:200px;height:200px;margin:-100px;border-radius:50%;border:1px solid var(--cy);box-shadow:0 0 60px rgba(95,225,255,.35),inset 0 0 60px rgba(125,139,255,.3);pointer-events:none}
+.shellfx.in{display:block;animation:shIn .64s ease-in forwards}
+.shellfx.out{display:block;animation:shOut .44s ease-in forwards}
+.vin{animation:fadeIn .45s ease-out}
+.crumb{display:flex;align-items:center;gap:2px;min-width:0;flex-wrap:wrap}
+.cb{height:26px;padding:0 8px;border-radius:6px;color:var(--t2);white-space:nowrap}
+.cb:hover{background:var(--b3);color:var(--tx)}
+.cb.cur{color:var(--tx);font-weight:600}
+.cs{color:var(--t3)}
+.tab{height:32px;padding:0 2px;margin-right:16px;color:var(--t3);border-bottom:2px solid transparent;font-size:12px}
+.tab:hover{color:var(--tx)}
+.tab.on{color:var(--tx);border-bottom-color:var(--cy)}
+.card{border:1px solid var(--ln);background:rgba(21,27,45,.6);border-radius:10px;padding:9px 11px;min-width:0}
+.k{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--t3)}
+.vv{font-size:12.5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h4{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin:16px 0 6px;display:flex;justify-content:space-between}
+.dr{width:100%;height:34px;padding:0 8px;border-radius:8px;display:flex;align-items:center;gap:9px}
+.dr:hover{background:var(--b3)}
+.dn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px}
+.dk{font-size:10px;color:var(--t3)}
+.tag{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:5px;background:var(--b3);border:1px solid var(--ln);color:var(--t2);margin:0 5px 5px 0}
+.note{border-radius:9px;padding:9px 11px;font-size:12px;color:var(--t2);border:1px dashed var(--ln2);margin-top:12px}
+.row{display:grid;grid-template-columns:minmax(210px,2fr) 1.2fr 1fr 1fr 1.2fr 1.1fr 1fr;align-items:center;gap:12px;padding:0 14px;min-height:44px;border-bottom:1px solid var(--ln)}
+.row.hd{min-height:34px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);background:var(--b2);position:sticky;top:0;z-index:2}
+.row.rw:hover{background:rgba(21,27,45,.7)}
+.row.rsel{background:rgba(95,225,255,.07);box-shadow:inset 0 0 0 1px rgba(95,225,255,.35)}
+.rn{display:flex;align-items:center;gap:10px;min-width:0;min-height:44px;width:100%}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px}
+.inp{height:32px;border-radius:8px;border:1px solid var(--ln2);background:var(--b2);color:var(--tx);font:inherit;padding:0 10px;min-width:0}
+.inp::placeholder{color:var(--t3)}
+.insp{position:absolute;right:12px;top:58px;bottom:12px;width:332px;display:flex;flex-direction:column;z-index:20}
+.rail{width:72px;flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 0;border-right:1px solid var(--ln);background:var(--b1)}
+.stage{background:radial-gradient(circle,rgba(125,139,255,.13) 1px,transparent 1.4px) 0 0/28px 28px,#070a13}
+.stage.s3{background:radial-gradient(ellipse 60% 50% at 42% 46%,rgba(70,84,190,.2),transparent 70%),radial-gradient(ellipse 40% 34% at 68% 62%,rgba(40,150,190,.11),transparent 70%),radial-gradient(ellipse 30% 40% at 22% 70%,rgba(120,80,200,.09),transparent 70%),#04060b;cursor:grab}
+.app{--b0:#05070d}
+[data-tip]:hover::after,[data-tip]:focus-visible::after{color:#e7ecf8}
+.k-http{--kc:#a9c8ff;--kd:none}
+.k-grpc{--kc:#5fe1ff;--kd:9 4}
+.k-data{--kc:#b79cff;--kd:1.5 5}
+.k-event{--kc:#8ef0c0;--kd:9 4 2 4}
+.kb{stroke:var(--kc);stroke-width:var(--ew);stroke-dasharray:var(--kd);opacity:.62}
+.kab{fill:var(--kc);opacity:.9}
+.khg{stroke:var(--kc);stroke-width:7;opacity:calc(.24*var(--glow))}
+.kh{stroke:var(--kc);stroke-width:calc(var(--ew) + .9px);stroke-dasharray:var(--kd)}
+.kah{fill:var(--kc)}
+.lg{width:36px;height:12px;flex:none;overflow:visible}
+.lgi{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--t2);white-space:nowrap}
+.evr{width:100%;padding:9px 10px;border-radius:9px;display:block}
+.evr:hover{background:var(--b3)}
+.evr.rsel{background:rgba(95,225,255,.08);box-shadow:inset 0 0 0 1px var(--cy)}
+.app.light{--b0:#eef1f7;--b1:#f6f7fb;--b2:#fff;--b3:#e8ecf5;--ln:#d6dcea;--ln2:#b9c3d9;--tx:#121a2c;--t2:#434e69;--t3:#5d6884;--ice:#2550c0;--in:#4a57d6;--vi:#6d4fd6;--ok:#2fc7a2;--wa:#f0a93a;--cr:#f06a6a}
+.app.light .float{background:rgba(255,255,255,.94);box-shadow:0 8px 26px rgba(40,55,95,.16)}
+.app.light .n2{background:#fff}
+.app.light .n2:hover{background:#f1f4fa}
+.app.light .n2.sel{background:#f1fbff}
+.app.light .sg.on{background:#fff}
+.app.light .pri{color:#fff}
+.app.light .card{background:rgba(232,236,245,.6)}
+.app.light .row.rw:hover{background:#eef1f8}
+.app.light .el{background:#fff}
+.app.light .lb3{text-shadow:0 0 4px #fff,0 0 8px #fff,0 1px 2px #fff}
+.app.light .stage{background:radial-gradient(circle,rgba(74,87,214,.2) 1px,transparent 1.4px) 0 0/28px 28px,#eef1f7}
+.app.light .stage.s3{background:radial-gradient(ellipse 60% 50% at 42% 46%,rgba(120,135,240,.2),transparent 70%),radial-gradient(ellipse 40% 34% at 68% 62%,rgba(60,180,220,.14),transparent 70%),#e9edf6}
+.app.light .star{stroke:#5b6aa8;opacity:.35}
+.app.light .star2{stroke:#3a4a92;opacity:.5}
+.app.light .pt{background:var(--cy);box-shadow:0 0 6px 1px var(--cy)}
+.app.light .e-dim{stroke:rgba(70,85,130,.24)}
+.app.light .a-dim{fill:rgba(70,85,130,.3)}
+.app.light .r-dim{stroke:rgba(74,87,214,.4)}
+.app.light .r-shell{stroke:rgba(74,87,214,.3)}
+.app.light .spk{stroke:rgba(60,80,150,.35)}
+.app.light .cl,.app.light .ns{border-color:#4a57d6;background:radial-gradient(circle,#4a57d6 0 18%,transparent 22%)}
+.app.light .ex{border-color:#66728f}
+.app.light .qu{border-color:#5a67e0}
+.app.light .k-http{--kc:#3f66c9}
+.app.light .k-grpc{--kc:#0b7fa6}
+.app.light .k-data{--kc:#6d4fd6}
+.app.light .k-event{--kc:#11875f}
+@keyframes halo{0%,100%{opacity:1}50%{opacity:.6}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes shIn{from{transform:scale(.25);opacity:0}40%{opacity:.9}to{transform:scale(7);opacity:0}}
+@keyframes shOut{from{transform:scale(6);opacity:0}50%{opacity:.7}to{transform:scale(.3);opacity:0}}
+.rm *,.rm *::before,.rm *::after{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion:reduce){.app *,.app *::before,.app *::after{animation:none!important}}
+@media (max-width:760px){
+.shell{flex-direction:column}
+.rail{width:auto;flex-direction:row;justify-content:space-around;border-right:0;border-bottom:1px solid var(--ln);padding:4px}
+.insp{left:8px;right:8px;width:auto;top:auto;bottom:8px;height:56%}
+.hide-s{display:none!important}
+}
+</style>
+</helmet>
+<div class="app {{rmCls}} {{themeCls}}" style="--cy: {{accent}}; --glow: {{glow}}; --ew: {{edgeW}}px; height: 100vh; min-height: 640px; display: flex; flex-direction: column; background: var(--b0); overflow: hidden; position: relative">
+
+<header style="flex: none; min-height: 52px; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 8px 14px; border-bottom: 1px solid var(--ln); background: var(--b1); position: relative; z-index: 40">
+<div style="display: flex; align-items: center; gap: 9px; width: 58px; justify-content: center">
+<svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: none; stroke: var(--cy); stroke-width: 1.4" role="img" aria-label="Orrery"><ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(-28 12 12)"></ellipse><ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(42 12 12)" style="stroke: var(--in)"></ellipse><circle cx="12" cy="12" r="2.2" style="fill: var(--cy); stroke: none"></circle></svg>
+</div>
+<div style="font-weight: 600; font-size: 14px; letter-spacing: .01em">Orrery</div>
+<div class="hide-s" style="width: 1px; height: 20px; background: var(--ln2); margin: 0 4px"></div>
+<div style="position: relative">
+<button class="hb" onClick="{{toggleEnv}}" aria-haspopup="listbox" aria-label="Environment"><span style="width: 7px; height: 7px; border-radius: 2px; background: var(--ok)"></span><span class="mono" style="font-size: 12px; color: var(--tx)">{{env}}</span><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"></path></svg></button>
+<sc-if value="{{envOpen}}" hint-placeholder-val="{{false}}">
+<div class="float" role="listbox" style="position: absolute; top: 38px; left: 0; width: 220px; padding: 6px; z-index: 50">
+<sc-for list="{{envs}}" as="e" hint-placeholder-count="3">
+<button class="dr" role="option" onClick="{{e.pick}}"><span class="mono dn">{{e.name}}</span><span class="dk">{{e.note}}</span></button>
+</sc-for>
+</div>
+</sc-if>
+</div>
+<button class="hb" onClick="{{openCmd}}" style="flex: 1 1 220px; max-width: 440px; justify-content: flex-start" aria-label="Search resources"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.2"></circle><path d="M10.2 10.2L13.5 13.5"></path></svg><span style="flex: 1; color: var(--t3)">Search services, resources, clusters…</span><span class="mono" style="font-size: 10.5px; padding: 1px 6px; border: 1px solid var(--ln2); border-radius: 5px">⌘K</span></button>
+<div style="flex: 1 1 0"></div>
+<button class="hb {{filterBtnCls}}" onClick="{{toggleFilter}}" aria-expanded="{{filterOpen}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h11M4.5 8h7M6.5 12h3"></path></svg>Filters<span class="mono" style="font-size: 11px">{{filterCount}}</span></button>
+<button class="hb hide-s td" data-tip="Snapshot: live topology"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.8"></circle><path d="M8 4.8V8l2.2 1.4"></path></svg>Live<span class="mono" style="font-size: 11px; color: var(--t3)">14:32 UTC</span></button>
+<button class="tb td" onClick="{{toggleTheme}}" data-tip="{{themeTip}}" aria-label="{{themeTip}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"></circle><path d="M8 1.5v1.8M8 12.7v1.8M1.5 8h1.8M12.7 8h1.8M3.4 3.4l1.3 1.3M11.3 11.3l1.3 1.3M3.4 12.6l1.3-1.3M11.3 4.7l1.3-1.3"></path></svg></button>
+<button class="tb td {{rmBtnCls}}" onClick="{{toggleRm}}" data-tip="Reduced motion" aria-label="Reduced motion" aria-pressed="{{rm}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 5h8M2 8h11M2 11h6"></path></svg></button>
+<button class="tb td hide-s" data-tip="Help and shortcuts" aria-label="Help"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.8"></circle><path d="M6.4 6.3a1.7 1.7 0 113 1.1c-.6.5-1.4.9-1.4 1.8M8 11.6v.1"></path></svg></button>
+<button class="td" data-tip="Account" aria-label="Account" style="width: 30px; height: 30px; border-radius: 50%; background: var(--b3); border: 1px solid var(--ln2); font-size: 11px; font-weight: 600; text-align: center">AR</button>
+<sc-if value="{{filterOpen}}" hint-placeholder-val="{{false}}">
+<div class="float" style="position: absolute; top: 50px; right: 14px; width: 380px; max-width: calc(100% - 28px); padding: 14px; z-index: 50">
+<div style="display: flex; justify-content: space-between; align-items: center"><b style="font-size: 13px">Global filters</b><button class="cb" onClick="{{clearFilters}}">Clear all</button></div>
+<div class="h4">Resource type</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{fl.types}}" as="c" hint-placeholder-count="5"><button class="chip {{c.cls}}" aria-pressed="{{c.on}}" onClick="{{c.toggle}}">{{c.label}}</button></sc-for></div>
+<div class="h4">Status</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{fl.stats}}" as="c" hint-placeholder-count="3"><button class="chip {{c.cls}}" aria-pressed="{{c.on}}" onClick="{{c.toggle}}"><span class="st {{c.st}}">{{c.stc}}</span>{{c.label}}</button></sc-for></div>
+<div class="h4">Domain</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{fl.doms}}" as="c" hint-placeholder-count="3"><button class="chip {{c.cls}}" aria-pressed="{{c.on}}" onClick="{{c.toggle}}">{{c.label}}</button></sc-for></div>
+<div style="margin-top: 12px; font-size: 11.5px; color: var(--t3)">Filters apply to the 2D workbench, the galaxy and the registry.</div>
+</div>
+</sc-if>
+</header>
+
+<div class="shell" style="flex: 1; min-height: 0; display: flex">
+<nav class="rail" aria-label="Sections">
+<button class="nv {{nav.overview}}" onClick="{{go.overview}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 2.5h4.5v4.5h-4.5zM9 2.5h4.5v4.5H9zM2.5 9h4.5v4.5h-4.5zM9 9h4.5v4.5H9z"></path></svg>Overview</button>
+<button class="nv {{nav.topology}}" onClick="{{go.topology}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r="1.8"></circle><circle cx="12.5" cy="3.5" r="1.8"></circle><circle cx="12.5" cy="12.5" r="1.8"></circle><path d="M5.2 7.2l5.6-3M5.2 8.8l5.6 3"></path></svg>Topology</button>
+<button class="nv {{nav.registry}}" onClick="{{go.registry}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11"></path></svg>Registry</button>
+<button class="nv {{nav.infra}}" onClick="{{go.infra}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="4" rx="1"></rect><rect x="2.5" y="9.5" width="11" height="4" rx="1"></rect></svg>Infra</button>
+<button class="nv {{nav.deps}}" onClick="{{go.deps}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3v6a3 3 0 003 3h7M10.5 9.5L13 12l-2.5 2.5"></path></svg>Deps</button>
+<button class="nv {{nav.events}}" onClick="{{go.events}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 1.5L3.5 9H8l-1 5.5L12.5 7H8z"></path></svg>Events</button>
+<button class="nv {{nav.saved}}" onClick="{{go.saved}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h8v11l-4-3-4 3z"></path></svg>Saved</button>
+</nav>
+
+<main style="flex: 1; min-width: 0; min-height: 0; position: relative">
+
+<sc-if value="{{isTopo}}" hint-placeholder-val="{{true}}">
+<div style="position: absolute; inset: 0; display: flex; flex-direction: column">
+<div style="flex: none; min-height: 46px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; padding: 6px 14px; border-bottom: 1px solid var(--ln); background: var(--b1); position: relative; z-index: 10">
+<sc-if value="{{is2}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; align-items: baseline; gap: 10px; min-width: 0"><b style="font-size: 14px">{{title}}</b><span class="mono" style="font-size: 11.5px; color: var(--t3)">{{scopeText}}</span></div>
+</sc-if>
+<sc-if value="{{is3}}" hint-placeholder-val="{{false}}">
+<nav class="crumb" aria-label="Exploration path"><sc-for list="{{crumbs}}" as="c" hint-placeholder-count="2"><span class="cs" aria-hidden="true">{{c.sep}}</span><button class="cb {{c.cls}}" onClick="{{c.go}}">{{c.name}}</button></sc-for></nav>
+</sc-if>
+<sc-if value="{{filtered}}" hint-placeholder-val="{{false}}">
+<button class="chip on" onClick="{{clearFilters}}">{{filterText}} · Clear</button>
+</sc-if>
+<sc-if value="{{evActive}}" hint-placeholder-val="{{false}}">
+<button class="chip on" onClick="{{clearEv}}"><span class="sh tp" style="font-size: 11px"></span><span class="mono">{{evChip}}</span> · producers and consumers · Clear</button>
+</sc-if>
+<div style="flex: 1 1 0"></div>
+<sc-if value="{{is2}}" hint-placeholder-val="{{true}}">
+<div class="seg" role="group" aria-label="Layout mode"><button class="sg {{lay.topo}}" onClick="{{setTopo}}">Topology</button><button class="sg {{lay.group}}" onClick="{{setGroup}}">Grouped infrastructure</button></div>
+</sc-if>
+<div class="seg" role="group" aria-label="View"><button class="sg {{vw.d2}}" onClick="{{to2d}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r="1.8"></circle><circle cx="12.5" cy="8" r="1.8"></circle><path d="M5.3 8h5.4"></path></svg>2D Workbench</button><button class="sg {{vw.d3}}" onClick="{{to3d}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><ellipse cx="8" cy="8" rx="6" ry="2.6"></ellipse><circle cx="8" cy="8" r="1.4"></circle></svg>3D Galaxy</button></div>
+</div>
+
+<div class="stage {{stageCls}}" ref="{{stageRef}}" onPointerDown="{{onDown}}" onPointerMove="{{onMove}}" onPointerUp="{{onUp}}" onPointerLeave="{{onLeave}}" onWheel="{{onWheel}}" style="flex: 1; min-height: 0; position: relative; overflow: hidden; touch-action: none">
+
+<sc-if value="{{is2}}" hint-placeholder-val="{{true}}">
+<div class="vin" style="position: absolute; left: 0; top: 0; transform-origin: 0 0; transform: {{g2.tf}}">
+<div style="opacity: {{g2.gop}}; pointer-events: {{g2.gpe}}">
+<sc-for list="{{g2.groups}}" as="b" hint-placeholder-count="5">
+<div class="gb {{b.cls}}" style="left: {{b.x}}px; top: {{b.y}}px; width: {{b.w}}px; height: {{b.h}}px"><button class="gh" onClick="{{b.pick}}"><span class="sh {{b.sh}}" style="font-size: 12px"></span><b>{{b.name}}</b><span>{{b.type}}</span></button></div>
+</sc-for>
+</div>
+<svg class="ov" aria-hidden="true"><path class="p e-dim" d="{{g2.eDim}}"></path><path class="a-dim" d="{{g2.aDim}}"></path><g class="k-http"><path class="p kb" d="{{g2.k.http.b}}"></path><path class="kab" d="{{g2.k.http.ab}}"></path><path class="p khg" d="{{g2.k.http.h}}"></path><path class="p kh" d="{{g2.k.http.h}}"></path><path class="kah" d="{{g2.k.http.ah}}"></path></g><g class="k-grpc"><path class="p kb" d="{{g2.k.grpc.b}}"></path><path class="kab" d="{{g2.k.grpc.ab}}"></path><path class="p khg" d="{{g2.k.grpc.h}}"></path><path class="p kh" d="{{g2.k.grpc.h}}"></path><path class="kah" d="{{g2.k.grpc.ah}}"></path></g><g class="k-data"><path class="p kb" d="{{g2.k.data.b}}"></path><path class="kab" d="{{g2.k.data.ab}}"></path><path class="p khg" d="{{g2.k.data.h}}"></path><path class="p kh" d="{{g2.k.data.h}}"></path><path class="kah" d="{{g2.k.data.ah}}"></path></g><g class="k-event"><path class="p kb" d="{{g2.k.event.b}}"></path><path class="kab" d="{{g2.k.event.ab}}"></path><path class="p khg" d="{{g2.k.event.h}}"></path><path class="p kh" d="{{g2.k.event.h}}"></path><path class="kah" d="{{g2.k.event.ah}}"></path></g></svg>
+<sc-for list="{{g2.labels}}" as="l" hint-placeholder-count="0"><span class="el mono" style="left: {{l.x}}px; top: {{l.y}}px">{{l.t}}</span></sc-for>
+<sc-for list="{{g2.nodes}}" as="n" hint-placeholder-count="12">
+<button class="n2 {{n.cls}}" style="transform: translate({{n.x}}px, {{n.y}}px)" onClick="{{n.pick}}" aria-label="{{n.aria}}"><span class="shw"><span class="sh {{n.sh}}"></span></span><span class="nt"><span class="nn">{{n.name}}</span><span class="nm mono" style="display: {{n.md}}">{{n.meta}}</span></span><span class="st {{n.st}}" title="{{n.stl}}">{{n.stc}}</span></button>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{is3}}" hint-placeholder-val="{{false}}">
+<div class="vin" style="position: absolute; left: 50%; top: 50%; width: 0; height: 0">
+<svg class="ov" aria-hidden="true"><path class="p star" d="{{g3.s1}}"></path><path class="p star2" d="{{g3.s2}}"></path></svg>
+<div style="position: absolute; left: 0; top: 0; opacity: {{g3.fade}}; transform: translate({{g3.px}}px, {{g3.py}}px)">
+<svg class="ov" aria-hidden="true"><path class="p r-shell" d="{{g3.rShell}}"></path><path class="p r-dim" d="{{g3.rDim}}"></path><path class="p r-hot" d="{{g3.rHot}}"></path><path class="p spk" d="{{g3.spk}}"></path><path class="p spk-h" d="{{g3.spkH}}"></path><path class="p e-dim" d="{{g3.eDim}}"></path><path class="a-dim" d="{{g3.aDim}}"></path><g class="k-http"><path class="p kb" d="{{g3.k.http.b}}"></path><path class="kab" d="{{g3.k.http.ab}}"></path><path class="p khg" d="{{g3.k.http.h}}"></path><path class="p kh" d="{{g3.k.http.h}}"></path><path class="kah" d="{{g3.k.http.ah}}"></path></g><g class="k-grpc"><path class="p kb" d="{{g3.k.grpc.b}}"></path><path class="kab" d="{{g3.k.grpc.ab}}"></path><path class="p khg" d="{{g3.k.grpc.h}}"></path><path class="p kh" d="{{g3.k.grpc.h}}"></path><path class="kah" d="{{g3.k.grpc.ah}}"></path></g><g class="k-data"><path class="p kb" d="{{g3.k.data.b}}"></path><path class="kab" d="{{g3.k.data.ab}}"></path><path class="p khg" d="{{g3.k.data.h}}"></path><path class="p kh" d="{{g3.k.data.h}}"></path><path class="kah" d="{{g3.k.data.ah}}"></path></g><g class="k-event"><path class="p kb" d="{{g3.k.event.b}}"></path><path class="kab" d="{{g3.k.event.ab}}"></path><path class="p khg" d="{{g3.k.event.h}}"></path><path class="p kh" d="{{g3.k.event.h}}"></path><path class="kah" d="{{g3.k.event.ah}}"></path></g></svg>
+<sc-for list="{{g3.parts}}" as="p" hint-placeholder-count="0"><span class="pt" style="left: {{p.x}}px; top: {{p.y}}px"></span></sc-for>
+<sc-for list="{{g3.labels}}" as="l" hint-placeholder-count="0"><span class="el mono" style="left: {{l.x}}px; top: {{l.y}}px; z-index: 3000">{{l.t}}</span></sc-for>
+<sc-for list="{{g3.nodes}}" as="n" hint-placeholder-count="14">
+<button class="g3 {{n.cls}}" style="left: {{n.x}}px; top: {{n.y}}px; z-index: {{n.z}}; opacity: {{n.op}}; font-size: {{n.fs}}px" onClick="{{n.pick}}" onDoubleClick="{{n.enter}}" aria-label="{{n.aria}}"><span class="sh {{n.sh}}"></span><span class="st {{n.st}}">{{n.stc}}</span><span class="lb3" style="display: {{n.ld}}">{{n.name}}<i>{{n.sub}}</i></span></button>
+</sc-for>
+</div>
+<div class="shellfx {{fx}}"></div>
+</div>
+
+<div class="float" style="position: absolute; left: 12px; top: 12px; padding: 8px 10px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; max-width: calc(100% - 24px)">
+<span class="k">{{levelText}}</span><b style="font-size: 12.5px">{{scopeName}}</b>
+<sc-if value="{{deep}}" hint-placeholder-val="{{false}}">
+<button class="sec" style="height: 28px" onClick="{{goUp}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4"></path></svg>Back to parent</button>
+<button class="sec" style="height: 28px" onClick="{{goRoot}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><ellipse cx="8" cy="8" rx="6" ry="2.6"></ellipse><circle cx="8" cy="8" r="1.4"></circle></svg>Return to galaxy</button>
+</sc-if>
+</div>
+<div class="hide-s" style="position: absolute; right: 14px; top: 14px; max-width: 44%; text-align: right; font-size: 11px; color: var(--t3); pointer-events: none">Drag to rotate · Shift-drag to pan · Scroll to zoom · Double-click a node to enter · Moving dots show direction only, not traffic</div>
+</sc-if>
+
+<sc-if value="{{noNodes}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none">
+<div class="float" style="padding: 22px 26px; max-width: 380px; text-align: center; pointer-events: auto"><div style="font-size: 15px; font-weight: 600">{{emptyTitle}}</div><div style="color: var(--t2); margin: 6px 0 14px">{{emptyBody}}</div><button class="sec" onClick="{{emptyAct}}">{{emptyBtn}}</button></div>
+</div>
+</sc-if>
+
+<div class="float hide-s" aria-label="Connection types" style="position: absolute; left: 12px; bottom: 64px; padding: 7px 12px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; z-index: 14">
+<span class="k">Connections</span>
+<span class="lgi"><svg class="lg" viewBox="0 0 36 12" aria-hidden="true"><g class="k-http"><path class="p kh" d="M1 6H25"></path><path class="kah" d="M35 6l-9 -3.6v7.2z"></path></g></svg>HTTP / HTTPS</span>
+<span class="lgi"><svg class="lg" viewBox="0 0 36 12" aria-hidden="true"><g class="k-grpc"><path class="p kh" d="M1 6H19"></path><path class="kah" d="M35 6l-8 -3.4v6.8zM27 6l-8 -3.4v6.8z"></path></g></svg>gRPC</span>
+<span class="lgi"><svg class="lg" viewBox="0 0 36 12" aria-hidden="true"><g class="k-data"><path class="p kh" d="M1 6H23"></path><path class="kah" d="M35 6l-5.5 -4.4-5.5 4.4 5.5 4.4z"></path></g></svg>Data store (SQL, cache)</span>
+<span class="lgi"><svg class="lg" viewBox="0 0 36 12" aria-hidden="true"><g class="k-event"><path class="p kh" d="M1 6H16"></path><path class="kah" d="M35 6l-9 -3.6v7.2zM17 6a3 3 0 1 0 6 0a3 3 0 1 0 -6 0z"></path></g></svg>Events (publish, consume)</span>
+</div>
+<div class="float" role="toolbar" aria-label="Canvas controls" style="position: absolute; left: 12px; bottom: 12px; padding: 5px; display: flex; align-items: center; flex-wrap: wrap; gap: 2px; max-width: calc(100% - 24px); z-index: 15">
+<button class="tb" onClick="{{zoomOut}}" data-tip="Zoom out" aria-label="Zoom out"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8h9"></path></svg></button>
+<button class="tb" onClick="{{zoomIn}}" data-tip="Zoom in" aria-label="Zoom in"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8h9M8 3.5v9"></path></svg></button>
+<button class="tb" onClick="{{fit}}" data-tip="Fit to screen" aria-label="Fit to screen"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10"></path></svg></button>
+<button class="tb" onClick="{{reset}}" data-tip="Reset view" aria-label="Reset view"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8a5 5 0 105-5H5M7 1L5 3l2 2"></path></svg></button>
+<span style="width: 1px; height: 20px; background: var(--ln2); margin: 0 5px"></span>
+<button class="tb {{tg.labels}}" onClick="{{tLabels}}" data-tip="Labels" aria-label="Toggle labels" aria-pressed="{{labels}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8.5v-6h6l5 5-6 6z"></path><circle cx="5.5" cy="5.5" r=".8"></circle></svg></button>
+<button class="tb {{tg.rel}}" onClick="{{tRel}}" data-tip="Relationship details" aria-label="Toggle relationship details" aria-pressed="{{rel}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9.5 4.5L13 8l-3.5 3.5"></path></svg></button>
+<button class="tb {{tg.hide}}" onClick="{{tHide}}" data-tip="Hide non-selected relationships" aria-label="Hide non-selected relationships" aria-pressed="{{hideOther}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8s2.2-4 6-4 6 4 6 4-2.2 4-6 4-6-4-6-4zM3 13L13 3"></path></svg></button>
+<sc-if value="{{is3}}" hint-placeholder-val="{{false}}">
+<button class="tb {{tg.edges}}" onClick="{{tEdges}}" data-tip="Connections" aria-label="Toggle connections" aria-pressed="{{edges3}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 12.5c2-8 9-8 11-9"></path><circle cx="2.5" cy="12.5" r="1.2"></circle><circle cx="13.5" cy="3.5" r="1.2"></circle></svg></button>
+<button class="sg" onClick="{{cycleDensity}}" data-tip="Visual detail" aria-label="Visual detail"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5l5.5 3L8 8.5l-5.5-3zM2.5 8.5l5.5 3 5.5-3M2.5 11l5.5 3 5.5-3"></path></svg>{{densityText}}</button>
+</sc-if>
+<span style="width: 1px; height: 20px; background: var(--ln2); margin: 0 5px"></span>
+<span class="k hide-s" style="margin: 0 6px 0 2px">Highlight</span>
+<button class="sg {{hlc.direct}}" onClick="{{hlDirect}}" data-tip="Immediate relationships">Direct</button>
+<button class="sg {{hlc.up}}" onClick="{{hlUp}}" data-tip="Everything this depends on">Upstream</button>
+<button class="sg {{hlc.down}}" onClick="{{hlDown}}" data-tip="Everything that depends on this">Downstream</button>
+</div>
+
+<sc-if value="{{noSel}}" hint-placeholder-val="{{true}}">
+<div class="hide-s" style="position: absolute; right: 12px; bottom: 12px; padding: 8px 12px; border-radius: 10px; border: 1px dashed var(--ln2); color: var(--t3); font-size: 11.5px; display: flex; align-items: center; gap: 12px; background: var(--b1)">
+<span>No resource selected</span>
+<span style="display: inline-flex; align-items: center; gap: 5px"><span class="st ok">✓</span>Healthy</span><span style="display: inline-flex; align-items: center; gap: 5px"><span class="st warn">!</span>Degraded</span><span style="display: inline-flex; align-items: center; gap: 5px"><span class="st crit">×</span>Critical</span>
+</div>
+</sc-if>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isReg}}" hint-placeholder-val="{{false}}">
+<div class="vin" style="position: absolute; inset: 0; display: flex; flex-direction: column; padding: 18px 20px 0; padding-right: {{regPad}}px">
+<div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px"><h1 style="margin: 0; font-size: 18px; font-weight: 600">Service Registry</h1><span class="mono" style="font-size: 11.5px; color: var(--t3)">{{regCount}}</span><div style="flex: 1 1 0"></div><button class="sec" onClick="{{go.topology}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r="1.8"></circle><circle cx="12.5" cy="3.5" r="1.8"></circle><circle cx="12.5" cy="12.5" r="1.8"></circle><path d="M5.2 7.2l5.6-3M5.2 8.8l5.6 3"></path></svg>Back to topology</button></div>
+<div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 14px 0 12px">
+<label for="regq" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Filter registry</label>
+<input id="regq" class="inp" style="flex: 0 1 240px" placeholder="Filter by name or owner" value="{{regQ}}" onChange="{{onRegQ}}">
+<sc-for list="{{fl.types}}" as="c" hint-placeholder-count="5"><button class="chip {{c.cls}}" aria-pressed="{{c.on}}" onClick="{{c.toggle}}">{{c.label}}</button></sc-for>
+<span style="width: 1px; height: 18px; background: var(--ln2)"></span>
+<sc-for list="{{fl.stats}}" as="c" hint-placeholder-count="3"><button class="chip {{c.cls}}" aria-pressed="{{c.on}}" onClick="{{c.toggle}}"><span class="st {{c.st}}">{{c.stc}}</span>{{c.label}}</button></sc-for>
+<span style="width: 1px; height: 18px; background: var(--ln2)"></span>
+<sc-for list="{{fl.doms}}" as="c" hint-placeholder-count="3"><button class="chip {{c.cls}}" aria-pressed="{{c.on}}" onClick="{{c.toggle}}">{{c.label}}</button></sc-for>
+</div>
+<div style="flex: 1; min-height: 0; overflow: auto; border: 1px solid var(--ln); border-bottom: 0; border-radius: 12px 12px 0 0; background: var(--b1)">
+<div role="table" aria-label="Registered resources" style="min-width: 900px">
+<div class="row hd" role="row"><span role="columnheader">Resource</span><span role="columnheader">Type</span><span role="columnheader">Environment</span><span role="columnheader">Domain</span><span role="columnheader">Owner</span><span role="columnheader">Health</span><span role="columnheader">Relationships</span></div>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+<div class="row rw {{r.cls}}" role="row"><span role="cell" style="min-width: 0"><button class="rn" onClick="{{r.pick}}"><span style="width: 26px; display: grid; place-items: center; font-size: 18px; flex: none"><span class="sh {{r.sh}}"></span></span><span style="min-width: 0"><span class="nn" style="display: block">{{r.name}}</span><span class="nm mono" style="display: block">{{r.id}}</span></span></button></span><span role="cell" style="color: var(--t2)">{{r.type}}</span><span role="cell" class="mono" style="font-size: 12px; color: var(--t2)">production</span><span role="cell" style="color: var(--t2)">{{r.domain}}</span><span role="cell" style="color: var(--t2)">{{r.owner}}</span><span role="cell" class="badge"><span class="st {{r.st}}">{{r.stc}}</span>{{r.stl}}</span><span role="cell" class="mono" style="font-size: 11.5px; color: var(--t3)">{{r.rels}}</span></div>
+</sc-for>
+<sc-if value="{{regEmpty}}" hint-placeholder-val="{{false}}">
+<div style="padding: 56px 20px; text-align: center"><div style="font-size: 15px; font-weight: 600">{{emptyTitle}}</div><div style="color: var(--t2); margin: 6px 0 14px">{{emptyBody}}</div><button class="sec" onClick="{{emptyAct}}">{{emptyBtn}}</button></div>
+</sc-if>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isOv}}" hint-placeholder-val="{{false}}">
+<div class="vin" style="position: absolute; inset: 0; overflow: auto; padding: 22px 24px">
+<h1 style="margin: 0 0 4px; font-size: 18px; font-weight: 600">Overview</h1>
+<div class="mono" style="font-size: 11.5px; color: var(--t3); margin-bottom: 18px">{{scopeText}}</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px">
+<sc-for list="{{tiles}}" as="t" hint-placeholder-count="6"><div class="card" style="padding: 14px 16px"><div class="k">{{t.label}}</div><div style="font-size: 26px; font-weight: 600; margin-top: 4px">{{t.n}}</div></div></sc-for>
+</div>
+<div class="h4" style="margin-top: 26px">Needs attention</div>
+<div style="max-width: 560px"><sc-for list="{{attn}}" as="d" hint-placeholder-count="3"><button class="dr" style="height: 44px" onClick="{{d.pick}}"><span class="sh {{d.sh}}" style="font-size: 16px"></span><span class="dn">{{d.name}}</span><span class="dk">{{d.kind}}</span><span class="st {{d.st}}">{{d.stc}}</span></button></sc-for></div>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px"><button class="pri" onClick="{{go.topology}}">Open topology</button><button class="sec" onClick="{{openGalaxy}}">Open 3D galaxy</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isSaved}}" hint-placeholder-val="{{false}}">
+<div class="vin" style="position: absolute; inset: 0; overflow: auto; padding: 22px 24px">
+<h1 style="margin: 0 0 16px; font-size: 18px; font-weight: 600">Saved Views</h1>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; max-width: 1100px">
+<sc-for list="{{saved}}" as="v" hint-placeholder-count="4"><button class="card" style="padding: 14px 16px; min-height: 96px" onClick="{{v.apply}}"><span class="k">{{v.kind}}</span><span style="display: block; font-size: 14px; font-weight: 600; margin: 4px 0">{{v.name}}</span><span style="display: block; color: var(--t2); font-size: 12px">{{v.desc}}</span></button></sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isEv}}" hint-placeholder-val="{{false}}">
+<div class="vin" style="position: absolute; inset: 0; display: flex; flex-wrap: wrap; align-content: flex-start; overflow: auto">
+<div style="flex: 1 1 300px; max-width: 420px; min-width: 0; padding: 20px 14px 20px 20px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: baseline; gap: 10px"><h1 style="margin: 0; font-size: 18px; font-weight: 600">Events</h1><span class="mono" style="font-size: 11.5px; color: var(--t3)">{{evCount}}</span></div>
+<label for="evq" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Search events</label>
+<input id="evq" class="inp" placeholder="Search events or topics, e.g. Payment" value="{{evQ}}" onChange="{{onEvQ}}">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{evList}}" as="e" hint-placeholder-count="6"><button class="evr {{e.cls}}" onClick="{{e.pick}}"><span class="mono" style="display: block; font-size: 13px; font-weight: 500">{{e.name}}</span><span style="display: block; font-size: 11.5px; color: var(--t3)"><span class="mono">{{e.topic}}</span> · {{e.counts}}</span></button></sc-for>
+</div>
+<sc-if value="{{evNone}}" hint-placeholder-val="{{false}}"><div class="note">No events match “{{evQ}}”. Try part of an event name or the topic it travels on.</div></sc-if>
+</div>
+<div style="flex: 999 1 520px; min-width: 0; padding: 22px 24px; border-left: 1px solid var(--ln); min-height: 100%">
+<div class="k">Event</div>
+<div class="mono" style="font-size: 22px; font-weight: 500; margin: 2px 0 6px">{{evd.name}}</div>
+<div style="color: var(--t2); max-width: 620px">{{evd.desc}}</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 22px">
+<button class="pri" onClick="{{evd.show2d}}">Highlight in 2D</button>
+<button class="sec" onClick="{{evd.show3d}}">Show in 3D galaxy</button>
+<span class="tag mono" style="margin: 0; display: inline-flex; align-items: center">schema {{evd.ver}}</span>
+<span class="tag" style="margin: 0; display: inline-flex; align-items: center">Owner · {{evd.owner}}</span>
+</div>
+<div style="display: flex; align-items: center; flex-wrap: wrap; gap: 14px">
+<div style="flex: 1 1 200px; min-width: 0">
+<div class="h4" style="margin-top: 0"><span>Producers</span><span>{{evd.prodN}}</span></div>
+<sc-for list="{{evd.prods}}" as="d" hint-placeholder-count="1"><button class="card dr" style="height: 48px; margin-bottom: 8px" onClick="{{d.pick}}"><span class="sh {{d.sh}}" style="font-size: 18px"></span><span class="dn">{{d.name}}</span><span class="dk mono">{{d.kind}}</span><span class="st {{d.st}}">{{d.stc}}</span></button></sc-for>
+</div>
+<svg viewBox="0 0 60 14" style="width: 60px; height: 14px; flex: none; overflow: visible" aria-hidden="true"><g class="k-event"><path class="p kh" d="M2 7H46"></path><path class="kah" d="M58 7l-9 -3.6v7.2z"></path></g></svg>
+<button class="card" style="flex: 0 1 230px; padding: 16px; text-align: center; border-color: var(--cy)" onClick="{{evd.pickTopic}}"><span style="display: block; font-size: 26px; line-height: 1"><span class="sh tp"></span></span><span class="mono" style="display: block; margin-top: 8px; font-weight: 500">{{evd.name}}</span><span style="display: block; font-size: 11.5px; color: var(--t3)">carried on <span class="mono">{{evd.topic}}</span></span></button>
+<svg viewBox="0 0 60 14" style="width: 60px; height: 14px; flex: none; overflow: visible" aria-hidden="true"><g class="k-event"><path class="p kh" d="M2 7H46"></path><path class="kah" d="M58 7l-9 -3.6v7.2z"></path></g></svg>
+<div style="flex: 1 1 200px; min-width: 0">
+<div class="h4" style="margin-top: 0"><span>Consumers</span><span>{{evd.consN}}</span></div>
+<sc-for list="{{evd.cons}}" as="d" hint-placeholder-count="2"><button class="card dr" style="height: 48px; margin-bottom: 8px" onClick="{{d.pick}}"><span class="sh {{d.sh}}" style="font-size: 18px"></span><span class="dn">{{d.name}}</span><span class="dk mono">{{d.kind}}</span><span class="st {{d.st}}">{{d.stc}}</span></button></sc-for>
+<sc-if value="{{evd.noCons}}" hint-placeholder-val="{{false}}"><div class="note" style="margin-top: 0">No consumers are modeled for this event.</div></sc-if>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{showInsp}}" hint-placeholder-val="{{false}}">
+<aside class="insp float vin" aria-label="Inspector">
+<div style="flex: none; padding: 14px 14px 0">
+<div style="display: flex; align-items: flex-start; gap: 11px">
+<span style="width: 38px; height: 38px; border-radius: 10px; background: var(--b3); border: 1px solid var(--ln); display: grid; place-items: center; font-size: 22px; flex: none"><span class="sh {{i.sh}}"></span></span>
+<div style="flex: 1; min-width: 0"><div style="font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{i.name}}</div><div class="mono" style="font-size: 11px; color: var(--t3)">{{i.type}} · {{i.id}}</div></div>
+<button class="tb" onClick="{{closeInsp}}" aria-label="Close inspector"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"></path></svg></button>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 8px 10px; border-radius: 9px; background: var(--b3)"><span class="st {{i.st}}">{{i.stc}}</span><b style="font-size: 12.5px">{{i.stl}}</b><span style="color: var(--t2); font-size: 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{i.note}}</span></div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px">
+<sc-if value="{{i.aEnter}}" hint-placeholder-val="{{false}}"><button class="pri" onClick="{{doEnter}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.8"></circle><circle cx="8" cy="8" r="1.6"></circle></svg>Explore inside</button></sc-if>
+<sc-if value="{{i.aUp}}" hint-placeholder-val="{{false}}"><button class="pri" onClick="{{goUp}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4"></path></svg>Back to parent</button></sc-if>
+<sc-if value="{{i.a3d}}" hint-placeholder-val="{{false}}"><button class="pri" onClick="{{explore3d}}"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><ellipse cx="8" cy="8" rx="6" ry="2.6"></ellipse><circle cx="8" cy="8" r="1.4"></circle></svg>Explore in 3D</button></sc-if>
+<sc-if value="{{i.a2d}}" hint-placeholder-val="{{false}}"><button class="sec" onClick="{{open2d}}">Open in 2D</button></sc-if>
+<sc-if value="{{i.aTopo}}" hint-placeholder-val="{{false}}"><button class="sec" onClick="{{open2d}}">Open in topology</button></sc-if>
+</div>
+<sc-if value="{{i.leaf}}" hint-placeholder-val="{{false}}"><div class="note">Leaf resource — no modeled children, so there is nothing to explore inside.</div></sc-if>
+<sc-if value="{{i.iso}}" hint-placeholder-val="{{false}}"><div class="note">Isolated — no relationships are modeled for this resource.</div></sc-if>
+<div role="tablist" style="display: flex; margin-top: 12px; border-bottom: 1px solid var(--ln)"><button class="tab {{tabc.ov}}" role="tab" onClick="{{tabOv}}">Overview</button><button class="tab {{tabc.deps}}" role="tab" onClick="{{tabDeps}}">Dependencies</button><button class="tab {{tabc.meta}}" role="tab" onClick="{{tabMeta}}">Metadata</button></div>
+</div>
+<div style="flex: 1; min-height: 0; overflow: auto; padding: 12px 14px 16px">
+<sc-if value="{{isTabOv}}" hint-placeholder-val="{{true}}">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<div class="card"><div class="k">Environment</div><div class="vv mono">production</div></div>
+<div class="card"><div class="k">Parent</div><button class="vv" style="display: block; width: 100%; color: var(--ice)" onClick="{{i.pickParent}}">{{i.parent}}</button></div>
+<div class="card"><div class="k">Owner</div><div class="vv">{{i.owner}}</div></div>
+<div class="card"><div class="k">Domain</div><div class="vv">{{i.domain}}</div></div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px">
+<div class="card"><div class="k">Contains</div><div class="vv" style="font-size: 18px; font-weight: 600">{{i.kids}}</div></div>
+<div class="card"><div class="k">Incoming</div><div class="vv" style="font-size: 18px; font-weight: 600">{{i.inN}}</div></div>
+<div class="card"><div class="k">Outgoing</div><div class="vv" style="font-size: 18px; font-weight: 600">{{i.outN}}</div></div>
+</div>
+<div class="h4">Related infrastructure</div>
+<sc-for list="{{i.infra}}" as="m" hint-placeholder-count="3"><div style="display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 1px solid var(--ln); font-size: 12px"><span style="color: var(--t3)">{{m.k}}</span><span class="mono" style="text-align: right">{{m.v}}</span></div></sc-for>
+</sc-if>
+<sc-if value="{{isTabDeps}}" hint-placeholder-val="{{false}}">
+<div class="h4" style="margin-top: 0"><span>Upstream dependencies</span><span>{{i.upN}}</span></div>
+<sc-for list="{{i.up}}" as="d" hint-placeholder-count="3"><button class="dr" onClick="{{d.pick}}"><span class="sh {{d.sh}}" style="font-size: 14px"></span><span class="dn">{{d.name}}</span><span class="dk mono">{{d.kind}}</span><span class="st {{d.st}}">{{d.stc}}</span></button></sc-for>
+<sc-if value="{{i.upNone}}" hint-placeholder-val="{{false}}"><div style="color: var(--t3); font-size: 12px; padding: 4px 8px">Depends on nothing modeled.</div></sc-if>
+<div class="h4"><span>Downstream consumers</span><span>{{i.downN}}</span></div>
+<sc-for list="{{i.down}}" as="d" hint-placeholder-count="3"><button class="dr" onClick="{{d.pick}}"><span class="sh {{d.sh}}" style="font-size: 14px"></span><span class="dn">{{d.name}}</span><span class="dk mono">{{d.kind}}</span><span class="st {{d.st}}">{{d.stc}}</span></button></sc-for>
+<sc-if value="{{i.downNone}}" hint-placeholder-val="{{false}}"><div style="color: var(--t3); font-size: 12px; padding: 4px 8px">Nothing modeled depends on this.</div></sc-if>
+</sc-if>
+<sc-if value="{{isTabMeta}}" hint-placeholder-val="{{false}}">
+<sc-for list="{{i.meta}}" as="m" hint-placeholder-count="4"><div style="display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--ln); font-size: 12px"><span style="color: var(--t3)">{{m.k}}</span><span class="mono" style="text-align: right; overflow-wrap: anywhere">{{m.v}}</span></div></sc-for>
+<div class="h4">Tags</div>
+<div><sc-for list="{{i.tags}}" as="t" hint-placeholder-count="3"><span class="tag mono">{{t.t}}</span></sc-for></div>
+</sc-if>
+</div>
+</aside>
+</sc-if>
+
+</main>
+</div>
+
+<sc-if value="{{cmd}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; background: rgba(3,5,10,.6); z-index: 80; display: flex; justify-content: center; align-items: flex-start; padding: 12vh 16px 0" onClick="{{closeCmd}}">
+<div class="float vin" role="dialog" aria-label="Search" style="width: 560px; max-width: 100%; overflow: hidden" onClick="{{stop}}">
+<div style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--ln)"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.2"></circle><path d="M10.2 10.2L13.5 13.5"></path></svg><label for="cmdq" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Search resources</label><input id="cmdq" ref="{{cmdRef}}" value="{{q}}" onChange="{{onQ}}" onKeyDown="{{onCmdKey}}" placeholder="Jump to a service, database, topic or cluster" style="flex: 1; background: none; border: 0; outline: none; color: var(--tx); font: inherit; font-size: 14px"><span class="mono" style="font-size: 10.5px; color: var(--t3); padding: 1px 6px; border: 1px solid var(--ln2); border-radius: 5px">esc</span></div>
+<div style="padding: 6px; max-height: 340px; overflow: auto">
+<sc-for list="{{results}}" as="d" hint-placeholder-count="5"><button class="dr" style="height: 42px" onClick="{{d.pick}}"><span style="width: 24px; display: grid; place-items: center; font-size: 16px"><span class="sh {{d.sh}}"></span></span><span class="dn">{{d.name}}</span><span class="dk mono">{{d.kind}}</span><span class="st {{d.st}}">{{d.stc}}</span></button></sc-for>
+<sc-if value="{{noResults}}" hint-placeholder-val="{{false}}"><div style="padding: 26px 16px; text-align: center"><div style="font-weight: 600">No resources match “{{q}}”</div><div style="color: var(--t2); font-size: 12px; margin-top: 4px">Try a service name, a resource type such as “topic”, or an owning team.</div></div></sc-if>
+</div>
+<div style="padding: 8px 14px; border-top: 1px solid var(--ln); font-size: 11px; color: var(--t3)">Enter selects the first result and focuses it in the current view.</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark","section":"Theme"},"accent":{"editor":"color","default":"#5fe1ff","options":["#5fe1ff","#8fb4ff","#7df0d0"],"section":"Theme"},"glow":{"editor":"range","min":0,"max":1.6,"step":0.1,"default":1,"section":"Connections"},"edgeW":{"editor":"range","min":0.6,"max":2.4,"step":0.1,"default":1,"unit":"px","section":"Connections"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  state = { section: 'topology', view: '2d', layout: 'topo', sel: null, hl: 'direct', labels: true, rel: false, hideOther: false, fT: {}, fS: {}, fD: {}, filterOpen: false, env: 'production', envOpen: false, cmd: false, q: '', tab: 'ov', scope: [], edges3: true, density: 1, rm: false, fx: '', regQ: '', theme: null, ev: null, evSel: null, evQ: '' };
+
+  init() {
+    if (this.E) return;
+    const E = {}, K = {};
+    const add = (id, name, type, parent, status, owner, domain, x) => { E[id] = Object.assign({ id, name, type, parent, status, owner, domain }, x || {}); if (parent) (K[parent] = K[parent] || []).push(id); };
+    add('g-edge', 'edge-prod', 'cluster', null, 'ok', 'Platform Edge', 'platform');
+    add('g-com', 'commerce-prod', 'cluster', null, 'ok', 'Commerce Platform', 'commerce');
+    add('g-pay', 'payments-prod', 'cluster', null, 'ok', 'Payments', 'payments');
+    add('g-data', 'data-prod', 'account', null, 'ok', 'Data Platform', 'platform');
+    add('g-msg', 'events-kafka', 'messaging', null, 'ok', 'Data Platform', 'platform');
+    add('ns-edge', 'edge', 'namespace', 'g-edge', 'ok', 'Platform Edge', 'platform');
+    add('ns-com', 'production', 'namespace', 'g-com', 'ok', 'Commerce Platform', 'commerce');
+    add('ns-batch', 'batch', 'namespace', 'g-com', 'ok', 'Commerce Platform', 'commerce');
+    add('ns-pay', 'production', 'namespace', 'g-pay', 'ok', 'Payments', 'payments');
+    add('ns-risk', 'risk', 'namespace', 'g-pay', 'ok', 'Risk', 'payments');
+    add('np-edge', 'edge-pool', 'nodepool', 'g-edge', 'ok', 'Platform Edge', 'platform');
+    add('np-com', 'general-pool', 'nodepool', 'g-com', 'ok', 'Commerce Platform', 'commerce');
+    add('np-pay', 'general-pool', 'nodepool', 'g-pay', 'ok', 'Payments', 'payments');
+    add('np-pci', 'pci-pool', 'nodepool', 'g-pay', 'ok', 'Payments', 'payments');
+    add('api-gateway', 'API Gateway', 'gateway', 'ns-edge', 'ok', 'Platform Edge', 'platform', { inst: 3 });
+    add('web-bff', 'Web BFF', 'service', 'ns-edge', 'ok', 'Storefront', 'commerce', { inst: 3 });
+    add('auth-service', 'Auth Service', 'service', 'ns-edge', 'ok', 'Identity', 'platform', { inst: 2 });
+    add('cart-service', 'Cart Service', 'service', 'ns-com', 'ok', 'Storefront', 'commerce', { inst: 2 });
+    add('catalog-service', 'Catalog Service', 'service', 'ns-com', 'ok', 'Catalog', 'commerce', { inst: 3 });
+    add('order-service', 'Order Service', 'service', 'ns-com', 'ok', 'Orders', 'commerce', { inst: 4 });
+    add('inventory-service', 'Inventory Service', 'service', 'ns-com', 'ok', 'Fulfilment', 'commerce', { inst: 3 });
+    add('notification-service', 'Notification Service', 'service', 'ns-com', 'crit', 'Engagement', 'commerce', { inst: 4, bad: { 1: 'crit', 3: 'crit' }, note: '2 of 4 instances unavailable' });
+    add('legacy-report-cron', 'Legacy Report Cron', 'service', 'ns-batch', 'ok', 'Unassigned', 'commerce', { inst: 1 });
+    add('payment-service', 'Payment Service', 'service', 'ns-pay', 'ok', 'Payments', 'payments', { inst: 4 });
+    add('ledger-service', 'Ledger Service', 'service', 'ns-pay', 'ok', 'Payments', 'payments', { inst: 2 });
+    add('payout-worker', 'Payout Worker', 'service', 'ns-pay', 'ok', 'Payments', 'payments', { inst: 2 });
+    add('fraud-scoring', 'Fraud Scoring', 'service', 'ns-risk', 'warn', 'Risk', 'payments', { inst: 3, bad: { 2: 'warn' }, note: '1 of 3 instances restarting' });
+    add('redis-cache', 'Redis Cache', 'cache', 'g-data', 'ok', 'Data Platform', 'platform');
+    add('catalog-search', 'Catalog Search', 'search', 'g-data', 'ok', 'Catalog', 'commerce');
+    add('inventory-pg', 'PostgreSQL · inventory', 'database', 'g-data', 'warn', 'Fulfilment', 'commerce', { rep: 2, bad: { 2: 'warn' }, note: 'replica-2 is lagging behind primary' });
+    add('orders-pg', 'PostgreSQL · orders', 'database', 'g-data', 'ok', 'Orders', 'commerce', { rep: 2 });
+    add('payments-pg', 'PostgreSQL · payments', 'database', 'g-data', 'ok', 'Payments', 'payments', { rep: 2 });
+    add('orders.events', 'orders.events', 'topic', 'g-msg', 'ok', 'Orders', 'commerce', { parts: 6 });
+    add('inventory.updates', 'inventory.updates', 'topic', 'g-msg', 'ok', 'Fulfilment', 'commerce', { parts: 3 });
+    add('payments.events', 'payments.events', 'topic', 'g-msg', 'ok', 'Payments', 'payments', { parts: 6 });
+    add('notifications.queue', 'notifications.queue', 'queue', 'g-msg', 'ok', 'Engagement', 'commerce');
+    add('card-processor', 'Card Processor API', 'external', null, 'ok', 'Third party', 'payments');
+    this.E = E; this.K = K;
+    this.X = [['api-gateway', 'web-bff', 'HTTP'], ['api-gateway', 'auth-service', 'gRPC'], ['api-gateway', 'order-service', 'HTTP'], ['api-gateway', 'catalog-service', 'HTTP'], ['web-bff', 'cart-service', 'gRPC'], ['web-bff', 'catalog-service', 'gRPC'], ['auth-service', 'redis-cache', 'RESP'], ['cart-service', 'redis-cache', 'RESP'], ['cart-service', 'catalog-service', 'gRPC'], ['order-service', 'payment-service', 'gRPC'], ['order-service', 'inventory-service', 'gRPC'], ['order-service', 'orders-pg', 'SQL'], ['order-service', 'orders.events', 'publishes'], ['orders.events', 'inventory-service', 'consumes'], ['inventory-service', 'inventory-pg', 'SQL'], ['inventory-service', 'inventory.updates', 'publishes'], ['inventory.updates', 'catalog-service', 'consumes'], ['catalog-service', 'catalog-search', 'HTTP'], ['payment-service', 'payments-pg', 'SQL'], ['payment-service', 'card-processor', 'HTTPS'], ['payment-service', 'fraud-scoring', 'gRPC'], ['payment-service', 'payments.events', 'publishes'], ['payment-service', 'ledger-service', 'gRPC'], ['ledger-service', 'payments-pg', 'SQL'], ['payments.events', 'ledger-service', 'consumes'], ['payments.events', 'payout-worker', 'consumes'], ['payments.events', 'notification-service', 'consumes'], ['orders.events', 'notification-service', 'consumes'], ['notification-service', 'notifications.queue', 'enqueues']];
+    this.P = { 'api-gateway': [40, 300, 60, 120], 'web-bff': [276, 200, 60, 186], 'auth-service': [276, 70, 60, 252], 'cart-service': [512, 110, 340, 120], 'catalog-service': [512, 250, 548, 120], 'order-service': [512, 430, 340, 186], 'inventory-service': [748, 330, 548, 186], 'notification-service': [1220, 470, 340, 252], 'legacy-report-cron': [40, 760, 340, 372], 'payment-service': [748, 640, 340, 570], 'ledger-service': [1220, 677, 548, 570], 'payout-worker': [1220, 590, 340, 636], 'fraud-scoring': [984, 530, 340, 728], 'redis-cache': [984, 60, 836, 100], 'catalog-search': [984, 150, 836, 166], 'inventory-pg': [984, 320, 836, 232], 'orders-pg': [984, 400, 836, 298], 'payments-pg': [984, 720, 836, 364], 'orders.events': [748, 480, 836, 520], 'inventory.updates': [984, 240, 836, 586], 'payments.events': [984, 596, 836, 652], 'notifications.queue': [1456, 470, 836, 718], 'card-processor': [984, 810, 1112, 644] };
+    this.GR = { 'g-edge': [40, 50, 216, 272], 'ns-edge': [50, 92, 196, 216], 'g-com': [316, 50, 440, 392], 'ns-com': [328, 92, 416, 216], 'ns-batch': [328, 322, 416, 108], 'g-pay': [316, 500, 440, 302], 'ns-pay': [328, 542, 416, 150], 'ns-risk': [328, 704, 416, 86], 'g-data': [816, 50, 216, 372], 'g-msg': [816, 470, 216, 306], 'x-ext': [1092, 596, 216, 110] };
+    this.RES = Object.keys(this.P);
+    this.T = { service: { l: 'Service', s: 'sv', z: 34 }, gateway: { l: 'API Gateway', s: 'gw', z: 38 }, database: { l: 'PostgreSQL', s: 'db', z: 34 }, cache: { l: 'Redis Cache', s: 'ca', z: 32 }, search: { l: 'Search Index', s: 'db', z: 30 }, topic: { l: 'Kafka Topic', s: 'tp', z: 28 }, queue: { l: 'Queue', s: 'qu', z: 28 }, external: { l: 'External API', s: 'ex', z: 28 }, cluster: { l: 'Kubernetes Cluster', s: 'cl', z: 18 }, account: { l: 'Cloud Account', s: 'cl', z: 18 }, messaging: { l: 'Kafka Cluster', s: 'cl', z: 18 }, namespace: { l: 'Namespace', s: 'ns', z: 18 }, instance: { l: 'Service Instance', s: 'in', z: 20 }, partition: { l: 'Partition', s: 'in', z: 16 }, replica: { l: 'Database Node', s: 'in', z: 20 }, nodepool: { l: 'Node Pool', s: 'np', z: 20 } };
+    this.SL = { ok: 'Healthy', warn: 'Degraded', crit: 'Critical' };
+    this.SC = { ok: '✓', warn: '!', crit: '×' };
+    const ev = (name, topic, prod, cons, ver, desc, verb) => ({ name, topic, prod, cons, ver, desc, verb: verb || 'publishes' });
+    this.EV = [
+      ev('OrderPlaced', 'orders.events', ['order-service'], ['inventory-service', 'notification-service'], 'v3', 'Emitted when a customer order is accepted and awaiting payment.'),
+      ev('OrderCancelled', 'orders.events', ['order-service'], ['inventory-service'], 'v2', 'Emitted when an order is cancelled before fulfilment.'),
+      ev('OrderShipped', 'orders.events', ['order-service'], ['notification-service'], 'v1', 'Emitted when an order leaves the warehouse.'),
+      ev('StockLevelChanged', 'inventory.updates', ['inventory-service'], ['catalog-service'], 'v2', 'Emitted when available stock for an item changes.'),
+      ev('StockReserved', 'inventory.updates', ['inventory-service'], ['catalog-service'], 'v1', 'Emitted when stock is held against an open order.'),
+      ev('PaymentCaptured', 'payments.events', ['payment-service'], ['ledger-service', 'payout-worker', 'notification-service'], 'v4', 'Emitted when funds are captured for an order.'),
+      ev('PaymentFailed', 'payments.events', ['payment-service'], ['notification-service'], 'v2', 'Emitted when a capture attempt is declined or errors.'),
+      ev('RefundIssued', 'payments.events', ['payment-service'], ['ledger-service', 'notification-service'], 'v1', 'Emitted when a refund is sent back to the customer.'),
+      ev('NotificationRequested', 'notifications.queue', ['notification-service'], [], 'v1', 'Queued when a customer message is ready for delivery.', 'enqueues')
+    ];
+    Object.keys(E).forEach((id) => { const e = E[id]; if (!this.isBox(e.type)) return; const lv = this.leaves(id); const bad = lv.filter((l) => E[l].status !== 'ok'); if (bad.length) { e.status = bad.some((l) => E[l].status === 'crit') ? 'crit' : 'warn'; e.note = bad.length + ' of ' + lv.length + ' resources need attention'; } });
+    this.c3 = this.defCam(null); this.c3.fade = 1;
+    this.v = { lt: 0 }; this.anims = []; this.cams = {}; this.PC = {};
+    let seed = 7; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    this.stars = []; for (let i = 0; i < 440; i++) { const u = rnd() * 2 - 1, a = rnd() * 6.2832, q = Math.sqrt(1 - u * u); this.stars.push([q * Math.cos(a), u, q * Math.sin(a), rnd() > .86]); }
+    this.stageRef = (el) => { if (el) this.stage = el; };
+    this.cmdRef = (el) => { if (!el) { this._cmdEl = null; return; } if (this._cmdEl !== el) { this._cmdEl = el; el.focus(); } };
+    this.step = (now) => this.tick(now);
+  }
+
+  componentDidMount() {
+    this.init();
+    try { if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) this.setState({ rm: true }); } catch (e) {}
+    this.onResize = () => { if (!this.gone) this.forceUpdate(); };
+    window.addEventListener('resize', this.onResize);
+    this.c2 = this.fit2(this.state.layout); this.forceUpdate();
+  }
+  componentDidUpdate() { if (this.needLoop() && !this.raf) this.kick(); }
+  componentWillUnmount() { this.gone = true; if (this.raf) cancelAnimationFrame(this.raf); window.removeEventListener('resize', this.onResize); }
+
+  isBox(t) { return t === 'cluster' || t === 'account' || t === 'messaging' || t === 'namespace'; }
+  isTopo() { const s = this.state.section; return s === 'topology' || s === 'infra' || s === 'deps'; }
+  cur() { const sc = this.state.scope; return sc.length ? sc[sc.length - 1] : null; }
+  any(o) { for (const k in o) if (o[k]) return true; return false; }
+  cat(t) { return (t === 'service' || t === 'gateway') ? 'svc' : (t === 'database' || t === 'cache' || t === 'search') ? 'data' : (t === 'topic' || t === 'queue') ? 'msg' : t === 'external' ? 'ext' : 'infra'; }
+  hash(s, n) { let h = 7 + n * 131; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return (h.toString(36) + 'x7k2q').slice(0, 5); }
+  ent(id) {
+    const e = this.E[id]; if (e) return e;
+    const c = this.SYN || (this.SYN = {}); if (c[id]) return c[id];
+    const parts = String(id).split('#'); const p = this.E[parts[0]]; if (!p) return null; const n = +parts[1];
+    let name, type;
+    if (p.parts) { name = 'partition-' + n; type = 'partition'; } else if (p.rep) { name = n ? 'replica-' + n : 'primary'; type = 'replica'; } else { name = p.id + '-' + this.hash(p.id, n); type = 'instance'; }
+    return c[id] = { id, name, type, parent: p.id, status: (p.bad && p.bad[n]) || 'ok', owner: p.owner, domain: p.domain, syn: true };
+  }
+  kids(id) {
+    const c = this.KC || (this.KC = {}); if (c[id]) return c[id];
+    const e = this.E[id]; let r = this.K[id] || [];
+    if (!r.length && e) { const n = e.inst || e.parts || (e.rep ? e.rep + 1 : 0); r = []; for (let i = 0; i < n; i++) r.push(id + '#' + i); }
+    return c[id] = r;
+  }
+  path(id) { if (!id) return []; if (this.PC[id]) return this.PC[id]; const r = []; let e = this.ent(id); while (e) { r.unshift(e.id); e = e.parent ? this.ent(e.parent) : null; } return this.PC[id] = r; }
+  leaves(id) { const e = this.E[id]; if (!e) return []; if (!this.isBox(e.type)) return this.P[id] ? [id] : []; let r = []; (this.K[id] || []).forEach((k) => { r = r.concat(this.leaves(k)); }); return r; }
+  passRes(id) { const s = this.state; if (s.env !== 'production') return false; const e = this.E[id]; return (!this.any(s.fT) || !!s.fT[this.cat(e.type)]) && (!this.any(s.fS) || !!s.fS[e.status]) && (!this.any(s.fD) || !!s.fD[e.domain]); }
+  vis3(id) { if (this.state.env !== 'production') return false; const e = this.ent(id); if (e.syn) return this.passRes(e.parent); if (e.type === 'nodepool') return true; if (this.isBox(e.type)) return this.leaves(id).some((l) => this.passRes(l)); return this.passRes(id); }
+  relOf(sel, mode) {
+    const key = sel + '|' + mode; if (this._rk === key) return this._rv;
+    const nodes = {}, edges = {}; let base = [];
+    if (sel) { const e = this.ent(sel); base = e.syn ? [] : this.leaves(sel); }
+    base.forEach((i) => { nodes[i] = 1; });
+    const X = this.X;
+    if (mode === 'direct') { X.forEach((x, i) => { if (nodes[x[0]] === 1 || nodes[x[1]] === 1) edges[i] = 1; }); X.forEach((x, i) => { if (edges[i]) { nodes[x[0]] = nodes[x[0]] || 2; nodes[x[1]] = nodes[x[1]] || 2; } }); }
+    else { const up = mode === 'up'; const q = base.slice(); const seen = {}; base.forEach((i) => { seen[i] = 1; }); while (q.length) { const n = q.shift(); X.forEach((x, i) => { const dp = x[2] === 'consumes' ? [x[1], x[0]] : [x[0], x[1]]; const from = up ? dp[0] : dp[1], to = up ? dp[1] : dp[0]; if (from === n) { edges[i] = 1; if (!seen[to]) { seen[to] = 1; nodes[to] = 2; q.push(to); } } }); } }
+    this._rk = key; return this._rv = { nodes, edges, n: base.length };
+  }
+  isRel(id, rel) { const sel = this.state.sel; if (id === sel || rel.nodes[id]) return true; if (this.path(sel).indexOf(id) >= 0) return true; if (this.path(id).indexOf(sel) >= 0) return true; const e = this.ent(id); if (this.isBox(e.type)) return this.leaves(id).some((l) => rel.nodes[l]); if (e.syn) return rel.nodes[e.parent] === 1; return false; }
+
+  kind(k) { return (k === 'HTTP' || k === 'HTTPS') ? 'http' : k === 'gRPC' ? 'grpc' : (k === 'SQL' || k === 'RESP') ? 'data' : 'event'; }
+  newK() { const o = {}; ['http', 'grpc', 'data', 'event'].forEach((k) => { o[k] = { b: '', ab: '', h: '', ah: '' }; }); return o; }
+  mark(k, x, y, dx, dy, z) {
+    const r = (n) => Math.round(n * 10) / 10;
+    const tri = (o) => { const tx = x - dx * o, ty = y - dy * o; return 'M' + r(tx) + ' ' + r(ty) + 'L' + r(tx - dx * z * 1.5 - dy * z * .62) + ' ' + r(ty - dy * z * 1.5 + dx * z * .62) + 'L' + r(tx - dx * z * 1.5 + dy * z * .62) + ' ' + r(ty - dy * z * 1.5 - dx * z * .62) + 'Z'; };
+    if (k === 'grpc') return tri(0) + tri(z * 1.35);
+    if (k === 'data') { const cx = x - dx * z, cy = y - dy * z; return 'M' + r(x) + ' ' + r(y) + 'L' + r(cx - dy * z * .8) + ' ' + r(cy + dx * z * .8) + 'L' + r(x - dx * z * 2) + ' ' + r(y - dy * z * 2) + 'L' + r(cx + dy * z * .8) + ' ' + r(cy - dx * z * .8) + 'Z'; }
+    if (k === 'event') { const cx = x - dx * z * 2.3, cy = y - dy * z * 2.3, q = z * .6; return tri(0) + 'M' + r(cx - q) + ' ' + r(cy) + 'a' + r(q) + ' ' + r(q) + ' 0 1 0 ' + r(q * 2) + ' 0a' + r(q) + ' ' + r(q) + ' 0 1 0 ' + r(-q * 2) + ' 0Z'; }
+    return tri(0);
+  }
+  evRel(name) {
+    if (this._ek === name) return this._ev; const v = this.EV.filter((e) => e.name === name)[0]; const nodes = {}, edges = {};
+    if (v) { nodes[v.topic] = 1; v.prod.concat(v.cons).forEach((i) => { nodes[i] = 2; }); this.X.forEach((x, i) => { if ((x[1] === v.topic && v.prod.indexOf(x[0]) >= 0) || (x[0] === v.topic && v.cons.indexOf(x[1]) >= 0)) edges[i] = 1; }); }
+    this._ek = name; return this._ev = { nodes, edges, n: v ? 1 : 0, ev: !!v };
+  }
+  curRel() { const s = this.state; return (s.ev && !s.sel) ? this.evRel(s.ev) : this.relOf(s.sel, s.hl); }
+
+  /* ---------- animation ---------- */
+  needLoop() { const s = this.state; return this.anims.length > 0 || (!s.rm && s.view === '3d' && (!!s.sel || !!s.ev) && this.isTopo() && s.edges3); }
+  kick() { if (this.raf || this.gone) return; this.raf = requestAnimationFrame(this.step); }
+  tick(now) {
+    this.raf = 0; if (this.gone) return; const dn = [];
+    this.anims = this.anims.filter((a) => { let t = (now - a.t0) / a.dur; if (t < 0) t = 0; if (t > 1) t = 1; const e = a.ease === 1 ? t * t : a.ease === 2 ? 1 - Math.pow(1 - t, 3) : (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2); for (const k in a.to) a.obj[k] = a.from[k] + (a.to[k] - a.from[k]) * e; if (t >= 1) { if (a.done) dn.push(a.done); return false; } return true; });
+    dn.forEach((f) => f());
+    if (!this.raf && this.needLoop()) this.raf = requestAnimationFrame(this.step);
+    this.forceUpdate();
+  }
+  tween(obj, to, dur, done, ease) {
+    if (this.state.rm) { Object.assign(obj, to); if (done) done(); this.forceUpdate(); return; }
+    const from = {}; for (const k in to) from[k] = obj[k];
+    this.anims = this.anims.filter((a) => a.obj !== obj);
+    this.anims.push({ obj, from, to, t0: performance.now(), dur: Math.max(1, dur), done, ease: ease || 0 }); this.kick();
+  }
+
+  /* ---------- 2D ---------- */
+  vw() { return this.stage ? this.stage.clientWidth : 1180; }
+  vh() { return this.stage ? this.stage.clientHeight : 760; }
+  fit2(layout) { const W = layout === 'group' ? 1348 : 1672, H = layout === 'group' ? 840 : 880; const vw = this.vw(), vh = this.vh(); const k = Math.max(.25, Math.min((vw - 60) / W, (vh - 110) / H, 1.1)); return { k, tx: (vw - W * k) / 2, ty: (vh - 50 - H * k) / 2 + 4 }; }
+  pos2(id) { const p = this.P[id], t = this.v.lt; if (p) return { x: p[0] + (p[2] - p[0]) * t, y: p[1] + (p[3] - p[1]) * t }; const g = this.GR[id]; if (g) return { x: g[0] + g[2] / 2 - 88, y: g[1] + g[3] / 2 - 23 }; return null; }
+  setLayout(l) { if (l === this.state.layout) return; this.setState({ layout: l }); this.tween(this.v, { lt: l === 'group' ? 1 : 0 }, 720); this.tween(this.c2, this.fit2(l), 720); }
+  g2() {
+    const s = this.state, E = this.E, c = this.c2; const rel = this.curRel(); const has = rel.n > 0;
+    const r = (n) => Math.round(n * 10) / 10; const W = 176, H = 46; const vis = {}; const pos = {};
+    const nodes = this.RES.filter((id) => this.passRes(id)).map((id) => {
+      const e = E[id], p = this.pos2(id); vis[id] = 1; pos[id] = p; const rr = rel.nodes[id];
+      const cls = (id === s.sel ? 'sel ' : rr === 1 ? 'mem ' : rr ? 'rel ' : has ? 'dim ' : '') + e.status;
+      return { id, name: e.name, meta: this.T[e.type].l + ' · ' + e.domain, sh: this.T[e.type].s, x: r(p.x), y: r(p.y), cls, st: e.status, stc: this.SC[e.status], stl: this.SL[e.status], md: s.labels ? 'block' : 'none', aria: e.name + ', ' + this.T[e.type].l + ', ' + this.SL[e.status], pick: () => this.pick(id) };
+    });
+    let eDim = '', aDim = ''; const K = this.newK(); const labels = []; const grouped = this.v.lt > .5;
+    this.X.forEach((x, i) => {
+      if (!vis[x[0]] || !vis[x[1]]) return; const a = pos[x[0]], b = pos[x[1]]; let d, av, mx, my;
+      if (b.x > a.x + W - 20) { const x1 = a.x + W, y1 = a.y + H / 2, x2 = b.x - 3, y2 = b.y + H / 2, dx = Math.max(36, (x2 - x1) * .5); d = 'M' + r(x1) + ' ' + r(y1) + 'C' + r(x1 + dx) + ' ' + r(y1) + ' ' + r(x2 - dx) + ' ' + r(y2) + ' ' + r(x2) + ' ' + r(y2); av = [x2, y2, 1, 0]; mx = (x1 + x2) / 2; my = (y1 + y2) / 2; }
+      else if (b.x + W - 20 < a.x) { const x1 = a.x, y1 = a.y + H / 2, x2 = b.x + W + 3, y2 = b.y + H / 2, dx = Math.max(36, (x1 - x2) * .5); d = 'M' + r(x1) + ' ' + r(y1) + 'C' + r(x1 - dx) + ' ' + r(y1) + ' ' + r(x2 + dx) + ' ' + r(y2) + ' ' + r(x2) + ' ' + r(y2); av = [x2, y2, -1, 0]; mx = (x1 + x2) / 2; my = (y1 + y2) / 2; }
+      else { const down = b.y > a.y; const gap = down ? b.y - a.y - H : a.y - b.y - H;
+        if (grouped && gap > 60) { const x1 = a.x, y1 = a.y + H / 2, x2 = b.x - 3, y2 = b.y + H / 2, bx = Math.min(x1, x2) - 46; d = 'M' + r(x1) + ' ' + r(y1) + 'C' + r(bx) + ' ' + r(y1) + ' ' + r(bx) + ' ' + r(y2) + ' ' + r(x2) + ' ' + r(y2); av = [x2, y2, 1, 0]; mx = bx + 12; my = (y1 + y2) / 2; }
+        else { const x1 = a.x + W / 2, x2 = b.x + W / 2, y1 = down ? a.y + H : a.y, y2 = down ? b.y - 3 : b.y + H + 3, dy = Math.max(18, Math.abs(y2 - y1) * .5) * (down ? 1 : -1); d = 'M' + r(x1) + ' ' + r(y1) + 'C' + r(x1) + ' ' + r(y1 + dy) + ' ' + r(x2) + ' ' + r(y2 - dy) + ' ' + r(x2) + ' ' + r(y2); av = [x2, y2, 0, down ? 1 : -1]; mx = (x1 + x2) / 2; my = (y1 + y2) / 2; } }
+      const hot = has && rel.edges[i]; const kd = this.kind(x[2]); const ar = this.mark(hot || !has ? kd : 'http', av[0], av[1], av[2], av[3], 5.5);
+      if (hot) { K[kd].h += d; K[kd].ah += ar; } else if (has) { if (s.hideOther) return; eDim += d; aDim += ar; } else { K[kd].b += d; K[kd].ab += ar; }
+      if (s.rel && (hot || !has)) labels.push({ x: r(mx), y: r(my), t: x[2] });
+    });
+    const groups = []; const lt = this.v.lt;
+    if (lt > .02) Object.keys(this.GR).forEach((id) => { const g = this.GR[id], e = E[id]; if (e && !this.leaves(id).some((l) => vis[l])) return; if (!e && !vis['card-processor']) return; groups.push({ id, x: g[0], y: g[1], w: g[2], h: g[3], name: e ? e.name : 'External', type: e ? this.T[e.type].l : 'Outside managed scope', sh: e ? this.T[e.type].s : 'ex', cls: (e ? (e.type === 'namespace' ? 'nsb' : '') : 'xb') + (id === s.sel ? ' gsel' : ''), pick: e ? () => this.pick(id) : () => {} }); });
+    return { nodes, eDim, aDim, k: K, labels, groups, gop: r(lt), gpe: lt > .5 ? 'auto' : 'none', tf: 'translate(' + r(c.tx) + 'px,' + r(c.ty) + 'px) scale(' + Math.round(c.k * 1000) / 1000 + ')', count: nodes.length };
+  }
+
+  /* ---------- 3D ---------- */
+  rp(c, R, tx, tz, a) { const x = R * Math.cos(a), z = R * Math.sin(a); const y1 = -z * Math.sin(tx), z1 = z * Math.cos(tx); return [c[0] + x * Math.cos(tz) - y1 * Math.sin(tz), c[1] + x * Math.sin(tz) + y1 * Math.cos(tz), c[2] + z1]; }
+  scene(sid) {
+    const cache = this._sc || (this._sc = {}); const key = sid || 'root'; if (cache[key]) return cache[key];
+    const nodes = [], rings = [], spokes = [], pos = {}; let ext = 470;
+    const put = (id, p, o) => { if (pos[id]) return; pos[id] = p; nodes.push(Object.assign({ id, p }, o || {})); };
+    if (!sid) {
+      const L = [['g-edge', [-400, 20, 70], 100, .5, .2], ['g-com', [-90, 150, -110], 165, .35, -.15], ['g-pay', [-10, -170, 150], 140, .6, .25], ['g-data', [340, 120, 30], 150, .2, .5], ['g-msg', [300, -160, -190], 125, .7, -.3]];
+      L.forEach((g) => { const m = this.leaves(g[0]); put(g[0], g[1], { core: 1 }); rings.push({ c: g[1], R: g[2], tx: g[3], tz: g[4], of: g[0] }); m.forEach((id, i) => { const p = this.rp(g[1], g[2] * .74, g[3], g[4], i * 6.2832 / m.length + g[3] * 3); p[1] += (i % 2 ? 1 : -1) * g[2] * .15; put(id, p); }); });
+      put('card-processor', [330, -300, 250]);
+    } else {
+      const S = this.ent(sid); put(sid, [0, 0, 0], { core: 1, big: 1 }); const ch = this.kids(sid);
+      const nested = ch.some((k) => this.E[k] && this.E[k].type === 'namespace');
+      const R1 = nested ? 240 : (S.type === 'service' || S.type === 'gateway') ? 130 : (S.type === 'topic' || S.type === 'database') ? 115 : 190; const TX = .42, TZ = .12;
+      rings.push({ c: [0, 0, 0], R: R1, tx: TX, tz: TZ, of: sid });
+      ch.forEach((k, i) => { const p = this.rp([0, 0, 0], R1, TX, TZ, i * 6.2832 / ch.length + .6); put(k, p); spokes.push([sid, k]); const e = this.ent(k); if (e.type === 'namespace') { const gk = this.kids(k); rings.push({ c: p, R: 82, tx: TX + .5, tz: -.4 + i, of: k }); gk.forEach((g, j) => { put(g, this.rp(p, 82, TX + .5, -.4 + i, j * 6.2832 / gk.length + i), { sub: 1 }); }); } });
+      ext = nested ? 440 : R1 + 190;
+      rings.push({ c: [0, 0, 0], R: ext, tx: 1.25, tz: .3, of: sid, shell: 1 }); rings.push({ c: [0, 0, 0], R: ext, tx: .15, tz: -.5, of: sid, shell: 1 });
+      const inside = {}; const mark = (id) => { inside[id] = 1; this.kids(id).forEach(mark); }; mark(sid);
+      const inb = [], outb = [];
+      this.X.forEach((x) => { const a = inside[x[0]], b = inside[x[1]]; if (a && !b && outb.indexOf(x[1]) < 0 && inb.indexOf(x[1]) < 0) outb.push(x[1]); if (b && !a && inb.indexOf(x[0]) < 0 && outb.indexOf(x[0]) < 0) inb.push(x[0]); });
+      const place = (list, sgn) => list.forEach((id, i) => { const n = list.length; const phi = n > 1 ? (-1 + 2 * i / (n - 1)) * 1.0 : 0; put(id, [sgn * ext * .94 * Math.cos(phi), ext * .82 * Math.sin(phi), (i % 2 ? 1 : -1) * ext * .28], { ext: 1 }); });
+      place(inb, -1); place(outb, 1);
+    }
+    const isExt = {}; nodes.forEach((n) => { if (n.ext) isExt[n.id] = 1; });
+    const rep = (id) => { let e = id; while (e && !pos[e]) { e = this.ent(e).parent; } return e; };
+    const edges = [], seen = {};
+    this.X.forEach((x, i) => { const a = rep(x[0]), b = rep(x[1]); if (!a || !b || a === b || (isExt[a] && isExt[b])) return; const k = a + '>' + b; if (seen[k]) return; seen[k] = 1; edges.push({ a, b, i, kind: x[2] }); });
+    return cache[key] = { nodes, rings, spokes, edges, pos, ext };
+  }
+  defCam(sid) { return { yaw: -.5, pitch: .3, dist: this.scene(sid).ext * 2.7, tx: 0, ty: 0, tz: 0, px: 0, py: 0, fade: 1 }; }
+  g3() {
+    const s = this.state, c = this.c3; const sc = this.scene(this.cur()); const rel = this.curRel(); const sel = s.sel; const has = !!sel || !!rel.ev;
+    const cyw = Math.cos(c.yaw), syw = Math.sin(c.yaw), cp = Math.cos(c.pitch), sp = Math.sin(c.pitch);
+    const pj = (p) => { const x = p[0] - c.tx, y = p[1] - c.ty, z = p[2] - c.tz; const x1 = x * cyw + z * syw, z1 = -x * syw + z * cyw; const y1 = y * cp - z1 * sp, z2 = y * sp + z1 * cp; const d = c.dist + z2; if (d < 60) return null; const k = 820 / d; return [x1 * k, -y1 * k, k, z2]; };
+    const r = (n) => Math.round(n * 10) / 10;
+    let s1 = '', s2 = '';
+    this.stars.forEach((st) => { const x1 = st[0] * cyw + st[2] * syw, z1 = -st[0] * syw + st[2] * cyw; const y1 = st[1] * cp - z1 * sp, z2 = st[1] * sp + z1 * cp; if (z2 < .2) return; const x = x1 / z2 * 900, y = -y1 / z2 * 900; if (Math.abs(x) > 1500 || Math.abs(y) > 900) return; const d = 'M' + r(x) + ' ' + r(y) + 'h.01'; if (st[3]) s2 += d; else s1 += d; });
+    const vis = {}, relm = {}; const nodes = [];
+    sc.nodes.forEach((n) => {
+      if (!this.vis3(n.id)) return; vis[n.id] = 1; const q = pj(n.p); if (!q) return;
+      const e = this.ent(n.id), t = this.T[e.type]; const isSel = n.id === sel; const related = !has || this.isRel(n.id, rel); relm[n.id] = related; const box = this.isBox(e.type);
+      let fs = t.z * q[2] * (n.big ? 1.9 : 1) * (n.sub ? .72 : 1); fs = Math.max(6, Math.min(fs, 130));
+      let op = Math.max(.42, Math.min(1, 1.02 - (q[3] + 260) / 1500)); if (!related) op *= .28; else if (n.ext && !isSel) op *= .8;
+      const lb = s.labels && (isSel || n.core || (related ? (s.density > 0 || has || box) : s.density === 2));
+      nodes.push({ id: n.id, name: e.name, sub: (isSel || n.core || box) ? t.l : '', sh: t.s, x: r(q[0]), y: r(q[1]), z: Math.round(2000 - q[3]), op: Math.round(op * 100) / 100, fs: r(fs), cls: (isSel ? 'sel ' : '') + e.status + (n.ext ? ' ext' : '') + (n.core ? ' core' : ''), st: e.status, stc: this.SC[e.status], ld: lb ? 'block' : 'none', aria: e.name + ', ' + t.l + ', ' + this.SL[e.status] + (n.ext ? ', outside current scope' : ''), pick: () => this.pick(n.id), enter: () => this.enter(n.id) });
+    });
+    let rDim = '', rHot = '', rShell = '';
+    sc.rings.forEach((g) => { if (!vis[g.of]) return; let d = ''; for (let i = 0; i <= 44; i++) { const q = pj(this.rp(g.c, g.R, g.tx, g.tz, i * 6.2832 / 44)); if (!q) { d = ''; break; } d += (i ? 'L' : 'M') + r(q[0]) + ' ' + r(q[1]); } if (g.shell) rShell += d; else if (g.of === sel) rHot += d; else rDim += d; });
+    let spk = '', spkH = '';
+    sc.spokes.forEach((p) => { if (!vis[p[0]] || !vis[p[1]]) return; const a = pj(sc.pos[p[0]]), b = pj(sc.pos[p[1]]); if (!a || !b) return; const d = 'M' + r(a[0]) + ' ' + r(a[1]) + 'L' + r(b[0]) + ' ' + r(b[1]); if (p[1] === sel) spkH += d; else spk += d; });
+    let eDim = '', aDim = ''; const K = this.newK(); const parts = [], labels = []; const now = performance.now();
+    if (s.edges3) sc.edges.forEach((e, idx) => {
+      if (!vis[e.a] || !vis[e.b]) return; const A = sc.pos[e.a], B = sc.pos[e.b];
+      const m = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2, (A[2] + B[2]) / 2]; const L = Math.hypot(m[0], m[1], m[2]); const dist = Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]);
+      const C = L > 30 ? [m[0] + m[0] / L * dist * .24, m[1] + m[1] / L * dist * .24, m[2] + m[2] / L * dist * .24] : [m[0], m[1] + dist * .26, m[2]];
+      const qp = (t) => { const u = 1 - t; return [u * u * A[0] + 2 * u * t * C[0] + t * t * B[0], u * u * A[1] + 2 * u * t * C[1] + t * t * B[1], u * u * A[2] + 2 * u * t * C[2] + t * t * B[2]]; };
+      let d = ''; for (let i = 0; i <= 14; i++) { const q = pj(qp(i / 14)); if (!q) { d = ''; break; } d += (i ? 'L' : 'M') + r(q[0]) + ' ' + r(q[1]); } if (!d) return;
+      const hot = has && (rel.edges[e.i] || (!!sel && (e.a === sel || e.b === sel))); const kd = this.kind(e.kind);
+      let ar = ''; const p1 = pj(qp(.56)), p2 = pj(qp(.62));
+      if (p1 && p2) { let dx = p2[0] - p1[0], dy = p2[1] - p1[1]; const ln = Math.hypot(dx, dy) || 1; dx /= ln; dy /= ln; const z = Math.max(2.8, Math.min(6.5, 6 * p2[2])); ar = this.mark(hot || !has ? kd : 'http', p2[0] + dx * z, p2[1] + dy * z, dx, dy, z); }
+      if (hot) { K[kd].h += d; K[kd].ah += ar; if (!s.rm) for (let k = 0; k < 2; k++) { const q = pj(qp((now * .00022 + k * .5 + idx * .13) % 1)); if (q) parts.push({ x: r(q[0]), y: r(q[1]) }); } if (s.rel) { const q = pj(qp(.4)); if (q) labels.push({ x: r(q[0]), y: r(q[1]), t: e.kind }); } }
+      else if (has) { if (s.hideOther) return; eDim += d; aDim += ar; } else { K[kd].b += d; K[kd].ab += ar; }
+    });
+    return { nodes, s1, s2, rDim, rHot, rShell, spk, spkH, eDim, aDim, k: K, parts, labels, fade: Math.round(c.fade * 100) / 100, px: r(c.px), py: r(c.py), count: nodes.length };
+  }
+  enter(id) {
+    if (!this.kids(id).length || this.anims.length) return; const cur = this.cur(); if (cur === id) return;
+    const p = this.scene(cur).pos[id] || [0, 0, 0]; const c = this.c3;
+    this.cams[cur || 'root'] = { yaw: c.yaw, pitch: c.pitch, dist: c.dist, tx: c.tx, ty: c.ty, tz: c.tz };
+    this.setState({ fx: this.state.rm ? '' : 'in', sel: id });
+    this.tween(c, { tx: p[0], ty: p[1], tz: p[2], dist: 170, px: 0, py: 0, fade: 0 }, 620, () => {
+      Object.assign(c, { tx: 0, ty: 0, tz: 0, dist: 250, px: 0, py: 0, fade: 0 });
+      this.setState({ scope: this.path(id), sel: id, fx: '', tab: 'ov' }, () => this.tween(c, { dist: this.scene(id).ext * 2.7, fade: 1, px: -150 }, 780, null, 2));
+    }, 1);
+  }
+  exitTo(n) {
+    const s = this.state; if (n >= s.scope.length || this.anims.length) return; const from = s.scope[n]; const ns = s.scope.slice(0, n); const cur = ns.length ? ns[ns.length - 1] : null; const c = this.c3;
+    this.setState({ fx: s.rm ? '' : 'out' });
+    this.tween(c, { dist: c.dist * 1.9, fade: 0 }, 420, () => {
+      const p = this.scene(cur).pos[from] || [0, 0, 0]; const sv = this.cams[cur || 'root'] || this.defCam(cur);
+      Object.assign(c, { tx: p[0], ty: p[1], tz: p[2], dist: 210, fade: 0, px: 0, py: 0, yaw: sv.yaw, pitch: sv.pitch });
+      this.setState({ scope: ns, sel: from, fx: '', tab: 'ov' }, () => this.tween(c, { tx: sv.tx, ty: sv.ty, tz: sv.tz, dist: sv.dist, fade: 1, px: -150 }, 780, null, 2));
+    }, 1);
+  }
+  jump(ns, id) { const c = this.c3; const cur = ns.length ? ns[ns.length - 1] : null; this.tween(c, { fade: 0 }, 240, () => { const p = this.scene(cur).pos[id] || [0, 0, 0]; Object.assign(c, this.defCam(cur), { tx: p[0], ty: p[1], tz: p[2], fade: 0, px: -150 }); this.setState({ scope: ns }, () => this.tween(c, { fade: 1 }, 420)); }); }
+
+  /* ---------- selection & navigation ---------- */
+  pick(id) { this.setState({ sel: id, tab: 'ov', cmd: false, q: '', envOpen: false, filterOpen: false }, () => this.focus(id)); }
+  focus(id) {
+    const s = this.state; if (!this.isTopo() || !id) return;
+    if (s.view === '3d') { const p = this.scene(this.cur()).pos[id]; if (!p) { this.jump(this.scene(null).pos[id] ? [] : this.path(id).slice(0, -1), id); return; } this.tween(this.c3, { tx: p[0], ty: p[1], tz: p[2], px: -150, py: 0 }, 650); }
+    else { const pp = this.pos2(id); if (!pp || !this.c2) return; const k = Math.max(this.c2.k, .82); const wide = this.vw() > 760; this.tween(this.c2, { k, tx: (this.vw() - (wide ? 340 : 0)) / 2 - (pp.x + 88) * k, ty: this.vh() / 2 - (pp.y + 23) * k - (wide ? 0 : 120) }, 600); }
+  }
+  setView(v, extra) {
+    const s = this.state; let sel = s.sel; const up = Object.assign({ view: v }, extra || {});
+    if (v === '2d' && sel) { let e = this.ent(sel); while (e && (e.syn || e.type === 'nodepool')) e = this.ent(e.parent); sel = e ? e.id : null; up.sel = sel; if (e && this.isBox(e.type) && s.layout !== 'group') { up.layout = 'group'; this.v.lt = 1; this.c2 = this.fit2('group'); } }
+    this.setState(up, () => { if (sel) this.focus(sel); });
+  }
+  toggle(key, k) { const o = Object.assign({}, this.state[key]); o[k] = !o[k]; const up = {}; up[key] = o; this.setState(up); }
+
+  renderVals() {
+    this.init(); const s = this.state, E = this.E; const topo = this.isTopo(); const is3 = topo && s.view === '3d', is2 = topo && s.view === '2d', isReg = s.section === 'registry';
+    if (!this.c2) this.c2 = this.fit2(s.layout);
+    const on = (b) => b ? 'on' : '';
+    const visRes = this.RES.filter((id) => this.passRes(id)); const nF = ['fT', 'fS', 'fD'].reduce((n, k) => n + Object.keys(s[k]).filter((x) => s[k][x]).length, 0);
+    const g2 = is2 ? this.g2() : { nodes: [], groups: [], labels: [] }; const g3 = is3 ? this.g3() : { nodes: [], parts: [], labels: [] };
+    const mk = (key, list) => list.map((c) => ({ label: c[1], on: !!s[key][c[0]], cls: on(s[key][c[0]]), st: c[0], stc: this.SC[c[0]] || '', toggle: () => this.toggle(key, c[0]) }));
+    const row = (id, kind) => { const e = this.ent(id); return { name: e.name, kind: kind || this.T[e.type].l, sh: this.T[e.type].s, st: e.status, stc: this.SC[e.status], pick: () => this.pickFrom(id) }; };
+
+    /* inspector */
+    let i = { up: [], down: [], infra: [], meta: [], tags: [], pickParent: () => {} };
+    if (s.sel) {
+      const e = this.ent(s.sel), t = this.T[e.type]; const M = {}; (e.syn ? [] : this.leaves(e.id)).forEach((l) => { M[l] = 1; });
+      let inN = 0, outN = 0; const up = [], down = [], su = {}, sd = {};
+      this.X.forEach((x) => { const a = M[x[0]], b = M[x[1]]; if (a === b) return; if (b) inN++; else outN++; const dep = x[2] === 'consumes' ? [x[1], x[0]] : [x[0], x[1]]; if (M[dep[0]]) { if (!su[dep[1]]) { su[dep[1]] = 1; up.push(row(dep[1], x[2])); } } else if (!sd[dep[0]]) { sd[dep[0]] = 1; down.push(row(dep[0], x[2])); } });
+      const kn = this.kids(e.id).length; const pth = this.path(e.id); const par = e.parent ? this.ent(e.parent) : null; const atCore = is3 && this.cur() === e.id;
+      const infra = pth.slice(0, -1).map((p) => ({ k: this.T[this.ent(p).type].l, v: this.ent(p).name })); infra.push({ k: 'Region', v: e.type === 'external' ? 'external' : 'us-east-1' }); infra.push({ k: 'Provider', v: e.type === 'external' ? 'third party' : 'AWS' });
+      const meta = [{ k: 'Resource ID', v: e.id }, { k: 'Kind', v: t.l }]; if (e.inst) meta.push({ k: 'Instances', v: String(e.inst) }); if (e.parts) meta.push({ k: 'Partitions', v: String(e.parts) }); if (e.rep) meta.push({ k: 'Topology', v: '1 primary · ' + e.rep + ' replicas' }); meta.push({ k: 'Owner', v: e.owner }); meta.push({ k: 'Registered', v: '2025-11-04' });
+      i = { id: e.id, name: e.name, type: t.l, sh: t.s, st: e.status, stc: this.SC[e.status], stl: this.SL[e.status], note: e.note || (e.status === 'ok' ? 'All checks passing' : ''), parent: par ? par.name : 'None (top level)', pickParent: par ? () => this.pickFrom(par.id) : () => {}, owner: e.owner, domain: e.domain, kids: kn ? String(kn) : '—', inN: e.syn ? '—' : String(inN), outN: e.syn ? '—' : String(outN), up, down, upN: String(up.length), downN: String(down.length), upNone: !up.length, downNone: !down.length, infra, meta, tags: ['env:production', 'domain:' + e.domain, 'team:' + e.owner.toLowerCase().replace(/ /g, '-'), 'kind:' + e.type].map((x) => ({ t: x })), leaf: !kn, iso: !e.syn && !this.isBox(e.type) && inN + outN === 0, aEnter: is3 && kn > 0 && !atCore, aUp: atCore, a3d: !is3, a2d: is3, aTopo: !topo };
+    }
+
+    /* registry */
+    let rows = [];
+    if (isReg) { const q = s.regQ.trim().toLowerCase(); rows = Object.keys(E).filter((id) => E[id].type !== 'nodepool' && this.passRes(id)).filter((id) => { const e = E[id]; return !q || (e.name + ' ' + e.id + ' ' + e.owner + ' ' + this.T[e.type].l).toLowerCase().indexOf(q) >= 0; }).map((id) => { const e = E[id]; const M = {}; this.leaves(id).forEach((l) => { M[l] = 1; }); let a = 0, b = 0; this.X.forEach((x) => { if (M[x[0]] === M[x[1]]) return; if (M[x[1]]) a++; else b++; }); return { id, name: e.name, type: this.T[e.type].l, sh: this.T[e.type].s, domain: e.domain, owner: e.owner, st: e.status, stc: this.SC[e.status], stl: this.SL[e.status], rels: a + ' in · ' + b + ' out', cls: id === s.sel ? 'rsel' : '', pick: () => this.pick(id) }; }); }
+
+    /* palette */
+    let results = [];
+    if (s.cmd) { const q = s.q.trim().toLowerCase(); results = Object.keys(E).filter((id) => { const e = E[id]; return !q || (e.name + ' ' + e.id + ' ' + this.T[e.type].l + ' ' + e.owner).toLowerCase().indexOf(q) >= 0; }).slice(0, 8).map((id) => row(id)); if (s.env === 'production') results = results.concat(this.EV.filter((v) => !q || (v.name + ' event ' + v.topic).toLowerCase().indexOf(q) >= 0).slice(0, 5).map((v) => ({ name: v.name, kind: 'Event · ' + v.topic, sh: 'tp', st: 'ok', stc: '✓', pick: () => this.setState({ section: 'events', evSel: v.name, cmd: false, q: '' }) }))); }
+
+    const envEmpty = s.env !== 'production';
+    const cnt = (f) => this.RES.filter(f).length;
+    const cur = this.cur(); const depth = s.scope.length;
+    const crumbs = [{ name: 'Global Galaxy', sep: '', cls: depth ? '' : 'cur', go: () => this.exitTo(0) }].concat(s.scope.map((id, n) => ({ name: this.ent(id).name, sep: '/', cls: n === depth - 1 ? 'cur' : '', go: () => this.exitTo(n + 1) })));
+    const clear = () => this.setState({ fT: {}, fS: {}, fD: {}, regQ: '' });
+    const goSec = (sec, extra) => () => this.setState(Object.assign({ section: sec, envOpen: false, filterOpen: false }, extra || {}), () => { if (this.state.sel) this.focus(this.state.sel); });
+    const zoom = (f) => () => { if (this.state.view === '3d') this.tween(this.c3, { dist: Math.max(220, Math.min(2800, this.c3.dist * f)) }, 300); else { const c = this.c2, k = Math.max(.25, Math.min(2.4, c.k / f)), mx = this.vw() / 2, my = this.vh() / 2; this.tween(c, { k, tx: mx - (mx - c.tx) * k / c.k, ty: my - (my - c.ty) * k / c.k }, 300); } };
+    const noNodes = topo && (is2 ? g2.nodes.length === 0 : g3.nodes.length === 0);
+    const light = (s.theme || this.props.theme || 'dark') === 'light'; const acc = this.props.accent ?? '#5fe1ff';
+    const evq = s.evQ.trim().toLowerCase(); const evAll = envEmpty ? [] : this.EV; const pl = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+    const evo = this.EV.filter((v) => v.name === s.evSel)[0] || this.EV[0];
+    const evList = evAll.filter((v) => !evq || (v.name + ' ' + v.topic).toLowerCase().indexOf(evq) >= 0).map((v) => ({ name: v.name, topic: v.topic, counts: pl(v.prod.length, 'producer') + ' · ' + pl(v.cons.length, 'consumer'), cls: v.name === evo.name ? 'rsel' : '', pick: () => this.setState({ evSel: v.name }) }));
+    const evd = { name: evo.name, topic: evo.topic, desc: evo.desc, ver: evo.ver, owner: E[evo.topic].owner, prods: evo.prod.map((id) => row(id, evo.verb)), cons: evo.cons.map((id) => row(id, 'consumes')), prodN: String(evo.prod.length), consN: String(evo.cons.length), noCons: !evo.cons.length, pickTopic: () => this.pickFrom(evo.topic),
+      show2d: () => this.setState({ section: 'topology', view: '2d', ev: evo.name, sel: null, env: 'production' }),
+      show3d: () => { Object.assign(this.c3, this.defCam(null)); this.setState({ section: 'topology', view: '3d', scope: [], ev: evo.name, sel: null, env: 'production' }); } };
+
+    return {
+      accent: light && acc.toLowerCase() === '#5fe1ff' ? '#0b7fa6' : acc, themeCls: light ? 'light' : '', themeTip: light ? 'Switch to dark theme' : 'Switch to light theme', toggleTheme: () => this.setState({ theme: light ? 'dark' : 'light' }), glow: this.props.glow ?? 1, edgeW: this.props.edgeW ?? 1,
+      isEv: s.section === 'events', evList, evd, evQ: s.evQ, onEvQ: (e) => this.setState({ evQ: e.target.value }), evNone: evList.length === 0, evCount: pl(evList.length, 'event') + ' · ' + s.env,
+      evActive: topo && !!s.ev, evChip: s.ev || '', clearEv: () => this.setState({ ev: null }),
+      rmCls: s.rm ? 'rm' : '', rm: s.rm, rmBtnCls: on(s.rm), toggleRm: () => this.setState({ rm: !s.rm }),
+      env: s.env, envOpen: s.envOpen, toggleEnv: () => this.setState({ envOpen: !s.envOpen, filterOpen: false }),
+      envs: [['production', '23 resources'], ['staging', 'empty'], ['development', 'empty']].map((e) => ({ name: e[0], note: e[1], pick: () => { this._sc = null; this.setState({ env: e[0], envOpen: false, sel: null, scope: [] }); Object.assign(this.c3, this.defCam(null)); } })),
+      filterOpen: s.filterOpen, toggleFilter: () => this.setState({ filterOpen: !s.filterOpen, envOpen: false }), filterCount: String(nF), filterBtnCls: on(nF > 0 || s.filterOpen), clearFilters: clear,
+      filtered: nF > 0 && !envEmpty, filterText: 'Filtered · ' + visRes.length + ' of ' + this.RES.length,
+      fl: { types: mk('fT', [['svc', 'Services'], ['data', 'Data stores'], ['msg', 'Messaging'], ['infra', 'Infrastructure'], ['ext', 'External']]), stats: mk('fS', [['ok', 'Healthy'], ['warn', 'Degraded'], ['crit', 'Critical']]), doms: mk('fD', [['commerce', 'commerce'], ['payments', 'payments'], ['platform', 'platform']]) },
+      nav: { overview: on(s.section === 'overview'), topology: on(s.section === 'topology'), registry: on(isReg), infra: on(s.section === 'infra'), deps: on(s.section === 'deps'), saved: on(s.section === 'saved'), events: on(s.section === 'events') },
+      go: { events: goSec('events'), overview: goSec('overview'), topology: goSec('topology'), registry: goSec('registry'), saved: goSec('saved'), infra: () => { this.setState({ section: 'infra', view: '2d' }, () => this.setLayout('group')); }, deps: goSec('deps', { view: '2d', hl: 'down' }) },
+      isTopo: topo, is2, is3, isReg, isOv: s.section === 'overview', isSaved: s.section === 'saved',
+      title: { topology: 'Topology', infra: 'Infrastructure', deps: 'Dependencies' }[s.section] || '', scopeText: s.env + ' · us-east-1 · ' + visRes.length + ' of ' + (envEmpty ? 0 : this.RES.length) + ' resources',
+      lay: { topo: on(s.layout === 'topo'), group: on(s.layout === 'group') }, setTopo: () => this.setLayout('topo'), setGroup: () => this.setLayout('group'),
+      vw: { d2: on(s.view === '2d'), d3: on(s.view === '3d') }, to2d: () => this.setView('2d'), to3d: () => this.setView('3d'),
+      stageCls: is3 ? 's3' : '', stageRef: this.stageRef, g2, g3, fx: s.fx,
+      onDown: (e) => { if (e.target.closest && e.target.closest('button,a,input')) return; this.anims = this.anims.filter((a) => a.obj !== this.c3 && a.obj !== this.c2 || a.done); this.drag = { x: e.clientX, y: e.clientY, pan: e.shiftKey || e.button === 1 || e.button === 2, moved: 0 }; },
+      onMove: (e) => { const d = this.drag; if (!d) return; if (e.buttons === 0) { this.drag = null; return; } const dx = e.clientX - d.x, dy = e.clientY - d.y; d.x = e.clientX; d.y = e.clientY; d.moved += Math.abs(dx) + Math.abs(dy); if (this.anims.length) return; if (this.state.view === '3d') { const c = this.c3; if (d.pan) { c.px += dx; c.py += dy; } else { c.yaw += dx * .006; c.pitch = Math.max(-1.35, Math.min(1.35, c.pitch + dy * .006)); } } else { this.c2.tx += dx; this.c2.ty += dy; } this.forceUpdate(); },
+      onUp: () => { const d = this.drag; this.drag = null; if (d && d.moved < 4 && this.state.sel) { this.setState({ sel: null }); if (this.state.view === '3d') this.tween(this.c3, { px: 0 }, 400); } },
+      onLeave: () => { this.drag = null; },
+      onWheel: (e) => { if (this.anims.length) return; if (this.state.view === '3d') { this.c3.dist = Math.max(220, Math.min(2800, this.c3.dist * Math.exp(e.deltaY * .0012))); } else { const c = this.c2, b = e.currentTarget.getBoundingClientRect(), mx = e.clientX - b.left, my = e.clientY - b.top, k = Math.max(.25, Math.min(2.4, c.k * Math.exp(-e.deltaY * .0015))); c.tx = mx - (mx - c.tx) * k / c.k; c.ty = my - (my - c.ty) * k / c.k; c.k = k; } this.forceUpdate(); },
+      zoomIn: zoom(.78), zoomOut: zoom(1.28),
+      fit: () => { if (s.view === '3d') this.tween(this.c3, { tx: 0, ty: 0, tz: 0, dist: this.scene(cur).ext * 2.7, px: s.sel ? -150 : 0, py: 0 }, 600); else this.tween(this.c2, this.fit2(s.layout), 500); },
+      reset: () => { if (s.view === '3d') { const d = this.defCam(cur); d.px = s.sel ? -150 : 0; this.tween(this.c3, d, 700); } else { this.setState({ sel: null, hl: 'direct' }); this.tween(this.c2, this.fit2(s.layout), 500); } },
+      labels: s.labels, rel: s.rel, hideOther: s.hideOther, edges3: s.edges3, tg: { labels: on(s.labels), rel: on(s.rel), hide: on(s.hideOther), edges: on(s.edges3) },
+      tLabels: () => this.setState({ labels: !s.labels }), tRel: () => this.setState({ rel: !s.rel }), tHide: () => this.setState({ hideOther: !s.hideOther }), tEdges: () => this.setState({ edges3: !s.edges3 }),
+      cycleDensity: () => this.setState({ density: (s.density + 1) % 3 }), densityText: ['Essential', 'Standard', 'Full'][s.density],
+      hlc: { direct: on(s.hl === 'direct'), up: on(s.hl === 'up'), down: on(s.hl === 'down') }, hlDirect: () => this.setState({ hl: 'direct' }), hlUp: () => this.setState({ hl: 'up' }), hlDown: () => this.setState({ hl: 'down' }),
+      crumbs, deep: depth > 0, levelText: depth ? 'Level ' + depth : 'Level 0', scopeName: cur ? 'Inside ' + this.ent(cur).name : 'Global Galaxy',
+      goUp: () => this.exitTo(Math.max(0, depth - 1)), goRoot: () => this.exitTo(0),
+      noSel: !s.sel, noNodes, regEmpty: isReg && rows.length === 0,
+      emptyTitle: envEmpty ? 'Nothing registered in ' + s.env + ' yet' : 'No resources match these filters', emptyBody: envEmpty ? 'Resources appear here once a discovery source is connected to this environment.' : 'Loosen the type, status or domain filters to bring resources back into view.', emptyBtn: envEmpty ? 'Switch to production' : 'Clear filters', emptyAct: envEmpty ? () => this.setState({ env: 'production' }) : clear,
+      regPad: s.sel && isReg ? 364 : 20, regCount: rows.length + ' resources · ' + s.env, regQ: s.regQ, onRegQ: (e) => this.setState({ regQ: e.target.value }), rows,
+      tiles: [['Resources', cnt(() => true)], ['Services and gateways', cnt((id) => this.cat(E[id].type) === 'svc')], ['Data stores', cnt((id) => this.cat(E[id].type) === 'data')], ['Topics and queues', cnt((id) => this.cat(E[id].type) === 'msg')], ['Healthy', cnt((id) => E[id].status === 'ok')], ['Degraded', cnt((id) => E[id].status === 'warn')], ['Critical', cnt((id) => E[id].status === 'crit')], ['Relationships', this.X.length]].map((t) => ({ label: t[0], n: String(envEmpty ? 0 : t[1]) })),
+      attn: envEmpty ? [] : this.RES.filter((id) => E[id].status !== 'ok').map((id) => row(id, E[id].note)),
+      openGalaxy: () => this.setState({ section: 'topology', view: '3d' }),
+      saved: [
+        { kind: '2D · downstream', name: 'Payments blast radius', desc: 'Everything that depends on Payment Service, traced transitively.', apply: () => this.setState({ section: 'topology', view: '2d', hl: 'down', sel: 'payment-service', env: 'production' }, () => this.focus('payment-service')) },
+        { kind: '3D · nested', name: 'Inside payments-prod', desc: 'The payments cluster interior: namespaces, workloads and node pools.', apply: () => { Object.assign(this.c3, this.defCam('g-pay'), { px: -150 }); this.setState({ section: 'topology', view: '3d', scope: ['g-pay'], sel: 'g-pay', env: 'production' }); } },
+        { kind: '2D · filtered', name: 'Degraded and critical', desc: 'Only resources that currently need attention.', apply: () => this.setState({ section: 'topology', view: '2d', fS: { warn: true, crit: true }, sel: null, env: 'production' }) },
+        { kind: '2D · grouped', name: 'Infrastructure by cluster', desc: 'The same graph arranged into clusters, namespaces and accounts.', apply: () => this.setState({ section: 'infra', view: '2d', env: 'production' }, () => this.setLayout('group')) }
+      ],
+      showInsp: !!s.sel && (topo || isReg), i, closeInsp: () => { this.setState({ sel: null }); if (is3) this.tween(this.c3, { px: 0 }, 400); },
+      doEnter: () => this.enter(s.sel), explore3d: () => this.setView('3d', { section: 'topology' }), open2d: () => this.setView('2d', { section: 'topology' }),
+      tabc: { ov: on(s.tab === 'ov'), deps: on(s.tab === 'deps'), meta: on(s.tab === 'meta') }, tabOv: () => this.setState({ tab: 'ov' }), tabDeps: () => this.setState({ tab: 'deps' }), tabMeta: () => this.setState({ tab: 'meta' }), isTabOv: s.tab === 'ov', isTabDeps: s.tab === 'deps', isTabMeta: s.tab === 'meta',
+      cmd: s.cmd, q: s.q, openCmd: () => this.setState({ cmd: true, q: '', envOpen: false, filterOpen: false }), closeCmd: () => this.setState({ cmd: false }), stop: (e) => e.stopPropagation(), cmdRef: this.cmdRef,
+      onQ: (e) => this.setState({ q: e.target.value }), onCmdKey: (e) => { if (e.key === 'Escape') this.setState({ cmd: false }); else if (e.key === 'Enter' && results.length) results[0].pick(); },
+      results, noResults: s.cmd && results.length === 0
+    };
+  }
+  pickFrom(id) { const s = this.state; if (!this.isTopo() && s.section !== 'registry') { this.setState({ section: 'topology', env: 'production' }, () => this.pick(id)); return; } this.pick(id); }
+}
+</script>
+</body>
+</html>

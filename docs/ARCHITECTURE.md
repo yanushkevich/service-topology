@@ -1,0 +1,349 @@
+# Architecture — Service Topology and Registry Platform
+
+**Status:** Initial architecture contract. Change deliberately and document material decisions.
+
+## 1. Goals
+- One canonical domain model, multiple renderers.
+- Domain logic independent of React Flow and Three.js.
+- Rendering components focused on presentation and interaction.
+- Shared application state without high-frequency render state in Zustand.
+- Replaceable mock repositories and future integration adapters.
+- Stable cross-view selection and filters.
+
+## 2. High-level architecture
+```text
+Application Shell
+├── Header / Navigation / Router
+└── Service Map Workspace
+    ├── Toolbar / Filters / Legend
+    ├── View Host
+    │   ├── 2D Topology (React Flow)
+    │   ├── 3D Network (React Three Fiber)
+    │   └── Infrastructure View
+    └── Service / Connection Inspector
+Features: Registry, Dependencies, Events & Traffic, Infrastructure
+Application services: repositories, selectors, dependency traversal, simulation
+Shared application state: Zustand
+Domain: services, connections, environments, providers, health, protocols, telemetry
+```
+
+## 3. Suggested source layout
+```text
+src/
+  app/                 # App, router, providers
+  layouts/             # Shell, header, navigation
+  domain/               # Canonical types, validation, selectors
+  data/
+    repositories/       # Repository interface and mock implementation
+    mock/               # Services and connections
+  state/                # Shared Zustand stores
+  features/
+    service-map/
+      workspace/
+      views/            # Topology2D, Network3D, InfrastructureView
+      adapters/         # Domain -> React Flow / 3D view models
+    service-registry/
+    inspector/
+    dependencies/
+    events/
+    infrastructure/
+  shared/               # UI primitives, theme, utilities
+  three/                # Scene components, materials, shaders, animation
+  styles/
+docs/
+  PRODUCT_SPEC.md
+  ARCHITECTURE.md
+  IMPLEMENTATION_PLAN.md
+  PHASE_PROMPT_TEMPLATE.md
+  phases/
+```
+Adjust this tree when justified; avoid empty abstractions created only to match a diagram.
+
+## 4. Conceptual domain model
+Treat this as a starting contract and adapt it deliberately.
+
+```ts
+type ServiceId = string;
+type ConnectionId = string;
+type Environment = "development" | "staging" | "production";
+type HealthStatus = "healthy" | "degraded" | "unavailable" | "unknown";
+type Provider = "aws" | "azure" | "gcp" | "on-prem" | "saas" | "internal" | "unknown";
+type ServiceCategory =
+  | "api" | "application" | "database" | "message-broker" | "worker"
+  | "container" | "cloud-resource" | "external" | "infrastructure" | "other";
+type Protocol =
+  | "http" | "https" | "graphql" | "grpc" | "websocket" | "kafka"
+  | "rabbitmq" | "tcp" | "tls" | "postgresql" | "mysql" | "mongodb"
+  | "redis" | "scheduled-job" | "other";
+
+interface Metrics {
+  latencyMs?: number;
+  throughputPerSecond?: number;
+  errorRatePercent?: number;
+  isSimulated: boolean;
+  observedAt?: string;
+}
+
+interface Service {
+  id: ServiceId;
+  name: string;
+  description?: string;
+  category: ServiceCategory;
+  provider: Provider;
+  environment: Environment;
+  health: HealthStatus;
+  owner?: string;
+  team?: string;
+  version?: string;
+  endpoint?: string;
+  resourceId?: string;
+  region?: string;
+  cluster?: string;
+  namespace?: string;
+  groupId?: string;
+  protocols: Protocol[];
+  metrics?: Metrics;
+  metadata?: Record<string, unknown>;
+  updatedAt: string;
+}
+
+type CommunicationPattern =
+  | "synchronous" | "asynchronous" | "streaming" | "scheduled" | "database" | "unknown";
+type ConnectionStatus = "active" | "degraded" | "inactive" | "unknown";
+
+interface Connection {
+  id: ConnectionId;
+  sourceId: ServiceId;
+  targetId: ServiceId;
+  protocol: Protocol;
+  pattern: CommunicationPattern;
+  direction: "unidirectional" | "bidirectional";
+  status: ConnectionStatus;
+  authenticationType?: string;
+  topicOrQueue?: string;
+  endpoint?: string;
+  metrics?: Metrics;
+  metadata?: Record<string, unknown>;
+  updatedAt: string;
+}
+```
+Validate unique IDs and connection references. Avoid scattering string literals; use shared types and mappings.
+
+## 5. Data flow and adapters
+```text
+Repository / Mock Data
+        ↓
+Canonical Domain Entities
+        ↓
+Selectors + Shared State
+   ├── React Flow adapter → 2D nodes/edges
+   ├── 3D layout adapter   → scene entities/connections
+   ├── Infrastructure selectors → grouped view
+   └── Registry selectors → table rows
+```
+React Flow nodes/edges are view models, not canonical records. Three.js objects are renderer details. Do not make domain types extend React Flow types or store Three.js objects in Zustand. External schemas should be mapped into canonical entities at integration boundaries.
+
+## 6. State ownership
+### Shared Zustand state
+Selected entity (canonical type + ID), active view, environment, shared filters, visible layers/labels, theme/preferences, and simulation controls where cross-feature coordination is needed.
+
+### Local component/renderer state
+React Flow viewport and drag state, Three.js objects/refs, per-frame signal positions, GSAP timelines, and local hover/presentation state. Use selectors for derived data; do not duplicate derived values without a reason or update global state every frame.
+
+## 7. Cross-view contract
+- Selection is represented by canonical entity type and ID.
+- Registry, 2D, and 3D selections update the same shared selection.
+- Each view resolves that ID to its own visual representation.
+- Inspector reads canonical data.
+- Switching views preserves selection, environment, and shared filters.
+- If a filter hides the selected entity, handle this consistently and visibly; do not silently desynchronize views.
+
+## 8. Shared visual mappings
+Centralize protocol, category, provider, health, and connection-status labels/icons/colors, plus accessible descriptions. Provide fallbacks for unknown values. Do not use color as the only indicator; verify both themes.
+
+## 9. Repository and future integrations
+Start with a repository interface and mock implementation. Features depend on the interface, not raw mock arrays. Future adapters may cover cloud inventory, Kubernetes, broker metadata, APM/telemetry, internal service catalogs, and on-prem inventory. Do not build real integrations until requested.
+
+## 10. Simulation
+Keep simulation separate from rendering. A simulation service emits typed events or updates mock repository state; selectors derive presentation; all views render canonical state. Label simulated data. Make failure/recovery behavior deterministic in tests. Do not place simulation timers inside graph nodes or frame loops.
+
+## 11. Animation
+- GSAP: finite sequences, scene reveal, camera focus, transitions.
+- `useFrame` or shaders: continuous signal motion/pulses.
+- CSS transitions: ordinary interface transitions.
+- Do not animate one property with competing systems.
+- Keep handles in refs/local renderer code, clean up resources, respect reduced motion, and never call React state setters at frame frequency.
+
+## 12. Performance and accessibility
+Lazy-load 3D; cap DPR; reuse and dispose geometries/materials correctly; stabilize React Flow node/edge identities; avoid unnecessary store subscriptions; support keyboard/focus/contrast; provide WebGL fallback and loading/empty/error states.
+
+## 13. Testing
+Test domain validation, repository integrity, selectors/filters, dependency traversal, style mappings, store actions, cross-view selection, registry focus, simulation transitions, state preservation, important integration workflows, production build, and manual 3D smoke tests.
+
+## 14. Architecture decision log
+For material decisions record:
+- Decision
+- Context/reason
+- Alternatives considered
+- Consequences and affected phases/tests/docs
+- Date and phase
+
+Do not silently change shared contracts.
+
+
+---
+
+# Revision 2 Addendum — Explicit Modeling and Integration Contracts
+
+**This addendum is authoritative where the original architecture is ambiguous.** The original architecture and examples are retained above.
+
+## 1. Dependency and layout engine
+
+React Flow is a required 2D visualization dependency. Use **ELK.js (`elkjs`) as the default graph layout engine** for deterministic hierarchical layout and edge routing. Keep layout computation behind a `GraphLayoutService` interface so the engine can be benchmarked or replaced without changing domain types.
+
+The layout adapter accepts serializable nodes, edges, groups, constraints, and pinned positions, and returns positions/routes. It must not mutate canonical domain entities. Add fixture-based tests for non-overlap, valid edge endpoints, deterministic output, and nested grouping.
+
+## 2. Canonical entity model: definitions, instances, resources
+
+The original conceptual `Service` type is retained for context, but the implementation should distinguish these entities:
+
+```ts
+type EntityId = string;
+type EnvironmentId = string;
+type ResourceId = string;
+
+interface ServiceDefinition {
+  id: EntityId;
+  name: string;
+  description?: string;
+  owner?: string;
+  team?: string;
+  category: string;
+  protocols: string[];
+  metadata?: Record<string, unknown>;
+}
+
+interface ServiceInstance {
+  id: EntityId;
+  serviceDefinitionId: EntityId;
+  environmentId: EnvironmentId; // exactly one environment per instance
+  provider: "aws" | "azure" | "gcp" | "on-prem" | "saas" | "internal" | "unknown";
+  health: "healthy" | "degraded" | "unavailable" | "unknown";
+  version?: string;
+  endpoint?: string;
+  resourceId?: ResourceId;
+  metrics?: Metrics;
+  updatedAt: string;
+  metadata?: Record<string, unknown>;
+}
+
+interface EnvironmentRecord {
+  id: EnvironmentId;
+  name: string;
+  kind: "development" | "staging" | "production" | "other";
+}
+
+interface InfrastructureResource {
+  id: ResourceId;
+  name: string;
+  type:
+    | "account" | "subscription" | "project" | "region" | "cluster"
+    | "namespace" | "workload" | "database" | "broker" | "topic"
+    | "queue" | "external-resource" | "other";
+  provider: "aws" | "azure" | "gcp" | "on-prem" | "saas" | "internal" | "unknown";
+  parentResourceId?: ResourceId;
+  environmentId?: EnvironmentId;
+  metadata?: Record<string, unknown>;
+}
+
+interface CommunicationRelationship {
+  id: EntityId;
+  sourceEntityId: EntityId;
+  targetEntityId: EntityId;
+  protocol: string;
+  pattern: "synchronous" | "asynchronous" | "streaming" | "scheduled" | "database" | "unknown";
+  direction: "unidirectional" | "bidirectional";
+  status: "active" | "degraded" | "inactive" | "unknown";
+  metrics?: Metrics;
+  metadata?: Record<string, unknown>;
+  updatedAt: string;
+}
+```
+
+These interfaces are illustrative contracts; consolidate shared enums/types in actual code rather than copying duplicate string unions. Communication endpoints may reference service instances and first-class resource entities. Validate endpoint existence and allowed relationship semantics.
+
+## 3. Messaging topology and containment
+
+- Kafka topics and RabbitMQ queues/exchanges are first-class `InfrastructureResource`/topology entities when represented in the graph.
+- Model producer → topic and topic → consumer as explicit communication relationships.
+- Do not rely on a topic string on an edge as the only topology representation.
+- Keep infrastructure containment separate from communication relationships.
+- Use `parentResourceId` for explicit hierarchy and validate missing parents and cycles.
+- A service definition may have multiple service instances across environments; each instance belongs to exactly one environment.
+
+## 4. Layout and graph performance
+
+- Layout runs in an adapter/service boundary; use a worker if profiling shows layout blocks the main thread.
+- Benchmark 250 visible nodes / 750 visible edges and a 1,000-entity inventory accessed through filters/grouping.
+- Do not promise all 1,000 entities simultaneously rendered at full detail.
+- Keep graph view models minimal and memoized; apply viewport culling, grouping, and edge filtering when needed.
+- Store manual positions as serializable records keyed by stable entity ID.
+- Test initial layout for node-box overlap using known fixtures and a defined tolerance.
+
+## 5. URL state, snapshots, and saved layouts
+
+Create serializable, versioned contracts for:
+- `TopologyUrlState`: active view, environment, selected entity type/ID, supported filters.
+- `TopologySnapshot`: schema version, timestamp, entity/relationship state, and snapshot metadata.
+- `SavedLayout`: schema version, layout ID/name, relevant filters/grouping, node positions keyed by canonical IDs, and view preferences.
+
+Implement URL encoding/decoding with tests for malformed or unknown IDs and browser back/forward behavior. Keep snapshots deterministic for tests. Start saved layouts with local persistence behind a `SavedLayoutRepository` interface; avoid coupling to browser storage in domain code.
+
+## 6. Backend/API contract
+
+Before adding real backend connectivity, create `docs/API_CONTRACT.md` with:
+- OpenAPI 3.1 as the contract for future HTTP APIs.
+- JSON Schema for persisted snapshots, saved layouts, and domain payloads where useful.
+- Versioning/error conventions and ID/enum semantics.
+- A mapping between API schemas and frontend domain types.
+- Examples for service search, topology retrieval, snapshots, and saved layouts.
+
+The initial mock implementation must satisfy the same repository interfaces expected of a future API adapter. Do not implement an unrequested backend or introduce GraphQL merely because it was considered earlier; choose one API contract strategy deliberately.
+
+## 7. Architecture decisions
+
+Record these decisions in the architecture decision log:
+- React Flow + ELK.js for the initial 2D graph.
+- Service definition versus per-environment service instance.
+- First-class topic/queue resources.
+- Explicit infrastructure containment hierarchy.
+- Infrastructure view as a grouped 2D topology mode.
+- 2D as primary; 3D as secondary.
+- Scale and benchmark targets.
+- URL state, snapshots, and saved-layout schemas.
+- OpenAPI 3.1 + JSON Schema as the future contract strategy.
+
+
+## Revision 4 — 3D galaxy scene architecture
+
+`docs/3D_GALAXY_EXPERIENCE.md` is the authoritative specification for the 3D galaxy view. The scene must be built from renderer-specific view models derived from canonical domain data; Three.js objects, mesh UUIDs, camera objects, and transient animation state must never become domain identity or canonical shared state.
+
+### Scene data pipeline
+
+1. Select the current topology scope from shared application state (environment, filters, selected entity, current scope/breadcrumbs).
+2. Resolve canonical entities and relationships for that scope, keeping containment relationships separate from communication/dependency relationships.
+3. Convert them through a deterministic 3D layout/view-model adapter into stable node positions, cluster regions, and edge paths.
+4. Render reusable node, edge, containment, label, and camera/navigation components.
+5. Send user actions (select, focus, enter scope, go back, filter) through shared domain/UI actions; do not mutate canonical entities from the render loop.
+
+### Hierarchical scope navigation
+
+Represent 3D navigation as explicit application state, such as a stack of scope IDs and return contexts. A scope contains the parent entity ID, the displayed child entities, the local dependency neighborhood if enabled, and the prior camera/layout context. Entering a node resolves actual modeled children/related entities; it must not assume every entity has children. On return, restore the previous scope and camera context where possible. The scope stack must be serializable enough for tests and URL/deep-link integration; never serialize Three.js instances.
+
+### Camera and animation ownership
+
+The camera rig owns orbit, pan, zoom, fit, focus, dive-in, and restoration transitions. Use imperative refs/frame-loop updates for animation; avoid React state updates on every frame. Transitions must be interruptible, deterministic in intent, and reduced-motion aware. Global pause stops decorative/traffic animation but must not disable camera controls or essential interaction.
+
+### Graph rendering and quality
+
+Use semantic clusters and deterministic layout; reduce detail as node/edge density grows. Labels, selection, status, and direction cannot depend solely on color or bloom. Edge animation must bind to a known traffic/status field and visibly distinguish mock data. Lazy-load the scene, cap DPR, clean up resources, and provide a WebGL/context-loss fallback to the registry or 2D map. Performance claims require a documented benchmark.
