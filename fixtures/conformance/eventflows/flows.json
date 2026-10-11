@@ -1,0 +1,488 @@
+{
+  "topology": "topology/mock.v1.json",
+  "cases": [
+    {
+      "environmentId": "production",
+      "expected": [
+        {
+          "eventType": {
+            "id": "event-notification-requested",
+            "name": "NotificationRequested",
+            "description": "Published when a customer message is ready for delivery; routed to the email queue.",
+            "schemaVersion": "v1",
+            "owner": "Commerce",
+            "team": "Engagement",
+            "channelResourceIds": [
+              "exchange-notifications-prod"
+            ],
+            "producerServiceIds": [
+              "notification-service"
+            ],
+            "consumerServiceIds": [
+              "email-dispatcher"
+            ],
+            "metadata": {
+              "routingKey": "notify.email.order"
+            }
+          },
+          "channelId": "exchange-notifications-prod",
+          "producers": [
+            {
+              "serviceDefinitionId": "notification-service",
+              "instanceId": "notification-service.production",
+              "relationshipIds": [
+                "rel:notification-service.production->exchange-notifications-prod"
+              ]
+            }
+          ],
+          "consumers": [
+            {
+              "serviceDefinitionId": "email-dispatcher",
+              "instanceId": "email-dispatcher.production",
+              "relationshipIds": [
+                "rel:exchange-notifications-prod->queue-notifications-email-prod",
+                "rel:queue-notifications-email-prod->email-dispatcher.production"
+              ],
+              "viaQueueId": "queue-notifications-email-prod"
+            }
+          ]
+        },
+        {
+          "eventType": {
+            "id": "event-order-cancelled",
+            "name": "OrderCancelled",
+            "description": "Emitted when an order is cancelled before fulfilment.",
+            "schemaVersion": "v2",
+            "owner": "Commerce",
+            "team": "Orders",
+            "channelResourceIds": [
+              "topic-orders-events-prod",
+              "topic-orders-events-staging"
+            ],
+            "producerServiceIds": [
+              "order-service"
+            ],
+            "consumerServiceIds": [
+              "inventory-service"
+            ]
+          },
+          "channelId": "topic-orders-events-prod",
+          "producers": [
+            {
+              "serviceDefinitionId": "order-service",
+              "instanceId": "order-service.production",
+              "relationshipIds": [
+                "rel:order-service.production->topic-orders-events-prod"
+              ]
+            }
+          ],
+          "consumers": [
+            {
+              "serviceDefinitionId": "inventory-service",
+              "instanceId": "inventory-service.production",
+              "relationshipIds": [
+                "rel:topic-orders-events-prod->inventory-service.production"
+              ]
+            }
+          ]
+        },
+        {
+          "eventType": {
+            "id": "event-order-placed",
+            "name": "OrderPlaced",
+            "description": "Emitted when a customer order is accepted and awaiting payment.",
+            "schemaVersion": "v3",
+            "owner": "Commerce",
+            "team": "Orders",
+            "channelResourceIds": [
+              "topic-orders-events-prod",
+              "topic-orders-events-staging"
+            ],
+            "producerServiceIds": [
+              "order-service"
+            ],
+            "consumerServiceIds": [
+              "inventory-service",
+              "notification-service"
+            ]
+          },
+          "channelId": "topic-orders-events-prod",
+          "producers": [
+            {
+              "serviceDefinitionId": "order-service",
+              "instanceId": "order-service.production",
+              "relationshipIds": [
+                "rel:order-service.production->topic-orders-events-prod"
+              ]
+            }
+          ],
+          "consumers": [
+            {
+              "serviceDefinitionId": "inventory-service",
+              "instanceId": "inventory-service.production",
+              "relationshipIds": [
+                "rel:topic-orders-events-prod->inventory-service.production"
+              ]
+            },
+            {
+              "serviceDefinitionId": "notification-service",
+              "instanceId": "notification-service.production",
+              "relationshipIds": [
+                "rel:topic-orders-events-prod->notification-service.production"
+              ]
+            }
+          ]
+        },
+        {
+          "eventType": {
+            "id": "event-order-shipped",
+            "name": "OrderShipped",
+            "description": "Emitted when an order leaves the warehouse.",
+            "schemaVersion": "v1",
+            "owner": "Commerce",
+            "team": "Orders",
+            "channelResourceIds": [
+              "topic-orders-events-prod",
+              "topic-orders-events-staging"
+            ],
+            "producerServiceIds": [
+              "order-service"
+            ],
+            "consumerServiceIds": [
+              "notification-service"
+            ]
+          },
+          "channelId": "topic-orders-events-prod",
+          "producers": [
+            {
+              "serviceDefinitionId": "order-service",
+              "instanceId": "order-service.production",
+              "relationshipIds": [
+                "rel:order-service.production->topic-orders-events-prod"
+              ]
+            }
+          ],
+          "consumers": [
+            {
+              "serviceDefinitionId": "notification-service",
+              "instanceId": "notification-service.production",
+              "relationshipIds": [
+                "rel:topic-orders-events-prod->notification-service.production"
+              ]
+            }
+          ]
+        },
+        {
+          "eventType": {
+            "id": "event-payment-captured",
+            "name": "PaymentCaptured",
+            "description": "Emitted when funds are captured for an order.",
+            "schemaVersion": "v4",
+            "owner": "Payments",
+            "team": "Payments",
+            "channelResourceIds": [
+              "topic-payments-events-prod"
+            ],
+            "producerServiceIds": [
+              "payment-service"
+            ],
+            "consumerServiceIds": [
+              "ledger-service"
+            ]
+          },
+          "channelId": "topic-payments-events-prod",
+          "producers": [
+            {
+              "serviceDefinitionId": "payment-service",
+              "instanceId": "payment-service.production",
+              "relationshipIds": [
+                "rel:payment-service.production->topic-payments-events-prod"
+              ]
+            }
+          ],
+          "consumers": [
+            {
+              "serviceDefinitionId": "ledger-service",
+              "instanceId": "ledger-service.production",
+              "relationshipIds": [
+                "rel:topic-payments-events-prod->ledger-service.production"
+              ]
+            }
+          ]
+        },
+        {
+          "eventType": {
+            "id": "event-payment-failed",
+            "name": "PaymentFailed",
+            "description": "Emitted when a capture attempt is declined or errors. No consumer is modeled yet.",
+            "schemaVersion": "v2",
+            "owner": "Payments",
+            "team": "Payments",
+            "channelResourceIds": [
+              "topic-payments-events-prod"
+            ],
+            "producerServiceIds": [
+              "payment-service"
+            ],
+            "consumerServiceIds": []
+          },
+          "channelId": "topic-payments-events-prod",
+          "producers": [
+            {
+              "serviceDefinitionId": "payment-service",
+              "instanceId": "payment-service.production",
+              "relationshipIds": [
+                "rel:payment-service.production->topic-payments-events-prod"
+              ]
+            }
+          ],
+          "consumers": []
+        },
+        {
+          "eventType": {
+            "id": "event-refund-issued",
+            "name": "RefundIssued",
+            "description": "Emitted when a refund is sent back to the customer.",
+            "schemaVersion": "v1",
+            "owner": "Payments",
+            "team": "Payments",
+            "channelResourceIds": [
+              "topic-payments-events-prod"
+            ],
+            "producerServiceIds": [
+              "payment-service"
+            ],
+            "consumerServiceIds": [
+              "ledger-service"
+            ]
+          },
+          "channelId": "topic-payments-events-prod",
+          "producers": [
+            {
+              "serviceDefinitionId": "payment-service",
+              "instanceId": "payment-service.production",
+              "relationshipIds": [
+                "rel:payment-service.production->topic-payments-events-prod"
+              ]
+            }
+          ],
+          "consumers": [
+            {
+              "serviceDefinitionId": "ledger-service",
+              "instanceId": "ledger-service.production",
+              "relationshipIds": [
+                "rel:topic-payments-events-prod->ledger-service.production"
+              ]
+            }
+          ]
+        },
+        {
+          "eventType": {
+            "id": "event-stock-level-changed",
+            "name": "StockLevelChanged",
+            "description": "Emitted when available stock for an item changes.",
+            "schemaVersion": "v2",
+            "owner": "Commerce",
+            "team": "Fulfilment",
+            "channelResourceIds": [
+              "topic-inventory-updates-prod"
+            ],
+            "producerServiceIds": [
+              "inventory-service"
+            ],
+            "consumerServiceIds": [
+              "catalog-service"
+            ]
+          },
+          "channelId": "topic-inventory-updates-prod",
+          "producers": [
+            {
+              "serviceDefinitionId": "inventory-service",
+              "instanceId": "inventory-service.production",
+              "relationshipIds": [
+                "rel:inventory-service.production->topic-inventory-updates-prod"
+              ]
+            }
+          ],
+          "consumers": [
+            {
+              "serviceDefinitionId": "catalog-service",
+              "instanceId": "catalog-service.production",
+              "relationshipIds": [
+                "rel:topic-inventory-updates-prod->catalog-service.production"
+              ]
+            }
+          ]
+        },
+        {
+          "eventType": {
+            "id": "event-stock-reserved",
+            "name": "StockReserved",
+            "description": "Emitted when stock is held against an open order.",
+            "schemaVersion": "v1",
+            "owner": "Commerce",
+            "team": "Fulfilment",
+            "channelResourceIds": [
+              "topic-inventory-updates-prod"
+            ],
+            "producerServiceIds": [
+              "inventory-service"
+            ],
+            "consumerServiceIds": [
+              "catalog-service"
+            ]
+          },
+          "channelId": "topic-inventory-updates-prod",
+          "producers": [
+            {
+              "serviceDefinitionId": "inventory-service",
+              "instanceId": "inventory-service.production",
+              "relationshipIds": [
+                "rel:inventory-service.production->topic-inventory-updates-prod"
+              ]
+            }
+          ],
+          "consumers": [
+            {
+              "serviceDefinitionId": "catalog-service",
+              "instanceId": "catalog-service.production",
+              "relationshipIds": [
+                "rel:topic-inventory-updates-prod->catalog-service.production"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "environmentId": "staging",
+      "expected": [
+        {
+          "eventType": {
+            "id": "event-order-cancelled",
+            "name": "OrderCancelled",
+            "description": "Emitted when an order is cancelled before fulfilment.",
+            "schemaVersion": "v2",
+            "owner": "Commerce",
+            "team": "Orders",
+            "channelResourceIds": [
+              "topic-orders-events-prod",
+              "topic-orders-events-staging"
+            ],
+            "producerServiceIds": [
+              "order-service"
+            ],
+            "consumerServiceIds": [
+              "inventory-service"
+            ]
+          },
+          "channelId": "topic-orders-events-staging",
+          "producers": [
+            {
+              "serviceDefinitionId": "order-service",
+              "instanceId": "order-service.staging",
+              "relationshipIds": [
+                "rel:order-service.staging->topic-orders-events-staging"
+              ]
+            }
+          ],
+          "consumers": [
+            {
+              "serviceDefinitionId": "inventory-service",
+              "instanceId": "inventory-service.staging",
+              "relationshipIds": [
+                "rel:topic-orders-events-staging->inventory-service.staging"
+              ]
+            }
+          ]
+        },
+        {
+          "eventType": {
+            "id": "event-order-placed",
+            "name": "OrderPlaced",
+            "description": "Emitted when a customer order is accepted and awaiting payment.",
+            "schemaVersion": "v3",
+            "owner": "Commerce",
+            "team": "Orders",
+            "channelResourceIds": [
+              "topic-orders-events-prod",
+              "topic-orders-events-staging"
+            ],
+            "producerServiceIds": [
+              "order-service"
+            ],
+            "consumerServiceIds": [
+              "inventory-service",
+              "notification-service"
+            ]
+          },
+          "channelId": "topic-orders-events-staging",
+          "producers": [
+            {
+              "serviceDefinitionId": "order-service",
+              "instanceId": "order-service.staging",
+              "relationshipIds": [
+                "rel:order-service.staging->topic-orders-events-staging"
+              ]
+            }
+          ],
+          "consumers": [
+            {
+              "serviceDefinitionId": "inventory-service",
+              "instanceId": "inventory-service.staging",
+              "relationshipIds": [
+                "rel:topic-orders-events-staging->inventory-service.staging"
+              ]
+            },
+            {
+              "serviceDefinitionId": "notification-service",
+              "instanceId": null,
+              "relationshipIds": []
+            }
+          ]
+        },
+        {
+          "eventType": {
+            "id": "event-order-shipped",
+            "name": "OrderShipped",
+            "description": "Emitted when an order leaves the warehouse.",
+            "schemaVersion": "v1",
+            "owner": "Commerce",
+            "team": "Orders",
+            "channelResourceIds": [
+              "topic-orders-events-prod",
+              "topic-orders-events-staging"
+            ],
+            "producerServiceIds": [
+              "order-service"
+            ],
+            "consumerServiceIds": [
+              "notification-service"
+            ]
+          },
+          "channelId": "topic-orders-events-staging",
+          "producers": [
+            {
+              "serviceDefinitionId": "order-service",
+              "instanceId": "order-service.staging",
+              "relationshipIds": [
+                "rel:order-service.staging->topic-orders-events-staging"
+              ]
+            }
+          ],
+          "consumers": [
+            {
+              "serviceDefinitionId": "notification-service",
+              "instanceId": null,
+              "relationshipIds": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "environmentId": "development",
+      "expected": []
+    }
+  ]
+}

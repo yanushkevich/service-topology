@@ -1,0 +1,1947 @@
+{
+  "topology": "topology/mock.v1.json",
+  "cases": [
+    {
+      "centerId": "api-gateway.production",
+      "depth": 1,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "catalog-service.production",
+        "order-service.production",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "api-gateway.production",
+      "depth": 2,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "inventory-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "rds-orders-prod",
+        "redis-sessions-prod",
+        "search-catalog-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "api-gateway.production",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "inventory-service.production",
+        "legacy-report-cron.production",
+        "notification-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "pg-payments-prod",
+        "rds-inventory-prod",
+        "rds-orders-prod",
+        "redis-sessions-prod",
+        "search-catalog-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod",
+        "topic-payments-events-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "web-bff.production",
+      "depth": 1,
+      "expected": [
+        "api-gateway.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "web-bff.production",
+      "depth": 2,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "order-service.production",
+        "redis-sessions-prod",
+        "search-catalog-prod",
+        "topic-inventory-updates-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "web-bff.production",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "inventory-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "rds-orders-prod",
+        "redis-sessions-prod",
+        "search-catalog-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "auth-service.production",
+      "depth": 1,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "redis-sessions-prod"
+      ]
+    },
+    {
+      "centerId": "auth-service.production",
+      "depth": 2,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "order-service.production",
+        "redis-sessions-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "auth-service.production",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "inventory-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "rds-orders-prod",
+        "redis-sessions-prod",
+        "search-catalog-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "cart-service.production",
+      "depth": 1,
+      "expected": [
+        "cart-service.production",
+        "catalog-service.production",
+        "redis-sessions-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "cart-service.production",
+      "depth": 2,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "redis-sessions-prod",
+        "search-catalog-prod",
+        "topic-inventory-updates-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "cart-service.production",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "inventory-service.production",
+        "order-service.production",
+        "redis-sessions-prod",
+        "search-catalog-prod",
+        "topic-inventory-updates-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "catalog-service.production",
+      "depth": 1,
+      "expected": [
+        "api-gateway.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "search-catalog-prod",
+        "topic-inventory-updates-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "catalog-service.production",
+      "depth": 2,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "inventory-service.production",
+        "order-service.production",
+        "redis-sessions-prod",
+        "search-catalog-prod",
+        "topic-inventory-updates-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "catalog-service.production",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "inventory-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "rds-inventory-prod",
+        "rds-orders-prod",
+        "redis-sessions-prod",
+        "search-catalog-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "order-service.production",
+      "depth": 1,
+      "expected": [
+        "api-gateway.production",
+        "inventory-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "rds-orders-prod",
+        "topic-orders-events-prod"
+      ]
+    },
+    {
+      "centerId": "order-service.production",
+      "depth": 2,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "catalog-service.production",
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "inventory-service.production",
+        "legacy-report-cron.production",
+        "notification-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "pg-payments-prod",
+        "rds-inventory-prod",
+        "rds-orders-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod",
+        "topic-payments-events-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "order-service.production",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "exchange-notifications-prod",
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "inventory-service.production",
+        "ledger-service.production",
+        "legacy-report-cron.production",
+        "notification-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "payment-service.staging",
+        "payout-worker.production",
+        "pg-payments-prod",
+        "rds-inventory-prod",
+        "rds-orders-prod",
+        "redis-sessions-prod",
+        "search-catalog-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod",
+        "topic-payments-events-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "inventory-service.production",
+      "depth": 1,
+      "expected": [
+        "inventory-service.production",
+        "order-service.production",
+        "rds-inventory-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod"
+      ]
+    },
+    {
+      "centerId": "inventory-service.production",
+      "depth": 2,
+      "expected": [
+        "api-gateway.production",
+        "catalog-service.production",
+        "inventory-service.production",
+        "notification-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "rds-inventory-prod",
+        "rds-orders-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod"
+      ]
+    },
+    {
+      "centerId": "inventory-service.production",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "exchange-notifications-prod",
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "inventory-service.production",
+        "legacy-report-cron.production",
+        "notification-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "pg-payments-prod",
+        "rds-inventory-prod",
+        "rds-orders-prod",
+        "search-catalog-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod",
+        "topic-payments-events-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "notification-service.production",
+      "depth": 1,
+      "expected": [
+        "exchange-notifications-prod",
+        "notification-service.production",
+        "topic-orders-events-prod"
+      ]
+    },
+    {
+      "centerId": "notification-service.production",
+      "depth": 2,
+      "expected": [
+        "exchange-notifications-prod",
+        "inventory-service.production",
+        "notification-service.production",
+        "order-service.production",
+        "queue-notifications-email-prod",
+        "topic-orders-events-prod"
+      ]
+    },
+    {
+      "centerId": "notification-service.production",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "email-dispatcher.production",
+        "exchange-notifications-prod",
+        "inventory-service.production",
+        "notification-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "queue-notifications-email-prod",
+        "rds-inventory-prod",
+        "rds-orders-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod"
+      ]
+    },
+    {
+      "centerId": "email-dispatcher.production",
+      "depth": 1,
+      "expected": [
+        "email-dispatcher.production",
+        "ext-email-delivery",
+        "queue-notifications-email-prod"
+      ]
+    },
+    {
+      "centerId": "email-dispatcher.production",
+      "depth": 2,
+      "expected": [
+        "email-dispatcher.production",
+        "exchange-notifications-prod",
+        "ext-email-delivery",
+        "queue-notifications-email-prod"
+      ]
+    },
+    {
+      "centerId": "email-dispatcher.production",
+      "depth": 3,
+      "expected": [
+        "email-dispatcher.production",
+        "exchange-notifications-prod",
+        "ext-email-delivery",
+        "notification-service.production",
+        "queue-notifications-email-prod"
+      ]
+    },
+    {
+      "centerId": "legacy-report-cron.production",
+      "depth": 1,
+      "expected": [
+        "legacy-report-cron.production",
+        "rds-orders-prod"
+      ]
+    },
+    {
+      "centerId": "legacy-report-cron.production",
+      "depth": 2,
+      "expected": [
+        "legacy-report-cron.production",
+        "order-service.production",
+        "rds-orders-prod"
+      ]
+    },
+    {
+      "centerId": "legacy-report-cron.production",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "inventory-service.production",
+        "legacy-report-cron.production",
+        "order-service.production",
+        "payment-service.production",
+        "rds-orders-prod",
+        "topic-orders-events-prod"
+      ]
+    },
+    {
+      "centerId": "payment-service.production",
+      "depth": 1,
+      "expected": [
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "order-service.production",
+        "payment-service.production",
+        "pg-payments-prod",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "payment-service.production",
+      "depth": 2,
+      "expected": [
+        "api-gateway.production",
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "inventory-service.production",
+        "ledger-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "payment-service.staging",
+        "payout-worker.production",
+        "pg-payments-prod",
+        "rds-orders-prod",
+        "topic-orders-events-prod",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "payment-service.production",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "catalog-service.production",
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "inventory-service.production",
+        "ledger-service.production",
+        "legacy-report-cron.production",
+        "notification-service.production",
+        "order-service.production",
+        "order-service.staging",
+        "payment-service.production",
+        "payment-service.staging",
+        "payout-worker.production",
+        "pg-ledger-prod",
+        "pg-payments-prod",
+        "rds-inventory-prod",
+        "rds-orders-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod",
+        "topic-payments-events-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "fraud-scoring.production",
+      "depth": 1,
+      "expected": [
+        "fraud-scoring.production",
+        "payment-service.production"
+      ]
+    },
+    {
+      "centerId": "fraud-scoring.production",
+      "depth": 2,
+      "expected": [
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "order-service.production",
+        "payment-service.production",
+        "pg-payments-prod",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "fraud-scoring.production",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "inventory-service.production",
+        "ledger-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "payment-service.staging",
+        "payout-worker.production",
+        "pg-payments-prod",
+        "rds-orders-prod",
+        "topic-orders-events-prod",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "ledger-service.production",
+      "depth": 1,
+      "expected": [
+        "ledger-service.production",
+        "payout-worker.production",
+        "pg-ledger-prod",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "ledger-service.production",
+      "depth": 2,
+      "expected": [
+        "ext-card-processor",
+        "ledger-service.production",
+        "payment-service.production",
+        "payout-worker.production",
+        "pg-ledger-prod",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "ledger-service.production",
+      "depth": 3,
+      "expected": [
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "ledger-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "payment-service.staging",
+        "payout-worker.production",
+        "pg-ledger-prod",
+        "pg-payments-prod",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "payout-worker.production",
+      "depth": 1,
+      "expected": [
+        "ext-card-processor",
+        "ledger-service.production",
+        "payout-worker.production"
+      ]
+    },
+    {
+      "centerId": "payout-worker.production",
+      "depth": 2,
+      "expected": [
+        "ext-card-processor",
+        "ledger-service.production",
+        "payment-service.production",
+        "payment-service.staging",
+        "payout-worker.production",
+        "pg-ledger-prod",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "payout-worker.production",
+      "depth": 3,
+      "expected": [
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "ledger-service.production",
+        "order-service.production",
+        "order-service.staging",
+        "payment-service.production",
+        "payment-service.staging",
+        "payout-worker.production",
+        "pg-ledger-prod",
+        "pg-payments-prod",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "api-gateway.staging",
+      "depth": 1,
+      "expected": [
+        "api-gateway.staging",
+        "catalog-service.staging",
+        "order-service.staging"
+      ]
+    },
+    {
+      "centerId": "api-gateway.staging",
+      "depth": 2,
+      "expected": [
+        "api-gateway.staging",
+        "catalog-service.staging",
+        "order-service.staging",
+        "payment-service.staging",
+        "topic-orders-events-staging"
+      ]
+    },
+    {
+      "centerId": "api-gateway.staging",
+      "depth": 3,
+      "expected": [
+        "api-gateway.staging",
+        "catalog-service.staging",
+        "ext-card-processor",
+        "inventory-service.staging",
+        "order-service.staging",
+        "payment-service.staging",
+        "topic-orders-events-staging"
+      ]
+    },
+    {
+      "centerId": "catalog-service.staging",
+      "depth": 1,
+      "expected": [
+        "api-gateway.staging",
+        "catalog-service.staging"
+      ]
+    },
+    {
+      "centerId": "catalog-service.staging",
+      "depth": 2,
+      "expected": [
+        "api-gateway.staging",
+        "catalog-service.staging",
+        "order-service.staging"
+      ]
+    },
+    {
+      "centerId": "catalog-service.staging",
+      "depth": 3,
+      "expected": [
+        "api-gateway.staging",
+        "catalog-service.staging",
+        "order-service.staging",
+        "payment-service.staging",
+        "topic-orders-events-staging"
+      ]
+    },
+    {
+      "centerId": "order-service.staging",
+      "depth": 1,
+      "expected": [
+        "api-gateway.staging",
+        "order-service.staging",
+        "payment-service.staging",
+        "topic-orders-events-staging"
+      ]
+    },
+    {
+      "centerId": "order-service.staging",
+      "depth": 2,
+      "expected": [
+        "api-gateway.staging",
+        "catalog-service.staging",
+        "ext-card-processor",
+        "inventory-service.staging",
+        "order-service.staging",
+        "payment-service.staging",
+        "topic-orders-events-staging"
+      ]
+    },
+    {
+      "centerId": "order-service.staging",
+      "depth": 3,
+      "expected": [
+        "api-gateway.staging",
+        "catalog-service.staging",
+        "ext-card-processor",
+        "inventory-service.staging",
+        "order-service.staging",
+        "payment-service.production",
+        "payment-service.staging",
+        "payout-worker.production",
+        "topic-orders-events-staging"
+      ]
+    },
+    {
+      "centerId": "inventory-service.staging",
+      "depth": 1,
+      "expected": [
+        "inventory-service.staging",
+        "topic-orders-events-staging"
+      ]
+    },
+    {
+      "centerId": "inventory-service.staging",
+      "depth": 2,
+      "expected": [
+        "inventory-service.staging",
+        "order-service.staging",
+        "topic-orders-events-staging"
+      ]
+    },
+    {
+      "centerId": "inventory-service.staging",
+      "depth": 3,
+      "expected": [
+        "api-gateway.staging",
+        "inventory-service.staging",
+        "order-service.staging",
+        "payment-service.staging",
+        "topic-orders-events-staging"
+      ]
+    },
+    {
+      "centerId": "payment-service.staging",
+      "depth": 1,
+      "expected": [
+        "ext-card-processor",
+        "order-service.staging",
+        "payment-service.staging"
+      ]
+    },
+    {
+      "centerId": "payment-service.staging",
+      "depth": 2,
+      "expected": [
+        "api-gateway.staging",
+        "ext-card-processor",
+        "order-service.staging",
+        "payment-service.production",
+        "payment-service.staging",
+        "payout-worker.production",
+        "topic-orders-events-staging"
+      ]
+    },
+    {
+      "centerId": "payment-service.staging",
+      "depth": 3,
+      "expected": [
+        "api-gateway.staging",
+        "catalog-service.staging",
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "inventory-service.staging",
+        "ledger-service.production",
+        "order-service.production",
+        "order-service.staging",
+        "payment-service.production",
+        "payment-service.staging",
+        "payout-worker.production",
+        "pg-payments-prod",
+        "topic-orders-events-staging",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "catalog-service.development",
+      "depth": 1,
+      "expected": [
+        "catalog-service.development",
+        "order-service.development"
+      ]
+    },
+    {
+      "centerId": "catalog-service.development",
+      "depth": 2,
+      "expected": [
+        "catalog-service.development",
+        "order-service.development"
+      ]
+    },
+    {
+      "centerId": "catalog-service.development",
+      "depth": 3,
+      "expected": [
+        "catalog-service.development",
+        "order-service.development"
+      ]
+    },
+    {
+      "centerId": "order-service.development",
+      "depth": 1,
+      "expected": [
+        "catalog-service.development",
+        "order-service.development"
+      ]
+    },
+    {
+      "centerId": "order-service.development",
+      "depth": 2,
+      "expected": [
+        "catalog-service.development",
+        "order-service.development"
+      ]
+    },
+    {
+      "centerId": "order-service.development",
+      "depth": 3,
+      "expected": [
+        "catalog-service.development",
+        "order-service.development"
+      ]
+    },
+    {
+      "centerId": "aws-acct-commerce-prod",
+      "depth": 1,
+      "expected": [
+        "aws-acct-commerce-prod"
+      ]
+    },
+    {
+      "centerId": "aws-acct-commerce-prod",
+      "depth": 2,
+      "expected": [
+        "aws-acct-commerce-prod"
+      ]
+    },
+    {
+      "centerId": "aws-acct-commerce-prod",
+      "depth": 3,
+      "expected": [
+        "aws-acct-commerce-prod"
+      ]
+    },
+    {
+      "centerId": "aws-use1-prod",
+      "depth": 1,
+      "expected": [
+        "aws-use1-prod"
+      ]
+    },
+    {
+      "centerId": "aws-use1-prod",
+      "depth": 2,
+      "expected": [
+        "aws-use1-prod"
+      ]
+    },
+    {
+      "centerId": "aws-use1-prod",
+      "depth": 3,
+      "expected": [
+        "aws-use1-prod"
+      ]
+    },
+    {
+      "centerId": "eks-commerce-prod",
+      "depth": 1,
+      "expected": [
+        "eks-commerce-prod"
+      ]
+    },
+    {
+      "centerId": "eks-commerce-prod",
+      "depth": 2,
+      "expected": [
+        "eks-commerce-prod"
+      ]
+    },
+    {
+      "centerId": "eks-commerce-prod",
+      "depth": 3,
+      "expected": [
+        "eks-commerce-prod"
+      ]
+    },
+    {
+      "centerId": "ns-edge-prod",
+      "depth": 1,
+      "expected": [
+        "ns-edge-prod"
+      ]
+    },
+    {
+      "centerId": "ns-edge-prod",
+      "depth": 2,
+      "expected": [
+        "ns-edge-prod"
+      ]
+    },
+    {
+      "centerId": "ns-edge-prod",
+      "depth": 3,
+      "expected": [
+        "ns-edge-prod"
+      ]
+    },
+    {
+      "centerId": "ns-commerce-prod",
+      "depth": 1,
+      "expected": [
+        "ns-commerce-prod"
+      ]
+    },
+    {
+      "centerId": "ns-commerce-prod",
+      "depth": 2,
+      "expected": [
+        "ns-commerce-prod"
+      ]
+    },
+    {
+      "centerId": "ns-commerce-prod",
+      "depth": 3,
+      "expected": [
+        "ns-commerce-prod"
+      ]
+    },
+    {
+      "centerId": "rds-orders-prod",
+      "depth": 1,
+      "expected": [
+        "legacy-report-cron.production",
+        "order-service.production",
+        "rds-orders-prod"
+      ]
+    },
+    {
+      "centerId": "rds-orders-prod",
+      "depth": 2,
+      "expected": [
+        "api-gateway.production",
+        "inventory-service.production",
+        "legacy-report-cron.production",
+        "order-service.production",
+        "payment-service.production",
+        "rds-orders-prod",
+        "topic-orders-events-prod"
+      ]
+    },
+    {
+      "centerId": "rds-orders-prod",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "catalog-service.production",
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "inventory-service.production",
+        "legacy-report-cron.production",
+        "notification-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "pg-payments-prod",
+        "rds-inventory-prod",
+        "rds-orders-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod",
+        "topic-payments-events-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "rds-inventory-prod",
+      "depth": 1,
+      "expected": [
+        "inventory-service.production",
+        "rds-inventory-prod"
+      ]
+    },
+    {
+      "centerId": "rds-inventory-prod",
+      "depth": 2,
+      "expected": [
+        "inventory-service.production",
+        "order-service.production",
+        "rds-inventory-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod"
+      ]
+    },
+    {
+      "centerId": "rds-inventory-prod",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "catalog-service.production",
+        "inventory-service.production",
+        "notification-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "rds-inventory-prod",
+        "rds-orders-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod"
+      ]
+    },
+    {
+      "centerId": "redis-sessions-prod",
+      "depth": 1,
+      "expected": [
+        "auth-service.production",
+        "cart-service.production",
+        "redis-sessions-prod"
+      ]
+    },
+    {
+      "centerId": "redis-sessions-prod",
+      "depth": 2,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "redis-sessions-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "redis-sessions-prod",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "order-service.production",
+        "redis-sessions-prod",
+        "search-catalog-prod",
+        "topic-inventory-updates-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "aws-acct-commerce-nonprod",
+      "depth": 1,
+      "expected": [
+        "aws-acct-commerce-nonprod"
+      ]
+    },
+    {
+      "centerId": "aws-acct-commerce-nonprod",
+      "depth": 2,
+      "expected": [
+        "aws-acct-commerce-nonprod"
+      ]
+    },
+    {
+      "centerId": "aws-acct-commerce-nonprod",
+      "depth": 3,
+      "expected": [
+        "aws-acct-commerce-nonprod"
+      ]
+    },
+    {
+      "centerId": "aws-use1-nonprod",
+      "depth": 1,
+      "expected": [
+        "aws-use1-nonprod"
+      ]
+    },
+    {
+      "centerId": "aws-use1-nonprod",
+      "depth": 2,
+      "expected": [
+        "aws-use1-nonprod"
+      ]
+    },
+    {
+      "centerId": "aws-use1-nonprod",
+      "depth": 3,
+      "expected": [
+        "aws-use1-nonprod"
+      ]
+    },
+    {
+      "centerId": "eks-commerce-staging",
+      "depth": 1,
+      "expected": [
+        "eks-commerce-staging"
+      ]
+    },
+    {
+      "centerId": "eks-commerce-staging",
+      "depth": 2,
+      "expected": [
+        "eks-commerce-staging"
+      ]
+    },
+    {
+      "centerId": "eks-commerce-staging",
+      "depth": 3,
+      "expected": [
+        "eks-commerce-staging"
+      ]
+    },
+    {
+      "centerId": "ns-commerce-staging",
+      "depth": 1,
+      "expected": [
+        "ns-commerce-staging"
+      ]
+    },
+    {
+      "centerId": "ns-commerce-staging",
+      "depth": 2,
+      "expected": [
+        "ns-commerce-staging"
+      ]
+    },
+    {
+      "centerId": "ns-commerce-staging",
+      "depth": 3,
+      "expected": [
+        "ns-commerce-staging"
+      ]
+    },
+    {
+      "centerId": "eks-commerce-dev",
+      "depth": 1,
+      "expected": [
+        "eks-commerce-dev"
+      ]
+    },
+    {
+      "centerId": "eks-commerce-dev",
+      "depth": 2,
+      "expected": [
+        "eks-commerce-dev"
+      ]
+    },
+    {
+      "centerId": "eks-commerce-dev",
+      "depth": 3,
+      "expected": [
+        "eks-commerce-dev"
+      ]
+    },
+    {
+      "centerId": "ns-commerce-dev",
+      "depth": 1,
+      "expected": [
+        "ns-commerce-dev"
+      ]
+    },
+    {
+      "centerId": "ns-commerce-dev",
+      "depth": 2,
+      "expected": [
+        "ns-commerce-dev"
+      ]
+    },
+    {
+      "centerId": "ns-commerce-dev",
+      "depth": 3,
+      "expected": [
+        "ns-commerce-dev"
+      ]
+    },
+    {
+      "centerId": "az-sub-payments",
+      "depth": 1,
+      "expected": [
+        "az-sub-payments"
+      ]
+    },
+    {
+      "centerId": "az-sub-payments",
+      "depth": 2,
+      "expected": [
+        "az-sub-payments"
+      ]
+    },
+    {
+      "centerId": "az-sub-payments",
+      "depth": 3,
+      "expected": [
+        "az-sub-payments"
+      ]
+    },
+    {
+      "centerId": "az-weu",
+      "depth": 1,
+      "expected": [
+        "az-weu"
+      ]
+    },
+    {
+      "centerId": "az-weu",
+      "depth": 2,
+      "expected": [
+        "az-weu"
+      ]
+    },
+    {
+      "centerId": "az-weu",
+      "depth": 3,
+      "expected": [
+        "az-weu"
+      ]
+    },
+    {
+      "centerId": "aks-payments-prod",
+      "depth": 1,
+      "expected": [
+        "aks-payments-prod"
+      ]
+    },
+    {
+      "centerId": "aks-payments-prod",
+      "depth": 2,
+      "expected": [
+        "aks-payments-prod"
+      ]
+    },
+    {
+      "centerId": "aks-payments-prod",
+      "depth": 3,
+      "expected": [
+        "aks-payments-prod"
+      ]
+    },
+    {
+      "centerId": "ns-payments-prod",
+      "depth": 1,
+      "expected": [
+        "ns-payments-prod"
+      ]
+    },
+    {
+      "centerId": "ns-payments-prod",
+      "depth": 2,
+      "expected": [
+        "ns-payments-prod"
+      ]
+    },
+    {
+      "centerId": "ns-payments-prod",
+      "depth": 3,
+      "expected": [
+        "ns-payments-prod"
+      ]
+    },
+    {
+      "centerId": "ns-risk-prod",
+      "depth": 1,
+      "expected": [
+        "ns-risk-prod"
+      ]
+    },
+    {
+      "centerId": "ns-risk-prod",
+      "depth": 2,
+      "expected": [
+        "ns-risk-prod"
+      ]
+    },
+    {
+      "centerId": "ns-risk-prod",
+      "depth": 3,
+      "expected": [
+        "ns-risk-prod"
+      ]
+    },
+    {
+      "centerId": "pg-payments-prod",
+      "depth": 1,
+      "expected": [
+        "payment-service.production",
+        "pg-payments-prod"
+      ]
+    },
+    {
+      "centerId": "pg-payments-prod",
+      "depth": 2,
+      "expected": [
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "order-service.production",
+        "payment-service.production",
+        "pg-payments-prod",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "pg-payments-prod",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "inventory-service.production",
+        "ledger-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "payment-service.staging",
+        "payout-worker.production",
+        "pg-payments-prod",
+        "rds-orders-prod",
+        "topic-orders-events-prod",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "aks-payments-staging",
+      "depth": 1,
+      "expected": [
+        "aks-payments-staging"
+      ]
+    },
+    {
+      "centerId": "aks-payments-staging",
+      "depth": 2,
+      "expected": [
+        "aks-payments-staging"
+      ]
+    },
+    {
+      "centerId": "aks-payments-staging",
+      "depth": 3,
+      "expected": [
+        "aks-payments-staging"
+      ]
+    },
+    {
+      "centerId": "ns-payments-staging",
+      "depth": 1,
+      "expected": [
+        "ns-payments-staging"
+      ]
+    },
+    {
+      "centerId": "ns-payments-staging",
+      "depth": 2,
+      "expected": [
+        "ns-payments-staging"
+      ]
+    },
+    {
+      "centerId": "ns-payments-staging",
+      "depth": 3,
+      "expected": [
+        "ns-payments-staging"
+      ]
+    },
+    {
+      "centerId": "gcp-proj-data",
+      "depth": 1,
+      "expected": [
+        "gcp-proj-data"
+      ]
+    },
+    {
+      "centerId": "gcp-proj-data",
+      "depth": 2,
+      "expected": [
+        "gcp-proj-data"
+      ]
+    },
+    {
+      "centerId": "gcp-proj-data",
+      "depth": 3,
+      "expected": [
+        "gcp-proj-data"
+      ]
+    },
+    {
+      "centerId": "gcp-usc1",
+      "depth": 1,
+      "expected": [
+        "gcp-usc1"
+      ]
+    },
+    {
+      "centerId": "gcp-usc1",
+      "depth": 2,
+      "expected": [
+        "gcp-usc1"
+      ]
+    },
+    {
+      "centerId": "gcp-usc1",
+      "depth": 3,
+      "expected": [
+        "gcp-usc1"
+      ]
+    },
+    {
+      "centerId": "kafka-events-prod",
+      "depth": 1,
+      "expected": [
+        "kafka-events-prod"
+      ]
+    },
+    {
+      "centerId": "kafka-events-prod",
+      "depth": 2,
+      "expected": [
+        "kafka-events-prod"
+      ]
+    },
+    {
+      "centerId": "kafka-events-prod",
+      "depth": 3,
+      "expected": [
+        "kafka-events-prod"
+      ]
+    },
+    {
+      "centerId": "topic-orders-events-prod",
+      "depth": 1,
+      "expected": [
+        "inventory-service.production",
+        "notification-service.production",
+        "order-service.production",
+        "topic-orders-events-prod"
+      ]
+    },
+    {
+      "centerId": "topic-orders-events-prod",
+      "depth": 2,
+      "expected": [
+        "api-gateway.production",
+        "exchange-notifications-prod",
+        "inventory-service.production",
+        "notification-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "rds-inventory-prod",
+        "rds-orders-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod"
+      ]
+    },
+    {
+      "centerId": "topic-orders-events-prod",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "catalog-service.production",
+        "exchange-notifications-prod",
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "inventory-service.production",
+        "legacy-report-cron.production",
+        "notification-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "pg-payments-prod",
+        "queue-notifications-email-prod",
+        "rds-inventory-prod",
+        "rds-orders-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod",
+        "topic-payments-events-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "topic-inventory-updates-prod",
+      "depth": 1,
+      "expected": [
+        "catalog-service.production",
+        "inventory-service.production",
+        "topic-inventory-updates-prod"
+      ]
+    },
+    {
+      "centerId": "topic-inventory-updates-prod",
+      "depth": 2,
+      "expected": [
+        "api-gateway.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "inventory-service.production",
+        "order-service.production",
+        "rds-inventory-prod",
+        "search-catalog-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "topic-inventory-updates-prod",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "inventory-service.production",
+        "notification-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "rds-inventory-prod",
+        "rds-orders-prod",
+        "redis-sessions-prod",
+        "search-catalog-prod",
+        "topic-inventory-updates-prod",
+        "topic-orders-events-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "topic-payments-events-prod",
+      "depth": 1,
+      "expected": [
+        "ledger-service.production",
+        "payment-service.production",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "topic-payments-events-prod",
+      "depth": 2,
+      "expected": [
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "ledger-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "payout-worker.production",
+        "pg-ledger-prod",
+        "pg-payments-prod",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "topic-payments-events-prod",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "inventory-service.production",
+        "ledger-service.production",
+        "order-service.production",
+        "payment-service.production",
+        "payment-service.staging",
+        "payout-worker.production",
+        "pg-ledger-prod",
+        "pg-payments-prod",
+        "rds-orders-prod",
+        "topic-orders-events-prod",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "search-catalog-prod",
+      "depth": 1,
+      "expected": [
+        "catalog-service.production",
+        "search-catalog-prod"
+      ]
+    },
+    {
+      "centerId": "search-catalog-prod",
+      "depth": 2,
+      "expected": [
+        "api-gateway.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "search-catalog-prod",
+        "topic-inventory-updates-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "search-catalog-prod",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "auth-service.production",
+        "cart-service.production",
+        "catalog-service.production",
+        "inventory-service.production",
+        "order-service.production",
+        "redis-sessions-prod",
+        "search-catalog-prod",
+        "topic-inventory-updates-prod",
+        "web-bff.production"
+      ]
+    },
+    {
+      "centerId": "kafka-events-staging",
+      "depth": 1,
+      "expected": [
+        "kafka-events-staging"
+      ]
+    },
+    {
+      "centerId": "kafka-events-staging",
+      "depth": 2,
+      "expected": [
+        "kafka-events-staging"
+      ]
+    },
+    {
+      "centerId": "kafka-events-staging",
+      "depth": 3,
+      "expected": [
+        "kafka-events-staging"
+      ]
+    },
+    {
+      "centerId": "topic-orders-events-staging",
+      "depth": 1,
+      "expected": [
+        "inventory-service.staging",
+        "order-service.staging",
+        "topic-orders-events-staging"
+      ]
+    },
+    {
+      "centerId": "topic-orders-events-staging",
+      "depth": 2,
+      "expected": [
+        "api-gateway.staging",
+        "inventory-service.staging",
+        "order-service.staging",
+        "payment-service.staging",
+        "topic-orders-events-staging"
+      ]
+    },
+    {
+      "centerId": "topic-orders-events-staging",
+      "depth": 3,
+      "expected": [
+        "api-gateway.staging",
+        "catalog-service.staging",
+        "ext-card-processor",
+        "inventory-service.staging",
+        "order-service.staging",
+        "payment-service.staging",
+        "topic-orders-events-staging"
+      ]
+    },
+    {
+      "centerId": "dc-fra",
+      "depth": 1,
+      "expected": [
+        "dc-fra"
+      ]
+    },
+    {
+      "centerId": "dc-fra",
+      "depth": 2,
+      "expected": [
+        "dc-fra"
+      ]
+    },
+    {
+      "centerId": "dc-fra",
+      "depth": 3,
+      "expected": [
+        "dc-fra"
+      ]
+    },
+    {
+      "centerId": "k8s-fra-prod",
+      "depth": 1,
+      "expected": [
+        "k8s-fra-prod"
+      ]
+    },
+    {
+      "centerId": "k8s-fra-prod",
+      "depth": 2,
+      "expected": [
+        "k8s-fra-prod"
+      ]
+    },
+    {
+      "centerId": "k8s-fra-prod",
+      "depth": 3,
+      "expected": [
+        "k8s-fra-prod"
+      ]
+    },
+    {
+      "centerId": "ns-batch-prod",
+      "depth": 1,
+      "expected": [
+        "ns-batch-prod"
+      ]
+    },
+    {
+      "centerId": "ns-batch-prod",
+      "depth": 2,
+      "expected": [
+        "ns-batch-prod"
+      ]
+    },
+    {
+      "centerId": "ns-batch-prod",
+      "depth": 3,
+      "expected": [
+        "ns-batch-prod"
+      ]
+    },
+    {
+      "centerId": "ns-messaging-prod",
+      "depth": 1,
+      "expected": [
+        "ns-messaging-prod"
+      ]
+    },
+    {
+      "centerId": "ns-messaging-prod",
+      "depth": 2,
+      "expected": [
+        "ns-messaging-prod"
+      ]
+    },
+    {
+      "centerId": "ns-messaging-prod",
+      "depth": 3,
+      "expected": [
+        "ns-messaging-prod"
+      ]
+    },
+    {
+      "centerId": "rabbitmq-fra-prod",
+      "depth": 1,
+      "expected": [
+        "rabbitmq-fra-prod"
+      ]
+    },
+    {
+      "centerId": "rabbitmq-fra-prod",
+      "depth": 2,
+      "expected": [
+        "rabbitmq-fra-prod"
+      ]
+    },
+    {
+      "centerId": "rabbitmq-fra-prod",
+      "depth": 3,
+      "expected": [
+        "rabbitmq-fra-prod"
+      ]
+    },
+    {
+      "centerId": "exchange-notifications-prod",
+      "depth": 1,
+      "expected": [
+        "exchange-notifications-prod",
+        "notification-service.production",
+        "queue-notifications-email-prod"
+      ]
+    },
+    {
+      "centerId": "exchange-notifications-prod",
+      "depth": 2,
+      "expected": [
+        "email-dispatcher.production",
+        "exchange-notifications-prod",
+        "notification-service.production",
+        "queue-notifications-email-prod",
+        "topic-orders-events-prod"
+      ]
+    },
+    {
+      "centerId": "exchange-notifications-prod",
+      "depth": 3,
+      "expected": [
+        "email-dispatcher.production",
+        "exchange-notifications-prod",
+        "ext-email-delivery",
+        "inventory-service.production",
+        "notification-service.production",
+        "order-service.production",
+        "queue-notifications-email-prod",
+        "topic-orders-events-prod"
+      ]
+    },
+    {
+      "centerId": "queue-notifications-email-prod",
+      "depth": 1,
+      "expected": [
+        "email-dispatcher.production",
+        "exchange-notifications-prod",
+        "queue-notifications-email-prod"
+      ]
+    },
+    {
+      "centerId": "queue-notifications-email-prod",
+      "depth": 2,
+      "expected": [
+        "email-dispatcher.production",
+        "exchange-notifications-prod",
+        "ext-email-delivery",
+        "notification-service.production",
+        "queue-notifications-email-prod"
+      ]
+    },
+    {
+      "centerId": "queue-notifications-email-prod",
+      "depth": 3,
+      "expected": [
+        "email-dispatcher.production",
+        "exchange-notifications-prod",
+        "ext-email-delivery",
+        "notification-service.production",
+        "queue-notifications-email-prod",
+        "topic-orders-events-prod"
+      ]
+    },
+    {
+      "centerId": "pg-ledger-prod",
+      "depth": 1,
+      "expected": [
+        "ledger-service.production",
+        "pg-ledger-prod"
+      ]
+    },
+    {
+      "centerId": "pg-ledger-prod",
+      "depth": 2,
+      "expected": [
+        "ledger-service.production",
+        "payout-worker.production",
+        "pg-ledger-prod",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "pg-ledger-prod",
+      "depth": 3,
+      "expected": [
+        "ext-card-processor",
+        "ledger-service.production",
+        "payment-service.production",
+        "payout-worker.production",
+        "pg-ledger-prod",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "ext-card-processor",
+      "depth": 1,
+      "expected": [
+        "ext-card-processor",
+        "payment-service.production",
+        "payment-service.staging",
+        "payout-worker.production"
+      ]
+    },
+    {
+      "centerId": "ext-card-processor",
+      "depth": 2,
+      "expected": [
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "ledger-service.production",
+        "order-service.production",
+        "order-service.staging",
+        "payment-service.production",
+        "payment-service.staging",
+        "payout-worker.production",
+        "pg-payments-prod",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "ext-card-processor",
+      "depth": 3,
+      "expected": [
+        "api-gateway.production",
+        "api-gateway.staging",
+        "ext-card-processor",
+        "fraud-scoring.production",
+        "inventory-service.production",
+        "ledger-service.production",
+        "order-service.production",
+        "order-service.staging",
+        "payment-service.production",
+        "payment-service.staging",
+        "payout-worker.production",
+        "pg-ledger-prod",
+        "pg-payments-prod",
+        "rds-orders-prod",
+        "topic-orders-events-prod",
+        "topic-orders-events-staging",
+        "topic-payments-events-prod"
+      ]
+    },
+    {
+      "centerId": "ext-email-delivery",
+      "depth": 1,
+      "expected": [
+        "email-dispatcher.production",
+        "ext-email-delivery"
+      ]
+    },
+    {
+      "centerId": "ext-email-delivery",
+      "depth": 2,
+      "expected": [
+        "email-dispatcher.production",
+        "ext-email-delivery",
+        "queue-notifications-email-prod"
+      ]
+    },
+    {
+      "centerId": "ext-email-delivery",
+      "depth": 3,
+      "expected": [
+        "email-dispatcher.production",
+        "exchange-notifications-prod",
+        "ext-email-delivery",
+        "queue-notifications-email-prod"
+      ]
+    }
+  ]
+}

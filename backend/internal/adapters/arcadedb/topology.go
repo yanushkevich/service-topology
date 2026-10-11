@@ -3,12 +3,15 @@ package arcadedb
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"servicetopology/backend/internal/domain"
@@ -33,9 +36,19 @@ func (e *ValidationError) Error() string {
 }
 
 // TopologyRepository stores and reads the canonical topology. It implements ports.TopologyRepository.
+//
+// Reads are cached by revision: every import writes a new random revision to the TopologyState
+// document in the same transaction as the data, and every read first fetches the revision (one
+// indexed lookup) inside its read session. An unchanged revision returns the cached topology; a
+// changed one (also from another process, e.g. `seed load`) re-reads it. Returned data is shared and
+// must be treated as read-only.
 type TopologyRepository struct {
 	c   *Client
 	now func() time.Time
+
+	mu       sync.Mutex
+	revision string
+	cached   *domain.TopologyData
 }
 
 var _ ports.TopologyRepository = (*TopologyRepository)(nil)
@@ -198,6 +211,12 @@ func (r *TopologyRepository) ReplaceTopology(ctx context.Context, data *domain.T
 			}
 		}
 	}
+	var b [16]byte
+	_, _ = rand.Read(b[:])
+	if _, err := tx.Command(ctx, "UPDATE TopologyState SET id = 'topology', revision = :rev, recordedAt = :at UPSERT WHERE id = 'topology'",
+		map[string]any{"rev": hex.EncodeToString(b[:]), "at": recordedAt}); err != nil {
+		return res, err
+	}
 	return res, tx.Commit(ctx)
 }
 
@@ -213,6 +232,21 @@ func (r *TopologyRepository) GetTopology(ctx context.Context, environmentID doma
 		return nil, err
 	}
 	defer tx.Rollback()
+	rows, err := tx.Query(ctx, "SELECT revision FROM TopologyState WHERE id = 'topology'", nil)
+	if err != nil {
+		return nil, err
+	}
+	revision := ""
+	if len(rows) > 0 {
+		revision, _ = rows[0]["revision"].(string)
+	}
+	r.mu.Lock()
+	if revision != "" && revision == r.revision && r.cached != nil {
+		cached := r.cached
+		r.mu.Unlock()
+		return cached, nil
+	}
+	r.mu.Unlock()
 	data := &domain.TopologyData{}
 	reads := []struct {
 		from string
@@ -237,6 +271,11 @@ func (r *TopologyRepository) GetTopology(ctx context.Context, environmentID doma
 	// Collections are arrays in the contract; an absent event type list stays absent.
 	for _, p := range []any{&data.Environments, &data.ServiceDefinitions, &data.ServiceInstances, &data.Resources, &data.Relationships} {
 		ensureNonNil(p)
+	}
+	if revision != "" {
+		r.mu.Lock()
+		r.revision, r.cached = revision, data
+		r.mu.Unlock()
 	}
 	return data, nil
 }

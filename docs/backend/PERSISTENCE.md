@@ -46,6 +46,7 @@ Semantic names such as "publishes", "consumes", "routes to", or "calls" are **de
 - Unique `id` indexes on every vertex type, `COMMUNICATES`, and `SchemaInfo`; non-unique indexes on `ServiceInstance.environmentId`, `Resource.type`, `Resource.parentResourceId`.
 - Backend-only properties: `ord`, `recordedAt`, `sourceType`.
 - Imports replace the topology in one transaction; reads preserve collection order via `ord`.
+- B4 (schema v3): indexes on `COMMUNICATES.sourceEntityId`/`targetEntityId` (found by plan review); `TopologyState` document with the topology revision used for read caching (ADR-DB-003).
 
 ## Schema, constraints, and indexes
 Create repeatable, versioned schema initialization. At minimum, enforce uniqueness for resource IDs and other independently identified records where supported; add indexes for `environmentId`, `kind`, `name`, `sourceExternalId`, status/health, and timestamps only where query patterns justify them. Validate exact index/constraint syntax and uniqueness behavior for the selected ArcadeDB version in integration tests. Initializers must be idempotent and must not delete user data. Use additive migrations where possible and document breaking changes.

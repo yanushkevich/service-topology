@@ -145,6 +145,74 @@ func (d Deps) apiRoutes(mux *http.ServeMux) {
 		writeJSON(w, http.StatusOK, l)
 		return nil
 	})
+	h("GET /api/v1/topology/dependencies", func(w http.ResponseWriter, r *http.Request) error {
+		q := r.URL.Query()
+		maxDepth, err := intParam(q.Get("maxDepth"), "maxDepth")
+		if err != nil {
+			return err
+		}
+		limit, err := intParam(q.Get("limit"), "limit")
+		if err != nil {
+			return err
+		}
+		res, err := s.Dependencies(r.Context(), q.Get("entityId"), q.Get("direction"), maxDepth, limit)
+		if err != nil {
+			return err
+		}
+		writeJSON(w, http.StatusOK, res)
+		return nil
+	})
+	h("GET /api/v1/topology/neighborhood", func(w http.ResponseWriter, r *http.Request) error {
+		depth, err := intParam(r.URL.Query().Get("depth"), "depth")
+		if err != nil {
+			return err
+		}
+		res, err := s.Neighborhood(r.Context(), r.URL.Query().Get("entityId"), depth)
+		if err != nil {
+			return err
+		}
+		writeJSON(w, http.StatusOK, res)
+		return nil
+	})
+	h("GET /api/v1/topology/impact", func(w http.ResponseWriter, r *http.Request) error {
+		q := r.URL.Query()
+		mode := q.Get("mode")
+		if mode == "" {
+			mode = domain.FailureUnavailable
+		}
+		var roots []domain.FailureRoot
+		for _, id := range strings.Split(q.Get("entityId"), ",") {
+			if id != "" {
+				roots = append(roots, domain.FailureRoot{EntityID: id, Mode: mode})
+			}
+		}
+		res, err := s.Impact(r.Context(), roots)
+		if err != nil {
+			return err
+		}
+		writeJSON(w, http.StatusOK, res)
+		return nil
+	})
+	h("GET /api/v1/propagation-rules", func(w http.ResponseWriter, r *http.Request) error {
+		writeJSON(w, http.StatusOK, map[string]any{"items": domain.PropagationRules})
+		return nil
+	})
+	h("GET /api/v1/event-types", func(w http.ResponseWriter, r *http.Request) error {
+		flows, err := s.EventTypes(r.Context(), r.URL.Query().Get("environmentId"))
+		if err != nil {
+			return err
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": flows})
+		return nil
+	})
+	h("GET /api/v1/event-types/{id}", func(w http.ResponseWriter, r *http.Request) error {
+		flow, err := s.EventType(r.Context(), r.PathValue("id"), r.URL.Query().Get("environmentId"))
+		if err != nil {
+			return err
+		}
+		writeJSON(w, http.StatusOK, flow)
+		return nil
+	})
 	h("DELETE /api/v1/layouts/{id}", func(w http.ResponseWriter, r *http.Request) error {
 		if err := s.DeleteLayout(r.Context(), r.PathValue("id")); err != nil {
 			return err
@@ -152,6 +220,18 @@ func (d Deps) apiRoutes(mux *http.ServeMux) {
 		w.WriteHeader(http.StatusNoContent)
 		return nil
 	})
+}
+
+// intParam parses an optional positive integer parameter (0 when absent).
+func intParam(raw, name string) (int, error) {
+	if raw == "" {
+		return 0, nil
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n < 1 {
+		return 0, &application.ErrInvalid{Param: name, Reason: "must be a positive integer"}
+	}
+	return n, nil
 }
 
 // listParam parses a comma-separated list parameter (OpenAPI style: form, explode: false) and

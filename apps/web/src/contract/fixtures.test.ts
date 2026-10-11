@@ -5,7 +5,11 @@ import { describe, expect, it } from 'vitest';
 import { mockSnapshots } from '../data/mock/snapshots';
 import { mockTopology } from '../data/mock/topology';
 import { buildRegistryRows, filterRegistryRows, REGISTRY_SORT_KEYS, sortRegistryRows, type EntityFilters, type RegistryRow } from '../domain/registry';
+import { eventFlowsIn } from '../domain/eventFlow';
+import { analyzeImpact, type FailureMode } from '../domain/propagation';
 import { buildTopologyIndex } from '../domain/topologyIndex';
+import { dependencyTree, HIGHLIGHT_MODES, neighborhood, reachFrom } from '../domain/traversal';
+import { generateTopology, INVENTORY_1000, SCALE_250 } from '../data/mock/generateTopology';
 import type { TopologyData } from '../domain/types';
 import { validateTopology, type ValidationIssue } from '../domain/validation';
 
@@ -215,7 +219,53 @@ function files(): Record<string, string> {
   }
   for (const [path, value] of Object.entries(registryCases())) out[path] = json(value);
   for (const snapshot of mockSnapshots()) out[`snapshots/${snapshot.id}.v1.json`] = json(snapshot);
+  for (const [path, value] of Object.entries(traversalCases())) out[path] = json(value);
+  out['topology/scale-250.v1.json'] = json(generateTopology(SCALE_250));
+  out['topology/inventory-1000.v1.json'] = json(generateTopology(INVENTORY_1000));
   return out;
+}
+
+/** Traversal, propagation, and event-flow results of the TypeScript reference on the mock topology. */
+function traversalCases(): Record<string, unknown> {
+  const index = buildTopologyIndex(mockTopology);
+  const entities = [...mockTopology.serviceInstances.map((i) => i.id), ...mockTopology.resources.map((r) => r.id)];
+  const sorted = (ids: Iterable<string>) => [...ids].sort();
+  const topology = 'topology/mock.v1.json';
+  const modes: FailureMode[] = ['unavailable', 'degraded'];
+  return {
+    'conformance/traversal/dependency-trees.json': {
+      topology,
+      cases: entities.flatMap((id) => (['upstream', 'downstream'] as const).map((direction) => ({ entityId: id, direction, expected: dependencyTree(index, id, direction) }))),
+    },
+    'conformance/traversal/neighborhoods.json': {
+      topology,
+      cases: entities.flatMap((id) => [1, 2, 3].map((depth) => ({ centerId: id, depth, expected: sorted(neighborhood(index, id, depth)) }))),
+    },
+    'conformance/traversal/reach.json': {
+      topology,
+      cases: entities.flatMap((id) =>
+        HIGHLIGHT_MODES.map((mode) => {
+          const reach = reachFrom(index, id, mode);
+          return { startId: id, mode, expected: { entityIds: sorted(reach.entityIds), relationshipIds: sorted(reach.relationshipIds) } };
+        }),
+      ),
+    },
+    'conformance/impact/impacts.json': {
+      topology,
+      cases: [
+        ...entities.flatMap((id) => modes.map((mode) => ({ roots: [{ entityId: id, mode }], expected: analyzeImpact(index, [{ entityId: id, mode }]) }))),
+        ...[
+          [{ entityId: 'payment-service.production', mode: 'unavailable' as const }, { entityId: 'topic-orders-events-prod', mode: 'unavailable' as const }],
+          [{ entityId: 'eks-commerce-prod', mode: 'unavailable' as const }, { entityId: 'rds-orders-prod', mode: 'degraded' as const }],
+          [{ entityId: 'rds-inventory-prod', mode: 'degraded' as const }, { entityId: 'inventory-service.production', mode: 'unavailable' as const }],
+        ].map((roots) => ({ roots, expected: analyzeImpact(index, roots) })),
+      ],
+    },
+    'conformance/eventflows/flows.json': {
+      topology,
+      cases: mockTopology.environments.map((e) => ({ environmentId: e.id, expected: eventFlowsIn(index, e.id) })),
+    },
+  };
 }
 
 describe('shared fixtures (fixtures/)', () => {

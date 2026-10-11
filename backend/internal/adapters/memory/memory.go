@@ -155,3 +155,53 @@ func (l layouts) Remove(_ context.Context, id string) error {
 	delete(l.s.layouts, id)
 	return nil
 }
+
+// Subgraph implements ports.GraphRepository with a bounded BFS over the in-memory topology.
+func (s *Store) Subgraph(_ context.Context, startID domain.EntityID, direction string, maxDepth, maxEntities int) (*ports.Subgraph, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.Err != nil {
+		return nil, s.Err
+	}
+	ix := domain.BuildIndex(s.Data)
+	if ix.Instances[startID] == nil && ix.Resources[startID] == nil {
+		return nil, ports.ErrNotFound
+	}
+	seen := map[domain.EntityID]bool{startID: true}
+	order := []domain.EntityID{startID}
+	frontier := []domain.EntityID{startID}
+	for d := 0; d < maxDepth && len(frontier) > 0; d++ {
+		var next []domain.EntityID
+		for _, id := range frontier {
+			var peers []domain.EntityID
+			if direction != ports.DirectionDownstream {
+				for _, r := range ix.Outgoing[id] {
+					peers = append(peers, r.TargetEntityID)
+				}
+			}
+			if direction != ports.DirectionUpstream {
+				for _, r := range ix.Incoming[id] {
+					peers = append(peers, r.SourceEntityID)
+				}
+			}
+			for _, p := range peers {
+				if !seen[p] {
+					seen[p] = true
+					order = append(order, p)
+					next = append(next, p)
+				}
+			}
+		}
+		frontier = next
+	}
+	if len(order) > maxEntities {
+		return nil, ports.ErrTooLarge
+	}
+	sub := &ports.Subgraph{StartID: startID, EntityIDs: order, Relationships: []domain.CommunicationRelationship{}}
+	for _, r := range s.Data.Relationships {
+		if seen[r.SourceEntityID] && seen[r.TargetEntityID] {
+			sub.Relationships = append(sub.Relationships, r)
+		}
+	}
+	return sub, nil
+}

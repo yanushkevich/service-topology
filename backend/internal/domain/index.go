@@ -11,6 +11,8 @@ type Index struct {
 	Relationships         map[EntityID]*CommunicationRelationship
 	EventTypes            map[EntityID]*EventType
 	InstancesByDefinition map[EntityID][]*ServiceInstance
+	InstancesByResource   map[EntityID][]*ServiceInstance
+	ChildResources        map[EntityID][]*InfrastructureResource
 	// Outgoing and Incoming hold relationships keyed by source and target entity.
 	Outgoing map[EntityID][]*CommunicationRelationship
 	Incoming map[EntityID][]*CommunicationRelationship
@@ -27,6 +29,8 @@ func BuildIndex(data *TopologyData) *Index {
 		Relationships:         make(map[EntityID]*CommunicationRelationship, len(data.Relationships)),
 		EventTypes:            make(map[EntityID]*EventType, len(data.EventTypes)),
 		InstancesByDefinition: map[EntityID][]*ServiceInstance{},
+		InstancesByResource:   map[EntityID][]*ServiceInstance{},
+		ChildResources:        map[EntityID][]*InfrastructureResource{},
 		Outgoing:              map[EntityID][]*CommunicationRelationship{},
 		Incoming:              map[EntityID][]*CommunicationRelationship{},
 	}
@@ -40,9 +44,16 @@ func BuildIndex(data *TopologyData) *Index {
 		inst := &data.ServiceInstances[i]
 		ix.Instances[inst.ID] = inst
 		ix.InstancesByDefinition[inst.ServiceDefinitionID] = append(ix.InstancesByDefinition[inst.ServiceDefinitionID], inst)
+		if inst.ResourceID != nil {
+			ix.InstancesByResource[*inst.ResourceID] = append(ix.InstancesByResource[*inst.ResourceID], inst)
+		}
 	}
 	for i := range data.Resources {
-		ix.Resources[data.Resources[i].ID] = &data.Resources[i]
+		r := &data.Resources[i]
+		ix.Resources[r.ID] = r
+		if r.ParentResourceID != nil {
+			ix.ChildResources[*r.ParentResourceID] = append(ix.ChildResources[*r.ParentResourceID], r)
+		}
 	}
 	for i := range data.Relationships {
 		r := &data.Relationships[i]

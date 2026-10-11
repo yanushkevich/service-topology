@@ -1,0 +1,5855 @@
+{
+  "topology": "topology/mock.v1.json",
+  "cases": [
+    {
+      "roots": [
+        {
+          "entityId": "api-gateway.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "api-gateway.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "web-bff.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "web-bff.production",
+          "viaRelationshipId": "rel:api-gateway.production->web-bff.production",
+          "causeId": "web-bff.production",
+          "path": [
+            "web-bff.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "web-bff.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "web-bff.production",
+          "viaRelationshipId": "rel:api-gateway.production->web-bff.production",
+          "causeId": "web-bff.production",
+          "path": [
+            "web-bff.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "auth-service.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "auth-service.production",
+          "viaRelationshipId": "rel:api-gateway.production->auth-service.production",
+          "causeId": "auth-service.production",
+          "path": [
+            "auth-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "auth-service.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "auth-service.production",
+          "viaRelationshipId": "rel:api-gateway.production->auth-service.production",
+          "causeId": "auth-service.production",
+          "path": [
+            "auth-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "cart-service.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "web-bff.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "cart-service.production",
+          "viaRelationshipId": "rel:web-bff.production->cart-service.production",
+          "causeId": "cart-service.production",
+          "path": [
+            "cart-service.production",
+            "web-bff.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "cart-service.production",
+          "viaRelationshipId": "rel:api-gateway.production->web-bff.production",
+          "causeId": "web-bff.production",
+          "path": [
+            "cart-service.production",
+            "web-bff.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "cart-service.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "web-bff.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "cart-service.production",
+          "viaRelationshipId": "rel:web-bff.production->cart-service.production",
+          "causeId": "cart-service.production",
+          "path": [
+            "cart-service.production",
+            "web-bff.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "cart-service.production",
+          "viaRelationshipId": "rel:api-gateway.production->web-bff.production",
+          "causeId": "web-bff.production",
+          "path": [
+            "cart-service.production",
+            "web-bff.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "catalog-service.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "catalog-service.production",
+          "viaRelationshipId": "rel:api-gateway.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "catalog-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "cart-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "catalog-service.production",
+          "viaRelationshipId": "rel:cart-service.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "catalog-service.production",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "catalog-service.production",
+          "viaRelationshipId": "rel:topic-inventory-updates-prod->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "catalog-service.production",
+            "topic-inventory-updates-prod"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "catalog-service.production",
+          "viaRelationshipId": "rel:web-bff.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "catalog-service.production",
+            "web-bff.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "catalog-service.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "catalog-service.production",
+          "viaRelationshipId": "rel:api-gateway.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "catalog-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "cart-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "catalog-service.production",
+          "viaRelationshipId": "rel:cart-service.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "catalog-service.production",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "catalog-service.production",
+          "viaRelationshipId": "rel:web-bff.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "catalog-service.production",
+            "web-bff.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "order-service.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "order-service.production",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "order-service.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "order-service.production",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "inventory-service.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "inventory-service.production",
+          "viaRelationshipId": "rel:order-service.production->inventory-service.production",
+          "causeId": "inventory-service.production",
+          "path": [
+            "inventory-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "inventory-service.production",
+          "viaRelationshipId": "rel:topic-orders-events-prod->inventory-service.production",
+          "causeId": "inventory-service.production",
+          "path": [
+            "inventory-service.production",
+            "topic-orders-events-prod"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "inventory-service.production",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "inventory-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "inventory-service.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "inventory-service.production",
+          "viaRelationshipId": "rel:order-service.production->inventory-service.production",
+          "causeId": "inventory-service.production",
+          "path": [
+            "inventory-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "inventory-service.production",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "inventory-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "notification-service.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "topic-orders-events-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "notification-service.production",
+          "viaRelationshipId": "rel:topic-orders-events-prod->notification-service.production",
+          "causeId": "notification-service.production",
+          "path": [
+            "notification-service.production",
+            "topic-orders-events-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "notification-service.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "email-dispatcher.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "queue-notifications-email-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "email-dispatcher.production",
+          "viaRelationshipId": "rel:queue-notifications-email-prod->email-dispatcher.production",
+          "causeId": "email-dispatcher.production",
+          "path": [
+            "email-dispatcher.production",
+            "queue-notifications-email-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "email-dispatcher.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "legacy-report-cron.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "legacy-report-cron.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "payment-service.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "payment-service.production",
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "causeId": "payment-service.production",
+          "path": [
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "payment-service.production",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "payment-service.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "payment-service.production",
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "causeId": "payment-service.production",
+          "path": [
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "payment-service.production",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "fraud-scoring.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "payment-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "fraud-scoring.production",
+          "viaRelationshipId": "rel:payment-service.production->fraud-scoring.production",
+          "causeId": "fraud-scoring.production",
+          "path": [
+            "fraud-scoring.production",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "fraud-scoring.production",
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "causeId": "payment-service.production",
+          "path": [
+            "fraud-scoring.production",
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "fraud-scoring.production",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "fraud-scoring.production",
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "fraud-scoring.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "payment-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "fraud-scoring.production",
+          "viaRelationshipId": "rel:payment-service.production->fraud-scoring.production",
+          "causeId": "fraud-scoring.production",
+          "path": [
+            "fraud-scoring.production",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "fraud-scoring.production",
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "causeId": "payment-service.production",
+          "path": [
+            "fraud-scoring.production",
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "fraud-scoring.production",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "fraud-scoring.production",
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ledger-service.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "payout-worker.production",
+          "effect": "degraded",
+          "ruleId": "scheduled-job",
+          "rootId": "ledger-service.production",
+          "viaRelationshipId": "rel:payout-worker.production->ledger-service.production",
+          "causeId": "ledger-service.production",
+          "path": [
+            "ledger-service.production",
+            "payout-worker.production"
+          ]
+        },
+        {
+          "entityId": "topic-payments-events-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "ledger-service.production",
+          "viaRelationshipId": "rel:topic-payments-events-prod->ledger-service.production",
+          "causeId": "ledger-service.production",
+          "path": [
+            "ledger-service.production",
+            "topic-payments-events-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ledger-service.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "payout-worker.production",
+          "effect": "degraded",
+          "ruleId": "scheduled-job",
+          "rootId": "ledger-service.production",
+          "viaRelationshipId": "rel:payout-worker.production->ledger-service.production",
+          "causeId": "ledger-service.production",
+          "path": [
+            "ledger-service.production",
+            "payout-worker.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "payout-worker.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "payout-worker.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "api-gateway.staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "api-gateway.staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "catalog-service.staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "catalog-service.staging",
+          "viaRelationshipId": "rel:api-gateway.staging->catalog-service.staging",
+          "causeId": "catalog-service.staging",
+          "path": [
+            "catalog-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "catalog-service.staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "catalog-service.staging",
+          "viaRelationshipId": "rel:api-gateway.staging->catalog-service.staging",
+          "causeId": "catalog-service.staging",
+          "path": [
+            "catalog-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "order-service.staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "order-service.staging",
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "causeId": "order-service.staging",
+          "path": [
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "order-service.staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "order-service.staging",
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "causeId": "order-service.staging",
+          "path": [
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "inventory-service.staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "topic-orders-events-staging",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "inventory-service.staging",
+          "viaRelationshipId": "rel:topic-orders-events-staging->inventory-service.staging",
+          "causeId": "inventory-service.staging",
+          "path": [
+            "inventory-service.staging",
+            "topic-orders-events-staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "inventory-service.staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "payment-service.staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "order-service.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "payment-service.staging",
+          "viaRelationshipId": "rel:order-service.staging->payment-service.staging",
+          "causeId": "payment-service.staging",
+          "path": [
+            "payment-service.staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "payment-service.staging",
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "causeId": "order-service.staging",
+          "path": [
+            "payment-service.staging",
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "payment-service.staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "order-service.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "payment-service.staging",
+          "viaRelationshipId": "rel:order-service.staging->payment-service.staging",
+          "causeId": "payment-service.staging",
+          "path": [
+            "payment-service.staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "payment-service.staging",
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "causeId": "order-service.staging",
+          "path": [
+            "payment-service.staging",
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "catalog-service.development",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "order-service.development",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "catalog-service.development",
+          "viaRelationshipId": "rel:order-service.development->catalog-service.development",
+          "causeId": "catalog-service.development",
+          "path": [
+            "catalog-service.development",
+            "order-service.development"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "catalog-service.development",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "order-service.development",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "catalog-service.development",
+          "viaRelationshipId": "rel:order-service.development->catalog-service.development",
+          "causeId": "catalog-service.development",
+          "path": [
+            "catalog-service.development",
+            "order-service.development"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "order-service.development",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "order-service.development",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aws-acct-commerce-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-prod",
+          "causeId": "aws-acct-commerce-prod",
+          "path": [
+            "aws-acct-commerce-prod",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "auth-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-prod",
+          "causeId": "aws-acct-commerce-prod",
+          "path": [
+            "aws-acct-commerce-prod",
+            "auth-service.production"
+          ]
+        },
+        {
+          "entityId": "aws-use1-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-prod",
+          "causeId": "aws-acct-commerce-prod",
+          "path": [
+            "aws-acct-commerce-prod",
+            "aws-use1-prod"
+          ]
+        },
+        {
+          "entityId": "cart-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-prod",
+          "causeId": "aws-acct-commerce-prod",
+          "path": [
+            "aws-acct-commerce-prod",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "catalog-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-prod",
+          "causeId": "aws-acct-commerce-prod",
+          "path": [
+            "aws-acct-commerce-prod",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "eks-commerce-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-prod",
+          "causeId": "aws-acct-commerce-prod",
+          "path": [
+            "aws-acct-commerce-prod",
+            "eks-commerce-prod"
+          ]
+        },
+        {
+          "entityId": "inventory-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-prod",
+          "causeId": "aws-acct-commerce-prod",
+          "path": [
+            "aws-acct-commerce-prod",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "ns-commerce-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-prod",
+          "causeId": "aws-acct-commerce-prod",
+          "path": [
+            "aws-acct-commerce-prod",
+            "ns-commerce-prod"
+          ]
+        },
+        {
+          "entityId": "ns-edge-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-prod",
+          "causeId": "aws-acct-commerce-prod",
+          "path": [
+            "aws-acct-commerce-prod",
+            "ns-edge-prod"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-prod",
+          "causeId": "aws-acct-commerce-prod",
+          "path": [
+            "aws-acct-commerce-prod",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "rds-inventory-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-prod",
+          "causeId": "aws-acct-commerce-prod",
+          "path": [
+            "aws-acct-commerce-prod",
+            "rds-inventory-prod"
+          ]
+        },
+        {
+          "entityId": "rds-orders-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-prod",
+          "causeId": "aws-acct-commerce-prod",
+          "path": [
+            "aws-acct-commerce-prod",
+            "rds-orders-prod"
+          ]
+        },
+        {
+          "entityId": "redis-sessions-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-prod",
+          "causeId": "aws-acct-commerce-prod",
+          "path": [
+            "aws-acct-commerce-prod",
+            "redis-sessions-prod"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-prod",
+          "causeId": "aws-acct-commerce-prod",
+          "path": [
+            "aws-acct-commerce-prod",
+            "web-bff.production"
+          ]
+        },
+        {
+          "entityId": "legacy-report-cron.production",
+          "effect": "degraded",
+          "ruleId": "scheduled-job",
+          "rootId": "aws-acct-commerce-prod",
+          "viaRelationshipId": "rel:legacy-report-cron.production->rds-orders-prod",
+          "causeId": "rds-orders-prod",
+          "path": [
+            "aws-acct-commerce-prod",
+            "rds-orders-prod",
+            "legacy-report-cron.production"
+          ]
+        },
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "aws-acct-commerce-prod",
+          "viaRelationshipId": "rel:topic-inventory-updates-prod->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "aws-acct-commerce-prod",
+            "catalog-service.production",
+            "topic-inventory-updates-prod"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "aws-acct-commerce-prod",
+          "viaRelationshipId": "rel:topic-orders-events-prod->inventory-service.production",
+          "causeId": "inventory-service.production",
+          "path": [
+            "aws-acct-commerce-prod",
+            "inventory-service.production",
+            "topic-orders-events-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aws-acct-commerce-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aws-use1-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-prod",
+          "causeId": "aws-use1-prod",
+          "path": [
+            "aws-use1-prod",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "auth-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-prod",
+          "causeId": "aws-use1-prod",
+          "path": [
+            "aws-use1-prod",
+            "auth-service.production"
+          ]
+        },
+        {
+          "entityId": "cart-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-prod",
+          "causeId": "aws-use1-prod",
+          "path": [
+            "aws-use1-prod",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "catalog-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-prod",
+          "causeId": "aws-use1-prod",
+          "path": [
+            "aws-use1-prod",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "eks-commerce-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-prod",
+          "causeId": "aws-use1-prod",
+          "path": [
+            "aws-use1-prod",
+            "eks-commerce-prod"
+          ]
+        },
+        {
+          "entityId": "inventory-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-prod",
+          "causeId": "aws-use1-prod",
+          "path": [
+            "aws-use1-prod",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "ns-commerce-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-prod",
+          "causeId": "aws-use1-prod",
+          "path": [
+            "aws-use1-prod",
+            "ns-commerce-prod"
+          ]
+        },
+        {
+          "entityId": "ns-edge-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-prod",
+          "causeId": "aws-use1-prod",
+          "path": [
+            "aws-use1-prod",
+            "ns-edge-prod"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-prod",
+          "causeId": "aws-use1-prod",
+          "path": [
+            "aws-use1-prod",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "rds-inventory-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-prod",
+          "causeId": "aws-use1-prod",
+          "path": [
+            "aws-use1-prod",
+            "rds-inventory-prod"
+          ]
+        },
+        {
+          "entityId": "rds-orders-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-prod",
+          "causeId": "aws-use1-prod",
+          "path": [
+            "aws-use1-prod",
+            "rds-orders-prod"
+          ]
+        },
+        {
+          "entityId": "redis-sessions-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-prod",
+          "causeId": "aws-use1-prod",
+          "path": [
+            "aws-use1-prod",
+            "redis-sessions-prod"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-prod",
+          "causeId": "aws-use1-prod",
+          "path": [
+            "aws-use1-prod",
+            "web-bff.production"
+          ]
+        },
+        {
+          "entityId": "legacy-report-cron.production",
+          "effect": "degraded",
+          "ruleId": "scheduled-job",
+          "rootId": "aws-use1-prod",
+          "viaRelationshipId": "rel:legacy-report-cron.production->rds-orders-prod",
+          "causeId": "rds-orders-prod",
+          "path": [
+            "aws-use1-prod",
+            "rds-orders-prod",
+            "legacy-report-cron.production"
+          ]
+        },
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "aws-use1-prod",
+          "viaRelationshipId": "rel:topic-inventory-updates-prod->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "aws-use1-prod",
+            "catalog-service.production",
+            "topic-inventory-updates-prod"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "aws-use1-prod",
+          "viaRelationshipId": "rel:topic-orders-events-prod->inventory-service.production",
+          "causeId": "inventory-service.production",
+          "path": [
+            "aws-use1-prod",
+            "inventory-service.production",
+            "topic-orders-events-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aws-use1-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "eks-commerce-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-prod",
+          "causeId": "eks-commerce-prod",
+          "path": [
+            "eks-commerce-prod",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "auth-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-prod",
+          "causeId": "eks-commerce-prod",
+          "path": [
+            "eks-commerce-prod",
+            "auth-service.production"
+          ]
+        },
+        {
+          "entityId": "cart-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-prod",
+          "causeId": "eks-commerce-prod",
+          "path": [
+            "eks-commerce-prod",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "catalog-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-prod",
+          "causeId": "eks-commerce-prod",
+          "path": [
+            "eks-commerce-prod",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "inventory-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-prod",
+          "causeId": "eks-commerce-prod",
+          "path": [
+            "eks-commerce-prod",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "ns-commerce-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-prod",
+          "causeId": "eks-commerce-prod",
+          "path": [
+            "eks-commerce-prod",
+            "ns-commerce-prod"
+          ]
+        },
+        {
+          "entityId": "ns-edge-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-prod",
+          "causeId": "eks-commerce-prod",
+          "path": [
+            "eks-commerce-prod",
+            "ns-edge-prod"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-prod",
+          "causeId": "eks-commerce-prod",
+          "path": [
+            "eks-commerce-prod",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-prod",
+          "causeId": "eks-commerce-prod",
+          "path": [
+            "eks-commerce-prod",
+            "web-bff.production"
+          ]
+        },
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "eks-commerce-prod",
+          "viaRelationshipId": "rel:topic-inventory-updates-prod->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "eks-commerce-prod",
+            "catalog-service.production",
+            "topic-inventory-updates-prod"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "eks-commerce-prod",
+          "viaRelationshipId": "rel:topic-orders-events-prod->inventory-service.production",
+          "causeId": "inventory-service.production",
+          "path": [
+            "eks-commerce-prod",
+            "inventory-service.production",
+            "topic-orders-events-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "eks-commerce-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-edge-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-edge-prod",
+          "causeId": "ns-edge-prod",
+          "path": [
+            "ns-edge-prod",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "auth-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-edge-prod",
+          "causeId": "ns-edge-prod",
+          "path": [
+            "ns-edge-prod",
+            "auth-service.production"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-edge-prod",
+          "causeId": "ns-edge-prod",
+          "path": [
+            "ns-edge-prod",
+            "web-bff.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-edge-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-commerce-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "cart-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-commerce-prod",
+          "causeId": "ns-commerce-prod",
+          "path": [
+            "ns-commerce-prod",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "catalog-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-commerce-prod",
+          "causeId": "ns-commerce-prod",
+          "path": [
+            "ns-commerce-prod",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "inventory-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-commerce-prod",
+          "causeId": "ns-commerce-prod",
+          "path": [
+            "ns-commerce-prod",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-commerce-prod",
+          "causeId": "ns-commerce-prod",
+          "path": [
+            "ns-commerce-prod",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ns-commerce-prod",
+          "viaRelationshipId": "rel:api-gateway.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "ns-commerce-prod",
+            "catalog-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "ns-commerce-prod",
+          "viaRelationshipId": "rel:topic-inventory-updates-prod->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "ns-commerce-prod",
+            "catalog-service.production",
+            "topic-inventory-updates-prod"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "ns-commerce-prod",
+          "viaRelationshipId": "rel:topic-orders-events-prod->inventory-service.production",
+          "causeId": "inventory-service.production",
+          "path": [
+            "ns-commerce-prod",
+            "inventory-service.production",
+            "topic-orders-events-prod"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ns-commerce-prod",
+          "viaRelationshipId": "rel:web-bff.production->cart-service.production",
+          "causeId": "cart-service.production",
+          "path": [
+            "ns-commerce-prod",
+            "cart-service.production",
+            "web-bff.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-commerce-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "rds-orders-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "legacy-report-cron.production",
+          "effect": "degraded",
+          "ruleId": "scheduled-job",
+          "rootId": "rds-orders-prod",
+          "viaRelationshipId": "rel:legacy-report-cron.production->rds-orders-prod",
+          "causeId": "rds-orders-prod",
+          "path": [
+            "rds-orders-prod",
+            "legacy-report-cron.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "data-access",
+          "rootId": "rds-orders-prod",
+          "viaRelationshipId": "rel:order-service.production->rds-orders-prod",
+          "causeId": "rds-orders-prod",
+          "path": [
+            "rds-orders-prod",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "rds-orders-prod",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "rds-orders-prod",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "rds-orders-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "legacy-report-cron.production",
+          "effect": "degraded",
+          "ruleId": "scheduled-job",
+          "rootId": "rds-orders-prod",
+          "viaRelationshipId": "rel:legacy-report-cron.production->rds-orders-prod",
+          "causeId": "rds-orders-prod",
+          "path": [
+            "rds-orders-prod",
+            "legacy-report-cron.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "data-access",
+          "rootId": "rds-orders-prod",
+          "viaRelationshipId": "rel:order-service.production->rds-orders-prod",
+          "causeId": "rds-orders-prod",
+          "path": [
+            "rds-orders-prod",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "rds-orders-prod",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "rds-orders-prod",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "rds-inventory-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "inventory-service.production",
+          "effect": "degraded",
+          "ruleId": "data-access",
+          "rootId": "rds-inventory-prod",
+          "viaRelationshipId": "rel:inventory-service.production->rds-inventory-prod",
+          "causeId": "rds-inventory-prod",
+          "path": [
+            "rds-inventory-prod",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "rds-inventory-prod",
+          "viaRelationshipId": "rel:order-service.production->inventory-service.production",
+          "causeId": "inventory-service.production",
+          "path": [
+            "rds-inventory-prod",
+            "inventory-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "rds-inventory-prod",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "rds-inventory-prod",
+            "inventory-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "rds-inventory-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "inventory-service.production",
+          "effect": "degraded",
+          "ruleId": "data-access",
+          "rootId": "rds-inventory-prod",
+          "viaRelationshipId": "rel:inventory-service.production->rds-inventory-prod",
+          "causeId": "rds-inventory-prod",
+          "path": [
+            "rds-inventory-prod",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "rds-inventory-prod",
+          "viaRelationshipId": "rel:order-service.production->inventory-service.production",
+          "causeId": "inventory-service.production",
+          "path": [
+            "rds-inventory-prod",
+            "inventory-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "rds-inventory-prod",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "rds-inventory-prod",
+            "inventory-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "redis-sessions-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "auth-service.production",
+          "effect": "degraded",
+          "ruleId": "data-access",
+          "rootId": "redis-sessions-prod",
+          "viaRelationshipId": "rel:auth-service.production->redis-sessions-prod",
+          "causeId": "redis-sessions-prod",
+          "path": [
+            "redis-sessions-prod",
+            "auth-service.production"
+          ]
+        },
+        {
+          "entityId": "cart-service.production",
+          "effect": "degraded",
+          "ruleId": "data-access",
+          "rootId": "redis-sessions-prod",
+          "viaRelationshipId": "rel:cart-service.production->redis-sessions-prod",
+          "causeId": "redis-sessions-prod",
+          "path": [
+            "redis-sessions-prod",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "redis-sessions-prod",
+          "viaRelationshipId": "rel:api-gateway.production->auth-service.production",
+          "causeId": "auth-service.production",
+          "path": [
+            "redis-sessions-prod",
+            "auth-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "redis-sessions-prod",
+          "viaRelationshipId": "rel:web-bff.production->cart-service.production",
+          "causeId": "cart-service.production",
+          "path": [
+            "redis-sessions-prod",
+            "cart-service.production",
+            "web-bff.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "redis-sessions-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "auth-service.production",
+          "effect": "degraded",
+          "ruleId": "data-access",
+          "rootId": "redis-sessions-prod",
+          "viaRelationshipId": "rel:auth-service.production->redis-sessions-prod",
+          "causeId": "redis-sessions-prod",
+          "path": [
+            "redis-sessions-prod",
+            "auth-service.production"
+          ]
+        },
+        {
+          "entityId": "cart-service.production",
+          "effect": "degraded",
+          "ruleId": "data-access",
+          "rootId": "redis-sessions-prod",
+          "viaRelationshipId": "rel:cart-service.production->redis-sessions-prod",
+          "causeId": "redis-sessions-prod",
+          "path": [
+            "redis-sessions-prod",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "redis-sessions-prod",
+          "viaRelationshipId": "rel:api-gateway.production->auth-service.production",
+          "causeId": "auth-service.production",
+          "path": [
+            "redis-sessions-prod",
+            "auth-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "redis-sessions-prod",
+          "viaRelationshipId": "rel:web-bff.production->cart-service.production",
+          "causeId": "cart-service.production",
+          "path": [
+            "redis-sessions-prod",
+            "cart-service.production",
+            "web-bff.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aws-acct-commerce-nonprod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-nonprod",
+          "causeId": "aws-acct-commerce-nonprod",
+          "path": [
+            "aws-acct-commerce-nonprod",
+            "api-gateway.staging"
+          ]
+        },
+        {
+          "entityId": "aws-use1-nonprod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-nonprod",
+          "causeId": "aws-acct-commerce-nonprod",
+          "path": [
+            "aws-acct-commerce-nonprod",
+            "aws-use1-nonprod"
+          ]
+        },
+        {
+          "entityId": "catalog-service.development",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-nonprod",
+          "causeId": "aws-acct-commerce-nonprod",
+          "path": [
+            "aws-acct-commerce-nonprod",
+            "catalog-service.development"
+          ]
+        },
+        {
+          "entityId": "catalog-service.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-nonprod",
+          "causeId": "aws-acct-commerce-nonprod",
+          "path": [
+            "aws-acct-commerce-nonprod",
+            "catalog-service.staging"
+          ]
+        },
+        {
+          "entityId": "eks-commerce-dev",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-nonprod",
+          "causeId": "aws-acct-commerce-nonprod",
+          "path": [
+            "aws-acct-commerce-nonprod",
+            "eks-commerce-dev"
+          ]
+        },
+        {
+          "entityId": "eks-commerce-staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-nonprod",
+          "causeId": "aws-acct-commerce-nonprod",
+          "path": [
+            "aws-acct-commerce-nonprod",
+            "eks-commerce-staging"
+          ]
+        },
+        {
+          "entityId": "inventory-service.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-nonprod",
+          "causeId": "aws-acct-commerce-nonprod",
+          "path": [
+            "aws-acct-commerce-nonprod",
+            "inventory-service.staging"
+          ]
+        },
+        {
+          "entityId": "ns-commerce-dev",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-nonprod",
+          "causeId": "aws-acct-commerce-nonprod",
+          "path": [
+            "aws-acct-commerce-nonprod",
+            "ns-commerce-dev"
+          ]
+        },
+        {
+          "entityId": "ns-commerce-staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-nonprod",
+          "causeId": "aws-acct-commerce-nonprod",
+          "path": [
+            "aws-acct-commerce-nonprod",
+            "ns-commerce-staging"
+          ]
+        },
+        {
+          "entityId": "order-service.development",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-nonprod",
+          "causeId": "aws-acct-commerce-nonprod",
+          "path": [
+            "aws-acct-commerce-nonprod",
+            "order-service.development"
+          ]
+        },
+        {
+          "entityId": "order-service.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-acct-commerce-nonprod",
+          "causeId": "aws-acct-commerce-nonprod",
+          "path": [
+            "aws-acct-commerce-nonprod",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-staging",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "aws-acct-commerce-nonprod",
+          "viaRelationshipId": "rel:topic-orders-events-staging->inventory-service.staging",
+          "causeId": "inventory-service.staging",
+          "path": [
+            "aws-acct-commerce-nonprod",
+            "inventory-service.staging",
+            "topic-orders-events-staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aws-acct-commerce-nonprod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aws-use1-nonprod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-nonprod",
+          "causeId": "aws-use1-nonprod",
+          "path": [
+            "aws-use1-nonprod",
+            "api-gateway.staging"
+          ]
+        },
+        {
+          "entityId": "catalog-service.development",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-nonprod",
+          "causeId": "aws-use1-nonprod",
+          "path": [
+            "aws-use1-nonprod",
+            "catalog-service.development"
+          ]
+        },
+        {
+          "entityId": "catalog-service.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-nonprod",
+          "causeId": "aws-use1-nonprod",
+          "path": [
+            "aws-use1-nonprod",
+            "catalog-service.staging"
+          ]
+        },
+        {
+          "entityId": "eks-commerce-dev",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-nonprod",
+          "causeId": "aws-use1-nonprod",
+          "path": [
+            "aws-use1-nonprod",
+            "eks-commerce-dev"
+          ]
+        },
+        {
+          "entityId": "eks-commerce-staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-nonprod",
+          "causeId": "aws-use1-nonprod",
+          "path": [
+            "aws-use1-nonprod",
+            "eks-commerce-staging"
+          ]
+        },
+        {
+          "entityId": "inventory-service.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-nonprod",
+          "causeId": "aws-use1-nonprod",
+          "path": [
+            "aws-use1-nonprod",
+            "inventory-service.staging"
+          ]
+        },
+        {
+          "entityId": "ns-commerce-dev",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-nonprod",
+          "causeId": "aws-use1-nonprod",
+          "path": [
+            "aws-use1-nonprod",
+            "ns-commerce-dev"
+          ]
+        },
+        {
+          "entityId": "ns-commerce-staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-nonprod",
+          "causeId": "aws-use1-nonprod",
+          "path": [
+            "aws-use1-nonprod",
+            "ns-commerce-staging"
+          ]
+        },
+        {
+          "entityId": "order-service.development",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-nonprod",
+          "causeId": "aws-use1-nonprod",
+          "path": [
+            "aws-use1-nonprod",
+            "order-service.development"
+          ]
+        },
+        {
+          "entityId": "order-service.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aws-use1-nonprod",
+          "causeId": "aws-use1-nonprod",
+          "path": [
+            "aws-use1-nonprod",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-staging",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "aws-use1-nonprod",
+          "viaRelationshipId": "rel:topic-orders-events-staging->inventory-service.staging",
+          "causeId": "inventory-service.staging",
+          "path": [
+            "aws-use1-nonprod",
+            "inventory-service.staging",
+            "topic-orders-events-staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aws-use1-nonprod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "eks-commerce-staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-staging",
+          "causeId": "eks-commerce-staging",
+          "path": [
+            "eks-commerce-staging",
+            "api-gateway.staging"
+          ]
+        },
+        {
+          "entityId": "catalog-service.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-staging",
+          "causeId": "eks-commerce-staging",
+          "path": [
+            "eks-commerce-staging",
+            "catalog-service.staging"
+          ]
+        },
+        {
+          "entityId": "inventory-service.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-staging",
+          "causeId": "eks-commerce-staging",
+          "path": [
+            "eks-commerce-staging",
+            "inventory-service.staging"
+          ]
+        },
+        {
+          "entityId": "ns-commerce-staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-staging",
+          "causeId": "eks-commerce-staging",
+          "path": [
+            "eks-commerce-staging",
+            "ns-commerce-staging"
+          ]
+        },
+        {
+          "entityId": "order-service.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-staging",
+          "causeId": "eks-commerce-staging",
+          "path": [
+            "eks-commerce-staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-staging",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "eks-commerce-staging",
+          "viaRelationshipId": "rel:topic-orders-events-staging->inventory-service.staging",
+          "causeId": "inventory-service.staging",
+          "path": [
+            "eks-commerce-staging",
+            "inventory-service.staging",
+            "topic-orders-events-staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "eks-commerce-staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-commerce-staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-commerce-staging",
+          "causeId": "ns-commerce-staging",
+          "path": [
+            "ns-commerce-staging",
+            "api-gateway.staging"
+          ]
+        },
+        {
+          "entityId": "catalog-service.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-commerce-staging",
+          "causeId": "ns-commerce-staging",
+          "path": [
+            "ns-commerce-staging",
+            "catalog-service.staging"
+          ]
+        },
+        {
+          "entityId": "inventory-service.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-commerce-staging",
+          "causeId": "ns-commerce-staging",
+          "path": [
+            "ns-commerce-staging",
+            "inventory-service.staging"
+          ]
+        },
+        {
+          "entityId": "order-service.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-commerce-staging",
+          "causeId": "ns-commerce-staging",
+          "path": [
+            "ns-commerce-staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-staging",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "ns-commerce-staging",
+          "viaRelationshipId": "rel:topic-orders-events-staging->inventory-service.staging",
+          "causeId": "inventory-service.staging",
+          "path": [
+            "ns-commerce-staging",
+            "inventory-service.staging",
+            "topic-orders-events-staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-commerce-staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "eks-commerce-dev",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "catalog-service.development",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-dev",
+          "causeId": "eks-commerce-dev",
+          "path": [
+            "eks-commerce-dev",
+            "catalog-service.development"
+          ]
+        },
+        {
+          "entityId": "ns-commerce-dev",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-dev",
+          "causeId": "eks-commerce-dev",
+          "path": [
+            "eks-commerce-dev",
+            "ns-commerce-dev"
+          ]
+        },
+        {
+          "entityId": "order-service.development",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-dev",
+          "causeId": "eks-commerce-dev",
+          "path": [
+            "eks-commerce-dev",
+            "order-service.development"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "eks-commerce-dev",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-commerce-dev",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "catalog-service.development",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-commerce-dev",
+          "causeId": "ns-commerce-dev",
+          "path": [
+            "ns-commerce-dev",
+            "catalog-service.development"
+          ]
+        },
+        {
+          "entityId": "order-service.development",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-commerce-dev",
+          "causeId": "ns-commerce-dev",
+          "path": [
+            "ns-commerce-dev",
+            "order-service.development"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-commerce-dev",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "az-sub-payments",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "aks-payments-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-sub-payments",
+          "causeId": "az-sub-payments",
+          "path": [
+            "az-sub-payments",
+            "aks-payments-prod"
+          ]
+        },
+        {
+          "entityId": "aks-payments-staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-sub-payments",
+          "causeId": "az-sub-payments",
+          "path": [
+            "az-sub-payments",
+            "aks-payments-staging"
+          ]
+        },
+        {
+          "entityId": "az-weu",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-sub-payments",
+          "causeId": "az-sub-payments",
+          "path": [
+            "az-sub-payments",
+            "az-weu"
+          ]
+        },
+        {
+          "entityId": "fraud-scoring.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-sub-payments",
+          "causeId": "az-sub-payments",
+          "path": [
+            "az-sub-payments",
+            "fraud-scoring.production"
+          ]
+        },
+        {
+          "entityId": "ledger-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-sub-payments",
+          "causeId": "az-sub-payments",
+          "path": [
+            "az-sub-payments",
+            "ledger-service.production"
+          ]
+        },
+        {
+          "entityId": "ns-payments-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-sub-payments",
+          "causeId": "az-sub-payments",
+          "path": [
+            "az-sub-payments",
+            "ns-payments-prod"
+          ]
+        },
+        {
+          "entityId": "ns-payments-staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-sub-payments",
+          "causeId": "az-sub-payments",
+          "path": [
+            "az-sub-payments",
+            "ns-payments-staging"
+          ]
+        },
+        {
+          "entityId": "ns-risk-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-sub-payments",
+          "causeId": "az-sub-payments",
+          "path": [
+            "az-sub-payments",
+            "ns-risk-prod"
+          ]
+        },
+        {
+          "entityId": "payment-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-sub-payments",
+          "causeId": "az-sub-payments",
+          "path": [
+            "az-sub-payments",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "payment-service.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-sub-payments",
+          "causeId": "az-sub-payments",
+          "path": [
+            "az-sub-payments",
+            "payment-service.staging"
+          ]
+        },
+        {
+          "entityId": "payout-worker.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-sub-payments",
+          "causeId": "az-sub-payments",
+          "path": [
+            "az-sub-payments",
+            "payout-worker.production"
+          ]
+        },
+        {
+          "entityId": "pg-payments-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-sub-payments",
+          "causeId": "az-sub-payments",
+          "path": [
+            "az-sub-payments",
+            "pg-payments-prod"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "az-sub-payments",
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "causeId": "payment-service.production",
+          "path": [
+            "az-sub-payments",
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "az-sub-payments",
+          "viaRelationshipId": "rel:order-service.staging->payment-service.staging",
+          "causeId": "payment-service.staging",
+          "path": [
+            "az-sub-payments",
+            "payment-service.staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "topic-payments-events-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "az-sub-payments",
+          "viaRelationshipId": "rel:topic-payments-events-prod->ledger-service.production",
+          "causeId": "ledger-service.production",
+          "path": [
+            "az-sub-payments",
+            "ledger-service.production",
+            "topic-payments-events-prod"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "az-sub-payments",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "az-sub-payments",
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "az-sub-payments",
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "causeId": "order-service.staging",
+          "path": [
+            "az-sub-payments",
+            "payment-service.staging",
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "az-sub-payments",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "az-weu",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "aks-payments-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-weu",
+          "causeId": "az-weu",
+          "path": [
+            "az-weu",
+            "aks-payments-prod"
+          ]
+        },
+        {
+          "entityId": "aks-payments-staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-weu",
+          "causeId": "az-weu",
+          "path": [
+            "az-weu",
+            "aks-payments-staging"
+          ]
+        },
+        {
+          "entityId": "fraud-scoring.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-weu",
+          "causeId": "az-weu",
+          "path": [
+            "az-weu",
+            "fraud-scoring.production"
+          ]
+        },
+        {
+          "entityId": "ledger-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-weu",
+          "causeId": "az-weu",
+          "path": [
+            "az-weu",
+            "ledger-service.production"
+          ]
+        },
+        {
+          "entityId": "ns-payments-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-weu",
+          "causeId": "az-weu",
+          "path": [
+            "az-weu",
+            "ns-payments-prod"
+          ]
+        },
+        {
+          "entityId": "ns-payments-staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-weu",
+          "causeId": "az-weu",
+          "path": [
+            "az-weu",
+            "ns-payments-staging"
+          ]
+        },
+        {
+          "entityId": "ns-risk-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-weu",
+          "causeId": "az-weu",
+          "path": [
+            "az-weu",
+            "ns-risk-prod"
+          ]
+        },
+        {
+          "entityId": "payment-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-weu",
+          "causeId": "az-weu",
+          "path": [
+            "az-weu",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "payment-service.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-weu",
+          "causeId": "az-weu",
+          "path": [
+            "az-weu",
+            "payment-service.staging"
+          ]
+        },
+        {
+          "entityId": "payout-worker.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-weu",
+          "causeId": "az-weu",
+          "path": [
+            "az-weu",
+            "payout-worker.production"
+          ]
+        },
+        {
+          "entityId": "pg-payments-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "az-weu",
+          "causeId": "az-weu",
+          "path": [
+            "az-weu",
+            "pg-payments-prod"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "az-weu",
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "causeId": "payment-service.production",
+          "path": [
+            "az-weu",
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "az-weu",
+          "viaRelationshipId": "rel:order-service.staging->payment-service.staging",
+          "causeId": "payment-service.staging",
+          "path": [
+            "az-weu",
+            "payment-service.staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "topic-payments-events-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "az-weu",
+          "viaRelationshipId": "rel:topic-payments-events-prod->ledger-service.production",
+          "causeId": "ledger-service.production",
+          "path": [
+            "az-weu",
+            "ledger-service.production",
+            "topic-payments-events-prod"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "az-weu",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "az-weu",
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "az-weu",
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "causeId": "order-service.staging",
+          "path": [
+            "az-weu",
+            "payment-service.staging",
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "az-weu",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aks-payments-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "fraud-scoring.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aks-payments-prod",
+          "causeId": "aks-payments-prod",
+          "path": [
+            "aks-payments-prod",
+            "fraud-scoring.production"
+          ]
+        },
+        {
+          "entityId": "ledger-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aks-payments-prod",
+          "causeId": "aks-payments-prod",
+          "path": [
+            "aks-payments-prod",
+            "ledger-service.production"
+          ]
+        },
+        {
+          "entityId": "ns-payments-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aks-payments-prod",
+          "causeId": "aks-payments-prod",
+          "path": [
+            "aks-payments-prod",
+            "ns-payments-prod"
+          ]
+        },
+        {
+          "entityId": "ns-risk-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aks-payments-prod",
+          "causeId": "aks-payments-prod",
+          "path": [
+            "aks-payments-prod",
+            "ns-risk-prod"
+          ]
+        },
+        {
+          "entityId": "payment-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aks-payments-prod",
+          "causeId": "aks-payments-prod",
+          "path": [
+            "aks-payments-prod",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "payout-worker.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aks-payments-prod",
+          "causeId": "aks-payments-prod",
+          "path": [
+            "aks-payments-prod",
+            "payout-worker.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "aks-payments-prod",
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "causeId": "payment-service.production",
+          "path": [
+            "aks-payments-prod",
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "topic-payments-events-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "aks-payments-prod",
+          "viaRelationshipId": "rel:topic-payments-events-prod->ledger-service.production",
+          "causeId": "ledger-service.production",
+          "path": [
+            "aks-payments-prod",
+            "ledger-service.production",
+            "topic-payments-events-prod"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "aks-payments-prod",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "aks-payments-prod",
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aks-payments-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-payments-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "ledger-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-payments-prod",
+          "causeId": "ns-payments-prod",
+          "path": [
+            "ns-payments-prod",
+            "ledger-service.production"
+          ]
+        },
+        {
+          "entityId": "payment-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-payments-prod",
+          "causeId": "ns-payments-prod",
+          "path": [
+            "ns-payments-prod",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "payout-worker.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-payments-prod",
+          "causeId": "ns-payments-prod",
+          "path": [
+            "ns-payments-prod",
+            "payout-worker.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ns-payments-prod",
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "causeId": "payment-service.production",
+          "path": [
+            "ns-payments-prod",
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "topic-payments-events-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "ns-payments-prod",
+          "viaRelationshipId": "rel:topic-payments-events-prod->ledger-service.production",
+          "causeId": "ledger-service.production",
+          "path": [
+            "ns-payments-prod",
+            "ledger-service.production",
+            "topic-payments-events-prod"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ns-payments-prod",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "ns-payments-prod",
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-payments-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-risk-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "fraud-scoring.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-risk-prod",
+          "causeId": "ns-risk-prod",
+          "path": [
+            "ns-risk-prod",
+            "fraud-scoring.production"
+          ]
+        },
+        {
+          "entityId": "payment-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ns-risk-prod",
+          "viaRelationshipId": "rel:payment-service.production->fraud-scoring.production",
+          "causeId": "fraud-scoring.production",
+          "path": [
+            "ns-risk-prod",
+            "fraud-scoring.production",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ns-risk-prod",
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "causeId": "payment-service.production",
+          "path": [
+            "ns-risk-prod",
+            "fraud-scoring.production",
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ns-risk-prod",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "ns-risk-prod",
+            "fraud-scoring.production",
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-risk-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "pg-payments-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "payment-service.production",
+          "effect": "degraded",
+          "ruleId": "data-access",
+          "rootId": "pg-payments-prod",
+          "viaRelationshipId": "rel:payment-service.production->pg-payments-prod",
+          "causeId": "pg-payments-prod",
+          "path": [
+            "pg-payments-prod",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "pg-payments-prod",
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "causeId": "payment-service.production",
+          "path": [
+            "pg-payments-prod",
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "pg-payments-prod",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "pg-payments-prod",
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "pg-payments-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "payment-service.production",
+          "effect": "degraded",
+          "ruleId": "data-access",
+          "rootId": "pg-payments-prod",
+          "viaRelationshipId": "rel:payment-service.production->pg-payments-prod",
+          "causeId": "pg-payments-prod",
+          "path": [
+            "pg-payments-prod",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "pg-payments-prod",
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "causeId": "payment-service.production",
+          "path": [
+            "pg-payments-prod",
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "pg-payments-prod",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "pg-payments-prod",
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aks-payments-staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "ns-payments-staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aks-payments-staging",
+          "causeId": "aks-payments-staging",
+          "path": [
+            "aks-payments-staging",
+            "ns-payments-staging"
+          ]
+        },
+        {
+          "entityId": "payment-service.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "aks-payments-staging",
+          "causeId": "aks-payments-staging",
+          "path": [
+            "aks-payments-staging",
+            "payment-service.staging"
+          ]
+        },
+        {
+          "entityId": "order-service.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "aks-payments-staging",
+          "viaRelationshipId": "rel:order-service.staging->payment-service.staging",
+          "causeId": "payment-service.staging",
+          "path": [
+            "aks-payments-staging",
+            "payment-service.staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "aks-payments-staging",
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "causeId": "order-service.staging",
+          "path": [
+            "aks-payments-staging",
+            "payment-service.staging",
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aks-payments-staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-payments-staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "payment-service.staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-payments-staging",
+          "causeId": "ns-payments-staging",
+          "path": [
+            "ns-payments-staging",
+            "payment-service.staging"
+          ]
+        },
+        {
+          "entityId": "order-service.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ns-payments-staging",
+          "viaRelationshipId": "rel:order-service.staging->payment-service.staging",
+          "causeId": "payment-service.staging",
+          "path": [
+            "ns-payments-staging",
+            "payment-service.staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ns-payments-staging",
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "causeId": "order-service.staging",
+          "path": [
+            "ns-payments-staging",
+            "payment-service.staging",
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-payments-staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "gcp-proj-data",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "gcp-usc1",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "gcp-proj-data",
+          "causeId": "gcp-proj-data",
+          "path": [
+            "gcp-proj-data",
+            "gcp-usc1"
+          ]
+        },
+        {
+          "entityId": "kafka-events-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "gcp-proj-data",
+          "causeId": "gcp-proj-data",
+          "path": [
+            "gcp-proj-data",
+            "kafka-events-prod"
+          ]
+        },
+        {
+          "entityId": "kafka-events-staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "gcp-proj-data",
+          "causeId": "gcp-proj-data",
+          "path": [
+            "gcp-proj-data",
+            "kafka-events-staging"
+          ]
+        },
+        {
+          "entityId": "search-catalog-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "gcp-proj-data",
+          "causeId": "gcp-proj-data",
+          "path": [
+            "gcp-proj-data",
+            "search-catalog-prod"
+          ]
+        },
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "gcp-proj-data",
+          "causeId": "gcp-proj-data",
+          "path": [
+            "gcp-proj-data",
+            "topic-inventory-updates-prod"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "gcp-proj-data",
+          "causeId": "gcp-proj-data",
+          "path": [
+            "gcp-proj-data",
+            "topic-orders-events-prod"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "gcp-proj-data",
+          "causeId": "gcp-proj-data",
+          "path": [
+            "gcp-proj-data",
+            "topic-orders-events-staging"
+          ]
+        },
+        {
+          "entityId": "topic-payments-events-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "gcp-proj-data",
+          "causeId": "gcp-proj-data",
+          "path": [
+            "gcp-proj-data",
+            "topic-payments-events-prod"
+          ]
+        },
+        {
+          "entityId": "catalog-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "gcp-proj-data",
+          "viaRelationshipId": "rel:catalog-service.production->search-catalog-prod",
+          "causeId": "search-catalog-prod",
+          "path": [
+            "gcp-proj-data",
+            "search-catalog-prod",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "inventory-service.production",
+          "effect": "degraded",
+          "ruleId": "publish-to-failed-channel",
+          "rootId": "gcp-proj-data",
+          "viaRelationshipId": "rel:inventory-service.production->topic-inventory-updates-prod",
+          "causeId": "topic-inventory-updates-prod",
+          "path": [
+            "gcp-proj-data",
+            "topic-inventory-updates-prod",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "inventory-service.staging",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "gcp-proj-data",
+          "viaRelationshipId": "rel:topic-orders-events-staging->inventory-service.staging",
+          "causeId": "topic-orders-events-staging",
+          "path": [
+            "gcp-proj-data",
+            "topic-orders-events-staging",
+            "inventory-service.staging"
+          ]
+        },
+        {
+          "entityId": "ledger-service.production",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "gcp-proj-data",
+          "viaRelationshipId": "rel:topic-payments-events-prod->ledger-service.production",
+          "causeId": "topic-payments-events-prod",
+          "path": [
+            "gcp-proj-data",
+            "topic-payments-events-prod",
+            "ledger-service.production"
+          ]
+        },
+        {
+          "entityId": "notification-service.production",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "gcp-proj-data",
+          "viaRelationshipId": "rel:topic-orders-events-prod->notification-service.production",
+          "causeId": "topic-orders-events-prod",
+          "path": [
+            "gcp-proj-data",
+            "topic-orders-events-prod",
+            "notification-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "publish-to-failed-channel",
+          "rootId": "gcp-proj-data",
+          "viaRelationshipId": "rel:order-service.production->topic-orders-events-prod",
+          "causeId": "topic-orders-events-prod",
+          "path": [
+            "gcp-proj-data",
+            "topic-orders-events-prod",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.staging",
+          "effect": "degraded",
+          "ruleId": "publish-to-failed-channel",
+          "rootId": "gcp-proj-data",
+          "viaRelationshipId": "rel:order-service.staging->topic-orders-events-staging",
+          "causeId": "topic-orders-events-staging",
+          "path": [
+            "gcp-proj-data",
+            "topic-orders-events-staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "payment-service.production",
+          "effect": "degraded",
+          "ruleId": "publish-to-failed-channel",
+          "rootId": "gcp-proj-data",
+          "viaRelationshipId": "rel:payment-service.production->topic-payments-events-prod",
+          "causeId": "topic-payments-events-prod",
+          "path": [
+            "gcp-proj-data",
+            "topic-payments-events-prod",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "gcp-proj-data",
+          "viaRelationshipId": "rel:api-gateway.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "gcp-proj-data",
+            "search-catalog-prod",
+            "catalog-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "gcp-proj-data",
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "causeId": "order-service.staging",
+          "path": [
+            "gcp-proj-data",
+            "topic-orders-events-staging",
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        },
+        {
+          "entityId": "cart-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "gcp-proj-data",
+          "viaRelationshipId": "rel:cart-service.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "gcp-proj-data",
+            "search-catalog-prod",
+            "catalog-service.production",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "payout-worker.production",
+          "effect": "degraded",
+          "ruleId": "scheduled-job",
+          "rootId": "gcp-proj-data",
+          "viaRelationshipId": "rel:payout-worker.production->ledger-service.production",
+          "causeId": "ledger-service.production",
+          "path": [
+            "gcp-proj-data",
+            "topic-payments-events-prod",
+            "ledger-service.production",
+            "payout-worker.production"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "gcp-proj-data",
+          "viaRelationshipId": "rel:web-bff.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "gcp-proj-data",
+            "search-catalog-prod",
+            "catalog-service.production",
+            "web-bff.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "gcp-proj-data",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "gcp-usc1",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "kafka-events-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "gcp-usc1",
+          "causeId": "gcp-usc1",
+          "path": [
+            "gcp-usc1",
+            "kafka-events-prod"
+          ]
+        },
+        {
+          "entityId": "kafka-events-staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "gcp-usc1",
+          "causeId": "gcp-usc1",
+          "path": [
+            "gcp-usc1",
+            "kafka-events-staging"
+          ]
+        },
+        {
+          "entityId": "search-catalog-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "gcp-usc1",
+          "causeId": "gcp-usc1",
+          "path": [
+            "gcp-usc1",
+            "search-catalog-prod"
+          ]
+        },
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "gcp-usc1",
+          "causeId": "gcp-usc1",
+          "path": [
+            "gcp-usc1",
+            "topic-inventory-updates-prod"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "gcp-usc1",
+          "causeId": "gcp-usc1",
+          "path": [
+            "gcp-usc1",
+            "topic-orders-events-prod"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "gcp-usc1",
+          "causeId": "gcp-usc1",
+          "path": [
+            "gcp-usc1",
+            "topic-orders-events-staging"
+          ]
+        },
+        {
+          "entityId": "topic-payments-events-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "gcp-usc1",
+          "causeId": "gcp-usc1",
+          "path": [
+            "gcp-usc1",
+            "topic-payments-events-prod"
+          ]
+        },
+        {
+          "entityId": "catalog-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "gcp-usc1",
+          "viaRelationshipId": "rel:catalog-service.production->search-catalog-prod",
+          "causeId": "search-catalog-prod",
+          "path": [
+            "gcp-usc1",
+            "search-catalog-prod",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "inventory-service.production",
+          "effect": "degraded",
+          "ruleId": "publish-to-failed-channel",
+          "rootId": "gcp-usc1",
+          "viaRelationshipId": "rel:inventory-service.production->topic-inventory-updates-prod",
+          "causeId": "topic-inventory-updates-prod",
+          "path": [
+            "gcp-usc1",
+            "topic-inventory-updates-prod",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "inventory-service.staging",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "gcp-usc1",
+          "viaRelationshipId": "rel:topic-orders-events-staging->inventory-service.staging",
+          "causeId": "topic-orders-events-staging",
+          "path": [
+            "gcp-usc1",
+            "topic-orders-events-staging",
+            "inventory-service.staging"
+          ]
+        },
+        {
+          "entityId": "ledger-service.production",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "gcp-usc1",
+          "viaRelationshipId": "rel:topic-payments-events-prod->ledger-service.production",
+          "causeId": "topic-payments-events-prod",
+          "path": [
+            "gcp-usc1",
+            "topic-payments-events-prod",
+            "ledger-service.production"
+          ]
+        },
+        {
+          "entityId": "notification-service.production",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "gcp-usc1",
+          "viaRelationshipId": "rel:topic-orders-events-prod->notification-service.production",
+          "causeId": "topic-orders-events-prod",
+          "path": [
+            "gcp-usc1",
+            "topic-orders-events-prod",
+            "notification-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "publish-to-failed-channel",
+          "rootId": "gcp-usc1",
+          "viaRelationshipId": "rel:order-service.production->topic-orders-events-prod",
+          "causeId": "topic-orders-events-prod",
+          "path": [
+            "gcp-usc1",
+            "topic-orders-events-prod",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.staging",
+          "effect": "degraded",
+          "ruleId": "publish-to-failed-channel",
+          "rootId": "gcp-usc1",
+          "viaRelationshipId": "rel:order-service.staging->topic-orders-events-staging",
+          "causeId": "topic-orders-events-staging",
+          "path": [
+            "gcp-usc1",
+            "topic-orders-events-staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "payment-service.production",
+          "effect": "degraded",
+          "ruleId": "publish-to-failed-channel",
+          "rootId": "gcp-usc1",
+          "viaRelationshipId": "rel:payment-service.production->topic-payments-events-prod",
+          "causeId": "topic-payments-events-prod",
+          "path": [
+            "gcp-usc1",
+            "topic-payments-events-prod",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "gcp-usc1",
+          "viaRelationshipId": "rel:api-gateway.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "gcp-usc1",
+            "search-catalog-prod",
+            "catalog-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "gcp-usc1",
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "causeId": "order-service.staging",
+          "path": [
+            "gcp-usc1",
+            "topic-orders-events-staging",
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        },
+        {
+          "entityId": "cart-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "gcp-usc1",
+          "viaRelationshipId": "rel:cart-service.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "gcp-usc1",
+            "search-catalog-prod",
+            "catalog-service.production",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "payout-worker.production",
+          "effect": "degraded",
+          "ruleId": "scheduled-job",
+          "rootId": "gcp-usc1",
+          "viaRelationshipId": "rel:payout-worker.production->ledger-service.production",
+          "causeId": "ledger-service.production",
+          "path": [
+            "gcp-usc1",
+            "topic-payments-events-prod",
+            "ledger-service.production",
+            "payout-worker.production"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "gcp-usc1",
+          "viaRelationshipId": "rel:web-bff.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "gcp-usc1",
+            "search-catalog-prod",
+            "catalog-service.production",
+            "web-bff.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "gcp-usc1",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "kafka-events-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "kafka-events-prod",
+          "causeId": "kafka-events-prod",
+          "path": [
+            "kafka-events-prod",
+            "topic-inventory-updates-prod"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "kafka-events-prod",
+          "causeId": "kafka-events-prod",
+          "path": [
+            "kafka-events-prod",
+            "topic-orders-events-prod"
+          ]
+        },
+        {
+          "entityId": "topic-payments-events-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "kafka-events-prod",
+          "causeId": "kafka-events-prod",
+          "path": [
+            "kafka-events-prod",
+            "topic-payments-events-prod"
+          ]
+        },
+        {
+          "entityId": "catalog-service.production",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "kafka-events-prod",
+          "viaRelationshipId": "rel:topic-inventory-updates-prod->catalog-service.production",
+          "causeId": "topic-inventory-updates-prod",
+          "path": [
+            "kafka-events-prod",
+            "topic-inventory-updates-prod",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "inventory-service.production",
+          "effect": "degraded",
+          "ruleId": "publish-to-failed-channel",
+          "rootId": "kafka-events-prod",
+          "viaRelationshipId": "rel:inventory-service.production->topic-inventory-updates-prod",
+          "causeId": "topic-inventory-updates-prod",
+          "path": [
+            "kafka-events-prod",
+            "topic-inventory-updates-prod",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "ledger-service.production",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "kafka-events-prod",
+          "viaRelationshipId": "rel:topic-payments-events-prod->ledger-service.production",
+          "causeId": "topic-payments-events-prod",
+          "path": [
+            "kafka-events-prod",
+            "topic-payments-events-prod",
+            "ledger-service.production"
+          ]
+        },
+        {
+          "entityId": "notification-service.production",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "kafka-events-prod",
+          "viaRelationshipId": "rel:topic-orders-events-prod->notification-service.production",
+          "causeId": "topic-orders-events-prod",
+          "path": [
+            "kafka-events-prod",
+            "topic-orders-events-prod",
+            "notification-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "publish-to-failed-channel",
+          "rootId": "kafka-events-prod",
+          "viaRelationshipId": "rel:order-service.production->topic-orders-events-prod",
+          "causeId": "topic-orders-events-prod",
+          "path": [
+            "kafka-events-prod",
+            "topic-orders-events-prod",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "payment-service.production",
+          "effect": "degraded",
+          "ruleId": "publish-to-failed-channel",
+          "rootId": "kafka-events-prod",
+          "viaRelationshipId": "rel:payment-service.production->topic-payments-events-prod",
+          "causeId": "topic-payments-events-prod",
+          "path": [
+            "kafka-events-prod",
+            "topic-payments-events-prod",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "kafka-events-prod",
+          "viaRelationshipId": "rel:api-gateway.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "kafka-events-prod",
+            "topic-inventory-updates-prod",
+            "catalog-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "cart-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "kafka-events-prod",
+          "viaRelationshipId": "rel:cart-service.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "kafka-events-prod",
+            "topic-inventory-updates-prod",
+            "catalog-service.production",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "payout-worker.production",
+          "effect": "degraded",
+          "ruleId": "scheduled-job",
+          "rootId": "kafka-events-prod",
+          "viaRelationshipId": "rel:payout-worker.production->ledger-service.production",
+          "causeId": "ledger-service.production",
+          "path": [
+            "kafka-events-prod",
+            "topic-payments-events-prod",
+            "ledger-service.production",
+            "payout-worker.production"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "kafka-events-prod",
+          "viaRelationshipId": "rel:web-bff.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "kafka-events-prod",
+            "topic-inventory-updates-prod",
+            "catalog-service.production",
+            "web-bff.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "kafka-events-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "topic-orders-events-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "inventory-service.production",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "topic-orders-events-prod",
+          "viaRelationshipId": "rel:topic-orders-events-prod->inventory-service.production",
+          "causeId": "topic-orders-events-prod",
+          "path": [
+            "topic-orders-events-prod",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "notification-service.production",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "topic-orders-events-prod",
+          "viaRelationshipId": "rel:topic-orders-events-prod->notification-service.production",
+          "causeId": "topic-orders-events-prod",
+          "path": [
+            "topic-orders-events-prod",
+            "notification-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "publish-to-failed-channel",
+          "rootId": "topic-orders-events-prod",
+          "viaRelationshipId": "rel:order-service.production->topic-orders-events-prod",
+          "causeId": "topic-orders-events-prod",
+          "path": [
+            "topic-orders-events-prod",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "topic-orders-events-prod",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "topic-orders-events-prod",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "topic-orders-events-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "catalog-service.production",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "topic-inventory-updates-prod",
+          "viaRelationshipId": "rel:topic-inventory-updates-prod->catalog-service.production",
+          "causeId": "topic-inventory-updates-prod",
+          "path": [
+            "topic-inventory-updates-prod",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "inventory-service.production",
+          "effect": "degraded",
+          "ruleId": "publish-to-failed-channel",
+          "rootId": "topic-inventory-updates-prod",
+          "viaRelationshipId": "rel:inventory-service.production->topic-inventory-updates-prod",
+          "causeId": "topic-inventory-updates-prod",
+          "path": [
+            "topic-inventory-updates-prod",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "topic-inventory-updates-prod",
+          "viaRelationshipId": "rel:api-gateway.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "topic-inventory-updates-prod",
+            "catalog-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "cart-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "topic-inventory-updates-prod",
+          "viaRelationshipId": "rel:cart-service.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "topic-inventory-updates-prod",
+            "catalog-service.production",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "topic-inventory-updates-prod",
+          "viaRelationshipId": "rel:order-service.production->inventory-service.production",
+          "causeId": "inventory-service.production",
+          "path": [
+            "topic-inventory-updates-prod",
+            "inventory-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "topic-inventory-updates-prod",
+          "viaRelationshipId": "rel:web-bff.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "topic-inventory-updates-prod",
+            "catalog-service.production",
+            "web-bff.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "topic-payments-events-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "ledger-service.production",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "topic-payments-events-prod",
+          "viaRelationshipId": "rel:topic-payments-events-prod->ledger-service.production",
+          "causeId": "topic-payments-events-prod",
+          "path": [
+            "topic-payments-events-prod",
+            "ledger-service.production"
+          ]
+        },
+        {
+          "entityId": "payment-service.production",
+          "effect": "degraded",
+          "ruleId": "publish-to-failed-channel",
+          "rootId": "topic-payments-events-prod",
+          "viaRelationshipId": "rel:payment-service.production->topic-payments-events-prod",
+          "causeId": "topic-payments-events-prod",
+          "path": [
+            "topic-payments-events-prod",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "topic-payments-events-prod",
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "causeId": "payment-service.production",
+          "path": [
+            "topic-payments-events-prod",
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "payout-worker.production",
+          "effect": "degraded",
+          "ruleId": "scheduled-job",
+          "rootId": "topic-payments-events-prod",
+          "viaRelationshipId": "rel:payout-worker.production->ledger-service.production",
+          "causeId": "ledger-service.production",
+          "path": [
+            "topic-payments-events-prod",
+            "ledger-service.production",
+            "payout-worker.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "topic-payments-events-prod",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "topic-payments-events-prod",
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "topic-payments-events-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "search-catalog-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "catalog-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "search-catalog-prod",
+          "viaRelationshipId": "rel:catalog-service.production->search-catalog-prod",
+          "causeId": "search-catalog-prod",
+          "path": [
+            "search-catalog-prod",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "search-catalog-prod",
+          "viaRelationshipId": "rel:api-gateway.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "search-catalog-prod",
+            "catalog-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "cart-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "search-catalog-prod",
+          "viaRelationshipId": "rel:cart-service.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "search-catalog-prod",
+            "catalog-service.production",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "search-catalog-prod",
+          "viaRelationshipId": "rel:web-bff.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "search-catalog-prod",
+            "catalog-service.production",
+            "web-bff.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "search-catalog-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "catalog-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "search-catalog-prod",
+          "viaRelationshipId": "rel:catalog-service.production->search-catalog-prod",
+          "causeId": "search-catalog-prod",
+          "path": [
+            "search-catalog-prod",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "search-catalog-prod",
+          "viaRelationshipId": "rel:api-gateway.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "search-catalog-prod",
+            "catalog-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "cart-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "search-catalog-prod",
+          "viaRelationshipId": "rel:cart-service.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "search-catalog-prod",
+            "catalog-service.production",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "search-catalog-prod",
+          "viaRelationshipId": "rel:web-bff.production->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "search-catalog-prod",
+            "catalog-service.production",
+            "web-bff.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "kafka-events-staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "topic-orders-events-staging",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "kafka-events-staging",
+          "causeId": "kafka-events-staging",
+          "path": [
+            "kafka-events-staging",
+            "topic-orders-events-staging"
+          ]
+        },
+        {
+          "entityId": "inventory-service.staging",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "kafka-events-staging",
+          "viaRelationshipId": "rel:topic-orders-events-staging->inventory-service.staging",
+          "causeId": "topic-orders-events-staging",
+          "path": [
+            "kafka-events-staging",
+            "topic-orders-events-staging",
+            "inventory-service.staging"
+          ]
+        },
+        {
+          "entityId": "order-service.staging",
+          "effect": "degraded",
+          "ruleId": "publish-to-failed-channel",
+          "rootId": "kafka-events-staging",
+          "viaRelationshipId": "rel:order-service.staging->topic-orders-events-staging",
+          "causeId": "topic-orders-events-staging",
+          "path": [
+            "kafka-events-staging",
+            "topic-orders-events-staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "kafka-events-staging",
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "causeId": "order-service.staging",
+          "path": [
+            "kafka-events-staging",
+            "topic-orders-events-staging",
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "kafka-events-staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "topic-orders-events-staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "inventory-service.staging",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "topic-orders-events-staging",
+          "viaRelationshipId": "rel:topic-orders-events-staging->inventory-service.staging",
+          "causeId": "topic-orders-events-staging",
+          "path": [
+            "topic-orders-events-staging",
+            "inventory-service.staging"
+          ]
+        },
+        {
+          "entityId": "order-service.staging",
+          "effect": "degraded",
+          "ruleId": "publish-to-failed-channel",
+          "rootId": "topic-orders-events-staging",
+          "viaRelationshipId": "rel:order-service.staging->topic-orders-events-staging",
+          "causeId": "topic-orders-events-staging",
+          "path": [
+            "topic-orders-events-staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "topic-orders-events-staging",
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "causeId": "order-service.staging",
+          "path": [
+            "topic-orders-events-staging",
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "topic-orders-events-staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "dc-fra",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "email-dispatcher.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "dc-fra",
+          "causeId": "dc-fra",
+          "path": [
+            "dc-fra",
+            "email-dispatcher.production"
+          ]
+        },
+        {
+          "entityId": "exchange-notifications-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "dc-fra",
+          "causeId": "dc-fra",
+          "path": [
+            "dc-fra",
+            "exchange-notifications-prod"
+          ]
+        },
+        {
+          "entityId": "k8s-fra-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "dc-fra",
+          "causeId": "dc-fra",
+          "path": [
+            "dc-fra",
+            "k8s-fra-prod"
+          ]
+        },
+        {
+          "entityId": "legacy-report-cron.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "dc-fra",
+          "causeId": "dc-fra",
+          "path": [
+            "dc-fra",
+            "legacy-report-cron.production"
+          ]
+        },
+        {
+          "entityId": "notification-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "dc-fra",
+          "causeId": "dc-fra",
+          "path": [
+            "dc-fra",
+            "notification-service.production"
+          ]
+        },
+        {
+          "entityId": "ns-batch-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "dc-fra",
+          "causeId": "dc-fra",
+          "path": [
+            "dc-fra",
+            "ns-batch-prod"
+          ]
+        },
+        {
+          "entityId": "ns-messaging-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "dc-fra",
+          "causeId": "dc-fra",
+          "path": [
+            "dc-fra",
+            "ns-messaging-prod"
+          ]
+        },
+        {
+          "entityId": "pg-ledger-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "dc-fra",
+          "causeId": "dc-fra",
+          "path": [
+            "dc-fra",
+            "pg-ledger-prod"
+          ]
+        },
+        {
+          "entityId": "queue-notifications-email-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "dc-fra",
+          "causeId": "dc-fra",
+          "path": [
+            "dc-fra",
+            "queue-notifications-email-prod"
+          ]
+        },
+        {
+          "entityId": "rabbitmq-fra-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "dc-fra",
+          "causeId": "dc-fra",
+          "path": [
+            "dc-fra",
+            "rabbitmq-fra-prod"
+          ]
+        },
+        {
+          "entityId": "ledger-service.production",
+          "effect": "degraded",
+          "ruleId": "data-access",
+          "rootId": "dc-fra",
+          "viaRelationshipId": "rel:ledger-service.production->pg-ledger-prod",
+          "causeId": "pg-ledger-prod",
+          "path": [
+            "dc-fra",
+            "pg-ledger-prod",
+            "ledger-service.production"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "dc-fra",
+          "viaRelationshipId": "rel:topic-orders-events-prod->notification-service.production",
+          "causeId": "notification-service.production",
+          "path": [
+            "dc-fra",
+            "notification-service.production",
+            "topic-orders-events-prod"
+          ]
+        },
+        {
+          "entityId": "payout-worker.production",
+          "effect": "degraded",
+          "ruleId": "scheduled-job",
+          "rootId": "dc-fra",
+          "viaRelationshipId": "rel:payout-worker.production->ledger-service.production",
+          "causeId": "ledger-service.production",
+          "path": [
+            "dc-fra",
+            "pg-ledger-prod",
+            "ledger-service.production",
+            "payout-worker.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "dc-fra",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "k8s-fra-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "email-dispatcher.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "k8s-fra-prod",
+          "causeId": "k8s-fra-prod",
+          "path": [
+            "k8s-fra-prod",
+            "email-dispatcher.production"
+          ]
+        },
+        {
+          "entityId": "legacy-report-cron.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "k8s-fra-prod",
+          "causeId": "k8s-fra-prod",
+          "path": [
+            "k8s-fra-prod",
+            "legacy-report-cron.production"
+          ]
+        },
+        {
+          "entityId": "notification-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "k8s-fra-prod",
+          "causeId": "k8s-fra-prod",
+          "path": [
+            "k8s-fra-prod",
+            "notification-service.production"
+          ]
+        },
+        {
+          "entityId": "ns-batch-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "k8s-fra-prod",
+          "causeId": "k8s-fra-prod",
+          "path": [
+            "k8s-fra-prod",
+            "ns-batch-prod"
+          ]
+        },
+        {
+          "entityId": "ns-messaging-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "k8s-fra-prod",
+          "causeId": "k8s-fra-prod",
+          "path": [
+            "k8s-fra-prod",
+            "ns-messaging-prod"
+          ]
+        },
+        {
+          "entityId": "queue-notifications-email-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "k8s-fra-prod",
+          "viaRelationshipId": "rel:queue-notifications-email-prod->email-dispatcher.production",
+          "causeId": "email-dispatcher.production",
+          "path": [
+            "k8s-fra-prod",
+            "email-dispatcher.production",
+            "queue-notifications-email-prod"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "k8s-fra-prod",
+          "viaRelationshipId": "rel:topic-orders-events-prod->notification-service.production",
+          "causeId": "notification-service.production",
+          "path": [
+            "k8s-fra-prod",
+            "notification-service.production",
+            "topic-orders-events-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "k8s-fra-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-batch-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "legacy-report-cron.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-batch-prod",
+          "causeId": "ns-batch-prod",
+          "path": [
+            "ns-batch-prod",
+            "legacy-report-cron.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-batch-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-messaging-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "email-dispatcher.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-messaging-prod",
+          "causeId": "ns-messaging-prod",
+          "path": [
+            "ns-messaging-prod",
+            "email-dispatcher.production"
+          ]
+        },
+        {
+          "entityId": "notification-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "ns-messaging-prod",
+          "causeId": "ns-messaging-prod",
+          "path": [
+            "ns-messaging-prod",
+            "notification-service.production"
+          ]
+        },
+        {
+          "entityId": "queue-notifications-email-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "ns-messaging-prod",
+          "viaRelationshipId": "rel:queue-notifications-email-prod->email-dispatcher.production",
+          "causeId": "email-dispatcher.production",
+          "path": [
+            "ns-messaging-prod",
+            "email-dispatcher.production",
+            "queue-notifications-email-prod"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "ns-messaging-prod",
+          "viaRelationshipId": "rel:topic-orders-events-prod->notification-service.production",
+          "causeId": "notification-service.production",
+          "path": [
+            "ns-messaging-prod",
+            "notification-service.production",
+            "topic-orders-events-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-messaging-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "rabbitmq-fra-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "exchange-notifications-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "rabbitmq-fra-prod",
+          "causeId": "rabbitmq-fra-prod",
+          "path": [
+            "rabbitmq-fra-prod",
+            "exchange-notifications-prod"
+          ]
+        },
+        {
+          "entityId": "queue-notifications-email-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "rabbitmq-fra-prod",
+          "causeId": "rabbitmq-fra-prod",
+          "path": [
+            "rabbitmq-fra-prod",
+            "queue-notifications-email-prod"
+          ]
+        },
+        {
+          "entityId": "email-dispatcher.production",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "rabbitmq-fra-prod",
+          "viaRelationshipId": "rel:queue-notifications-email-prod->email-dispatcher.production",
+          "causeId": "queue-notifications-email-prod",
+          "path": [
+            "rabbitmq-fra-prod",
+            "queue-notifications-email-prod",
+            "email-dispatcher.production"
+          ]
+        },
+        {
+          "entityId": "notification-service.production",
+          "effect": "degraded",
+          "ruleId": "publish-to-failed-channel",
+          "rootId": "rabbitmq-fra-prod",
+          "viaRelationshipId": "rel:notification-service.production->exchange-notifications-prod",
+          "causeId": "exchange-notifications-prod",
+          "path": [
+            "rabbitmq-fra-prod",
+            "exchange-notifications-prod",
+            "notification-service.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "rabbitmq-fra-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "exchange-notifications-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "notification-service.production",
+          "effect": "degraded",
+          "ruleId": "publish-to-failed-channel",
+          "rootId": "exchange-notifications-prod",
+          "viaRelationshipId": "rel:notification-service.production->exchange-notifications-prod",
+          "causeId": "exchange-notifications-prod",
+          "path": [
+            "exchange-notifications-prod",
+            "notification-service.production"
+          ]
+        },
+        {
+          "entityId": "queue-notifications-email-prod",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "exchange-notifications-prod",
+          "viaRelationshipId": "rel:exchange-notifications-prod->queue-notifications-email-prod",
+          "causeId": "exchange-notifications-prod",
+          "path": [
+            "exchange-notifications-prod",
+            "queue-notifications-email-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "exchange-notifications-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "queue-notifications-email-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "email-dispatcher.production",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "queue-notifications-email-prod",
+          "viaRelationshipId": "rel:queue-notifications-email-prod->email-dispatcher.production",
+          "causeId": "queue-notifications-email-prod",
+          "path": [
+            "queue-notifications-email-prod",
+            "email-dispatcher.production"
+          ]
+        },
+        {
+          "entityId": "exchange-notifications-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "queue-notifications-email-prod",
+          "viaRelationshipId": "rel:exchange-notifications-prod->queue-notifications-email-prod",
+          "causeId": "queue-notifications-email-prod",
+          "path": [
+            "queue-notifications-email-prod",
+            "exchange-notifications-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "queue-notifications-email-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "pg-ledger-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "ledger-service.production",
+          "effect": "degraded",
+          "ruleId": "data-access",
+          "rootId": "pg-ledger-prod",
+          "viaRelationshipId": "rel:ledger-service.production->pg-ledger-prod",
+          "causeId": "pg-ledger-prod",
+          "path": [
+            "pg-ledger-prod",
+            "ledger-service.production"
+          ]
+        },
+        {
+          "entityId": "payout-worker.production",
+          "effect": "degraded",
+          "ruleId": "scheduled-job",
+          "rootId": "pg-ledger-prod",
+          "viaRelationshipId": "rel:payout-worker.production->ledger-service.production",
+          "causeId": "ledger-service.production",
+          "path": [
+            "pg-ledger-prod",
+            "ledger-service.production",
+            "payout-worker.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "pg-ledger-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "ledger-service.production",
+          "effect": "degraded",
+          "ruleId": "data-access",
+          "rootId": "pg-ledger-prod",
+          "viaRelationshipId": "rel:ledger-service.production->pg-ledger-prod",
+          "causeId": "pg-ledger-prod",
+          "path": [
+            "pg-ledger-prod",
+            "ledger-service.production"
+          ]
+        },
+        {
+          "entityId": "payout-worker.production",
+          "effect": "degraded",
+          "ruleId": "scheduled-job",
+          "rootId": "pg-ledger-prod",
+          "viaRelationshipId": "rel:payout-worker.production->ledger-service.production",
+          "causeId": "ledger-service.production",
+          "path": [
+            "pg-ledger-prod",
+            "ledger-service.production",
+            "payout-worker.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ext-card-processor",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "payment-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ext-card-processor",
+          "viaRelationshipId": "rel:payment-service.production->ext-card-processor",
+          "causeId": "ext-card-processor",
+          "path": [
+            "ext-card-processor",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "payment-service.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ext-card-processor",
+          "viaRelationshipId": "rel:payment-service.staging->ext-card-processor",
+          "causeId": "ext-card-processor",
+          "path": [
+            "ext-card-processor",
+            "payment-service.staging"
+          ]
+        },
+        {
+          "entityId": "payout-worker.production",
+          "effect": "degraded",
+          "ruleId": "scheduled-job",
+          "rootId": "ext-card-processor",
+          "viaRelationshipId": "rel:payout-worker.production->ext-card-processor",
+          "causeId": "ext-card-processor",
+          "path": [
+            "ext-card-processor",
+            "payout-worker.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ext-card-processor",
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "causeId": "payment-service.production",
+          "path": [
+            "ext-card-processor",
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ext-card-processor",
+          "viaRelationshipId": "rel:order-service.staging->payment-service.staging",
+          "causeId": "payment-service.staging",
+          "path": [
+            "ext-card-processor",
+            "payment-service.staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ext-card-processor",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "ext-card-processor",
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ext-card-processor",
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "causeId": "order-service.staging",
+          "path": [
+            "ext-card-processor",
+            "payment-service.staging",
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ext-card-processor",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "payment-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ext-card-processor",
+          "viaRelationshipId": "rel:payment-service.production->ext-card-processor",
+          "causeId": "ext-card-processor",
+          "path": [
+            "ext-card-processor",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "payment-service.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ext-card-processor",
+          "viaRelationshipId": "rel:payment-service.staging->ext-card-processor",
+          "causeId": "ext-card-processor",
+          "path": [
+            "ext-card-processor",
+            "payment-service.staging"
+          ]
+        },
+        {
+          "entityId": "payout-worker.production",
+          "effect": "degraded",
+          "ruleId": "scheduled-job",
+          "rootId": "ext-card-processor",
+          "viaRelationshipId": "rel:payout-worker.production->ext-card-processor",
+          "causeId": "ext-card-processor",
+          "path": [
+            "ext-card-processor",
+            "payout-worker.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ext-card-processor",
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "causeId": "payment-service.production",
+          "path": [
+            "ext-card-processor",
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ext-card-processor",
+          "viaRelationshipId": "rel:order-service.staging->payment-service.staging",
+          "causeId": "payment-service.staging",
+          "path": [
+            "ext-card-processor",
+            "payment-service.staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ext-card-processor",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "ext-card-processor",
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.staging",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ext-card-processor",
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "causeId": "order-service.staging",
+          "path": [
+            "ext-card-processor",
+            "payment-service.staging",
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ext-email-delivery",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "email-dispatcher.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ext-email-delivery",
+          "viaRelationshipId": "rel:email-dispatcher.production->ext-email-delivery",
+          "causeId": "ext-email-delivery",
+          "path": [
+            "ext-email-delivery",
+            "email-dispatcher.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ext-email-delivery",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "email-dispatcher.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "ext-email-delivery",
+          "viaRelationshipId": "rel:email-dispatcher.production->ext-email-delivery",
+          "causeId": "ext-email-delivery",
+          "path": [
+            "ext-email-delivery",
+            "email-dispatcher.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "payment-service.production",
+          "mode": "unavailable"
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "inventory-service.production",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "topic-orders-events-prod",
+          "viaRelationshipId": "rel:topic-orders-events-prod->inventory-service.production",
+          "causeId": "topic-orders-events-prod",
+          "path": [
+            "topic-orders-events-prod",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "notification-service.production",
+          "effect": "degraded",
+          "ruleId": "consume-from-failed-channel",
+          "rootId": "topic-orders-events-prod",
+          "viaRelationshipId": "rel:topic-orders-events-prod->notification-service.production",
+          "causeId": "topic-orders-events-prod",
+          "path": [
+            "topic-orders-events-prod",
+            "notification-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "payment-service.production",
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "causeId": "payment-service.production",
+          "path": [
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "payment-service.production",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "eks-commerce-prod",
+          "mode": "unavailable"
+        },
+        {
+          "entityId": "rds-orders-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "api-gateway.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-prod",
+          "causeId": "eks-commerce-prod",
+          "path": [
+            "eks-commerce-prod",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "auth-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-prod",
+          "causeId": "eks-commerce-prod",
+          "path": [
+            "eks-commerce-prod",
+            "auth-service.production"
+          ]
+        },
+        {
+          "entityId": "cart-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-prod",
+          "causeId": "eks-commerce-prod",
+          "path": [
+            "eks-commerce-prod",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "catalog-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-prod",
+          "causeId": "eks-commerce-prod",
+          "path": [
+            "eks-commerce-prod",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "inventory-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-prod",
+          "causeId": "eks-commerce-prod",
+          "path": [
+            "eks-commerce-prod",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "legacy-report-cron.production",
+          "effect": "degraded",
+          "ruleId": "scheduled-job",
+          "rootId": "rds-orders-prod",
+          "viaRelationshipId": "rel:legacy-report-cron.production->rds-orders-prod",
+          "causeId": "rds-orders-prod",
+          "path": [
+            "rds-orders-prod",
+            "legacy-report-cron.production"
+          ]
+        },
+        {
+          "entityId": "ns-commerce-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-prod",
+          "causeId": "eks-commerce-prod",
+          "path": [
+            "eks-commerce-prod",
+            "ns-commerce-prod"
+          ]
+        },
+        {
+          "entityId": "ns-edge-prod",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-prod",
+          "causeId": "eks-commerce-prod",
+          "path": [
+            "eks-commerce-prod",
+            "ns-edge-prod"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-prod",
+          "causeId": "eks-commerce-prod",
+          "path": [
+            "eks-commerce-prod",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "effect": "unavailable",
+          "ruleId": "containment",
+          "rootId": "eks-commerce-prod",
+          "causeId": "eks-commerce-prod",
+          "path": [
+            "eks-commerce-prod",
+            "web-bff.production"
+          ]
+        },
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "eks-commerce-prod",
+          "viaRelationshipId": "rel:topic-inventory-updates-prod->catalog-service.production",
+          "causeId": "catalog-service.production",
+          "path": [
+            "eks-commerce-prod",
+            "catalog-service.production",
+            "topic-inventory-updates-prod"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "eks-commerce-prod",
+          "viaRelationshipId": "rel:topic-orders-events-prod->inventory-service.production",
+          "causeId": "inventory-service.production",
+          "path": [
+            "eks-commerce-prod",
+            "inventory-service.production",
+            "topic-orders-events-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "rds-inventory-prod",
+          "mode": "degraded"
+        },
+        {
+          "entityId": "inventory-service.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "entityId": "order-service.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "inventory-service.production",
+          "viaRelationshipId": "rel:order-service.production->inventory-service.production",
+          "causeId": "inventory-service.production",
+          "path": [
+            "inventory-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "effect": "degraded",
+          "ruleId": "consumer-backlog",
+          "rootId": "inventory-service.production",
+          "viaRelationshipId": "rel:topic-orders-events-prod->inventory-service.production",
+          "causeId": "inventory-service.production",
+          "path": [
+            "inventory-service.production",
+            "topic-orders-events-prod"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "effect": "degraded",
+          "ruleId": "synchronous-call",
+          "rootId": "inventory-service.production",
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "causeId": "order-service.production",
+          "path": [
+            "inventory-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    }
+  ]
+}

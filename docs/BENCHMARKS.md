@@ -69,3 +69,33 @@ Run: `npm run bench:3d -- --url <preview-url>` (`apps/web/scripts/bench-3d.mjs`;
 
 Assessment: the 250/750 fixture renders completely in 3D and stays interactive, but frame rate on software WebGL is far below 60 fps. **GPU measurement is still needed** before claiming the 3D target. Product owner accepted current performance for now (2026-10-11). Mitigations already in place: on-demand rendering when nothing animates, instanced arrows/particles, one line object per edge kind, label level-of-detail, and aggregation above 250 nodes.
 
+
+
+## 2026-10-11 — Backend B4 (Go API on ArcadeDB)
+
+**How to run:** `cd backend && make dev-up && make bench` (`cmd/apibench`: loads `fixtures/topology/inventory-1000.v1.json` into a temporary database, serves the real HTTP handler in-process, 3 warm-ups + 30 timed requests per row, drops the database).
+
+**Conditions:** Apple M2, 8 cores, 8 GB; Go 1.27.2; ArcadeDB 26.10.1 in Rancher Desktop (Docker 29.1.3, 2 GB VM shared with k3s and other containers; ArcadeDB capped at a 384 MB heap, Serial GC, `mem_limit` 768 MB). Client and API on the host, database in the VM. Dataset: 768 instances, 239 resources, 2,100 relationships (no event types in generated data). Not an idle machine: treat as indicative.
+
+Import (`seed load`, one statement per record in one transaction): 4.4–5.4 s for ~3,100 records.
+
+| Request (worst-case start entities) | p50 before cache | p50 with revision cache | p95 with cache | Response |
+|---|---|---|---|---|
+| `GET /topology` (all) | 87.3 ms | 5.8 ms | 6.7 ms | 1,187 KB |
+| `GET /topology?environmentId=` | 87.2 ms | 3.9 ms | 4.9 ms | 424 KB |
+| `GET /registry` page of 100, sort name | 81.8 ms | 3.4 ms | 5.1 ms | 28 KB |
+| `GET /registry` search (q + filters) | 83.6 ms | 2.5 ms | 3.9 ms | 13 KB |
+| `GET /topology/dependencies` upstream, depth 10 (busiest caller) | 24.0 ms | 23.9 ms | 27.4 ms | 93 KB |
+| `GET /topology/dependencies` downstream, depth 10 (most-called resource) | 55.2 ms | 55.5 ms | 62.5 ms | 146 KB |
+| `GET /topology/neighborhood` depth 3 | 11.0 ms | 10.8 ms | 13.3 ms | 16 KB |
+| `GET /topology/impact` (largest container unavailable) | 89.2 ms | 5.5 ms | 6.1 ms | 231 KB |
+| `GET /event-types` | 83.9 ms | 2.0 ms | 2.4 ms | <1 KB |
+
+Breakdown before caching (median): reading the full topology from ArcadeDB 85.9 ms; index, registry rows, and sort in Go 3.3 ms. With the cache, the read is a revision lookup (1.5 ms).
+
+Query-plan review (`EXPLAIN`, printed by `make bench`):
+- ID lookups use the unique indexes (`FETCH FROM INDEX ServiceInstance[id]`).
+- `TRAVERSE … MAXDEPTH n STRATEGY BREADTH_FIRST` starts from an index lookup.
+- Loading relationships between traversed entities did a **full scan of `COMMUNICATES`**; schema v3 adds indexes on `sourceEntityId`/`targetEntityId` (plan now `FETCH FROM INDEX COMMUNICATES[targetEntityId]`). No measurable latency change at 2,100 relationships; it keeps the query from growing with the total edge count.
+
+Assessment: with the revision cache, every full-topology endpoint answers in under 7 ms (p95) at 1,000 entities. Bounded traversals (11–56 ms) are now the slowest; their cost follows the size of the traversed neighbourhood, not the inventory (ADR-DB-003). Not yet measured: concurrency, larger inventories, a production-like database host.

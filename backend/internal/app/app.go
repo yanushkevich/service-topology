@@ -42,6 +42,7 @@ func Run(ctx context.Context, cfg config.Config, logger *slog.Logger, onListen f
 			TopologyRepo: arcadedb.NewTopologyRepository(client),
 			SnapshotRepo: arcadedb.NewSnapshotRepository(client),
 			LayoutRepo:   arcadedb.NewLayoutRepository(client),
+			GraphRepo:    arcadedb.NewGraphRepository(client),
 		}
 	}
 	handler := httpapi.NewHandler(httpapi.Deps{

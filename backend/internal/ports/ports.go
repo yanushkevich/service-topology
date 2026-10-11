@@ -54,6 +54,33 @@ type SavedLayoutRepository interface {
 	Remove(ctx context.Context, id string) error
 }
 
+// Traversal directions over communication relationships.
+const (
+	DirectionUpstream   = "upstream"   // follow outgoing relationships (what it depends on)
+	DirectionDownstream = "downstream" // follow incoming relationships (what depends on it)
+	DirectionBoth       = "both"       // undirected (neighborhoods)
+)
+
+// ErrTooLarge reports a traversal that would visit more entities than the server allows.
+var ErrTooLarge = errors.New("traversal too large")
+
+// Subgraph is the part of the communication graph within a bounded distance of a start entity:
+// every entity reachable in at most MaxDepth hops in the given direction, and every relationship
+// between them. Shortest paths of length <= MaxDepth computed on it equal those on the full graph.
+type Subgraph struct {
+	StartID       domain.EntityID
+	EntityIDs     []domain.EntityID
+	Relationships []domain.CommunicationRelationship
+}
+
+// GraphRepository answers bounded graph questions in the database instead of loading the whole
+// topology (docs/backend/PERSISTENCE.md "Query routing").
+type GraphRepository interface {
+	// Subgraph returns the bounded subgraph around startID; ErrNotFound if startID is not a service
+	// instance or resource; ErrTooLarge if more than maxEntities would be visited.
+	Subgraph(ctx context.Context, startID domain.EntityID, direction string, maxDepth, maxEntities int) (*Subgraph, error)
+}
+
 // ReadinessCheck is one dependency checked by GET /readyz. Messages must not reveal connection
 // details or credentials.
 type ReadinessCheck interface {

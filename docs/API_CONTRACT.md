@@ -47,6 +47,9 @@
 | `POST /topology/snapshots` | Store a snapshot (e.g. simulation capture) | `SnapshotRepository.save(snapshot)` |
 | `GET /layouts` / `POST /layouts` | Saved layouts | `SavedLayoutRepository.list()` / `.save()` |
 | `PUT /layouts/{id}` / `DELETE /layouts/{id}` | Replace / delete a layout | `SavedLayoutRepository.save()` / `.remove()` |
+| `GET /topology/dependencies`, `GET /topology/neighborhood` | Bounded traversal (B4) | `traversal.ts` `dependencyTree` / `neighborhood` (identical results) |
+| `GET /topology/impact`, `GET /propagation-rules` | Read-only failure impact and the rules (B4) | `propagation.ts` |
+| `GET /event-types`, `GET /event-types/{id}` | Event catalog (B4, ADR-014) | `eventFlow.ts` |
 
 Each operation in `openapi.json` names its interface in `x-repository`. An HTTP adapter implements the existing interfaces (`apps/web/src/data/repositories/TopologyRepository.ts`, `apps/web/src/data/snapshots/SnapshotRepository.ts`, `apps/web/src/data/savedLayouts/SavedLayoutRepository.ts`), so UI code does not change.
 

@@ -37,6 +37,7 @@ type Service struct {
 	TopologyRepo ports.TopologyRepository
 	SnapshotRepo ports.SnapshotRepository
 	LayoutRepo   ports.SavedLayoutRepository
+	GraphRepo    ports.GraphRepository
 }
 
 func (s *Service) index(ctx context.Context) (*domain.Index, error) {

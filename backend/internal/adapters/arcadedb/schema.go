@@ -11,8 +11,10 @@ import (
 // SchemaVersion is the version of the types, properties, and indexes below. Bump it with additive
 // changes only; record breaking ones in docs/backend/DATABASE_DECISIONS.md.
 //
-// History: 1 = canonical topology (B2); 2 = Snapshot and SavedLayout documents (B3, additive).
-const SchemaVersion = 2
+// History: 1 = canonical topology (B2); 2 = Snapshot and SavedLayout documents (B3, additive);
+// 3 = COMMUNICATES endpoint indexes for bounded traversal and the TopologyState revision document
+// used for read caching (B4, additive).
+const SchemaVersion = 3
 
 // Vertex types for canonical entities (docs/backend/PERSISTENCE.md). Each has a unique `id`.
 var vertexTypes = []string{"Environment", "ServiceDefinition", "ServiceInstance", "Resource", "EventType"}
@@ -25,7 +27,7 @@ var edgeTypes = []string{"COMMUNICATES", "CONTAINS", "HOSTED_IN", "INSTANCE_OF",
 const schemaInfoType = "SchemaInfo"
 
 // Document types with a unique id (snapshots and layouts store their validated JSON as payload).
-var documentTypes = []string{"Snapshot", "SavedLayout"}
+var documentTypes = []string{"Snapshot", "SavedLayout", "TopologyState"}
 
 // ddl returns the idempotent schema statements. All names are constants from this file, never input.
 func ddl() []string {
@@ -44,6 +46,11 @@ func ddl() []string {
 	s = append(s,
 		"CREATE PROPERTY COMMUNICATES.id IF NOT EXISTS STRING (mandatory true, notnull true)",
 		"CREATE INDEX IF NOT EXISTS ON COMMUNICATES (id) UNIQUE",
+		// Subgraph loads relationships by endpoint (PERSISTENCE.md); without these it scanned every edge.
+		"CREATE PROPERTY COMMUNICATES.sourceEntityId IF NOT EXISTS STRING",
+		"CREATE PROPERTY COMMUNICATES.targetEntityId IF NOT EXISTS STRING",
+		"CREATE INDEX IF NOT EXISTS ON COMMUNICATES (sourceEntityId) NOTUNIQUE",
+		"CREATE INDEX IF NOT EXISTS ON COMMUNICATES (targetEntityId) NOTUNIQUE",
 		// Registry and topology filters (PERSISTENCE.md "Schema, constraints, and indexes").
 		"CREATE PROPERTY ServiceInstance.environmentId IF NOT EXISTS STRING",
 		"CREATE INDEX IF NOT EXISTS ON ServiceInstance (environmentId) NOTUNIQUE",
@@ -57,6 +64,9 @@ func ddl() []string {
 		"CREATE PROPERTY Snapshot.takenAt IF NOT EXISTS STRING",
 		"CREATE INDEX IF NOT EXISTS ON Snapshot (id) UNIQUE",
 		"CREATE INDEX IF NOT EXISTS ON Snapshot (takenAt) NOTUNIQUE",
+		"CREATE DOCUMENT TYPE TopologyState IF NOT EXISTS",
+		"CREATE PROPERTY TopologyState.id IF NOT EXISTS STRING (mandatory true, notnull true)",
+		"CREATE INDEX IF NOT EXISTS ON TopologyState (id) UNIQUE",
 		"CREATE DOCUMENT TYPE SavedLayout IF NOT EXISTS",
 		"CREATE PROPERTY SavedLayout.id IF NOT EXISTS STRING (mandatory true, notnull true)",
 		"CREATE INDEX IF NOT EXISTS ON SavedLayout (id) UNIQUE",

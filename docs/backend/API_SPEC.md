@@ -39,12 +39,13 @@ Each operation names its frontend interface in `x-repository`. The frontend swit
 ### Environments and entities
 - `GET /environments/{environmentId}`.
 
-### Traversal (bounded; mirrors the client rules in `apps/web/src/domain/traversal.ts`)
+### Traversal (implemented in B4; bounded; identical to `apps/web/src/domain/traversal.ts`)
 - `GET /topology/neighborhood?entityId=&depth=1..3&environmentId=`: undirected neighborhood, as the URL `nh` parameter (depth 1–3).
 - `GET /topology/dependencies?entityId=&direction=upstream|downstream&maxDepth=&limit=`: transitive dependencies with hop count, path, and relationship per hop (as `dependencyTree`). `maxDepth` default 10, `limit` default 500; responses state `truncated`.
-- `GET /topology/impact?entityId=&mode=unavailable|degraded`: read-only propagation preview using the rules in `apps/web/src/domain/propagation.ts` (same rule IDs). Only if server-side analysis is needed; the client computes it today.
+- `GET /topology/impact?entityId=a,b&mode=unavailable|degraded`: read-only propagation preview using the rules in `apps/web/src/domain/propagation.ts` (same rule IDs, identical results).
+- `GET /propagation-rules`: the rule table with rationale.
 
-### Event catalog (ADR-014)
+### Event catalog (ADR-014; implemented in B4)
 - `GET /event-types?environmentId=&q=&cursor=&limit=`: event types present in the environment with channel and counts.
 - `GET /event-types/{id}?environmentId=`: resolved flow (channel, producers, consumers with instance IDs, relationship IDs, `viaQueueId`, not-deployed definitions).
 

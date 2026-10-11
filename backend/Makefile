@@ -11,7 +11,7 @@ export ARCADEDB_DATABASE ?= topology
 export ARCADEDB_USERNAME ?= root
 export ARCADEDB_PASSWORD_FILE ?= $(CURDIR)/secrets/arcadedb_root_password.txt
 
-.PHONY: check fmt fmt-check vet test test-integration contract-check run seed validate schema-check dev-up dev-down reset-local
+.PHONY: check fmt fmt-check vet test test-integration contract-check bench run seed validate schema-check dev-up dev-down reset-local
 
 ## check: formatting, vet, and unit/conformance tests (the B1 quality gate)
 check: fmt-check vet test
@@ -37,6 +37,10 @@ test-integration:
 ## docs/api/openapi.json (Node + apps/web dependencies required)
 contract-check:
 	GO=$(GO) ./scripts/contract-check.sh
+
+## bench: API latency against ArcadeDB on a generated dataset (temporary database); see docs/BENCHMARKS.md
+bench:
+	$(GO) run ./cmd/apibench -dataset inventory-1000
 
 ## run: start the API on HTTP_ADDR (default :8080) against the local ArcadeDB
 run:

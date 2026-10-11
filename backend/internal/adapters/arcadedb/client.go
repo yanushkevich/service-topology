@@ -107,6 +107,7 @@ func (c *Client) WithDatabase(name string) *Client {
 
 type response struct {
 	Result    json.RawMessage `json:"result"`
+	Explain   string          `json:"explain"`
 	Truncated bool            `json:"truncated"`
 	Error     string          `json:"error"`
 	Exception string          `json:"exception"`
@@ -262,6 +263,15 @@ func (c *Client) run(ctx context.Context, endpoint, session, sql string, params 
 // Query runs an idempotent SQL query outside a transaction.
 func (c *Client) Query(ctx context.Context, sql string, params map[string]any) ([]Record, error) {
 	return c.run(ctx, "query", "", sql, params)
+}
+
+// Explain returns the execution plan text of an "EXPLAIN …" statement (benchmarks, plan review).
+func (c *Client) Explain(ctx context.Context, sql string, params map[string]any) (string, error) {
+	out, _, err := c.do(ctx, http.MethodPost, "command/"+url.PathEscape(c.database), "", statement{Language: "sql", Command: sql, Params: params})
+	if err != nil {
+		return "", err
+	}
+	return out.Explain, nil
 }
 
 // Command runs a SQL command outside a transaction (schema DDL).

@@ -61,3 +61,18 @@ The product needs a registry for heterogeneous resources and flexible provider-s
 ### Consequences
 - Imports are whole-topology replacements, which suits mock and fixture data. Incremental, per-source upserts arrive with provider adapters (future milestone) and need their own ADR.
 - Reads of the full topology run inside a session so the collections come from one state.
+
+## ADR-DB-003: Bounded traversal in the database, results computed in Go, revision-cached reads (2026-10-11, Milestone B4)
+
+**Status:** Accepted (implemented; measurements in `docs/BENCHMARKS.md` "Backend B4").
+
+### Decisions
+- **Traversal split.** The database fetches the bounded subgraph (`TRAVERSE out|in|both("COMMUNICATES") … MAXDEPTH n STRATEGY BREADTH_FIRST`, capped at 5,000 visited entities, then the relationships among them through the new endpoint indexes). Go computes the exact client result on that subgraph (`DependencyTree`, `Neighborhood`). Shortest paths up to the bound are identical to the full graph; verified on 918 traversals (every mock entity, both directions, depths 1/2/10, neighbourhoods 1–3, and a sample of the 250-entity dataset).
+- **Why not compute the order in SQL:** the client's tie-breaks (relationships in collation order, results by depth then collated ID) are part of the contract; reproducing them in SQL would duplicate logic that conformance fixtures already pin in Go.
+- **Impact analysis and event flows** need containment and multi-hop callers across the topology, so they run on the full in-memory index (bounded by the topology size, not by a traversal).
+- **Revision-cached reads.** Every import writes a random revision to `TopologyState` in the same transaction. Reads fetch the revision (one indexed lookup) in their read session and reuse the cached topology when it is unchanged. Imports from other processes are picked up on the next read (integration test). Cached data is shared and read-only.
+- **Bounds:** dependencies `maxDepth` ≤ 10 (default 10), `limit` ≤ 1,000 (default 500, `truncated` flag); neighbourhood depth ≤ 3; impact ≤ 20 roots; 5,000 visited entities per traversal (400 above that).
+
+### Consequences and alternatives
+- With the cache, an in-memory traversal on the cached index would be faster at 1,000 entities (milliseconds instead of 11–56 ms). The database traversal is kept because its cost follows the neighbourhood size rather than the inventory size, and it does not require the whole topology in memory. Revisit if traversal latency matters more than memory at the target size (switching is a small change behind `ports.GraphRepository`).
+- Imports are one statement per record (about 5 s for 3,100 records). Batch them (e.g. `sqlscript`) if import time matters.

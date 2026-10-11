@@ -1,6 +1,6 @@
 # Go Backend Implementation Plan (ArcadeDB)
 
-**Status:** B1–B3 implemented (closeouts below); B4–B6 not started. Execute one milestone at a time; do not automatically start the next. Backend milestones are B1–B6, a separate track from frontend Milestones 1–7. Code lives in `backend/`. Commit each milestone with scope `b1`…`b6`. Track status in the root `docs/IMPLEMENTATION_PLAN.md`.
+**Status:** B1–B4 implemented (closeouts below); B5–B6 not started. Execute one milestone at a time; do not automatically start the next. Backend milestones are B1–B6, a separate track from frontend Milestones 1–7. Code lives in `backend/`. Commit each milestone with scope `b1`…`b6`. Track status in the root `docs/IMPLEMENTATION_PLAN.md`.
 
 ## Milestone B1 — Go service foundation and domain
 Scope: `backend/` Go module (scaffold files moved in from `docs/backend/scaffold/`), configuration validation, HTTP lifecycle, health/readiness skeleton, structured logging, domain types and the full `validateTopology` rule set, repository/query interfaces, shared fixture export (`fixtures/`, from the frontend mock via a script) and the conformance fixture format.
@@ -83,4 +83,20 @@ Evidence: `make check` exit 0; `make test-integration` passes (incl. snapshot an
 | Snapshots and layouts persisted | Pass | ArcadeDB schema v2 (additive; upgraded in place from v1), `TestSnapshotAndLayoutRepositories`; seed loads the 3 history fixtures idempotently and refuses to change an existing snapshot |
 
 Contract changes (additive, v1): documented error responses (400/404/409/413/415), environment projection and cursor semantics, `Problem.requestId`, validation code families. Known limitations: every request reads the full topology from ArcadeDB (fine at mock size; measured in B4); registry cursors are offset-based; layout concurrency control is still open.
+
+## Milestone B4 closeout (2026-10-11)
+Evidence: `make check` exit 0; `go test -race -count=1 ./...` passes; `make test-integration` passes; `make contract-check` 46/46 (14 new checks for the traversal, impact, rule, and event-type endpoints); `make bench` on 1,000 entities (`docs/BENCHMARKS.md`); frontend `npm run check` passes.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Endpoints added to `openapi.json` first | Pass | `/topology/dependencies`, `/topology/neighborhood`, `/topology/impact`, `/propagation-rules`, `/event-types`, `/event-types/{id}` with schemas; frontend contract tests pass |
+| Results equal the TypeScript functions | Pass | Go ports tested on TypeScript-generated fixtures: 124 dependency trees, 186 neighbourhoods, 186 reach sets, 127 impact analyses, event flows for 3 environments (shown to fail on altered expectations) |
+| Parameterized database traversal | Pass | `GraphRepository.Subgraph` (SQL `TRAVERSE`, bound parameters, allowlisted direction); 918 database-backed traversals equal the full-graph results (`TestTraversalOnTheDatabaseEqualsTheFullGraph`) |
+| Cycles, disconnected entities, depth limits, environment boundaries | Pass | BFS with visited sets (the mock has cycles through bindings/channels); every entity incl. isolated containment resources; depths 1/2/10 and neighbourhoods 1–3; projections validated per environment |
+| Authorization | Not applicable yet | No authentication exists; decided in B6 |
+| Query plans reviewed | Pass | `make bench` prints `EXPLAIN`; full edge scan found and fixed with schema v3 indexes |
+| Latency measured on a representative dataset | Pass | 1,000 entities: full-topology endpoints 2–6 ms p50 with the revision cache (82–89 ms before), traversals 11–56 ms |
+| No unbounded traversal endpoint | Pass | depth, limit, roots, and visited-entity caps (ADR-DB-003) |
+
+Known limitations: measurements on a shared 2 GB VM, single client, no concurrency test; imports are one statement per record; generated datasets have no event types.
 

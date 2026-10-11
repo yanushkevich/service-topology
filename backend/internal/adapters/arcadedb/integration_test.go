@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"servicetopology/backend/internal/adapters/arcadedb"
+	"servicetopology/backend/internal/application"
 	"servicetopology/backend/internal/config"
 	"servicetopology/backend/internal/domain"
 	"servicetopology/backend/internal/fixtures"
@@ -371,5 +372,107 @@ func TestSnapshotAndLayoutRepositories(t *testing.T) {
 	}
 	if err := layouts.Remove(ctx, "old"); !errors.Is(err, ports.ErrNotFound) {
 		t.Fatalf("remove missing: %v", err)
+	}
+}
+
+// The bounded subgraph fetched with TRAVERSE must give exactly the client's results (computed on the
+// full in-memory graph) for every start entity, direction, and depth bound.
+func TestTraversalOnTheDatabaseEqualsTheFullGraph(t *testing.T) {
+	c := tempClient(t)
+	ctx := context.Background()
+	if err := arcadedb.EnsureSchema(ctx, c); err != nil {
+		t.Fatal(err)
+	}
+	dir, _ := fixtures.Dir()
+	for _, file := range []string{"mock.v1.json", "scale-250.v1.json"} {
+		data, err := fixtures.LoadTopology(filepath.Join(dir, "topology", file))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := arcadedb.NewTopologyRepository(c).ReplaceTopology(ctx, data, "fixture"); err != nil {
+			t.Fatal(err)
+		}
+		full := domain.BuildIndex(data)
+		svc := &application.Service{TopologyRepo: arcadedb.NewTopologyRepository(c), GraphRepo: arcadedb.NewGraphRepository(c)}
+		var starts []string
+		for _, i := range data.ServiceInstances {
+			starts = append(starts, i.ID)
+		}
+		for _, r := range data.Resources {
+			starts = append(starts, r.ID)
+		}
+		if file != "mock.v1.json" { // sample the larger dataset to keep the test fast
+			sampled := []string{}
+			for i := 0; i < len(starts); i += 7 {
+				sampled = append(sampled, starts[i])
+			}
+			starts = sampled
+		}
+		checked := 0
+		for _, id := range starts {
+			for _, direction := range []string{"upstream", "downstream"} {
+				for _, depth := range []int{1, 2, 10} {
+					got, err := svc.Dependencies(ctx, id, direction, depth, application.MaxDependencyLimit)
+					if err != nil {
+						t.Fatalf("%s %s %d: %v", id, direction, depth, err)
+					}
+					want := full.DependencyTree(id, direction, depth)
+					if len(want) > application.MaxDependencyLimit {
+						want = want[:application.MaxDependencyLimit]
+					}
+					a, _ := json.Marshal(got.Items)
+					b, _ := json.Marshal(want)
+					if string(a) != string(b) {
+						t.Fatalf("%s: %s %s depth %d differs\n got: %.300s\nwant: %.300s", file, id, direction, depth, a, b)
+					}
+					checked++
+				}
+			}
+			for depth := 1; depth <= 3; depth++ {
+				got, err := svc.Neighborhood(ctx, id, depth)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if a, b := strings.Join(got.EntityIDs, ","), strings.Join(domain.SortedIDs(full.Neighborhood(id, depth)), ","); a != b {
+					t.Fatalf("%s: neighborhood %s depth %d differs", file, id, depth)
+				}
+				checked++
+			}
+		}
+		t.Logf("%s: %d traversals equal the full-graph results", file, checked)
+	}
+}
+
+// A cached reader must see an import made through another repository (another process, e.g. seed).
+func TestReadCacheFollowsImportsFromElsewhere(t *testing.T) {
+	c := tempClient(t)
+	ctx := context.Background()
+	if err := arcadedb.EnsureSchema(ctx, c); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := mockTopology(t)
+	writer, reader := arcadedb.NewTopologyRepository(c), arcadedb.NewTopologyRepository(c)
+	if _, err := writer.ReplaceTopology(ctx, data, "fixture"); err != nil {
+		t.Fatal(err)
+	}
+	first, err := reader.GetTopology(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	again, _ := reader.GetTopology(ctx, "")
+	if first != again {
+		t.Fatal("unchanged revision should return the cached topology")
+	}
+	changed, _ := mockTopology(t)
+	changed.Environments[0].Name = "Production (renamed)"
+	if _, err := writer.ReplaceTopology(ctx, changed, "fixture"); err != nil {
+		t.Fatal(err)
+	}
+	after, err := reader.GetTopology(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after == first || after.Environments[0].Name != "Production (renamed)" {
+		t.Fatalf("reader served stale data after an import elsewhere: %q", after.Environments[0].Name)
 	}
 }

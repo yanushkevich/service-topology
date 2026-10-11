@@ -689,6 +689,314 @@
           }
         }
       }
+    },
+    "/topology/dependencies": {
+      "get": {
+        "operationId": "getDependencies",
+        "summary": "Upstream (what it depends on) or downstream (what depends on it), bounded.",
+        "x-repository": "GraphRepository.subgraph + dependencyTree (today traversal.ts dependencyTree)",
+        "parameters": [
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Service instance or resource."
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "upstream",
+                "downstream"
+              ]
+            }
+          },
+          {
+            "name": "maxDepth",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "default": 10
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 500
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DependencyResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/topology/neighborhood": {
+      "get": {
+        "operationId": "getNeighborhood",
+        "summary": "Entities within depth hops, ignoring direction (URL state `nh`).",
+        "x-repository": "GraphRepository.subgraph + neighborhood (today traversal.ts neighborhood)",
+        "parameters": [
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "depth",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3,
+              "default": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NeighborhoodResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/topology/impact": {
+      "get": {
+        "operationId": "getImpact",
+        "summary": "Read-only failure impact preview using the propagation rules. Never changes data.",
+        "x-repository": "proposed; today propagation.ts analyzeImpact",
+        "parameters": [
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "maxItems": 20
+            },
+            "description": "One or more failure roots (comma-separated).",
+            "style": "form",
+            "explode": false
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "unavailable",
+                "degraded"
+              ],
+              "default": "unavailable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImpactResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/propagation-rules": {
+      "get": {
+        "operationId": "listPropagationRules",
+        "summary": "The propagation rules with their rationale.",
+        "x-repository": "constant PROPAGATION_RULES (propagation.ts)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PropagationRule"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/event-types": {
+      "get": {
+        "operationId": "listEventTypes",
+        "summary": "Event types carried in an environment, by name (ADR-014).",
+        "x-repository": "proposed; today eventFlow.ts eventFlowsIn",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/EventFlow"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/event-types/{id}": {
+      "get": {
+        "operationId": "getEventType",
+        "summary": "One event type resolved in an environment.",
+        "x-repository": "proposed; today eventFlow.ts resolveEventFlow",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "environmentId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventFlow"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -902,6 +1210,318 @@
           "requestId": {
             "type": "string",
             "description": "Extension member: the request ID (also in the X-Request-ID response header), for correlating with server logs."
+          }
+        }
+      },
+      "DependencyEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entityId",
+          "depth",
+          "viaRelationshipId",
+          "parentId",
+          "path"
+        ],
+        "description": "One entity at its shortest distance (breadth-first; relationships tried in ID order).",
+        "properties": {
+          "entityId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "viaRelationshipId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "parentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 2,
+            "description": "Start → … → entity."
+          }
+        }
+      },
+      "DependencyResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entityId",
+          "direction",
+          "maxDepth",
+          "truncated",
+          "items"
+        ],
+        "properties": {
+          "entityId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "direction": {
+            "enum": [
+              "upstream",
+              "downstream"
+            ]
+          },
+          "maxDepth": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "True when more entries exist than `limit`."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DependencyEntry"
+            }
+          }
+        }
+      },
+      "NeighborhoodResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "centerId",
+          "depth",
+          "entityIds",
+          "relationshipIds"
+        ],
+        "properties": {
+          "centerId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "entityIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "relationshipIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Relationships between the returned entities."
+          }
+        }
+      },
+      "FailureRoot": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entityId",
+          "mode"
+        ],
+        "properties": {
+          "entityId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mode": {
+            "enum": [
+              "unavailable",
+              "degraded"
+            ]
+          }
+        }
+      },
+      "Impact": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entityId",
+          "effect",
+          "ruleId",
+          "rootId",
+          "causeId",
+          "path"
+        ],
+        "properties": {
+          "entityId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "effect": {
+            "enum": [
+              "unavailable",
+              "degraded"
+            ]
+          },
+          "ruleId": {
+            "enum": [
+              "containment",
+              "synchronous-call",
+              "data-access",
+              "scheduled-job",
+              "publish-to-failed-channel",
+              "consume-from-failed-channel",
+              "consumer-backlog"
+            ]
+          },
+          "rootId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "viaRelationshipId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Absent for containment."
+          },
+          "causeId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ImpactResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "roots",
+          "impacts"
+        ],
+        "description": "Read-only what-if per the propagation rules (simulated reasoning, not a prediction).",
+        "properties": {
+          "roots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FailureRoot"
+            }
+          },
+          "impacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Impact"
+            }
+          }
+        }
+      },
+      "PropagationRule": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "when",
+          "effect",
+          "rationale",
+          "transitive"
+        ],
+        "properties": {
+          "id": {
+            "enum": [
+              "containment",
+              "synchronous-call",
+              "data-access",
+              "scheduled-job",
+              "publish-to-failed-channel",
+              "consume-from-failed-channel",
+              "consumer-backlog"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "when": {
+            "type": "string"
+          },
+          "effect": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "transitive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "EventFlowParticipant": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "serviceDefinitionId",
+          "instanceId",
+          "relationshipIds"
+        ],
+        "properties": {
+          "serviceDefinitionId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "instanceId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "null when the definition is not deployed in the environment."
+          },
+          "relationshipIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Path between instance and channel; empty when not connected."
+          },
+          "viaQueueId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Queue bound to an exchange channel that the consumer reads from."
+          }
+        }
+      },
+      "EventFlow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventType",
+          "channelId",
+          "producers",
+          "consumers"
+        ],
+        "properties": {
+          "eventType": {
+            "$ref": "../schemas/topology.v1.schema.json#/$defs/EventType"
+          },
+          "channelId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "producers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventFlowParticipant"
+            }
+          },
+          "consumers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventFlowParticipant"
+            }
           }
         }
       }

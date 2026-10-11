@@ -1,0 +1,3006 @@
+{
+  "topology": "topology/mock.v1.json",
+  "cases": [
+    {
+      "entityId": "api-gateway.production",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "auth-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:api-gateway.production->auth-service.production",
+          "parentId": "api-gateway.production",
+          "path": [
+            "api-gateway.production",
+            "auth-service.production"
+          ]
+        },
+        {
+          "entityId": "catalog-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:api-gateway.production->catalog-service.production",
+          "parentId": "api-gateway.production",
+          "path": [
+            "api-gateway.production",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "api-gateway.production",
+          "path": [
+            "api-gateway.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:api-gateway.production->web-bff.production",
+          "parentId": "api-gateway.production",
+          "path": [
+            "api-gateway.production",
+            "web-bff.production"
+          ]
+        },
+        {
+          "entityId": "cart-service.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:web-bff.production->cart-service.production",
+          "parentId": "web-bff.production",
+          "path": [
+            "api-gateway.production",
+            "web-bff.production",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "inventory-service.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:order-service.production->inventory-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "api-gateway.production",
+            "order-service.production",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "payment-service.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "api-gateway.production",
+            "order-service.production",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "rds-orders-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:order-service.production->rds-orders-prod",
+          "parentId": "order-service.production",
+          "path": [
+            "api-gateway.production",
+            "order-service.production",
+            "rds-orders-prod"
+          ]
+        },
+        {
+          "entityId": "redis-sessions-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:auth-service.production->redis-sessions-prod",
+          "parentId": "auth-service.production",
+          "path": [
+            "api-gateway.production",
+            "auth-service.production",
+            "redis-sessions-prod"
+          ]
+        },
+        {
+          "entityId": "search-catalog-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:catalog-service.production->search-catalog-prod",
+          "parentId": "catalog-service.production",
+          "path": [
+            "api-gateway.production",
+            "catalog-service.production",
+            "search-catalog-prod"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:order-service.production->topic-orders-events-prod",
+          "parentId": "order-service.production",
+          "path": [
+            "api-gateway.production",
+            "order-service.production",
+            "topic-orders-events-prod"
+          ]
+        },
+        {
+          "entityId": "ext-card-processor",
+          "depth": 3,
+          "viaRelationshipId": "rel:payment-service.production->ext-card-processor",
+          "parentId": "payment-service.production",
+          "path": [
+            "api-gateway.production",
+            "order-service.production",
+            "payment-service.production",
+            "ext-card-processor"
+          ]
+        },
+        {
+          "entityId": "fraud-scoring.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:payment-service.production->fraud-scoring.production",
+          "parentId": "payment-service.production",
+          "path": [
+            "api-gateway.production",
+            "order-service.production",
+            "payment-service.production",
+            "fraud-scoring.production"
+          ]
+        },
+        {
+          "entityId": "notification-service.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:topic-orders-events-prod->notification-service.production",
+          "parentId": "topic-orders-events-prod",
+          "path": [
+            "api-gateway.production",
+            "order-service.production",
+            "topic-orders-events-prod",
+            "notification-service.production"
+          ]
+        },
+        {
+          "entityId": "pg-payments-prod",
+          "depth": 3,
+          "viaRelationshipId": "rel:payment-service.production->pg-payments-prod",
+          "parentId": "payment-service.production",
+          "path": [
+            "api-gateway.production",
+            "order-service.production",
+            "payment-service.production",
+            "pg-payments-prod"
+          ]
+        },
+        {
+          "entityId": "rds-inventory-prod",
+          "depth": 3,
+          "viaRelationshipId": "rel:inventory-service.production->rds-inventory-prod",
+          "parentId": "inventory-service.production",
+          "path": [
+            "api-gateway.production",
+            "order-service.production",
+            "inventory-service.production",
+            "rds-inventory-prod"
+          ]
+        },
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "depth": 3,
+          "viaRelationshipId": "rel:inventory-service.production->topic-inventory-updates-prod",
+          "parentId": "inventory-service.production",
+          "path": [
+            "api-gateway.production",
+            "order-service.production",
+            "inventory-service.production",
+            "topic-inventory-updates-prod"
+          ]
+        },
+        {
+          "entityId": "topic-payments-events-prod",
+          "depth": 3,
+          "viaRelationshipId": "rel:payment-service.production->topic-payments-events-prod",
+          "parentId": "payment-service.production",
+          "path": [
+            "api-gateway.production",
+            "order-service.production",
+            "payment-service.production",
+            "topic-payments-events-prod"
+          ]
+        },
+        {
+          "entityId": "exchange-notifications-prod",
+          "depth": 4,
+          "viaRelationshipId": "rel:notification-service.production->exchange-notifications-prod",
+          "parentId": "notification-service.production",
+          "path": [
+            "api-gateway.production",
+            "order-service.production",
+            "topic-orders-events-prod",
+            "notification-service.production",
+            "exchange-notifications-prod"
+          ]
+        },
+        {
+          "entityId": "ledger-service.production",
+          "depth": 4,
+          "viaRelationshipId": "rel:topic-payments-events-prod->ledger-service.production",
+          "parentId": "topic-payments-events-prod",
+          "path": [
+            "api-gateway.production",
+            "order-service.production",
+            "payment-service.production",
+            "topic-payments-events-prod",
+            "ledger-service.production"
+          ]
+        },
+        {
+          "entityId": "pg-ledger-prod",
+          "depth": 5,
+          "viaRelationshipId": "rel:ledger-service.production->pg-ledger-prod",
+          "parentId": "ledger-service.production",
+          "path": [
+            "api-gateway.production",
+            "order-service.production",
+            "payment-service.production",
+            "topic-payments-events-prod",
+            "ledger-service.production",
+            "pg-ledger-prod"
+          ]
+        },
+        {
+          "entityId": "queue-notifications-email-prod",
+          "depth": 5,
+          "viaRelationshipId": "rel:exchange-notifications-prod->queue-notifications-email-prod",
+          "parentId": "exchange-notifications-prod",
+          "path": [
+            "api-gateway.production",
+            "order-service.production",
+            "topic-orders-events-prod",
+            "notification-service.production",
+            "exchange-notifications-prod",
+            "queue-notifications-email-prod"
+          ]
+        },
+        {
+          "entityId": "email-dispatcher.production",
+          "depth": 6,
+          "viaRelationshipId": "rel:queue-notifications-email-prod->email-dispatcher.production",
+          "parentId": "queue-notifications-email-prod",
+          "path": [
+            "api-gateway.production",
+            "order-service.production",
+            "topic-orders-events-prod",
+            "notification-service.production",
+            "exchange-notifications-prod",
+            "queue-notifications-email-prod",
+            "email-dispatcher.production"
+          ]
+        },
+        {
+          "entityId": "ext-email-delivery",
+          "depth": 7,
+          "viaRelationshipId": "rel:email-dispatcher.production->ext-email-delivery",
+          "parentId": "email-dispatcher.production",
+          "path": [
+            "api-gateway.production",
+            "order-service.production",
+            "topic-orders-events-prod",
+            "notification-service.production",
+            "exchange-notifications-prod",
+            "queue-notifications-email-prod",
+            "email-dispatcher.production",
+            "ext-email-delivery"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "api-gateway.production",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "web-bff.production",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "cart-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:web-bff.production->cart-service.production",
+          "parentId": "web-bff.production",
+          "path": [
+            "web-bff.production",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "catalog-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:web-bff.production->catalog-service.production",
+          "parentId": "web-bff.production",
+          "path": [
+            "web-bff.production",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "redis-sessions-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:cart-service.production->redis-sessions-prod",
+          "parentId": "cart-service.production",
+          "path": [
+            "web-bff.production",
+            "cart-service.production",
+            "redis-sessions-prod"
+          ]
+        },
+        {
+          "entityId": "search-catalog-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:catalog-service.production->search-catalog-prod",
+          "parentId": "catalog-service.production",
+          "path": [
+            "web-bff.production",
+            "catalog-service.production",
+            "search-catalog-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "web-bff.production",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "api-gateway.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:api-gateway.production->web-bff.production",
+          "parentId": "web-bff.production",
+          "path": [
+            "web-bff.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "auth-service.production",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "redis-sessions-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:auth-service.production->redis-sessions-prod",
+          "parentId": "auth-service.production",
+          "path": [
+            "auth-service.production",
+            "redis-sessions-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "auth-service.production",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "api-gateway.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:api-gateway.production->auth-service.production",
+          "parentId": "auth-service.production",
+          "path": [
+            "auth-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "cart-service.production",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "catalog-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:cart-service.production->catalog-service.production",
+          "parentId": "cart-service.production",
+          "path": [
+            "cart-service.production",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "redis-sessions-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:cart-service.production->redis-sessions-prod",
+          "parentId": "cart-service.production",
+          "path": [
+            "cart-service.production",
+            "redis-sessions-prod"
+          ]
+        },
+        {
+          "entityId": "search-catalog-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:catalog-service.production->search-catalog-prod",
+          "parentId": "catalog-service.production",
+          "path": [
+            "cart-service.production",
+            "catalog-service.production",
+            "search-catalog-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "cart-service.production",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "web-bff.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:web-bff.production->cart-service.production",
+          "parentId": "cart-service.production",
+          "path": [
+            "cart-service.production",
+            "web-bff.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:api-gateway.production->web-bff.production",
+          "parentId": "web-bff.production",
+          "path": [
+            "cart-service.production",
+            "web-bff.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "catalog-service.production",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "search-catalog-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:catalog-service.production->search-catalog-prod",
+          "parentId": "catalog-service.production",
+          "path": [
+            "catalog-service.production",
+            "search-catalog-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "catalog-service.production",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "api-gateway.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:api-gateway.production->catalog-service.production",
+          "parentId": "catalog-service.production",
+          "path": [
+            "catalog-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "cart-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:cart-service.production->catalog-service.production",
+          "parentId": "catalog-service.production",
+          "path": [
+            "catalog-service.production",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:topic-inventory-updates-prod->catalog-service.production",
+          "parentId": "catalog-service.production",
+          "path": [
+            "catalog-service.production",
+            "topic-inventory-updates-prod"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:web-bff.production->catalog-service.production",
+          "parentId": "catalog-service.production",
+          "path": [
+            "catalog-service.production",
+            "web-bff.production"
+          ]
+        },
+        {
+          "entityId": "inventory-service.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:inventory-service.production->topic-inventory-updates-prod",
+          "parentId": "topic-inventory-updates-prod",
+          "path": [
+            "catalog-service.production",
+            "topic-inventory-updates-prod",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:order-service.production->inventory-service.production",
+          "parentId": "inventory-service.production",
+          "path": [
+            "catalog-service.production",
+            "topic-inventory-updates-prod",
+            "inventory-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "depth": 3,
+          "viaRelationshipId": "rel:topic-orders-events-prod->inventory-service.production",
+          "parentId": "inventory-service.production",
+          "path": [
+            "catalog-service.production",
+            "topic-inventory-updates-prod",
+            "inventory-service.production",
+            "topic-orders-events-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "order-service.production",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "inventory-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:order-service.production->inventory-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "order-service.production",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "payment-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "order-service.production",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "rds-orders-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:order-service.production->rds-orders-prod",
+          "parentId": "order-service.production",
+          "path": [
+            "order-service.production",
+            "rds-orders-prod"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:order-service.production->topic-orders-events-prod",
+          "parentId": "order-service.production",
+          "path": [
+            "order-service.production",
+            "topic-orders-events-prod"
+          ]
+        },
+        {
+          "entityId": "ext-card-processor",
+          "depth": 2,
+          "viaRelationshipId": "rel:payment-service.production->ext-card-processor",
+          "parentId": "payment-service.production",
+          "path": [
+            "order-service.production",
+            "payment-service.production",
+            "ext-card-processor"
+          ]
+        },
+        {
+          "entityId": "fraud-scoring.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:payment-service.production->fraud-scoring.production",
+          "parentId": "payment-service.production",
+          "path": [
+            "order-service.production",
+            "payment-service.production",
+            "fraud-scoring.production"
+          ]
+        },
+        {
+          "entityId": "notification-service.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:topic-orders-events-prod->notification-service.production",
+          "parentId": "topic-orders-events-prod",
+          "path": [
+            "order-service.production",
+            "topic-orders-events-prod",
+            "notification-service.production"
+          ]
+        },
+        {
+          "entityId": "pg-payments-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:payment-service.production->pg-payments-prod",
+          "parentId": "payment-service.production",
+          "path": [
+            "order-service.production",
+            "payment-service.production",
+            "pg-payments-prod"
+          ]
+        },
+        {
+          "entityId": "rds-inventory-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:inventory-service.production->rds-inventory-prod",
+          "parentId": "inventory-service.production",
+          "path": [
+            "order-service.production",
+            "inventory-service.production",
+            "rds-inventory-prod"
+          ]
+        },
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:inventory-service.production->topic-inventory-updates-prod",
+          "parentId": "inventory-service.production",
+          "path": [
+            "order-service.production",
+            "inventory-service.production",
+            "topic-inventory-updates-prod"
+          ]
+        },
+        {
+          "entityId": "topic-payments-events-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:payment-service.production->topic-payments-events-prod",
+          "parentId": "payment-service.production",
+          "path": [
+            "order-service.production",
+            "payment-service.production",
+            "topic-payments-events-prod"
+          ]
+        },
+        {
+          "entityId": "catalog-service.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:topic-inventory-updates-prod->catalog-service.production",
+          "parentId": "topic-inventory-updates-prod",
+          "path": [
+            "order-service.production",
+            "inventory-service.production",
+            "topic-inventory-updates-prod",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "exchange-notifications-prod",
+          "depth": 3,
+          "viaRelationshipId": "rel:notification-service.production->exchange-notifications-prod",
+          "parentId": "notification-service.production",
+          "path": [
+            "order-service.production",
+            "topic-orders-events-prod",
+            "notification-service.production",
+            "exchange-notifications-prod"
+          ]
+        },
+        {
+          "entityId": "ledger-service.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:topic-payments-events-prod->ledger-service.production",
+          "parentId": "topic-payments-events-prod",
+          "path": [
+            "order-service.production",
+            "payment-service.production",
+            "topic-payments-events-prod",
+            "ledger-service.production"
+          ]
+        },
+        {
+          "entityId": "pg-ledger-prod",
+          "depth": 4,
+          "viaRelationshipId": "rel:ledger-service.production->pg-ledger-prod",
+          "parentId": "ledger-service.production",
+          "path": [
+            "order-service.production",
+            "payment-service.production",
+            "topic-payments-events-prod",
+            "ledger-service.production",
+            "pg-ledger-prod"
+          ]
+        },
+        {
+          "entityId": "queue-notifications-email-prod",
+          "depth": 4,
+          "viaRelationshipId": "rel:exchange-notifications-prod->queue-notifications-email-prod",
+          "parentId": "exchange-notifications-prod",
+          "path": [
+            "order-service.production",
+            "topic-orders-events-prod",
+            "notification-service.production",
+            "exchange-notifications-prod",
+            "queue-notifications-email-prod"
+          ]
+        },
+        {
+          "entityId": "search-catalog-prod",
+          "depth": 4,
+          "viaRelationshipId": "rel:catalog-service.production->search-catalog-prod",
+          "parentId": "catalog-service.production",
+          "path": [
+            "order-service.production",
+            "inventory-service.production",
+            "topic-inventory-updates-prod",
+            "catalog-service.production",
+            "search-catalog-prod"
+          ]
+        },
+        {
+          "entityId": "email-dispatcher.production",
+          "depth": 5,
+          "viaRelationshipId": "rel:queue-notifications-email-prod->email-dispatcher.production",
+          "parentId": "queue-notifications-email-prod",
+          "path": [
+            "order-service.production",
+            "topic-orders-events-prod",
+            "notification-service.production",
+            "exchange-notifications-prod",
+            "queue-notifications-email-prod",
+            "email-dispatcher.production"
+          ]
+        },
+        {
+          "entityId": "ext-email-delivery",
+          "depth": 6,
+          "viaRelationshipId": "rel:email-dispatcher.production->ext-email-delivery",
+          "parentId": "email-dispatcher.production",
+          "path": [
+            "order-service.production",
+            "topic-orders-events-prod",
+            "notification-service.production",
+            "exchange-notifications-prod",
+            "queue-notifications-email-prod",
+            "email-dispatcher.production",
+            "ext-email-delivery"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "order-service.production",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "api-gateway.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "inventory-service.production",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "rds-inventory-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:inventory-service.production->rds-inventory-prod",
+          "parentId": "inventory-service.production",
+          "path": [
+            "inventory-service.production",
+            "rds-inventory-prod"
+          ]
+        },
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:inventory-service.production->topic-inventory-updates-prod",
+          "parentId": "inventory-service.production",
+          "path": [
+            "inventory-service.production",
+            "topic-inventory-updates-prod"
+          ]
+        },
+        {
+          "entityId": "catalog-service.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:topic-inventory-updates-prod->catalog-service.production",
+          "parentId": "topic-inventory-updates-prod",
+          "path": [
+            "inventory-service.production",
+            "topic-inventory-updates-prod",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "search-catalog-prod",
+          "depth": 3,
+          "viaRelationshipId": "rel:catalog-service.production->search-catalog-prod",
+          "parentId": "catalog-service.production",
+          "path": [
+            "inventory-service.production",
+            "topic-inventory-updates-prod",
+            "catalog-service.production",
+            "search-catalog-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "inventory-service.production",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "order-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:order-service.production->inventory-service.production",
+          "parentId": "inventory-service.production",
+          "path": [
+            "inventory-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:topic-orders-events-prod->inventory-service.production",
+          "parentId": "inventory-service.production",
+          "path": [
+            "inventory-service.production",
+            "topic-orders-events-prod"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "inventory-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "notification-service.production",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "exchange-notifications-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:notification-service.production->exchange-notifications-prod",
+          "parentId": "notification-service.production",
+          "path": [
+            "notification-service.production",
+            "exchange-notifications-prod"
+          ]
+        },
+        {
+          "entityId": "queue-notifications-email-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:exchange-notifications-prod->queue-notifications-email-prod",
+          "parentId": "exchange-notifications-prod",
+          "path": [
+            "notification-service.production",
+            "exchange-notifications-prod",
+            "queue-notifications-email-prod"
+          ]
+        },
+        {
+          "entityId": "email-dispatcher.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:queue-notifications-email-prod->email-dispatcher.production",
+          "parentId": "queue-notifications-email-prod",
+          "path": [
+            "notification-service.production",
+            "exchange-notifications-prod",
+            "queue-notifications-email-prod",
+            "email-dispatcher.production"
+          ]
+        },
+        {
+          "entityId": "ext-email-delivery",
+          "depth": 4,
+          "viaRelationshipId": "rel:email-dispatcher.production->ext-email-delivery",
+          "parentId": "email-dispatcher.production",
+          "path": [
+            "notification-service.production",
+            "exchange-notifications-prod",
+            "queue-notifications-email-prod",
+            "email-dispatcher.production",
+            "ext-email-delivery"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "notification-service.production",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "topic-orders-events-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:topic-orders-events-prod->notification-service.production",
+          "parentId": "notification-service.production",
+          "path": [
+            "notification-service.production",
+            "topic-orders-events-prod"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:order-service.production->topic-orders-events-prod",
+          "parentId": "topic-orders-events-prod",
+          "path": [
+            "notification-service.production",
+            "topic-orders-events-prod",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "notification-service.production",
+            "topic-orders-events-prod",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "email-dispatcher.production",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "ext-email-delivery",
+          "depth": 1,
+          "viaRelationshipId": "rel:email-dispatcher.production->ext-email-delivery",
+          "parentId": "email-dispatcher.production",
+          "path": [
+            "email-dispatcher.production",
+            "ext-email-delivery"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "email-dispatcher.production",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "queue-notifications-email-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:queue-notifications-email-prod->email-dispatcher.production",
+          "parentId": "email-dispatcher.production",
+          "path": [
+            "email-dispatcher.production",
+            "queue-notifications-email-prod"
+          ]
+        },
+        {
+          "entityId": "exchange-notifications-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:exchange-notifications-prod->queue-notifications-email-prod",
+          "parentId": "queue-notifications-email-prod",
+          "path": [
+            "email-dispatcher.production",
+            "queue-notifications-email-prod",
+            "exchange-notifications-prod"
+          ]
+        },
+        {
+          "entityId": "notification-service.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:notification-service.production->exchange-notifications-prod",
+          "parentId": "exchange-notifications-prod",
+          "path": [
+            "email-dispatcher.production",
+            "queue-notifications-email-prod",
+            "exchange-notifications-prod",
+            "notification-service.production"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "depth": 4,
+          "viaRelationshipId": "rel:topic-orders-events-prod->notification-service.production",
+          "parentId": "notification-service.production",
+          "path": [
+            "email-dispatcher.production",
+            "queue-notifications-email-prod",
+            "exchange-notifications-prod",
+            "notification-service.production",
+            "topic-orders-events-prod"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "depth": 5,
+          "viaRelationshipId": "rel:order-service.production->topic-orders-events-prod",
+          "parentId": "topic-orders-events-prod",
+          "path": [
+            "email-dispatcher.production",
+            "queue-notifications-email-prod",
+            "exchange-notifications-prod",
+            "notification-service.production",
+            "topic-orders-events-prod",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 6,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "email-dispatcher.production",
+            "queue-notifications-email-prod",
+            "exchange-notifications-prod",
+            "notification-service.production",
+            "topic-orders-events-prod",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "legacy-report-cron.production",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "rds-orders-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:legacy-report-cron.production->rds-orders-prod",
+          "parentId": "legacy-report-cron.production",
+          "path": [
+            "legacy-report-cron.production",
+            "rds-orders-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "legacy-report-cron.production",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "payment-service.production",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "ext-card-processor",
+          "depth": 1,
+          "viaRelationshipId": "rel:payment-service.production->ext-card-processor",
+          "parentId": "payment-service.production",
+          "path": [
+            "payment-service.production",
+            "ext-card-processor"
+          ]
+        },
+        {
+          "entityId": "fraud-scoring.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:payment-service.production->fraud-scoring.production",
+          "parentId": "payment-service.production",
+          "path": [
+            "payment-service.production",
+            "fraud-scoring.production"
+          ]
+        },
+        {
+          "entityId": "pg-payments-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:payment-service.production->pg-payments-prod",
+          "parentId": "payment-service.production",
+          "path": [
+            "payment-service.production",
+            "pg-payments-prod"
+          ]
+        },
+        {
+          "entityId": "topic-payments-events-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:payment-service.production->topic-payments-events-prod",
+          "parentId": "payment-service.production",
+          "path": [
+            "payment-service.production",
+            "topic-payments-events-prod"
+          ]
+        },
+        {
+          "entityId": "ledger-service.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:topic-payments-events-prod->ledger-service.production",
+          "parentId": "topic-payments-events-prod",
+          "path": [
+            "payment-service.production",
+            "topic-payments-events-prod",
+            "ledger-service.production"
+          ]
+        },
+        {
+          "entityId": "pg-ledger-prod",
+          "depth": 3,
+          "viaRelationshipId": "rel:ledger-service.production->pg-ledger-prod",
+          "parentId": "ledger-service.production",
+          "path": [
+            "payment-service.production",
+            "topic-payments-events-prod",
+            "ledger-service.production",
+            "pg-ledger-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "payment-service.production",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "order-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "parentId": "payment-service.production",
+          "path": [
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "fraud-scoring.production",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "fraud-scoring.production",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "payment-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:payment-service.production->fraud-scoring.production",
+          "parentId": "fraud-scoring.production",
+          "path": [
+            "fraud-scoring.production",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "parentId": "payment-service.production",
+          "path": [
+            "fraud-scoring.production",
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "fraud-scoring.production",
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "ledger-service.production",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "pg-ledger-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:ledger-service.production->pg-ledger-prod",
+          "parentId": "ledger-service.production",
+          "path": [
+            "ledger-service.production",
+            "pg-ledger-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "ledger-service.production",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "payout-worker.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:payout-worker.production->ledger-service.production",
+          "parentId": "ledger-service.production",
+          "path": [
+            "ledger-service.production",
+            "payout-worker.production"
+          ]
+        },
+        {
+          "entityId": "topic-payments-events-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:topic-payments-events-prod->ledger-service.production",
+          "parentId": "ledger-service.production",
+          "path": [
+            "ledger-service.production",
+            "topic-payments-events-prod"
+          ]
+        },
+        {
+          "entityId": "payment-service.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:payment-service.production->topic-payments-events-prod",
+          "parentId": "topic-payments-events-prod",
+          "path": [
+            "ledger-service.production",
+            "topic-payments-events-prod",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "parentId": "payment-service.production",
+          "path": [
+            "ledger-service.production",
+            "topic-payments-events-prod",
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 4,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "ledger-service.production",
+            "topic-payments-events-prod",
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "payout-worker.production",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "ext-card-processor",
+          "depth": 1,
+          "viaRelationshipId": "rel:payout-worker.production->ext-card-processor",
+          "parentId": "payout-worker.production",
+          "path": [
+            "payout-worker.production",
+            "ext-card-processor"
+          ]
+        },
+        {
+          "entityId": "ledger-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:payout-worker.production->ledger-service.production",
+          "parentId": "payout-worker.production",
+          "path": [
+            "payout-worker.production",
+            "ledger-service.production"
+          ]
+        },
+        {
+          "entityId": "pg-ledger-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:ledger-service.production->pg-ledger-prod",
+          "parentId": "ledger-service.production",
+          "path": [
+            "payout-worker.production",
+            "ledger-service.production",
+            "pg-ledger-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "payout-worker.production",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "api-gateway.staging",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "catalog-service.staging",
+          "depth": 1,
+          "viaRelationshipId": "rel:api-gateway.staging->catalog-service.staging",
+          "parentId": "api-gateway.staging",
+          "path": [
+            "api-gateway.staging",
+            "catalog-service.staging"
+          ]
+        },
+        {
+          "entityId": "order-service.staging",
+          "depth": 1,
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "parentId": "api-gateway.staging",
+          "path": [
+            "api-gateway.staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "payment-service.staging",
+          "depth": 2,
+          "viaRelationshipId": "rel:order-service.staging->payment-service.staging",
+          "parentId": "order-service.staging",
+          "path": [
+            "api-gateway.staging",
+            "order-service.staging",
+            "payment-service.staging"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-staging",
+          "depth": 2,
+          "viaRelationshipId": "rel:order-service.staging->topic-orders-events-staging",
+          "parentId": "order-service.staging",
+          "path": [
+            "api-gateway.staging",
+            "order-service.staging",
+            "topic-orders-events-staging"
+          ]
+        },
+        {
+          "entityId": "ext-card-processor",
+          "depth": 3,
+          "viaRelationshipId": "rel:payment-service.staging->ext-card-processor",
+          "parentId": "payment-service.staging",
+          "path": [
+            "api-gateway.staging",
+            "order-service.staging",
+            "payment-service.staging",
+            "ext-card-processor"
+          ]
+        },
+        {
+          "entityId": "inventory-service.staging",
+          "depth": 3,
+          "viaRelationshipId": "rel:topic-orders-events-staging->inventory-service.staging",
+          "parentId": "topic-orders-events-staging",
+          "path": [
+            "api-gateway.staging",
+            "order-service.staging",
+            "topic-orders-events-staging",
+            "inventory-service.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "api-gateway.staging",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "catalog-service.staging",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "catalog-service.staging",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "api-gateway.staging",
+          "depth": 1,
+          "viaRelationshipId": "rel:api-gateway.staging->catalog-service.staging",
+          "parentId": "catalog-service.staging",
+          "path": [
+            "catalog-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "order-service.staging",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "payment-service.staging",
+          "depth": 1,
+          "viaRelationshipId": "rel:order-service.staging->payment-service.staging",
+          "parentId": "order-service.staging",
+          "path": [
+            "order-service.staging",
+            "payment-service.staging"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-staging",
+          "depth": 1,
+          "viaRelationshipId": "rel:order-service.staging->topic-orders-events-staging",
+          "parentId": "order-service.staging",
+          "path": [
+            "order-service.staging",
+            "topic-orders-events-staging"
+          ]
+        },
+        {
+          "entityId": "ext-card-processor",
+          "depth": 2,
+          "viaRelationshipId": "rel:payment-service.staging->ext-card-processor",
+          "parentId": "payment-service.staging",
+          "path": [
+            "order-service.staging",
+            "payment-service.staging",
+            "ext-card-processor"
+          ]
+        },
+        {
+          "entityId": "inventory-service.staging",
+          "depth": 2,
+          "viaRelationshipId": "rel:topic-orders-events-staging->inventory-service.staging",
+          "parentId": "topic-orders-events-staging",
+          "path": [
+            "order-service.staging",
+            "topic-orders-events-staging",
+            "inventory-service.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "order-service.staging",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "api-gateway.staging",
+          "depth": 1,
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "parentId": "order-service.staging",
+          "path": [
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "inventory-service.staging",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "inventory-service.staging",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "topic-orders-events-staging",
+          "depth": 1,
+          "viaRelationshipId": "rel:topic-orders-events-staging->inventory-service.staging",
+          "parentId": "inventory-service.staging",
+          "path": [
+            "inventory-service.staging",
+            "topic-orders-events-staging"
+          ]
+        },
+        {
+          "entityId": "order-service.staging",
+          "depth": 2,
+          "viaRelationshipId": "rel:order-service.staging->topic-orders-events-staging",
+          "parentId": "topic-orders-events-staging",
+          "path": [
+            "inventory-service.staging",
+            "topic-orders-events-staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "api-gateway.staging",
+          "depth": 3,
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "parentId": "order-service.staging",
+          "path": [
+            "inventory-service.staging",
+            "topic-orders-events-staging",
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "payment-service.staging",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "ext-card-processor",
+          "depth": 1,
+          "viaRelationshipId": "rel:payment-service.staging->ext-card-processor",
+          "parentId": "payment-service.staging",
+          "path": [
+            "payment-service.staging",
+            "ext-card-processor"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "payment-service.staging",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "order-service.staging",
+          "depth": 1,
+          "viaRelationshipId": "rel:order-service.staging->payment-service.staging",
+          "parentId": "payment-service.staging",
+          "path": [
+            "payment-service.staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "api-gateway.staging",
+          "depth": 2,
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "parentId": "order-service.staging",
+          "path": [
+            "payment-service.staging",
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "catalog-service.development",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "catalog-service.development",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "order-service.development",
+          "depth": 1,
+          "viaRelationshipId": "rel:order-service.development->catalog-service.development",
+          "parentId": "catalog-service.development",
+          "path": [
+            "catalog-service.development",
+            "order-service.development"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "order-service.development",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "catalog-service.development",
+          "depth": 1,
+          "viaRelationshipId": "rel:order-service.development->catalog-service.development",
+          "parentId": "order-service.development",
+          "path": [
+            "order-service.development",
+            "catalog-service.development"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "order-service.development",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "aws-acct-commerce-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "aws-acct-commerce-prod",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "aws-use1-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "aws-use1-prod",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "eks-commerce-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "eks-commerce-prod",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "ns-edge-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "ns-edge-prod",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "ns-commerce-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "ns-commerce-prod",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "rds-orders-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "rds-orders-prod",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "legacy-report-cron.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:legacy-report-cron.production->rds-orders-prod",
+          "parentId": "rds-orders-prod",
+          "path": [
+            "rds-orders-prod",
+            "legacy-report-cron.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:order-service.production->rds-orders-prod",
+          "parentId": "rds-orders-prod",
+          "path": [
+            "rds-orders-prod",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "rds-orders-prod",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "rds-inventory-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "rds-inventory-prod",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "inventory-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:inventory-service.production->rds-inventory-prod",
+          "parentId": "rds-inventory-prod",
+          "path": [
+            "rds-inventory-prod",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:order-service.production->inventory-service.production",
+          "parentId": "inventory-service.production",
+          "path": [
+            "rds-inventory-prod",
+            "inventory-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:topic-orders-events-prod->inventory-service.production",
+          "parentId": "inventory-service.production",
+          "path": [
+            "rds-inventory-prod",
+            "inventory-service.production",
+            "topic-orders-events-prod"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "rds-inventory-prod",
+            "inventory-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "redis-sessions-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "redis-sessions-prod",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "auth-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:auth-service.production->redis-sessions-prod",
+          "parentId": "redis-sessions-prod",
+          "path": [
+            "redis-sessions-prod",
+            "auth-service.production"
+          ]
+        },
+        {
+          "entityId": "cart-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:cart-service.production->redis-sessions-prod",
+          "parentId": "redis-sessions-prod",
+          "path": [
+            "redis-sessions-prod",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:api-gateway.production->auth-service.production",
+          "parentId": "auth-service.production",
+          "path": [
+            "redis-sessions-prod",
+            "auth-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:web-bff.production->cart-service.production",
+          "parentId": "cart-service.production",
+          "path": [
+            "redis-sessions-prod",
+            "cart-service.production",
+            "web-bff.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "aws-acct-commerce-nonprod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "aws-acct-commerce-nonprod",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "aws-use1-nonprod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "aws-use1-nonprod",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "eks-commerce-staging",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "eks-commerce-staging",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "ns-commerce-staging",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "ns-commerce-staging",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "eks-commerce-dev",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "eks-commerce-dev",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "ns-commerce-dev",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "ns-commerce-dev",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "az-sub-payments",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "az-sub-payments",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "az-weu",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "az-weu",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "aks-payments-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "aks-payments-prod",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "ns-payments-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "ns-payments-prod",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "ns-risk-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "ns-risk-prod",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "pg-payments-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "pg-payments-prod",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "payment-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:payment-service.production->pg-payments-prod",
+          "parentId": "pg-payments-prod",
+          "path": [
+            "pg-payments-prod",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "parentId": "payment-service.production",
+          "path": [
+            "pg-payments-prod",
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "pg-payments-prod",
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "aks-payments-staging",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "aks-payments-staging",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "ns-payments-staging",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "ns-payments-staging",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "gcp-proj-data",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "gcp-proj-data",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "gcp-usc1",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "gcp-usc1",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "kafka-events-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "kafka-events-prod",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "topic-orders-events-prod",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "inventory-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:topic-orders-events-prod->inventory-service.production",
+          "parentId": "topic-orders-events-prod",
+          "path": [
+            "topic-orders-events-prod",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "notification-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:topic-orders-events-prod->notification-service.production",
+          "parentId": "topic-orders-events-prod",
+          "path": [
+            "topic-orders-events-prod",
+            "notification-service.production"
+          ]
+        },
+        {
+          "entityId": "exchange-notifications-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:notification-service.production->exchange-notifications-prod",
+          "parentId": "notification-service.production",
+          "path": [
+            "topic-orders-events-prod",
+            "notification-service.production",
+            "exchange-notifications-prod"
+          ]
+        },
+        {
+          "entityId": "rds-inventory-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:inventory-service.production->rds-inventory-prod",
+          "parentId": "inventory-service.production",
+          "path": [
+            "topic-orders-events-prod",
+            "inventory-service.production",
+            "rds-inventory-prod"
+          ]
+        },
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:inventory-service.production->topic-inventory-updates-prod",
+          "parentId": "inventory-service.production",
+          "path": [
+            "topic-orders-events-prod",
+            "inventory-service.production",
+            "topic-inventory-updates-prod"
+          ]
+        },
+        {
+          "entityId": "catalog-service.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:topic-inventory-updates-prod->catalog-service.production",
+          "parentId": "topic-inventory-updates-prod",
+          "path": [
+            "topic-orders-events-prod",
+            "inventory-service.production",
+            "topic-inventory-updates-prod",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "queue-notifications-email-prod",
+          "depth": 3,
+          "viaRelationshipId": "rel:exchange-notifications-prod->queue-notifications-email-prod",
+          "parentId": "exchange-notifications-prod",
+          "path": [
+            "topic-orders-events-prod",
+            "notification-service.production",
+            "exchange-notifications-prod",
+            "queue-notifications-email-prod"
+          ]
+        },
+        {
+          "entityId": "email-dispatcher.production",
+          "depth": 4,
+          "viaRelationshipId": "rel:queue-notifications-email-prod->email-dispatcher.production",
+          "parentId": "queue-notifications-email-prod",
+          "path": [
+            "topic-orders-events-prod",
+            "notification-service.production",
+            "exchange-notifications-prod",
+            "queue-notifications-email-prod",
+            "email-dispatcher.production"
+          ]
+        },
+        {
+          "entityId": "search-catalog-prod",
+          "depth": 4,
+          "viaRelationshipId": "rel:catalog-service.production->search-catalog-prod",
+          "parentId": "catalog-service.production",
+          "path": [
+            "topic-orders-events-prod",
+            "inventory-service.production",
+            "topic-inventory-updates-prod",
+            "catalog-service.production",
+            "search-catalog-prod"
+          ]
+        },
+        {
+          "entityId": "ext-email-delivery",
+          "depth": 5,
+          "viaRelationshipId": "rel:email-dispatcher.production->ext-email-delivery",
+          "parentId": "email-dispatcher.production",
+          "path": [
+            "topic-orders-events-prod",
+            "notification-service.production",
+            "exchange-notifications-prod",
+            "queue-notifications-email-prod",
+            "email-dispatcher.production",
+            "ext-email-delivery"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "topic-orders-events-prod",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "order-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:order-service.production->topic-orders-events-prod",
+          "parentId": "topic-orders-events-prod",
+          "path": [
+            "topic-orders-events-prod",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "topic-orders-events-prod",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "topic-inventory-updates-prod",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "catalog-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:topic-inventory-updates-prod->catalog-service.production",
+          "parentId": "topic-inventory-updates-prod",
+          "path": [
+            "topic-inventory-updates-prod",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "search-catalog-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:catalog-service.production->search-catalog-prod",
+          "parentId": "catalog-service.production",
+          "path": [
+            "topic-inventory-updates-prod",
+            "catalog-service.production",
+            "search-catalog-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "topic-inventory-updates-prod",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "inventory-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:inventory-service.production->topic-inventory-updates-prod",
+          "parentId": "topic-inventory-updates-prod",
+          "path": [
+            "topic-inventory-updates-prod",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:order-service.production->inventory-service.production",
+          "parentId": "inventory-service.production",
+          "path": [
+            "topic-inventory-updates-prod",
+            "inventory-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:topic-orders-events-prod->inventory-service.production",
+          "parentId": "inventory-service.production",
+          "path": [
+            "topic-inventory-updates-prod",
+            "inventory-service.production",
+            "topic-orders-events-prod"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "topic-inventory-updates-prod",
+            "inventory-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "topic-payments-events-prod",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "ledger-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:topic-payments-events-prod->ledger-service.production",
+          "parentId": "topic-payments-events-prod",
+          "path": [
+            "topic-payments-events-prod",
+            "ledger-service.production"
+          ]
+        },
+        {
+          "entityId": "pg-ledger-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:ledger-service.production->pg-ledger-prod",
+          "parentId": "ledger-service.production",
+          "path": [
+            "topic-payments-events-prod",
+            "ledger-service.production",
+            "pg-ledger-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "topic-payments-events-prod",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "payment-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:payment-service.production->topic-payments-events-prod",
+          "parentId": "topic-payments-events-prod",
+          "path": [
+            "topic-payments-events-prod",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "parentId": "payment-service.production",
+          "path": [
+            "topic-payments-events-prod",
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "topic-payments-events-prod",
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "search-catalog-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "search-catalog-prod",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "catalog-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:catalog-service.production->search-catalog-prod",
+          "parentId": "search-catalog-prod",
+          "path": [
+            "search-catalog-prod",
+            "catalog-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:api-gateway.production->catalog-service.production",
+          "parentId": "catalog-service.production",
+          "path": [
+            "search-catalog-prod",
+            "catalog-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "cart-service.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:cart-service.production->catalog-service.production",
+          "parentId": "catalog-service.production",
+          "path": [
+            "search-catalog-prod",
+            "catalog-service.production",
+            "cart-service.production"
+          ]
+        },
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:topic-inventory-updates-prod->catalog-service.production",
+          "parentId": "catalog-service.production",
+          "path": [
+            "search-catalog-prod",
+            "catalog-service.production",
+            "topic-inventory-updates-prod"
+          ]
+        },
+        {
+          "entityId": "web-bff.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:web-bff.production->catalog-service.production",
+          "parentId": "catalog-service.production",
+          "path": [
+            "search-catalog-prod",
+            "catalog-service.production",
+            "web-bff.production"
+          ]
+        },
+        {
+          "entityId": "inventory-service.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:inventory-service.production->topic-inventory-updates-prod",
+          "parentId": "topic-inventory-updates-prod",
+          "path": [
+            "search-catalog-prod",
+            "catalog-service.production",
+            "topic-inventory-updates-prod",
+            "inventory-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "depth": 4,
+          "viaRelationshipId": "rel:order-service.production->inventory-service.production",
+          "parentId": "inventory-service.production",
+          "path": [
+            "search-catalog-prod",
+            "catalog-service.production",
+            "topic-inventory-updates-prod",
+            "inventory-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "depth": 4,
+          "viaRelationshipId": "rel:topic-orders-events-prod->inventory-service.production",
+          "parentId": "inventory-service.production",
+          "path": [
+            "search-catalog-prod",
+            "catalog-service.production",
+            "topic-inventory-updates-prod",
+            "inventory-service.production",
+            "topic-orders-events-prod"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "kafka-events-staging",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "kafka-events-staging",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "topic-orders-events-staging",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "inventory-service.staging",
+          "depth": 1,
+          "viaRelationshipId": "rel:topic-orders-events-staging->inventory-service.staging",
+          "parentId": "topic-orders-events-staging",
+          "path": [
+            "topic-orders-events-staging",
+            "inventory-service.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "topic-orders-events-staging",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "order-service.staging",
+          "depth": 1,
+          "viaRelationshipId": "rel:order-service.staging->topic-orders-events-staging",
+          "parentId": "topic-orders-events-staging",
+          "path": [
+            "topic-orders-events-staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "api-gateway.staging",
+          "depth": 2,
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "parentId": "order-service.staging",
+          "path": [
+            "topic-orders-events-staging",
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "dc-fra",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "dc-fra",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "k8s-fra-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "k8s-fra-prod",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "ns-batch-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "ns-batch-prod",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "ns-messaging-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "ns-messaging-prod",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "rabbitmq-fra-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "rabbitmq-fra-prod",
+      "direction": "downstream",
+      "expected": []
+    },
+    {
+      "entityId": "exchange-notifications-prod",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "queue-notifications-email-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:exchange-notifications-prod->queue-notifications-email-prod",
+          "parentId": "exchange-notifications-prod",
+          "path": [
+            "exchange-notifications-prod",
+            "queue-notifications-email-prod"
+          ]
+        },
+        {
+          "entityId": "email-dispatcher.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:queue-notifications-email-prod->email-dispatcher.production",
+          "parentId": "queue-notifications-email-prod",
+          "path": [
+            "exchange-notifications-prod",
+            "queue-notifications-email-prod",
+            "email-dispatcher.production"
+          ]
+        },
+        {
+          "entityId": "ext-email-delivery",
+          "depth": 3,
+          "viaRelationshipId": "rel:email-dispatcher.production->ext-email-delivery",
+          "parentId": "email-dispatcher.production",
+          "path": [
+            "exchange-notifications-prod",
+            "queue-notifications-email-prod",
+            "email-dispatcher.production",
+            "ext-email-delivery"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "exchange-notifications-prod",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "notification-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:notification-service.production->exchange-notifications-prod",
+          "parentId": "exchange-notifications-prod",
+          "path": [
+            "exchange-notifications-prod",
+            "notification-service.production"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:topic-orders-events-prod->notification-service.production",
+          "parentId": "notification-service.production",
+          "path": [
+            "exchange-notifications-prod",
+            "notification-service.production",
+            "topic-orders-events-prod"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:order-service.production->topic-orders-events-prod",
+          "parentId": "topic-orders-events-prod",
+          "path": [
+            "exchange-notifications-prod",
+            "notification-service.production",
+            "topic-orders-events-prod",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 4,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "exchange-notifications-prod",
+            "notification-service.production",
+            "topic-orders-events-prod",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "queue-notifications-email-prod",
+      "direction": "upstream",
+      "expected": [
+        {
+          "entityId": "email-dispatcher.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:queue-notifications-email-prod->email-dispatcher.production",
+          "parentId": "queue-notifications-email-prod",
+          "path": [
+            "queue-notifications-email-prod",
+            "email-dispatcher.production"
+          ]
+        },
+        {
+          "entityId": "ext-email-delivery",
+          "depth": 2,
+          "viaRelationshipId": "rel:email-dispatcher.production->ext-email-delivery",
+          "parentId": "email-dispatcher.production",
+          "path": [
+            "queue-notifications-email-prod",
+            "email-dispatcher.production",
+            "ext-email-delivery"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "queue-notifications-email-prod",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "exchange-notifications-prod",
+          "depth": 1,
+          "viaRelationshipId": "rel:exchange-notifications-prod->queue-notifications-email-prod",
+          "parentId": "queue-notifications-email-prod",
+          "path": [
+            "queue-notifications-email-prod",
+            "exchange-notifications-prod"
+          ]
+        },
+        {
+          "entityId": "notification-service.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:notification-service.production->exchange-notifications-prod",
+          "parentId": "exchange-notifications-prod",
+          "path": [
+            "queue-notifications-email-prod",
+            "exchange-notifications-prod",
+            "notification-service.production"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "depth": 3,
+          "viaRelationshipId": "rel:topic-orders-events-prod->notification-service.production",
+          "parentId": "notification-service.production",
+          "path": [
+            "queue-notifications-email-prod",
+            "exchange-notifications-prod",
+            "notification-service.production",
+            "topic-orders-events-prod"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "depth": 4,
+          "viaRelationshipId": "rel:order-service.production->topic-orders-events-prod",
+          "parentId": "topic-orders-events-prod",
+          "path": [
+            "queue-notifications-email-prod",
+            "exchange-notifications-prod",
+            "notification-service.production",
+            "topic-orders-events-prod",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 5,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "queue-notifications-email-prod",
+            "exchange-notifications-prod",
+            "notification-service.production",
+            "topic-orders-events-prod",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "pg-ledger-prod",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "pg-ledger-prod",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "ledger-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:ledger-service.production->pg-ledger-prod",
+          "parentId": "pg-ledger-prod",
+          "path": [
+            "pg-ledger-prod",
+            "ledger-service.production"
+          ]
+        },
+        {
+          "entityId": "payout-worker.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:payout-worker.production->ledger-service.production",
+          "parentId": "ledger-service.production",
+          "path": [
+            "pg-ledger-prod",
+            "ledger-service.production",
+            "payout-worker.production"
+          ]
+        },
+        {
+          "entityId": "topic-payments-events-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:topic-payments-events-prod->ledger-service.production",
+          "parentId": "ledger-service.production",
+          "path": [
+            "pg-ledger-prod",
+            "ledger-service.production",
+            "topic-payments-events-prod"
+          ]
+        },
+        {
+          "entityId": "payment-service.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:payment-service.production->topic-payments-events-prod",
+          "parentId": "topic-payments-events-prod",
+          "path": [
+            "pg-ledger-prod",
+            "ledger-service.production",
+            "topic-payments-events-prod",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "depth": 4,
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "parentId": "payment-service.production",
+          "path": [
+            "pg-ledger-prod",
+            "ledger-service.production",
+            "topic-payments-events-prod",
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 5,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "pg-ledger-prod",
+            "ledger-service.production",
+            "topic-payments-events-prod",
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "ext-card-processor",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "ext-card-processor",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "payment-service.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:payment-service.production->ext-card-processor",
+          "parentId": "ext-card-processor",
+          "path": [
+            "ext-card-processor",
+            "payment-service.production"
+          ]
+        },
+        {
+          "entityId": "payment-service.staging",
+          "depth": 1,
+          "viaRelationshipId": "rel:payment-service.staging->ext-card-processor",
+          "parentId": "ext-card-processor",
+          "path": [
+            "ext-card-processor",
+            "payment-service.staging"
+          ]
+        },
+        {
+          "entityId": "payout-worker.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:payout-worker.production->ext-card-processor",
+          "parentId": "ext-card-processor",
+          "path": [
+            "ext-card-processor",
+            "payout-worker.production"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "depth": 2,
+          "viaRelationshipId": "rel:order-service.production->payment-service.production",
+          "parentId": "payment-service.production",
+          "path": [
+            "ext-card-processor",
+            "payment-service.production",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "order-service.staging",
+          "depth": 2,
+          "viaRelationshipId": "rel:order-service.staging->payment-service.staging",
+          "parentId": "payment-service.staging",
+          "path": [
+            "ext-card-processor",
+            "payment-service.staging",
+            "order-service.staging"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 3,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "ext-card-processor",
+            "payment-service.production",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.staging",
+          "depth": 3,
+          "viaRelationshipId": "rel:api-gateway.staging->order-service.staging",
+          "parentId": "order-service.staging",
+          "path": [
+            "ext-card-processor",
+            "payment-service.staging",
+            "order-service.staging",
+            "api-gateway.staging"
+          ]
+        }
+      ]
+    },
+    {
+      "entityId": "ext-email-delivery",
+      "direction": "upstream",
+      "expected": []
+    },
+    {
+      "entityId": "ext-email-delivery",
+      "direction": "downstream",
+      "expected": [
+        {
+          "entityId": "email-dispatcher.production",
+          "depth": 1,
+          "viaRelationshipId": "rel:email-dispatcher.production->ext-email-delivery",
+          "parentId": "ext-email-delivery",
+          "path": [
+            "ext-email-delivery",
+            "email-dispatcher.production"
+          ]
+        },
+        {
+          "entityId": "queue-notifications-email-prod",
+          "depth": 2,
+          "viaRelationshipId": "rel:queue-notifications-email-prod->email-dispatcher.production",
+          "parentId": "email-dispatcher.production",
+          "path": [
+            "ext-email-delivery",
+            "email-dispatcher.production",
+            "queue-notifications-email-prod"
+          ]
+        },
+        {
+          "entityId": "exchange-notifications-prod",
+          "depth": 3,
+          "viaRelationshipId": "rel:exchange-notifications-prod->queue-notifications-email-prod",
+          "parentId": "queue-notifications-email-prod",
+          "path": [
+            "ext-email-delivery",
+            "email-dispatcher.production",
+            "queue-notifications-email-prod",
+            "exchange-notifications-prod"
+          ]
+        },
+        {
+          "entityId": "notification-service.production",
+          "depth": 4,
+          "viaRelationshipId": "rel:notification-service.production->exchange-notifications-prod",
+          "parentId": "exchange-notifications-prod",
+          "path": [
+            "ext-email-delivery",
+            "email-dispatcher.production",
+            "queue-notifications-email-prod",
+            "exchange-notifications-prod",
+            "notification-service.production"
+          ]
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "depth": 5,
+          "viaRelationshipId": "rel:topic-orders-events-prod->notification-service.production",
+          "parentId": "notification-service.production",
+          "path": [
+            "ext-email-delivery",
+            "email-dispatcher.production",
+            "queue-notifications-email-prod",
+            "exchange-notifications-prod",
+            "notification-service.production",
+            "topic-orders-events-prod"
+          ]
+        },
+        {
+          "entityId": "order-service.production",
+          "depth": 6,
+          "viaRelationshipId": "rel:order-service.production->topic-orders-events-prod",
+          "parentId": "topic-orders-events-prod",
+          "path": [
+            "ext-email-delivery",
+            "email-dispatcher.production",
+            "queue-notifications-email-prod",
+            "exchange-notifications-prod",
+            "notification-service.production",
+            "topic-orders-events-prod",
+            "order-service.production"
+          ]
+        },
+        {
+          "entityId": "api-gateway.production",
+          "depth": 7,
+          "viaRelationshipId": "rel:api-gateway.production->order-service.production",
+          "parentId": "order-service.production",
+          "path": [
+            "ext-email-delivery",
+            "email-dispatcher.production",
+            "queue-notifications-email-prod",
+            "exchange-notifications-prod",
+            "notification-service.production",
+            "topic-orders-events-prod",
+            "order-service.production",
+            "api-gateway.production"
+          ]
+        }
+      ]
+    }
+  ]
+}

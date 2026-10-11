@@ -113,6 +113,21 @@ if (full) {
   await check('capture invalid', 'post', '/topology/snapshots', '/topology/snapshots', { status: 422, body: { ...capture, id: `contract-bad-${stamp}`, source: 'fixture', isSimulated: false } });
 }
 
+await check('dependencies upstream', 'get', '/topology/dependencies', '/topology/dependencies?entityId=order-service.production&direction=upstream', { status: 200 });
+await check('dependencies bounded', 'get', '/topology/dependencies', '/topology/dependencies?entityId=payment-service.production&direction=downstream&maxDepth=1&limit=1', { status: 200 });
+await check('dependencies, bad direction', 'get', '/topology/dependencies', '/topology/dependencies?entityId=order-service.production&direction=sideways', { status: 400 });
+await check('dependencies, unknown entity', 'get', '/topology/dependencies', '/topology/dependencies?entityId=ghost&direction=upstream', { status: 404 });
+await check('neighborhood', 'get', '/topology/neighborhood', '/topology/neighborhood?entityId=topic-orders-events-prod&depth=2', { status: 200 });
+await check('neighborhood, depth too large', 'get', '/topology/neighborhood', '/topology/neighborhood?entityId=topic-orders-events-prod&depth=4', { status: 400 });
+await check('impact', 'get', '/topology/impact', '/topology/impact?entityId=eks-commerce-prod,rds-orders-prod&mode=unavailable', { status: 200 });
+await check('impact, unknown entity', 'get', '/topology/impact', '/topology/impact?entityId=ghost', { status: 404 });
+await check('propagation rules', 'get', '/propagation-rules', '/propagation-rules', { status: 200 });
+await check('event types', 'get', '/event-types', '/event-types?environmentId=production', { status: 200 });
+await check('event type', 'get', '/event-types/{id}', '/event-types/event-notification-requested?environmentId=production', { status: 200 });
+await check('event type, not deployed consumer', 'get', '/event-types/{id}', '/event-types/event-order-placed?environmentId=staging', { status: 200 });
+await check('event type, not carried', 'get', '/event-types/{id}', '/event-types/event-payment-captured?environmentId=staging', { status: 404 });
+await check('event types, missing environment', 'get', '/event-types', '/event-types', { status: 400 });
+
 const layout = openapi.paths['/layouts'].post.requestBody.content['application/json'].examples.default.value;
 const mine = { ...layout, id: `contract-${stamp}` };
 await check('create layout', 'post', '/layouts', '/layouts', { status: 201, body: mine });

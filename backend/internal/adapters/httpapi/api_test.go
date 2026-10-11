@@ -31,7 +31,7 @@ func apiHandler(t *testing.T) (http.Handler, *memory.Store) {
 		t.Fatal(err)
 	}
 	store := memory.New(data)
-	svc := &application.Service{TopologyRepo: store, SnapshotRepo: store, LayoutRepo: store.Layouts()}
+	svc := &application.Service{TopologyRepo: store, SnapshotRepo: store, LayoutRepo: store.Layouts(), GraphRepo: store}
 	return httpapi.NewHandler(httpapi.Deps{Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), API: svc}), store
 }
 
@@ -282,5 +282,67 @@ func TestDatabaseFailuresAreServiceUnavailable(t *testing.T) {
 	noDB := httpapi.NewHandler(httpapi.Deps{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	if r := call(noDB, "GET", "/api/v1/environments", ""); r.code != 503 {
 		t.Fatalf("no database: %d", r.code)
+	}
+}
+
+func TestTraversalEndpoints(t *testing.T) {
+	h, store := apiHandler(t)
+	full := domain.BuildIndex(store.Data)
+
+	var deps application.DependencyResult
+	call(h, "GET", "/api/v1/topology/dependencies?entityId=order-service.production&direction=upstream", "").json(t, &deps)
+	want := full.DependencyTree("order-service.production", "upstream", 0)
+	if mustJSON(deps.Items) != mustJSON(want) || deps.MaxDepth != 10 || deps.Truncated {
+		t.Fatalf("dependencies differ from the full-graph tree")
+	}
+	call(h, "GET", "/api/v1/topology/dependencies?entityId=order-service.production&direction=upstream&maxDepth=1&limit=2", "").json(t, &deps)
+	if len(deps.Items) != 2 || !deps.Truncated || deps.Items[0].Depth != 1 {
+		t.Fatalf("bounded: %+v", deps)
+	}
+
+	var nh application.NeighborhoodResult
+	call(h, "GET", "/api/v1/topology/neighborhood?entityId=topic-orders-events-prod&depth=2", "").json(t, &nh)
+	if mustJSON(nh.EntityIDs) != mustJSON(domain.SortedIDs(full.Neighborhood("topic-orders-events-prod", 2))) || len(nh.RelationshipIDs) == 0 {
+		t.Fatalf("neighborhood %+v", nh)
+	}
+
+	var imp application.ImpactResult
+	call(h, "GET", "/api/v1/topology/impact?entityId=payment-service.production", "").json(t, &imp)
+	if mustJSON(imp.Impacts) != mustJSON(full.AnalyzeImpact([]domain.FailureRoot{{EntityID: "payment-service.production", Mode: "unavailable"}})) || len(imp.Impacts) == 0 {
+		t.Fatalf("impact %+v", imp)
+	}
+
+	var rules struct{ Items []domain.PropagationRule }
+	call(h, "GET", "/api/v1/propagation-rules", "").json(t, &rules)
+	if len(rules.Items) != 7 {
+		t.Fatalf("rules %d", len(rules.Items))
+	}
+
+	var flows struct{ Items []json.RawMessage }
+	call(h, "GET", "/api/v1/event-types?environmentId=staging", "").json(t, &flows)
+	if len(flows.Items) != 3 {
+		t.Fatalf("event types %d", len(flows.Items))
+	}
+	if r := call(h, "GET", "/api/v1/event-types/event-order-placed?environmentId=production", ""); r.code != 200 || !strings.Contains(string(r.body), `"channelId":"topic-orders-events-prod"`) {
+		t.Fatalf("event type: %d %s", r.code, r.body)
+	}
+
+	for path, code := range map[string]int{
+		"/api/v1/topology/dependencies?entityId=order-service.production&direction=sideways":             400,
+		"/api/v1/topology/dependencies?entityId=order-service.production&direction=upstream&maxDepth=11": 400,
+		"/api/v1/topology/dependencies?entityId=order-service.production&direction=upstream&limit=1001":  400,
+		"/api/v1/topology/dependencies?direction=upstream":                                               400,
+		"/api/v1/topology/dependencies?entityId=ghost&direction=upstream":                                404,
+		"/api/v1/topology/dependencies?entityId=production&direction=upstream":                           404, // an environment, not traversable
+		"/api/v1/topology/neighborhood?entityId=order-service.production&depth=4":                        400,
+		"/api/v1/topology/impact?entityId=order-service.production&mode=slow":                            400,
+		"/api/v1/topology/impact?entityId=ghost":                                                         404,
+		"/api/v1/event-types":                                                                            400,
+		"/api/v1/event-types?environmentId=ghost":                                                        404,
+		"/api/v1/event-types/event-payment-captured?environmentId=staging":                               404,
+	} {
+		if r := call(h, "GET", path, ""); r.code != code {
+			t.Errorf("%s: got %d, want %d (%s)", path, r.code, code, r.body)
+		}
 	}
 }
