@@ -192,7 +192,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 3 | Implemented (2026-10-11) | See the Milestone 3 closeout below. |
 | 4 | Implemented (2026-10-11) | See the Milestone 4 closeout below. |
 | 5 | Implemented (2026-10-11) | See the Milestone 5 closeout below. |
-| 6 | In progress (2026-10-11) | Tailwind migration and section pages (PRODUCT_SPEC Revision 5, `milestones/MILESTONE_06_TAILWIND_SECTIONS.md`). |
+| 6 | Implemented (2026-10-11) | See the Milestone 6 closeout below. |
 
 ### Milestone 1 closeout (2026-10-11)
 Evidence: `npm run check` (typecheck, lint, 50 tests, build) passes. Visual check via headless Chrome at 1440×900 (dark/light) and 700×900.
@@ -274,7 +274,7 @@ Evidence: `npm run check` passes (counts in the closeout commit); `npm run audit
 | Keyboard access, visible focus, accessible names, reduced motion verified | Pass | `keyboard.test.tsx`, jsdom + browser axe, Tab pass in `audit-a11y.mjs`, reduced-motion check, motion policy tests |
 | Typecheck, lint, tests, build | Pass | `npm run check` |
 | Animation resources cleaned up; no frame-frequency React state | Pass | `GalaxyScene.test.tsx` (disposal), `frameLoop.test.ts` (guard) |
-| Performance measured, limitations documented honestly | Pass | `BENCHMARKS.md` (incl. variance and SwiftShader caveats), `DEVELOPER_GUIDE.md` §7 |
+| Performance measured, limitations documented honestly | Pass | `BENCHMARKS.md` (incl. variance and SwiftShader caveats), `DEVELOPER_GUIDE.md` §8 (Known limitations) |
 | `API_CONTRACT.md` defines OpenAPI 3.1 + JSON Schema with examples | Pass | `docs/api/openapi.json`, `docs/schemas/*`, `contract.test.ts` |
 | Differentiation as a hypothesis, no superiority claims | Pass | `POSITIONING.md` (unvalidated; "?" cells to verify; validation plan) |
 | Setup, architecture, testing, scaling, extension docs | Pass | `DEVELOPER_GUIDE.md`, `README.md` |
@@ -282,3 +282,18 @@ Evidence: `npm run check` passes (counts in the closeout commit); `npm run audit
 
 Remaining risks: no GPU measurement of 3D; 2D selection timing inconclusive on a loaded machine; positioning unvalidated with users; placeholder pages (Overview, Dependencies, Infrastructure, Settings).
 
+### Milestone 6 closeout (2026-10-11)
+Evidence: `npm run check` passes (typecheck, lint, 327 tests passed / 1 skipped, build). `npm run audit:a11y` against the production build: 21/21 page × theme runs with 0 axe violations (incl. color contrast), visible focus on every Tab stop checked, reduced motion on. Screenshots reviewed at 1440×1000 in both themes (map, registry, events after the migration; Overview, Dependencies, Infrastructure, Settings) and Infrastructure at 390×844.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| No `*.module.css`; Tailwind utilities plus layered component CSS | Pass | `find src -name '*.module.css'` → 0; `src/styles/global.css`, `components.css` |
+| Only token colors as utilities; contrast test passes | Pass | `--color-*: initial` + `@theme inline`; `contrast.test.ts` |
+| Both themes without visual regression | Pass (screenshot review) | Before/after captures of map, registry, events; new pages in both themes. 3D checked in the browser audit run, not pixel-compared |
+| New pages meet §K, use canonical data and shared state, honor history, have empty states | Pass | `sectionPages.test.tsx` (14 tests, incl. history mode on Overview and Dependencies); empty states in each page; domain selectors tested in `pages.test.ts` |
+| Impact preview uses propagation rules and never changes simulation state | Pass | `analyzeImpact` read-only; `sectionPages.test.tsx` asserts no failures injected |
+| Infrastructure from `parentResourceId` only; keyboard tree | Pass | `containmentForest` (`pages.test.ts`); `role="tree"` with roving tabindex, arrows/Home/End/Enter (`sectionPages.test.tsx`) |
+| Settings persist locally; motion override app-wide; nothing canonical | Pass | `preferencesStore.test.ts`; `data-motion="reduce"` test; CSS rule in `global.css`; renderers use `isMotionReduced()`; preferences not in URL state |
+| `npm run check`; axe in jsdom and browser, both themes, all pages | Pass | See evidence above; `a11y.test.tsx` section-page cases |
+
+Known limitations: the Infrastructure tree is not virtualized and was not measured at 1,000 entities; preferences are per browser only; 3D visual comparison was not pixel-based.

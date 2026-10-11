@@ -149,4 +149,5 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 - **Alternatives:** keep CSS Modules (rejected by product owner); adopt Tailwind only for new UI (rejected: two styling systems).
 - **Consequences:** class-name-based test hooks are replaced by data attributes (e.g. `data-emphasis`); the design-token contract is unchanged.
 - **Verification:** no `*.module.css` remains; contrast, axe (jsdom + browser), keyboard tests pass; screenshot review in both themes.
+- **Verified (2026-10-11):** no `*.module.css` files; `npm run check` passes; `npm run audit:a11y` 21/21 page × theme runs with 0 violations, including the four new pages; screenshot review of map, registry, events, and the new pages in both themes (Milestone 6 closeout in `IMPLEMENTATION_PLAN.md`).
 

@@ -55,13 +55,22 @@ Rules that keep this working (enforced by tests where marked):
 | State | Owner |
 |---|---|
 | Topology data | `TopologyDataProvider` (React context), fed by repository + simulation |
-| Selection `{kind,id}`, environment, filters, view, layout mode, highlight mode, neighborhood, `asOf`, `galaxyScope`, theme, motion pause | `useUiStore` (Zustand), mirrored to the URL except theme and pause |
+| Selection `{kind,id}`, environment, filters, view, layout mode, highlight mode, neighborhood, `asOf`, `galaxyScope`, effective theme, motion pause | `useUiStore` (Zustand), mirrored to the URL except theme and pause |
+| Preferences: theme (incl. system), motion override, default view, 3D labels/traffic, default simulation speed | `usePreferencesStore`, saved locally via `PreferencesRepository`; defaults only, never in URLs or canonical data |
 | Simulation state and run controls | `useSimulationStore` |
 | Viewport, drag positions, collapsed groups, panel open/closed | Component-local (2D map, 3D view) |
 | Camera poses per 3D scope | `CameraMemory` in the 3D view |
 | Saved layouts, snapshots | Their repositories |
 
-## 4. Testing strategy
+## 4. Styling (Tailwind, ADR-013)
+- Tailwind CSS v4 via `@tailwindcss/vite`; entry `src/styles/global.css`. `tokens.css` holds every value; `@theme inline` maps tokens to utilities and `--color-*: initial` disables the default palette, so only token colors exist (`bg-surface-0..3`, `text-fg`/`fg-2`/`fg-3`, `border-line`/`line-strong`/`control`, `bg-accent`, `text-ok-fg`/`warn-fg`/`crit-fg`, `edge-*`).
+- One breakpoint: `max-md:` (≤ 760 px). Theme switches by `data-theme` on `<html>`; never use `dark:` variants.
+- Reuse `Button`, `Chip`, `Segmented`/`Segment`, `Panel`, `Kicker` (`src/shared/ui/primitives.tsx`) or the class helpers in `classes.ts` (`buttonClass`, `fieldClass`, `kickerClass`, `cx`). Section pages use `PageShell`, `Card`, `Note`.
+- State styling uses ARIA/data variants (`aria-pressed:`, `aria-selected:`, `data-[emphasis=dim]`), which double as test hooks. Do not test class names.
+- Glyph artwork, status shapes, tags, and React Flow / 3D label overrides live in `@layer components` in `src/styles/components.css`.
+- New colors go in `tokens.css` (both themes) and must pass `contrast.test.ts`.
+
+## 5. Testing strategy
 
 | Layer | Where | Notes |
 |---|---|---|
@@ -74,7 +83,7 @@ Rules that keep this working (enforced by tests where marked):
 
 Rules: never claim a check passed without running it; record benchmark conditions; keep fixtures deterministic.
 
-## 5. Scaling
+## 6. Scaling
 
 Targets (ADR-005): 250 visible nodes / 750 visible edges; 1,000 entities navigable. Measured results and conditions are in `docs/BENCHMARKS.md`.
 
@@ -85,7 +94,7 @@ Mechanisms in place:
 
 Next steps if inventories grow: server-side registry search, incremental topology sync (change feed), virtualized registry rows, viewport culling in 2D (`onlyRenderVisibleElements`), and a GPU measurement of the 3D view.
 
-## 6. Extension recipes
+## 7. Extension recipes
 
 **Add a provider** (e.g. `oci`):
 1. `PROVIDERS` in `src/domain/types.ts`.
@@ -123,16 +132,17 @@ Nothing in the UI needs to change.
 
 **Add a page:**
 1. Add the route in `src/app/routes.tsx` and an entry in `NAV_ITEMS`; the page title is automatic.
-2. Read data via `useTopology()` and shared state via `useUiStore`.
+2. Wrap content in `PageShell` (heading, data-source tag, loading state, shared inspector). It passes the current `TopologyIndex` (a snapshot when `asOf` is set). Read shared state via `useUiStore`; put derived data in a pure selector in `src/domain`.
 3. Add an axe audit case in `src/test/a11y.test.tsx` and a page in `scripts/audit-a11y.mjs`.
 
 **Add a history fixture:** add a variant in `src/data/mock/snapshots.ts`. Tests check validity and that no timestamp is later than `takenAt`.
 
-## 7. Known limitations (current)
+## 8. Known limitations (current)
 - No real integrations, authentication, or tenancy. All data is mock; all telemetry is simulated.
 - Performance: 2D selection response and 3D frame rate need re-measurement on an idle machine or with a GPU (`docs/BENCHMARKS.md`).
 - Grouped 2D mode at full detail fits at a small zoom; read it collapsed or through the Groups panel. Saved positions do not resize groups.
 - 3D: dense 250-node overviews need zooming for member labels; explore deeper than grandchildren by entering further.
 - History: captured snapshots last for the session; generated datasets have no history fixtures.
 - Propagation is rule-based (no probabilities, retries, or circuit breakers); simulated traffic is metric drift, not request-level traffic.
-- Overview, Dependencies, Infrastructure, and Settings pages are placeholders (the Infrastructure view lives in the map's grouped mode).
+- Preferences are per browser (localStorage); there is no user account to sync them.
+- The Infrastructure tree renders every expanded row (no virtualization); at 1,000 entities use search/filters or collapse levels.

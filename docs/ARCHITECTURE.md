@@ -422,3 +422,20 @@ Decisions: `DECISIONS.md` ADR-011. Measurements: `docs/BENCHMARKS.md`.
 
 Pipeline (Revision 4): shared state (environment, filters, neighborhood, `galaxyScope`, selection) → `resolveGalaxyScope` → `layoutGalaxy` → `buildScene` → React Three Fiber. Actions (select, enter, back) go through the shared store; the render loop only moves particles, toggles label visibility, and runs camera tweens.
 
+## Milestone 6 implementation notes (2026-10-11)
+
+Decisions: `DECISIONS.md` ADR-013. Requirements: `PRODUCT_SPEC.md` Revision 5 (§J–L).
+
+| Concern | Location |
+|---|---|
+| Tailwind entry, theme mapping (`@theme inline`, default palette disabled), base styles | `src/styles/global.css` |
+| Design tokens (single source of values, both themes) | `src/styles/tokens.css` |
+| Layered component CSS: glyphs, status shapes, tags, React Flow and 3D label overrides | `src/styles/components.css` |
+| Shared class helpers and primitives (Button, Chip, Segmented, Panel, Kicker) | `src/shared/ui/classes.ts`, `src/shared/ui/primitives.tsx` |
+| Section page layout (content + shared inspector), Card, Note | `src/features/pages/PageShell.tsx` |
+| Overview summary selector | `src/domain/summary.ts` → `src/features/overview/OverviewPage.tsx` |
+| Dependency trees (direct/transitive with paths) | `src/domain/traversal.ts` (`dependencyTree`) → `src/features/dependencies/DependenciesPage.tsx` |
+| Containment forest with roll-ups and inherited environments | `src/domain/containment.ts` → `src/features/infrastructure/InfrastructurePage.tsx` |
+| Local preferences (repository, store), motion helper | `src/state/preferencesStore.ts`, `src/state/motion.ts` → `src/features/settings/SettingsPage.tsx` |
+
+State: preferences are local and per browser (localStorage behind `PreferencesRepository`); they set defaults only (initial theme, view, simulation speed, 3D labels/traffic) and never enter URLs, snapshots, or canonical data. `AppShell` applies the effective theme (following the OS for "system") and `data-motion="reduce"` on `<html>`; renderers read `isMotionReduced()` / `useMotionReduced()`. The new pages read the same `TopologyIndex` as the other views (a snapshot when `asOf` is set) and act only through the shared store; the Dependencies impact preview calls `analyzeImpact` read-only.

@@ -35,6 +35,11 @@ describe('overview page', () => {
     expect(within(screen.getByRole('list', { name: 'Recent simulated events' })).getAllByRole('listitem').length).toBeGreaterThan(0);
   });
 
+  it('summarizes a snapshot while browsing history', async () => {
+    renderApp('/overview?v=1&env=production&asof=fixture-0600');
+    expect(await screen.findByText(/as of snapshot/)).toBeInTheDocument();
+  });
+
   it('opens the registry filtered to unhealthy entities', async () => {
     const user = userEvent.setup();
     const router = renderApp('/overview');
@@ -65,6 +70,12 @@ describe('dependencies page', () => {
     expect(within(impact).getByText('API Gateway')).toBeInTheDocument();
     // The preview is read-only: nothing was injected.
     expect(useSimulationStore.getState().sim?.failures ?? []).toEqual([]);
+  });
+
+  it('is read-only while browsing history', async () => {
+    renderApp('/dependencies?v=1&env=production&asof=fixture-0600&sel=service-instance:order-service.production');
+    expect(await screen.findByRole('button', { name: 'Simulate this failure' })).toBeDisabled();
+    expect(screen.getByText('Unavailable while browsing history.')).toBeInTheDocument();
   });
 
   it('shows the neighborhood on the map', async () => {
@@ -139,6 +150,16 @@ describe('settings page', () => {
 
     await user.click(within(screen.getByRole('group', { name: '3D simulated traffic' })).getByRole('button', { name: 'Off' }));
     expect(usePreferencesStore.getState().preferences.galaxyTraffic).toBe(false);
+  });
+
+  it('applies the motion override app-wide', async () => {
+    const user = userEvent.setup();
+    renderApp('/settings');
+    const motion = await screen.findByRole('group', { name: 'Motion' });
+    await user.click(within(motion).getByRole('button', { name: 'Reduce' }));
+    expect(document.documentElement.dataset.motion).toBe('reduce');
+    await user.click(within(motion).getByRole('button', { name: 'Follow system' }));
+    expect(document.documentElement.dataset.motion).toBeUndefined();
   });
 
   it('lists and deletes saved layouts', async () => {
