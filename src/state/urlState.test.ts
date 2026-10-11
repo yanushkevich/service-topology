@@ -11,6 +11,7 @@ const full: TopologyUrlState = {
   highlightMode: 'upstream',
   neighborhood: { centerId: 'ledger-service.production', depth: 2 },
   asOf: 'fixture-0600',
+  galaxyScope: ['aws-acct-commerce-prod', 'eks-commerce-prod'],
 };
 
 describe('URL state codec', () => {

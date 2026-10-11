@@ -15,6 +15,7 @@ function fromStore(state: UiState): TopologyUrlState {
     highlightMode: state.highlightMode,
     neighborhood: state.neighborhood,
     asOf: state.asOf,
+    galaxyScope: state.galaxyScope,
   };
 }
 
@@ -28,6 +29,7 @@ function applyToStore(url: TopologyUrlState) {
     highlightMode: url.highlightMode,
     neighborhood: url.neighborhood,
     asOf: url.asOf,
+    galaxyScope: url.galaxyScope,
   }));
 }
 

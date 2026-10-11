@@ -25,6 +25,8 @@ export function resetUiStore() {
     highlightMode: 'direct',
     neighborhood: null,
     asOf: null,
+    galaxyScope: [],
+    motionPaused: false,
   });
   useSimulationStore.setState({ sim: null, running: false, speed: 'normal' });
 }

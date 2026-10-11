@@ -32,6 +32,13 @@ interface UiState {
   neighborhood: Neighborhood | null;
   /** When set, all views show this snapshot (read-only) instead of the current state. */
   asOf: string | null;
+  /**
+   * 3D "Explore inside" path: entity IDs from the overview inward. [] = galaxy overview. Canonical IDs
+   * only (serializable, URL-encoded); camera state stays in the renderer.
+   */
+  galaxyScope: readonly EntityId[];
+  /** Global pause for decorative/traffic animation (camera controls stay usable). */
+  motionPaused: boolean;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
   setActiveView: (view: ServiceMapView) => void;
@@ -43,6 +50,10 @@ interface UiState {
   setHighlightMode: (mode: HighlightMode) => void;
   setNeighborhood: (neighborhood: Neighborhood | null) => void;
   setAsOf: (snapshotId: string | null) => void;
+  enterScope: (entityId: EntityId) => void;
+  /** Keep the first `depth` levels (0 = overview). */
+  exitScopeTo: (depth: number) => void;
+  setMotionPaused: (paused: boolean) => void;
 }
 
 export interface Neighborhood {
@@ -82,6 +93,8 @@ export const useUiStore = create<UiState>()((set, get) => ({
   highlightMode: 'direct',
   neighborhood: null,
   asOf: null,
+  galaxyScope: [],
+  motionPaused: false,
   setTheme: (theme) => {
     persistTheme(theme);
     set({ theme });
@@ -96,6 +109,10 @@ export const useUiStore = create<UiState>()((set, get) => ({
   setHighlightMode: (highlightMode) => set({ highlightMode }),
   setNeighborhood: (neighborhood) => set({ neighborhood }),
   setAsOf: (asOf) => set({ asOf }),
+  enterScope: (entityId) =>
+    set((state) => (state.galaxyScope.at(-1) === entityId ? {} : { galaxyScope: [...state.galaxyScope, entityId] })),
+  exitScopeTo: (depth) => set((state) => ({ galaxyScope: state.galaxyScope.slice(0, Math.max(0, depth)) })),
+  setMotionPaused: (motionPaused) => set({ motionPaused }),
 }));
 
 /** Toggle membership of a value in a filter list. */
