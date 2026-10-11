@@ -17,11 +17,14 @@ Shareable view state for `/map`, `/registry`, and other sections. Implemented in
 | `nh` | Neighborhood | `<entityId>~<depth>`, depth 1–3 | none |
 | `scope` | 3D explore path, outermost first; repeated (`scope=a&scope=b`); added in Milestone 4, optional | entity IDs | overview |
 | `asof` | Browse a snapshot (read-only history); added in Milestone 3, optional | snapshot ID | current state |
+| `ev` | Event-flow highlight on the map (ADR-014); a selection takes precedence; added in Milestone 7, optional | event type ID | none |
 
 Rules:
 - Encoding is canonical (lists sorted, defaults omitted), so equal state gives an identical URL.
 - A missing `v` means "no state in the URL"; the app writes the current state. An unsupported `v` is ignored entirely.
 - Invalid values are dropped individually and logged; decoding never throws.
-- Unknown entity IDs are kept; the inspector shows "Selection not found". An unknown environment falls back to the first environment.
+- Unknown entity IDs are kept; the inspector shows "Selection not found". An unknown `ev` is kept and the map chip says so.
+- The event catalog's selected event is the route (`/events/<eventTypeId>`), not a query parameter.
+- An unknown environment falls back to the first environment.
 - Back/forward restore state. Discrete changes push history entries; typing a search replaces the current entry.
 - Do not put secrets in the URL. Search text is the only free-form value.

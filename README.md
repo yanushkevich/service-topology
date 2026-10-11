@@ -3,7 +3,7 @@
 This package is the product/architecture guide and staged implementation plan for a mock-first Service Topology and Registry Platform. It is documentation, not a completed application or proof that a backend exists.
 
 ## Development setup
-All six milestones are implemented: application shell, canonical domain model with validation, a mock multi-cloud repository, the service registry, the shared inspector, the 2D map (React Flow + ELK) with grouped infrastructure mode, shareable URLs, and saved layouts, a deterministic simulation with explainable failure propagation and snapshot history (Events & Traffic page), and a secondary 3D galaxy view (React Three Fiber) with "Explore inside" navigation, plus Overview, Dependencies, Infrastructure, and Settings pages (Milestone 6). Built with React 19 + strict TypeScript + Vite, Tailwind CSS v4, React Router, Zustand, React Flow + ELK.js (2D), and Three.js + React Three Fiber (3D). All data is mock and all telemetry is simulated. Requires Node.js 22+.
+All seven milestones are implemented: application shell, canonical domain model with validation, a mock multi-cloud repository, the service registry, the shared inspector, the 2D map (React Flow + ELK) with grouped infrastructure mode, shareable URLs, and saved layouts, a deterministic simulation with explainable failure propagation and snapshot history (Events & Traffic page), and a secondary 3D galaxy view (React Three Fiber) with "Explore inside" navigation, plus Overview, Dependencies, Infrastructure, and Settings pages (Milestone 6), and an Events catalog of event types with producer/consumer flows highlighted on the map (Milestone 7). Built with React 19 + strict TypeScript + Vite, Tailwind CSS v4, React Router, Zustand, React Flow + ELK.js (2D), and Three.js + React Three Fiber (3D). All data is mock and all telemetry is simulated. Requires Node.js 22+.
 
 ```sh
 npm install
@@ -32,6 +32,7 @@ Execute one milestone at a time, in order:
 - `docs/milestones/MILESTONE_04_NETWORK_3D.md`
 - `docs/milestones/MILESTONE_05_POLISH_HARDENING.md`
 - `docs/milestones/MILESTONE_06_TAILWIND_SECTIONS.md` (Revision 5)
+- `docs/milestones/MILESTONE_07_EVENT_CATALOG.md` (Revision 6)
 
 Older phase prompts remain in `docs/phases/` for task-level traceability, but they do not replace the five-milestone delivery gates. Revision 1 files are preserved under `docs/archive/original-v1/` as historical material.
 

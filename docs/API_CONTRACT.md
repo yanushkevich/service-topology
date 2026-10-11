@@ -5,7 +5,7 @@
 | Artifact | What it is |
 |---|---|
 | `docs/api/openapi.json` | OpenAPI **3.1.0** document (`jsonSchemaDialect` = JSON Schema 2020-12) |
-| `docs/schemas/topology.v1.schema.json` | `TopologyData` v1: environments, definitions, instances, resources, relationships |
+| `docs/schemas/topology.v1.schema.json` | `TopologyData` v1: environments, definitions, instances, resources, relationships, optional event types |
 | `docs/schemas/topology-snapshot.v1.schema.json` | `TopologySnapshot` v1 (wraps `TopologyData`) |
 | `docs/schemas/saved-layout.v1.schema.json` | `SavedLayout` v1 |
 | `docs/schemas/topology-url-state.v1.md` | Query-parameter contract for shareable links (not an HTTP API) |
@@ -23,7 +23,8 @@
 - **Environments:** each service instance has exactly one `environmentId`. A resource without one inherits its nearest ancestor's environment; with none it is environment-independent (e.g. SaaS) and appears in every environment.
 - **Containment vs communication:** hierarchy is only `parentResourceId` (no cycles). Communication is only `CommunicationRelationship`. Neither is inferred from names or metadata.
 - **Messaging:** Kafka topics and RabbitMQ queues/exchanges are resources; producer → channel → consumer are explicit relationships. Exchange → queue bindings are relationships with `metadata.bindingKey`.
-- **Integrity beyond JSON Schema:** servers must reject topologies that fail `validateTopology` (missing references, parent cycles, environment conflicts, cross-environment relationships, invalid binding targets), returning 422 with problem details.
+- **Event types (added within v1, Milestone 7, ADR-014):** optional `eventTypes`, each a logical contract (`OrderPlaced`) with `channelResourceIds` (topic/queue/exchange, at most one per environment) and `producerServiceIds` / `consumerServiceIds` (service definitions). Per environment they resolve to instances and existing relationships (producer → channel, channel → consumer, or exchange → bound queue → consumer); they never add communication. Clients that ignore the field are unaffected.
+- **Integrity beyond JSON Schema:** servers must reject topologies that fail `validateTopology` (missing references, parent cycles, environment conflicts, cross-environment relationships, invalid binding targets, event types inconsistent with relationships), returning 422 with problem details.
 - **Simulated vs observed:** every `metrics` object carries `isSimulated`. Snapshots carry `source` (`fixture` | `simulation` | `observed`) and `isSimulated`, which must be `true` unless the source is `observed`. Clients label simulated data and never describe it as live.
 
 ## Endpoints and the frontend interfaces they back
@@ -31,7 +32,7 @@
 | Endpoint | Purpose | Frontend interface today |
 |---|---|---|
 | `GET /environments` | Environment selector | `TopologyRepository.getTopology` → `environments` |
-| `GET /topology?environmentId=` | Canonical topology (optionally one environment) | `TopologyRepository.getTopology(signal)` |
+| `GET /topology?environmentId=` | Canonical topology (optionally one environment), including event types | `TopologyRepository.getTopology(signal)` |
 | `GET /registry?environmentId=&q=&provider=&health=&kind=&sort=&cursor=&limit=` | Paginated registry search | Computed client-side (`buildRegistryRows`, `filterRegistryRows`, `sortRegistryRows`); proposed `RegistryRepository.search` |
 | `GET /entities/{kind}/{id}` | One entity (deep links, inspector) | Resolved from `TopologyIndex`; proposed |
 | `GET /topology/snapshots?from=&to=` | History list | `SnapshotRepository.list()` |

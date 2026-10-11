@@ -39,7 +39,8 @@ TopologyDataProvider ── one TopologyIndex (current, or snapshot when `asOf` 
         ├─ 2D map ── buildTopologyGraph → ELK (Web Worker) → React Flow adapter ─► React Flow
         ├─ 3D galaxy ── resolveGalaxyScope → layoutGalaxy → buildScene ─► React Three Fiber (lazy)
         ├─ Inspector ── canonical lookups + propagation impacts
-        └─ Events & Traffic ── engine events, rules, snapshots, diff
+        ├─ Events ── eventFlowsIn / resolveEventFlow ─► catalog; eventFlowReach ─► 2D/3D highlight
+        └─ Simulation ── engine events, rules, snapshots, diff
 Shared cross-view state (Zustand, IDs/options only) ◄─► URL (useUrlStateSync)
 ```
 
@@ -55,7 +56,7 @@ Rules that keep this working (enforced by tests where marked):
 | State | Owner |
 |---|---|
 | Topology data | `TopologyDataProvider` (React context), fed by repository + simulation |
-| Selection `{kind,id}`, environment, filters, view, layout mode, highlight mode, neighborhood, `asOf`, `galaxyScope`, effective theme, motion pause | `useUiStore` (Zustand), mirrored to the URL except theme and pause |
+| Selection `{kind,id}`, environment, filters, view, layout mode, highlight mode, neighborhood, `asOf`, `galaxyScope`, `eventHighlight`, effective theme, motion pause | `useUiStore` (Zustand), mirrored to the URL except theme and pause |
 | Preferences: theme (incl. system), motion override, default view, 3D labels/traffic, default simulation speed | `usePreferencesStore`, saved locally via `PreferencesRepository`; defaults only, never in URLs or canonical data |
 | Simulation state and run controls | `useSimulationStore` |
 | Viewport, drag positions, collapsed groups, panel open/closed | Component-local (2D map, 3D view) |
@@ -135,6 +136,8 @@ Nothing in the UI needs to change.
 2. Wrap content in `PageShell` (heading, data-source tag, loading state, shared inspector). It passes the current `TopologyIndex` (a snapshot when `asOf` is set). Read shared state via `useUiStore`; put derived data in a pure selector in `src/domain`.
 3. Add an axe audit case in `src/test/a11y.test.tsx` and a page in `scripts/audit-a11y.mjs`.
 
+**Add an event type:** add an `EventType` to the topology (mock: `eventTypes` in `src/data/mock/topology.ts`) with its channel per environment and producer/consumer service definitions. The relationships must already exist (producer → channel, channel → consumer, or via a queue bound to an exchange); `validateTopology` reports any mismatch.
+
 **Add a history fixture:** add a variant in `src/data/mock/snapshots.ts`. Tests check validity and that no timestamp is later than `takenAt`.
 
 ## 8. Known limitations (current)
@@ -145,4 +148,5 @@ Nothing in the UI needs to change.
 - History: captured snapshots last for the session; generated datasets have no history fixtures.
 - Propagation is rule-based (no probabilities, retries, or circuit breakers); simulated traffic is metric drift, not request-level traffic.
 - Preferences are per browser (localStorage); there is no user account to sync them.
+- Generated datasets (`?dataset=…`) have no event types, so the Events catalog is empty there. Event types are not part of the snapshot diff.
 - The Infrastructure tree renders every expanded row (no virtualization); at 1,000 entities use search/filters or collapse levels.

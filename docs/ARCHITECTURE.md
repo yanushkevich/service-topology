@@ -21,7 +21,7 @@ Application Shell
     │   ├── 3D Network (React Three Fiber)
     │   └── Infrastructure View
     └── Service / Connection Inspector
-Features: Registry, Dependencies, Events & Traffic, Infrastructure
+Features: Registry, Dependencies, Events (catalog), Simulation, Infrastructure
 Application services: repositories, selectors, dependency traversal, simulation
 Shared application state: Zustand
 Domain: services, connections, environments, providers, health, protocols, telemetry
@@ -401,7 +401,7 @@ Decisions: `DECISIONS.md` ADR-010.
 | Simulation runtime state and timer | `src/state/simulationStore.ts`, `src/state/useSimulationTicker.ts` |
 | Snapshot repository and fixtures | `src/data/snapshots/`, `src/data/mock/snapshots.ts` |
 | One index for all views (current simulated state or snapshot) | `src/data/TopologyDataProvider.tsx` |
-| Events & Traffic page (controls, log, history, rules) | `src/features/events/` |
+| Simulation page (controls, log, history, rules); formerly "Events & Traffic" at `/events` | `src/features/simulation/` |
 | History banner, header simulation status | `src/layouts/HistoryBanner.tsx`, `src/layouts/Header.tsx` |
 
 Data flow: repository → baseline → `useSimulationStore.initialize` → engine `data` → `TopologyDataProvider` index → registry/map/inspector. With `asOf` set, the provider builds the index from the snapshot instead; the engine is untouched.
@@ -439,3 +439,23 @@ Decisions: `DECISIONS.md` ADR-013. Requirements: `PRODUCT_SPEC.md` Revision 5 (�
 | Local preferences (repository, store), motion helper | `src/state/preferencesStore.ts`, `src/state/motion.ts` → `src/features/settings/SettingsPage.tsx` |
 
 State: preferences are local and per browser (localStorage behind `PreferencesRepository`); they set defaults only (initial theme, view, simulation speed, 3D labels/traffic) and never enter URLs, snapshots, or canonical data. `AppShell` applies the effective theme (following the OS for "system") and `data-motion="reduce"` on `<html>`; renderers read `isMotionReduced()` / `useMotionReduced()`. The new pages read the same `TopologyIndex` as the other views (a snapshot when `asOf` is set) and act only through the shared store; the Dependencies impact preview calls `analyzeImpact` read-only.
+
+## Milestone 7 implementation notes (2026-10-11)
+
+Decisions: `DECISIONS.md` ADR-014. Requirements: `PRODUCT_SPEC.md` Revision 6 (§M).
+
+| Concern | Location |
+|---|---|
+| `EventType`, `EVENT_CHANNEL_TYPES` | `src/domain/types.ts` |
+| Index maps `eventTypes`, `eventTypesByChannel` | `src/domain/topologyIndex.ts` |
+| Flow resolver (per environment; exchange → bound queue → consumer), highlight reach | `src/domain/eventFlow.ts` |
+| Event-type validation rules | `src/domain/validation.ts` |
+| Mock event types | `src/data/mock/topology.ts` |
+| Events catalog page (`/events`, `/events/:eventTypeId`) | `src/features/event-catalog/EventsPage.tsx` |
+| Shared highlight hook and map chip | `src/features/event-catalog/useEventHighlight.ts`, `EventHighlightChip.tsx` |
+| 2D / 3D emphasis from an event reach | `computeHighlight` (`reactFlowAdapter.ts`), `buildScene` (`sceneModel.ts`) |
+| Inspector "Events carried" | `src/features/inspector/InspectorPanel.tsx` |
+| Simulation page (moved from `/events`) | `src/features/simulation/` |
+
+Pipeline: `uiStore.eventHighlight` (URL `ev`) → `useEventHighlight(index)` → `resolveEventFlow` → `eventFlowReach` (a `Reach`, the same shape as selection reach) → 2D `computeHighlight` / 3D `buildScene`, used only when nothing is selected. Event types never add graph nodes or edges and do not change propagation; they select existing relationships. The catalog reads the same `TopologyIndex` as every view, so history mode works unchanged.
+

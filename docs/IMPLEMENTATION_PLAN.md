@@ -196,7 +196,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 4 | Implemented (2026-10-11) | See the Milestone 4 closeout below. |
 | 5 | Implemented (2026-10-11) | See the Milestone 5 closeout below. |
 | 6 | Implemented (2026-10-11) | See the Milestone 6 closeout below. |
-| 7 | In progress (2026-10-11) | Event catalog (PRODUCT_SPEC Revision 6, `milestones/MILESTONE_07_EVENT_CATALOG.md`). |
+| 7 | Implemented (2026-10-11) | See the Milestone 7 closeout below. |
 
 ### Milestone 1 closeout (2026-10-11)
 Evidence: `npm run check` (typecheck, lint, 50 tests, build) passes. Visual check via headless Chrome at 1440×900 (dark/light) and 700×900.
@@ -301,3 +301,19 @@ Evidence: `npm run check` passes (typecheck, lint, 327 tests passed / 1 skipped,
 | `npm run check`; axe in jsdom and browser, both themes, all pages | Pass | See evidence above; `a11y.test.tsx` section-page cases |
 
 Known limitations: the Infrastructure tree is not virtualized and was not measured at 1,000 entities; preferences are per browser only; 3D visual comparison was not pixel-based.
+
+### Milestone 7 closeout (2026-10-11)
+Evidence: `npm run check` passes (typecheck, lint, 353 tests passed / 1 skipped, build). `npm run audit:a11y` against the production build: 25/25 runs with 0 axe violations (incl. color contrast), visible focus on every Tab stop checked, reduced motion on; new runs: Simulation, Events catalog, and the map with an event highlight, in both themes. Screenshots reviewed: catalog at 1440×900 (dark, light) and 2000×900 (horizontal flow), 390×844 (staging), 2D and 3D event highlight.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Every M.1 validation rule tested; mock validates with zero issues | Pass | `eventFlow.test.ts` (missing/invalid channel, two channels per environment, unknown service, missing producer/consumer relationship incl. direction, global ID uniqueness); `validation.test.ts` mock integrity |
+| Flows from existing relationships only; not-deployed shown, not an error | Pass | `resolveEventFlow` tests (staging: Notification Service not deployed; exchange → queue → consumer) |
+| Catalog filters by event and channel; detail with health; selection shared | Pass | `EventsPage.test.tsx` |
+| Highlight emphasizes exactly the flow in 2D/3D; selection precedence; chip clears; `ev` round-trips | Pass | `EventsPage.test.tsx` (2D emphasis, chip, deep link), `urlState.test.ts`; 3D via `buildScene` `eventReach` and screenshot review (not covered by a 3D unit test) |
+| History mode | Pass | `EventsPage.test.tsx` (`asof=fixture-0600`) |
+| Contract includes event types | Pass | `topology.v1.schema.json` `EventType`; `contract.test.ts` validates the mock and snapshots with event types |
+| Check and axe (jsdom + browser, both themes) for Events and Simulation | Pass | See evidence above |
+
+Known limitations: generated datasets have no event types; the snapshot diff ignores event types; there is no 3D unit test for event emphasis (verified by screenshot only); the shell test that runs two ELK layouts got a 15 s timeout after timing out at 5 s under full-suite load.
+
