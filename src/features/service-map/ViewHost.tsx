@@ -1,6 +1,5 @@
 import { lazy, Suspense } from 'react';
 import { useUiStore } from '../../state/uiStore';
-import styles from './serviceMap.module.css';
 
 // React Flow and the map code load only when the map is shown; Three.js only when 3D is opened.
 const Topology2D = lazy(() => import('./views/Topology2D').then((m) => ({ default: m.Topology2D })));
@@ -17,7 +16,7 @@ export function ViewHost() {
   return (
     <Suspense
       fallback={
-        <div className={styles.placeholder} role="status">
+        <div className="absolute inset-0 grid place-items-center p-4 text-fg-2" role="status">
           {activeView === '3d' ? 'Loading 3D galaxy…' : 'Loading map…'}
         </div>
       }

@@ -15,7 +15,6 @@ import { SIMULATION_SPEEDS, useSimulationStore } from '../../state/simulationSto
 import { useUiStore } from '../../state/uiStore';
 import { InspectorPanel } from '../inspector/InspectorPanel';
 import { describeEvent, formatClock } from './describeEvent';
-import styles from './events.module.css';
 
 export function EventsPage() {
   const topology = useTopology();
@@ -24,10 +23,10 @@ export function EventsPage() {
   const baselineIndex = useMemo(() => (sim ? buildTopologyIndex(sim.baseline) : null), [sim]);
 
   return (
-    <div className={styles.page}>
-      <div className={styles.main}>
-        <div className={styles.heading}>
-          <h1 className={styles.title}>Events & Traffic</h1>
+    <div className="absolute inset-0 flex max-md:flex-col">
+      <div className="flex min-w-0 flex-1 flex-col gap-3.5 overflow-auto px-5 pt-[18px] pb-8">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <h1 className="m-0 text-xl font-semibold">Events & Traffic</h1>
           {topology.status === 'ready' && <DataSourceTag sourceLabel={topology.sourceLabel} isMock={topology.isMock} />}
         </div>
         {topology.status !== 'ready' || !sim || !baselineIndex ? (
@@ -94,46 +93,46 @@ function SimulationPanel({ index, readOnly }: { index: TopologyIndex; readOnly: 
 
   if (!sim) return null;
   return (
-    <section className={styles.card} aria-labelledby="simulation-heading">
-      <div className={styles.cardHeader}>
-        <h2 id="simulation-heading" className={styles.h2}>
+    <section className="rounded-xl border border-line bg-surface-1 px-4 py-3.5" aria-labelledby="simulation-heading">
+      <div className="mb-2.5 flex flex-wrap items-center gap-2.5">
+        <h2 id="simulation-heading" className="m-0 text-lg font-semibold">
           Simulation
         </h2>
         <SimulatedTag simulated />
-        <span className={`mono ${styles.clock}`} aria-label="Simulated clock">
+        <span className={`font-mono text-sm text-fg`} aria-label="Simulated clock">
           {formatClock(sim.clock)} · tick {sim.tick}
         </span>
-        <span className={styles.muted}>{running ? 'Running' : 'Paused'} · simulated, not observed</span>
+        <span className="m-0 text-sm text-fg-2">{running ? 'Running' : 'Paused'} · simulated, not observed</span>
       </div>
 
       {readOnly && (
-        <p className={styles.note} role="status">
+        <p className="m-0 mb-2.5 rounded-[9px] border border-dashed border-line-strong px-[11px] py-[9px] text-sm text-fg-2" role="status">
           You are viewing a snapshot. Simulation keeps its own state but its changes are not shown until you return to the
           current state.
         </p>
       )}
 
-      <div className={styles.controls} role="group" aria-label="Simulation controls">
-        <button type="button" className={styles.primary} onClick={() => setRunning(!running)} aria-pressed={running}>
+      <div className="mt-2 flex flex-wrap items-center gap-2" role="group" aria-label="Simulation controls">
+        <button type="button" className="h-8 rounded-md bg-accent px-3 font-semibold whitespace-nowrap text-on-accent disabled:opacity-50" onClick={() => setRunning(!running)} aria-pressed={running}>
           {running ? 'Pause' : 'Run'}
         </button>
-        <button type="button" className={styles.secondary} onClick={step} disabled={running}>
+        <button type="button" className="h-8 rounded-md border border-line-strong px-3 whitespace-nowrap text-fg hover:bg-surface-3 disabled:opacity-50" onClick={step} disabled={running}>
           Step {TICK_SECONDS} s
         </button>
-        <div className={styles.segmented} role="group" aria-label="Speed">
+        <div className="flex gap-0.5 rounded-[9px] border border-line bg-surface-2 p-[3px]" role="group" aria-label="Speed">
           {SIMULATION_SPEEDS.map((s) => (
-            <button key={s.id} type="button" className={styles.segment} aria-pressed={speed === s.id} onClick={() => setSpeed(s.id)}>
+            <button key={s.id} type="button" className="flex h-6 items-center gap-1.5 rounded-sm px-2.5 text-sm whitespace-nowrap text-fg-2 hover:text-fg aria-pressed:bg-selected aria-pressed:text-fg aria-pressed:shadow-[inset_0_0_0_1px_var(--color-line-strong),inset_0_-2px_0_var(--color-accent)] aria-checked:bg-selected aria-checked:text-fg aria-checked:shadow-[inset_0_0_0_1px_var(--color-line-strong),inset_0_-2px_0_var(--color-accent)]" aria-pressed={speed === s.id} onClick={() => setSpeed(s.id)}>
               {s.label}
             </button>
           ))}
         </div>
-        <button type="button" className={styles.secondary} onClick={reset}>
+        <button type="button" className="h-8 rounded-md border border-line-strong px-3 whitespace-nowrap text-fg hover:bg-surface-3 disabled:opacity-50" onClick={reset}>
           Reset to recorded state
         </button>
       </div>
 
       <form
-        className={styles.inject}
+        className="mt-2 flex flex-wrap items-center gap-2"
         onSubmit={(e) => {
           e.preventDefault();
           if (!effectiveTarget) return;
@@ -142,10 +141,10 @@ function SimulationPanel({ index, readOnly }: { index: TopologyIndex; readOnly: 
           select({ kind: index.instances.has(effectiveTarget) ? 'service-instance' : 'resource', id: effectiveTarget });
         }}
       >
-        <label htmlFor={entityId} className={styles.label}>
+        <label htmlFor={entityId} className="text-sm text-fg-2">
           Fail
         </label>
-        <select id={entityId} className={styles.select} value={effectiveTarget} onChange={(e) => setTarget(e.target.value)}>
+        <select id={entityId} className="h-8 max-w-[340px] min-w-0 rounded-md border border-control bg-surface-2 px-2 text-fg" value={effectiveTarget} onChange={(e) => setTarget(e.target.value)}>
           <optgroup label="Services">
             {options.services.map((row) => (
               <option key={row.ref.id} value={row.ref.id}>
@@ -168,57 +167,57 @@ function SimulationPanel({ index, readOnly }: { index: TopologyIndex; readOnly: 
             ))}
           </optgroup>
         </select>
-        <div className={styles.segmented} role="radiogroup" aria-label="Failure mode">
+        <div className="flex gap-0.5 rounded-[9px] border border-line bg-surface-2 p-[3px]" role="radiogroup" aria-label="Failure mode">
           {(['unavailable', 'degraded'] as const).map((m) => (
-            <button key={m} type="button" role="radio" aria-checked={mode === m} className={styles.segment} onClick={() => setMode(m)}>
+            <button key={m} type="button" role="radio" aria-checked={mode === m} className="flex h-6 items-center gap-1.5 rounded-sm px-2.5 text-sm whitespace-nowrap text-fg-2 hover:text-fg aria-pressed:bg-selected aria-pressed:text-fg aria-pressed:shadow-[inset_0_0_0_1px_var(--color-line-strong),inset_0_-2px_0_var(--color-accent)] aria-checked:bg-selected aria-checked:text-fg aria-checked:shadow-[inset_0_0_0_1px_var(--color-line-strong),inset_0_-2px_0_var(--color-accent)]" onClick={() => setMode(m)}>
               {healthLabel(m)}
             </button>
           ))}
         </div>
-        <label htmlFor={recoverId} className={styles.label}>
+        <label htmlFor={recoverId} className="text-sm text-fg-2">
           Auto-recover
         </label>
-        <select id={recoverId} className={styles.select} value={autoRecover} onChange={(e) => setAutoRecover(Number(e.target.value))}>
+        <select id={recoverId} className="h-8 max-w-[340px] min-w-0 rounded-md border border-control bg-surface-2 px-2 text-fg" value={autoRecover} onChange={(e) => setAutoRecover(Number(e.target.value))}>
           {AUTO_RECOVER.map((o, i) => (
             <option key={o.label} value={i}>
               {o.label}
             </option>
           ))}
         </select>
-        <button type="submit" className={styles.danger} disabled={!effectiveTarget}>
+        <button type="submit" className="h-8 rounded-md border border-crit px-3 font-semibold whitespace-nowrap text-crit-fg hover:bg-crit/10 disabled:opacity-50" disabled={!effectiveTarget}>
           Inject failure
         </button>
       </form>
 
-      <h3 className={styles.h3}>
-        Active simulated failures <span className="mono">{sim.failures.length}</span>
+      <h3 className="mt-4 mb-1.5 text-[10px] font-normal tracking-[0.08em] text-fg-3 uppercase">
+        Active simulated failures <span className="font-mono">{sim.failures.length}</span>
       </h3>
       {sim.failures.length === 0 ? (
-        <p className={styles.muted}>None. Inject a failure above or from the inspector.</p>
+        <p className="m-0 text-sm text-fg-2">None. Inject a failure above or from the inspector.</p>
       ) : (
-        <ul className={styles.list}>
+        <ul className="m-0 list-none p-0">
           {sim.failures.map((f) => (
-            <li key={f.entityId} className={styles.row}>
+            <li key={f.entityId} className="flex flex-wrap items-center gap-2.5 border-t border-line py-1.5">
               <button
                 type="button"
-                className={styles.link}
+                className="text-left font-semibold text-fg hover:underline"
                 onClick={() => select({ kind: index.instances.has(f.entityId) ? 'service-instance' : 'resource', id: f.entityId })}
               >
                 {endpointName(index, f.entityId)}
               </button>
-              <span className={styles.muted}>
+              <span className="m-0 text-sm text-fg-2">
                 {healthLabel(f.mode)}
                 {f.recoverAtTick !== undefined ? ` · auto-recovers at tick ${f.recoverAtTick}` : ''} · affects{' '}
                 {sim.impacts.filter((i) => i.rootId === f.entityId).length}
               </span>
-              <button type="button" className={styles.secondary} onClick={() => recover(f.entityId)}>
+              <button type="button" className="h-8 rounded-md border border-line-strong px-3 whitespace-nowrap text-fg hover:bg-surface-3 disabled:opacity-50" onClick={() => recover(f.entityId)}>
                 Recover
               </button>
             </li>
           ))}
           {sim.failures.length > 1 && (
             <li>
-              <button type="button" className={styles.secondary} onClick={recoverAll}>
+              <button type="button" className="h-8 rounded-md border border-line-strong px-3 whitespace-nowrap text-fg hover:bg-surface-3 disabled:opacity-50" onClick={recoverAll}>
                 Recover all
               </button>
             </li>
@@ -258,43 +257,43 @@ function EventLog({ index, events }: { index: TopologyIndex; events: readonly Si
     .slice(0, 200);
 
   return (
-    <section className={styles.card} aria-labelledby="events-heading">
-      <div className={styles.cardHeader}>
-        <h2 id="events-heading" className={styles.h2}>
+    <section className="rounded-xl border border-line bg-surface-1 px-4 py-3.5" aria-labelledby="events-heading">
+      <div className="mb-2.5 flex flex-wrap items-center gap-2.5">
+        <h2 id="events-heading" className="m-0 text-lg font-semibold">
           Event log
         </h2>
-        <span className="mono">{events.length}</span>
-        <div className={styles.segmented} role="group" aria-label="Event types">
+        <span className="font-mono">{events.length}</span>
+        <div className="flex gap-0.5 rounded-[9px] border border-line bg-surface-2 p-[3px]" role="group" aria-label="Event types">
           {EVENT_FILTERS.map((f) => (
-            <button key={f.id} type="button" className={styles.segment} aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
+            <button key={f.id} type="button" className="flex h-6 items-center gap-1.5 rounded-sm px-2.5 text-sm whitespace-nowrap text-fg-2 hover:text-fg aria-pressed:bg-selected aria-pressed:text-fg aria-pressed:shadow-[inset_0_0_0_1px_var(--color-line-strong),inset_0_-2px_0_var(--color-accent)] aria-checked:bg-selected aria-checked:text-fg aria-checked:shadow-[inset_0_0_0_1px_var(--color-line-strong),inset_0_-2px_0_var(--color-accent)]" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
               {f.label}
             </button>
           ))}
         </div>
-        <label className={styles.checkbox}>
+        <label className="inline-flex items-center gap-1.5 text-sm text-fg-2">
           <input type="checkbox" checked={onlySelected} onChange={(e) => setOnlySelected(e.target.checked)} disabled={!selection} />
           Only the selection
         </label>
       </div>
       {shown.length === 0 ? (
-        <p className={styles.muted}>
+        <p className="m-0 text-sm text-fg-2">
           {events.length === 0
             ? 'No simulated events yet. Run the simulation for traffic changes, or inject a failure to see health changes and their causes.'
             : 'No events match.'}
         </p>
       ) : (
-        <ol className={styles.events} aria-label="Simulated events, newest first">
+        <ol className="m-0 max-h-[420px] list-none overflow-auto p-0" aria-label="Simulated events, newest first">
           {shown.map((event) => {
             const { title, detail } = describeEvent(index, event);
             const kind = event.entityKind;
             return (
-              <li key={event.id} className={styles.event}>
-                <span className={`mono ${styles.eventTime}`}>{formatClock(event.at)}</span>
-                <span className={styles.eventBody}>
-                  <button type="button" className={styles.eventTitle} onClick={() => select({ kind, id: event.entityId })}>
+              <li key={event.id} className="flex items-start gap-3 border-t border-line py-2">
+                <span className={`font-mono w-[92px] flex-none pt-0.5 text-xs text-fg-3`}>{formatClock(event.at)}</span>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <button type="button" className="text-left font-semibold text-fg hover:underline" onClick={() => select({ kind, id: event.entityId })}>
                     {title}
                   </button>
-                  {detail && <span className={styles.eventDetail}>{detail}</span>}
+                  {detail && <span className="text-sm text-fg-2">{detail}</span>}
                 </span>
                 <SimulatedTag simulated={event.isSimulated} />
               </li>
@@ -356,31 +355,31 @@ function HistoryPanel({ index, current, clock }: { index: TopologyIndex; current
   const nameOf = (change: SnapshotChange) => (change.kind === 'relationship' ? relationshipName(index, change.id) : endpointName(index, change.id));
 
   return (
-    <section className={styles.card} aria-labelledby="history-heading">
-      <div className={styles.cardHeader}>
-        <h2 id="history-heading" className={styles.h2}>
+    <section className="rounded-xl border border-line bg-surface-1 px-4 py-3.5" aria-labelledby="history-heading">
+      <div className="mb-2.5 flex flex-wrap items-center gap-2.5">
+        <h2 id="history-heading" className="m-0 text-lg font-semibold">
           History
         </h2>
-        <span className={styles.muted}>Fixture snapshots and captures of the simulation. Browsing one never changes current state.</span>
+        <span className="m-0 text-sm text-fg-2">Fixture snapshots and captures of the simulation. Browsing one never changes current state.</span>
       </div>
       {summaries === null ? (
-        <p className={styles.muted}>Loading snapshots…</p>
+        <p className="m-0 text-sm text-fg-2">Loading snapshots…</p>
       ) : summaries.length === 0 ? (
-        <p className={styles.muted}>No snapshots for this data source.</p>
+        <p className="m-0 text-sm text-fg-2">No snapshots for this data source.</p>
       ) : (
-        <ul className={styles.list} aria-label="Snapshots">
+        <ul className="m-0 list-none p-0" aria-label="Snapshots">
           {summaries.map((s) => (
-            <li key={s.id} className={styles.row}>
-              <span className={styles.snapshotText}>
+            <li key={s.id} className="flex flex-wrap items-center gap-2.5 border-t border-line py-1.5">
+              <span className="flex min-w-[200px] flex-1 flex-col [&_span]:text-[10.5px] [&_span]:text-fg-3">
                 <b>{s.label}</b>
-                <span className="mono">
+                <span className="font-mono">
                   {formatTimestamp(s.takenAt)} · {s.source === 'fixture' ? 'fixture' : s.source === 'simulation' ? 'simulation capture' : 'observed'}
                 </span>
               </span>
               <SimulatedTag simulated={s.isSimulated} />
               <button
                 type="button"
-                className={asOf === s.id ? styles.primary : styles.secondary}
+                className={asOf === s.id ? 'h-8 rounded-md bg-accent px-3 font-semibold whitespace-nowrap text-on-accent disabled:opacity-50' : 'h-8 rounded-md border border-line-strong px-3 whitespace-nowrap text-fg hover:bg-surface-3 disabled:opacity-50'}
                 aria-pressed={asOf === s.id}
                 onClick={() => setAsOf(asOf === s.id ? null : s.id)}
               >
@@ -390,23 +389,23 @@ function HistoryPanel({ index, current, clock }: { index: TopologyIndex; current
           ))}
         </ul>
       )}
-      <div className={styles.controls}>
-        <button type="button" className={styles.secondary} onClick={() => void capture()}>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <button type="button" className="h-8 rounded-md border border-line-strong px-3 whitespace-nowrap text-fg hover:bg-surface-3 disabled:opacity-50" onClick={() => void capture()}>
           Capture current state
         </button>
         {message && (
-          <span className={styles.muted} role="status">
+          <span className="m-0 text-sm text-fg-2" role="status">
             {message}
           </span>
         )}
       </div>
 
-      <h3 className={styles.h3}>Compare</h3>
-      <div className={styles.controls}>
-        <label htmlFor={fromId} className={styles.label}>
+      <h3 className="mt-4 mb-1.5 text-[10px] font-normal tracking-[0.08em] text-fg-3 uppercase">Compare</h3>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <label htmlFor={fromId} className="text-sm text-fg-2">
           From
         </label>
-        <select id={fromId} className={styles.select} value={fromValue} onChange={(e) => setFrom(e.target.value)}>
+        <select id={fromId} className="h-8 max-w-[340px] min-w-0 rounded-md border border-control bg-surface-2 px-2 text-fg" value={fromValue} onChange={(e) => setFrom(e.target.value)}>
           {summaries?.map((s) => (
             <option key={s.id} value={s.id}>
               {s.label}
@@ -414,10 +413,10 @@ function HistoryPanel({ index, current, clock }: { index: TopologyIndex; current
           ))}
           <option value={CURRENT}>Current (simulated)</option>
         </select>
-        <label htmlFor={toId} className={styles.label}>
+        <label htmlFor={toId} className="text-sm text-fg-2">
           To
         </label>
-        <select id={toId} className={styles.select} value={to} onChange={(e) => setTo(e.target.value)}>
+        <select id={toId} className="h-8 max-w-[340px] min-w-0 rounded-md border border-control bg-surface-2 px-2 text-fg" value={to} onChange={(e) => setTo(e.target.value)}>
           {summaries?.map((s) => (
             <option key={s.id} value={s.id}>
               {s.label}
@@ -425,27 +424,27 @@ function HistoryPanel({ index, current, clock }: { index: TopologyIndex; current
           ))}
           <option value={CURRENT}>Current (simulated)</option>
         </select>
-        <button type="button" className={styles.secondary} onClick={() => void compare()}>
+        <button type="button" className="h-8 rounded-md border border-line-strong px-3 whitespace-nowrap text-fg hover:bg-surface-3 disabled:opacity-50" onClick={() => void compare()}>
           Compare
         </button>
       </div>
       {changes !== null &&
         (changes.length === 0 ? (
-          <p className={styles.muted} role="status">
+          <p className="m-0 text-sm text-fg-2" role="status">
             No differences.
           </p>
         ) : (
-          <ul className={styles.list} aria-label="Differences">
+          <ul className="m-0 list-none p-0" aria-label="Differences">
             {changes.map((change) => (
-              <li key={`${change.type}:${change.id}`} className={styles.row}>
+              <li key={`${change.type}:${change.id}`} className="flex flex-wrap items-center gap-2.5 border-t border-line py-1.5">
                 <button
                   type="button"
-                  className={styles.link}
+                  className="text-left font-semibold text-fg hover:underline"
                   onClick={() => (change.kind === 'environment' || change.kind === 'service-definition' ? undefined : select({ kind: change.kind, id: change.id }))}
                 >
                   {nameOf(change)}
                 </button>
-                <span className={styles.muted}>{describeChange(change)}</span>
+                <span className="m-0 text-sm text-fg-2">{describeChange(change)}</span>
               </li>
             ))}
           </ul>
@@ -474,13 +473,13 @@ function describeChange(change: SnapshotChange): string {
 
 function RulesPanel() {
   return (
-    <section className={styles.card} aria-labelledby="rules-heading">
-      <div className={styles.cardHeader}>
-        <h2 id="rules-heading" className={styles.h2}>
+    <section className="rounded-xl border border-line bg-surface-1 px-4 py-3.5" aria-labelledby="rules-heading">
+      <div className="mb-2.5 flex flex-wrap items-center gap-2.5">
+        <h2 id="rules-heading" className="m-0 text-lg font-semibold">
           How simulated failures propagate
         </h2>
       </div>
-      <table className={styles.rules}>
+      <table className="w-full border-collapse text-sm [&_td]:border-t [&_td]:border-line [&_td]:py-2 [&_td]:pr-2.5 [&_td]:text-left [&_td]:align-top [&_td]:text-fg-2 [&_th]:border-t [&_th]:border-line [&_th]:py-2 [&_th]:pr-2.5 [&_th]:text-left [&_th]:align-top [&_tbody_th]:font-semibold [&_tbody_th]:whitespace-nowrap [&_tbody_th]:text-fg [&_thead_th]:border-t-0 [&_thead_th]:text-[10px] [&_thead_th]:font-normal [&_thead_th]:tracking-[0.08em] [&_thead_th]:text-fg-3 [&_thead_th]:uppercase max-md:[&_td]:block max-md:[&_th]:block max-md:[&_thead]:hidden max-md:[&_tr]:block">
         <thead>
           <tr>
             <th scope="col">Rule</th>
@@ -503,8 +502,8 @@ function RulesPanel() {
           ))}
         </tbody>
       </table>
-      <h3 className={styles.h3}>Does not propagate</h3>
-      <ul className={styles.notes}>
+      <h3 className="mt-4 mb-1.5 text-[10px] font-normal tracking-[0.08em] text-fg-3 uppercase">Does not propagate</h3>
+      <ul className="m-0 pl-[18px] text-sm text-fg-2">
         {NON_PROPAGATION_NOTES.map((note) => (
           <li key={note}>{note}</li>
         ))}

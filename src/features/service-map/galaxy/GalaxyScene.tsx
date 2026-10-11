@@ -8,7 +8,6 @@ import { healthLabel } from '../../../shared/mappings';
 import { approachPose, CameraMemory, fitPose, focusPose, type CameraPose } from './cameraMath';
 import { ringPoint, type RingLayout, type Vec3 } from './layout3d';
 import { NEAR_LABEL_DISTANCE, type MotionPolicy, type SceneEdge, type SceneModel, type SceneNode } from './sceneModel';
-import styles from './galaxy.module.css';
 
 /**
  * Galaxy scene contents (spec §2, §6). Renders view models only; every mesh carries its canonical
@@ -66,6 +65,7 @@ const NODE_COLOR: Record<string, string> = {
   namespace: '#8fa2ff',
 };
 const SERVICE_COLOR = '#7f9df0';
+const LABEL_STATUS: Record<string, string> = { degraded: 'text-warn-fg', unavailable: 'text-crit-fg', unknown: 'text-fg-3' };
 const CONTAINER_TYPES = new Set(['account', 'subscription', 'project', 'region', 'datacenter', 'cluster', 'namespace', 'broker']);
 const DASH: Record<string, [number, number]> = { http: [1, 0], grpc: [9, 4], data: [1.5, 5], event: [9, 4], other: [2, 3] };
 
@@ -460,11 +460,14 @@ const GalaxyNode = memo(function GalaxyNode({
       )}
       {showLabel && (
         <Html position={[0, r + 8, 0]} center zIndexRange={[30, 0]} style={{ pointerEvents: 'none' }}>
-          <div ref={labelRef} className={`${styles.label} ${dimmed ? styles.labelDim : ''} ${node.emphasis === 'selected' ? styles.labelSelected : ''}`}>
-            <span className={styles.labelName}>{node.name}</span>
-            {node.memberCount > 1 && <span className={styles.labelMeta}>{node.memberCount} entities</span>}
+          <div
+            ref={labelRef}
+            className={`galaxy-label flex flex-col items-center text-xs leading-tight font-medium whitespace-nowrap text-fg select-none ${dimmed ? 'opacity-35' : ''}`}
+          >
+            <span className={node.emphasis === 'selected' ? 'rounded-md border border-accent bg-surface-1/80 px-1.5 py-px' : undefined}>{node.name}</span>
+            {node.memberCount > 1 && <span className="font-mono text-[10px] text-fg-3">{node.memberCount} entities</span>}
             {node.health !== 'healthy' && (
-              <span className={`${styles.labelStatus} ${styles[`status-${node.health}`] ?? ''}`}>{healthLabel(node.health)}</span>
+              <span className={`rounded-[4px] border border-current px-[5px] text-[10px] font-semibold ${LABEL_STATUS[node.health] ?? ''}`}>{healthLabel(node.health)}</span>
             )}
           </div>
         </Html>

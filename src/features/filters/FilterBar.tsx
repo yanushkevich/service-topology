@@ -3,8 +3,8 @@ import { ENTITY_GROUPS, hasActiveFilters, type RegistryRow } from '../../domain/
 import { HEALTH_STATUSES, PROVIDERS } from '../../domain/types';
 import { GROUP_LABELS, healthLabel, providerLabel } from '../../shared/mappings';
 import { StatusShape } from '../../shared/ui/StatusShape';
+import { Chip } from '../../shared/ui/primitives';
 import { toggleValue, useUiStore } from '../../state/uiStore';
-import styles from './filterBar.module.css';
 
 /**
  * Shared filters (search, kind, health, provider). Every view reads the same store state, so
@@ -20,15 +20,15 @@ export function FilterBar({ rows, label, showSearch = true }: { rows: readonly R
   const providers = PROVIDERS.filter((p) => rows.some((row) => row.provider === p) || filters.providers.includes(p));
 
   return (
-    <div className={styles.filters} role="search" aria-label={label}>
+    <div className="my-3.5 flex flex-wrap items-center gap-x-3 gap-y-2" role="search" aria-label={label}>
       {showSearch && (
         <>
-          <label htmlFor={searchId} className="visually-hidden">
+          <label htmlFor={searchId} className="sr-only">
             Search by name, ID, owner, or team
           </label>
           <input
             id={searchId}
-            className={styles.input}
+            className="h-8 min-w-0 flex-[0_1_240px] rounded-md border border-control bg-surface-2 px-2.5 text-fg placeholder:text-fg-3"
             type="search"
             placeholder="Search name, ID, owner, team"
             value={filters.query}
@@ -63,7 +63,7 @@ export function FilterBar({ rows, label, showSearch = true }: { rows: readonly R
         ))}
       </ChipGroup>
       {hasActiveFilters(filters) && (
-        <button type="button" className={styles.clear} onClick={resetFilters}>
+        <button type="button" className="h-7 rounded-md border border-line-strong px-3 whitespace-nowrap text-fg hover:bg-surface-3" onClick={resetFilters}>
           Clear filters
         </button>
       )}
@@ -73,16 +73,8 @@ export function FilterBar({ rows, label, showSearch = true }: { rows: readonly R
 
 function ChipGroup({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className={styles.chipGroup} role="group" aria-label={label}>
+    <div className="flex flex-wrap gap-1.5 border-l border-line-strong pl-3 max-md:border-l-0 max-md:pl-0" role="group" aria-label={label}>
       {children}
     </div>
-  );
-}
-
-function Chip({ pressed, onClick, children }: { pressed: boolean; onClick: () => void; children: ReactNode }) {
-  return (
-    <button type="button" className={styles.chip} aria-pressed={pressed} onClick={onClick}>
-      {children}
-    </button>
   );
 }

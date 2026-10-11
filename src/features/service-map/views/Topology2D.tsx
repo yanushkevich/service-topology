@@ -43,7 +43,6 @@ import { RelationshipEdge } from './flow/RelationshipEdge';
 import { LayoutsMenu } from './LayoutsMenu';
 import { GroupsPanel } from './GroupsPanel';
 import type { SavedLayout } from '../../../data/savedLayouts/savedLayout';
-import styles from './topology2d.module.css';
 
 /** Above this many visible nodes the map asks the user to narrow the view (ADR-005 target: 250). */
 export const MAX_VISIBLE_NODES = 300;
@@ -72,7 +71,7 @@ export function Topology2D() {
   const topology = useTopology();
   if (topology.status !== 'ready') {
     return (
-      <div className={styles.centered}>
+      <div className="pointer-events-none absolute inset-0 grid place-items-center p-4 text-fg-2">
         <LoadState state={topology} />
       </div>
     );
@@ -282,7 +281,7 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
   return (
     <MapActionsContext.Provider value={actions}>
       {/* `topology-dim-others` dims every element that is neither selected nor highlighted (flow.module.css). */}
-      <div className={`${styles.canvas} ${highlight?.active ? 'topology-dim-others' : ''}`}>
+      <div className={`topology-canvas absolute inset-0 ${highlight?.active ? 'topology-dim-others' : ''}`}>
         <ReactFlow<TopologyFlowNode, RelationshipFlowEdge>
           nodes={nodes}
           edges={edges}
@@ -309,8 +308,8 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
             pannable
             zoomable
             ariaLabel="Topology overview"
-            className={styles.minimap}
-            nodeClassName={(n) => (n.type === 'group' ? styles.miniGroup ?? '' : styles.miniNode ?? '')}
+            className="flow-minimap"
+            nodeClassName={(n) => (n.type === 'group' ? 'flow-minimap-group' : 'flow-minimap-node')}
           />
         </ReactFlow>
 
@@ -363,10 +362,10 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
               That is more than the {MAX_VISIBLE_NODES}-node limit for full detail. Narrow the view with search or filters,
               explore a neighborhood from the registry or inspector, or group by infrastructure.
             </p>
-            <div className={styles.overlayActions}>
+            <div className="flex flex-wrap justify-center gap-2">
               <button
                 type="button"
-                className={styles.primary}
+                className="inline-flex h-8 items-center gap-1.5 rounded-md bg-accent px-3.5 font-semibold whitespace-nowrap text-on-accent hover:brightness-110 disabled:opacity-50"
                 onClick={() => {
                   const grouped = buildTopologyGraph(index, { environmentId, filters, mode: 'infrastructure' });
                   setCollapsed(new Set(groupIdsAtDepth(grouped, 0)));
@@ -375,7 +374,7 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
               >
                 Group by provider (collapsed)
               </button>
-              <button type="button" className={styles.secondary} onClick={() => setRenderAnyway(true)}>
+              <button type="button" className="inline-flex h-8 items-center gap-1.5 rounded-md border border-line-strong px-3 whitespace-nowrap text-fg no-underline hover:bg-surface-3" onClick={() => setRenderAnyway(true)}>
                 Render all anyway
               </button>
             </div>
@@ -383,13 +382,13 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
         )}
         {!tooMany && graph.nodes.length === 0 && <EmptyGraph index={index} graph={graph} />}
         {!tooMany && graph.nodes.length > 0 && !shown && !layoutError && (
-          <div className={styles.centered} role="status">
+          <div className="pointer-events-none absolute inset-0 grid place-items-center p-4 text-fg-2" role="status">
             Laying out {graph.nodes.length} nodes…
           </div>
         )}
         {layoutError && (
           <Overlay title="Layout failed">
-            <p className="mono">{layoutError}</p>
+            <p className="font-mono">{layoutError}</p>
           </Overlay>
         )}
       </div>
@@ -418,20 +417,20 @@ function ScopeBar({
     (filters.query.trim() ? 1 : 0) + filters.providers.length + filters.health.length + filters.groups.length;
 
   return (
-    <div className={`${styles.float} ${styles.scopeBar}`}>
-      <span className="mono" aria-live="polite">
+    <div className={`absolute z-15 rounded-xl border border-line bg-float shadow-float backdrop-blur-[10px] top-3 left-3 flex max-w-[calc(100%-24px)] flex-wrap items-center gap-2 py-1.5 pr-2 pl-3 text-[11.5px] text-fg-2`}>
+      <span className="font-mono" aria-live="polite">
         {environmentName} · {graph.nodes.length} nodes · {graph.edges.length} connections
       </span>
-      <button type="button" className={styles.chip} aria-expanded={filtersOpen} onClick={onToggleFilters}>
+      <button type="button" className="h-6.5 rounded-full border border-line-strong px-2.5 text-sm whitespace-nowrap text-fg-2 hover:text-fg aria-expanded:border-indigo aria-expanded:bg-indigo/18 aria-expanded:text-fg" aria-expanded={filtersOpen} onClick={onToggleFilters}>
         Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
       </button>
       {hasActiveFilters(filters) && (
-        <button type="button" className={`${styles.chip} ${styles.chipOn}`} onClick={resetFilters}>
+        <button type="button" className="h-6.5 rounded-full border border-indigo bg-indigo/18 px-2.5 text-sm whitespace-nowrap text-fg" onClick={resetFilters}>
           Clear filters
         </button>
       )}
       {neighborhood && (
-        <span className={styles.neighborhood} role="group" aria-label="Neighborhood">
+        <span className="inline-flex items-center gap-1 border-l border-line-strong pl-2 [&_b]:text-fg" role="group" aria-label="Neighborhood">
           <span>
             Neighborhood of <b>{neighborhoodName(index, neighborhood.centerId)}</b>
           </span>
@@ -439,7 +438,7 @@ function ScopeBar({
             <button
               key={depth}
               type="button"
-              className={styles.depth}
+              className="size-6 rounded-sm border border-line-strong text-sm text-fg-2 aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-fg"
               aria-pressed={neighborhood.depth === depth}
               aria-label={`${depth} ${depth === 1 ? 'hop' : 'hops'}`}
               onClick={() => setNeighborhood({ ...neighborhood, depth })}
@@ -447,7 +446,7 @@ function ScopeBar({
               {depth}
             </button>
           ))}
-          <button type="button" className={styles.chip} onClick={() => setNeighborhood(null)}>
+          <button type="button" className="h-6.5 rounded-full border border-line-strong px-2.5 text-sm whitespace-nowrap text-fg-2 hover:text-fg aria-expanded:border-indigo aria-expanded:bg-indigo/18 aria-expanded:text-fg" onClick={() => setNeighborhood(null)}>
             Show all
           </button>
         </span>
@@ -469,9 +468,9 @@ function MapFilters({ index, onClose }: { index: TopologyIndex; onClose: () => v
     [index, environmentId],
   );
   return (
-    <div className={`${styles.float} ${styles.filterPanel}`} role="dialog" aria-label="Map filters">
+    <div className={`absolute z-15 rounded-xl border border-line bg-float shadow-float backdrop-blur-[10px] top-14 right-3 left-3 z-20 flex max-w-[980px] items-start gap-2 py-1 pr-2 pl-3.5`} role="dialog" aria-label="Map filters">
       <FilterBar rows={rows} label="Filter map" />
-      <button type="button" className={styles.iconButton} onClick={onClose} aria-label="Close filters">
+      <button type="button" className="grid size-8.5 flex-none place-items-center rounded-md text-fg-2 hover:bg-surface-3 hover:text-fg" onClick={onClose} aria-label="Close filters">
         <Icon name="close" />
       </button>
     </div>
@@ -503,50 +502,50 @@ function CanvasControls({
   const setHighlightMode = useUiStore((s) => s.setHighlightMode);
   const duration = prefersReducedMotion() ? 0 : 200;
   return (
-    <div className={`${styles.float} ${styles.controls}`} role="toolbar" aria-label="Canvas controls">
-      <button type="button" className={styles.iconButton} onClick={() => void reactFlow.zoomOut({ duration })} aria-label="Zoom out" title="Zoom out">
+    <div className={`absolute z-15 rounded-xl border border-line bg-float shadow-float backdrop-blur-[10px] bottom-3 left-3 flex max-w-[calc(100%-24px)] flex-wrap items-center gap-0.5 p-[5px]`} role="toolbar" aria-label="Canvas controls">
+      <button type="button" className="grid size-8.5 flex-none place-items-center rounded-md text-fg-2 hover:bg-surface-3 hover:text-fg" onClick={() => void reactFlow.zoomOut({ duration })} aria-label="Zoom out" title="Zoom out">
         <Icon name="minus" />
       </button>
-      <button type="button" className={styles.iconButton} onClick={() => void reactFlow.zoomIn({ duration })} aria-label="Zoom in" title="Zoom in">
+      <button type="button" className="grid size-8.5 flex-none place-items-center rounded-md text-fg-2 hover:bg-surface-3 hover:text-fg" onClick={() => void reactFlow.zoomIn({ duration })} aria-label="Zoom in" title="Zoom in">
         <Icon name="plus" />
       </button>
       <button
         type="button"
-        className={styles.iconButton}
+        className="grid size-8.5 flex-none place-items-center rounded-md text-fg-2 hover:bg-surface-3 hover:text-fg"
         onClick={() => void reactFlow.fitView({ padding: 0.12, duration })}
         aria-label="Fit to screen"
         title="Fit to screen"
       >
         <Icon name="fit" />
       </button>
-      <button type="button" className={styles.textButton} aria-expanded={layoutsOpen} onClick={onToggleLayouts}>
+      <button type="button" className="h-7.5 rounded-md px-2.5 text-sm text-fg-2 hover:bg-surface-3 hover:text-fg aria-pressed:bg-surface-3 aria-pressed:text-fg aria-expanded:bg-surface-3 aria-expanded:text-fg disabled:opacity-50" aria-expanded={layoutsOpen} onClick={onToggleLayouts}>
         Layouts
       </button>
       {groupsOpen !== null && (
-        <button type="button" className={styles.textButton} aria-expanded={groupsOpen} onClick={onToggleGroups}>
+        <button type="button" className="h-7.5 rounded-md px-2.5 text-sm text-fg-2 hover:bg-surface-3 hover:text-fg aria-pressed:bg-surface-3 aria-pressed:text-fg aria-expanded:bg-surface-3 aria-expanded:text-fg disabled:opacity-50" aria-expanded={groupsOpen} onClick={onToggleGroups}>
           Groups
         </button>
       )}
       {hasManualPositions && (
-        <button type="button" className={styles.textButton} onClick={onResetLayout}>
+        <button type="button" className="h-7.5 rounded-md px-2.5 text-sm text-fg-2 hover:bg-surface-3 hover:text-fg aria-pressed:bg-surface-3 aria-pressed:text-fg aria-expanded:bg-surface-3 aria-expanded:text-fg disabled:opacity-50" onClick={onResetLayout}>
           Reset positions
         </button>
       )}
       {collapsedCount > 0 && (
-        <button type="button" className={styles.textButton} onClick={onExpandAll}>
+        <button type="button" className="h-7.5 rounded-md px-2.5 text-sm text-fg-2 hover:bg-surface-3 hover:text-fg aria-pressed:bg-surface-3 aria-pressed:text-fg aria-expanded:bg-surface-3 aria-expanded:text-fg disabled:opacity-50" onClick={onExpandAll}>
           Expand all
         </button>
       )}
-      <span className={styles.divider} aria-hidden="true" />
-      <span className={styles.k} aria-hidden="true">
+      <span className="mx-[5px] h-5 w-px bg-line-strong" aria-hidden="true" />
+      <span className="mx-1 text-[10px] tracking-[0.07em] text-fg-3 uppercase" aria-hidden="true">
         Highlight
       </span>
-      <div className={styles.segmented} role="group" aria-label="Highlight dependencies">
+      <div className="flex gap-0.5 rounded-[9px] border border-line bg-surface-2 p-[3px]" role="group" aria-label="Highlight dependencies">
         {HIGHLIGHT_MODES.map((m) => (
           <button
             key={m}
             type="button"
-            className={styles.segment}
+            className="flex h-6.5 items-center gap-1.5 rounded-sm px-2.75 text-sm whitespace-nowrap text-fg-2 hover:text-fg aria-pressed:bg-selected aria-pressed:text-fg aria-pressed:shadow-[inset_0_0_0_1px_var(--color-line-strong),inset_0_-2px_0_var(--color-accent)] aria-pressed:[&_svg]:text-accent"
             aria-pressed={highlightMode === m}
             title={HIGHLIGHT_LABELS[m].hint}
             onClick={() => setHighlightMode(m)}
@@ -563,10 +562,10 @@ const DASH: Record<string, string> = { http: 'none', grpc: '9 4', data: '1.5 5',
 
 function Legend() {
   return (
-    <div className={`${styles.float} ${styles.legend}`} aria-label="Connection types">
-      <span className={styles.k}>Connections</span>
+    <div className={`absolute z-15 rounded-xl border border-line bg-float shadow-float backdrop-blur-[10px] bottom-16 left-3 z-14 flex flex-wrap items-center gap-x-4 gap-y-1.5 px-3 py-[7px] text-[11.5px] text-fg-2 max-md:hidden`} aria-label="Connection types">
+      <span className="mx-1 text-[10px] tracking-[0.07em] text-fg-3 uppercase">Connections</span>
       {EDGE_KINDS.filter((k) => k !== 'other').map((kind) => (
-        <span key={kind} className={styles.legendItem}>
+        <span key={kind} className="inline-flex items-center gap-1.5">
           <svg width="36" height="12" viewBox="0 0 36 12" aria-hidden="true">
             <path d="M2 6H28" stroke={`var(--edge-${kind})`} strokeWidth="1.6" strokeDasharray={DASH[kind]} fill="none" />
             <path d="M34 6l-6 -3v6z" fill={`var(--edge-${kind})`} />
@@ -580,9 +579,9 @@ function Legend() {
 
 function Overlay({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className={styles.overlay}>
-      <div className={`${styles.float} ${styles.overlayCard}`} role="status">
-        <h2 className={styles.overlayTitle}>{title}</h2>
+    <div className="pointer-events-none absolute inset-0 z-18 grid place-items-center p-4">
+      <div className={`absolute z-15 rounded-xl border border-line bg-float shadow-float backdrop-blur-[10px] pointer-events-auto relative max-w-[440px] px-6.5 py-5.5 text-center text-fg-2 [&_p]:m-0 [&_p]:mb-3.5`} role="status">
+        <h2 className="m-0 mb-1.5 text-lg font-semibold text-fg">{title}</h2>
         {children}
       </div>
     </div>
@@ -605,12 +604,12 @@ function EmptyGraph({ index, graph }: { index: TopologyIndex; graph: TopologyGra
   return (
     <Overlay title="No matches">
       <p>Nothing in {name} matches the current search, filters{neighborhood ? ', and neighborhood' : ''}.</p>
-      <div className={styles.overlayActions}>
-        <button type="button" className={styles.secondary} onClick={resetFilters}>
+      <div className="flex flex-wrap justify-center gap-2">
+        <button type="button" className="inline-flex h-8 items-center gap-1.5 rounded-md border border-line-strong px-3 whitespace-nowrap text-fg no-underline hover:bg-surface-3" onClick={resetFilters}>
           Clear filters
         </button>
         {neighborhood && (
-          <button type="button" className={styles.secondary} onClick={() => setNeighborhood(null)}>
+          <button type="button" className="inline-flex h-8 items-center gap-1.5 rounded-md border border-line-strong px-3 whitespace-nowrap text-fg no-underline hover:bg-surface-3" onClick={() => setNeighborhood(null)}>
             Show all
           </button>
         )}
@@ -650,11 +649,11 @@ function HiddenNotice({ index, environmentId }: { index: TopologyIndex; environm
   const instanceEnv = id ? index.instances.get(id)?.environmentId : undefined;
   const otherEnvironment = instanceEnv && instanceEnv !== environmentId ? instanceEnv : undefined;
   return (
-    <div className={`${styles.float} ${styles.notice}`} role="status">
+    <div className="absolute top-3 left-1/2 z-16 flex -translate-x-1/2 items-center gap-2.5 rounded-xl border border-dashed border-line-strong bg-float py-[7px] pr-2 pl-3 text-sm text-fg-2 shadow-float backdrop-blur-[10px]" role="status">
       <span>The selected entity is not on the map with the current {otherEnvironment ? 'environment' : 'filters or neighborhood'}.</span>
       <button
         type="button"
-        className={styles.chip}
+        className="h-6.5 rounded-full border border-line-strong px-2.5 text-sm whitespace-nowrap text-fg-2 hover:text-fg aria-expanded:border-indigo aria-expanded:bg-indigo/18 aria-expanded:text-fg"
         onClick={() => {
           if (otherEnvironment) setEnvironmentId(otherEnvironment);
           resetFilters();

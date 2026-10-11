@@ -4,7 +4,6 @@ import { useSavedLayoutRepository } from '../../../data/savedLayouts/savedLayout
 import { formatTimestamp } from '../../../shared/format';
 import { Icon } from '../../../shared/ui/Icon';
 import { useUiStore } from '../../../state/uiStore';
-import styles from './topology2d.module.css';
 
 interface LayoutsMenuProps {
   /** Current node positions keyed by canonical ID (relative to group in infrastructure mode). */
@@ -56,57 +55,57 @@ export function LayoutsMenu({ currentPositions, collapsedGroupIds, onApply, onCl
   };
 
   return (
-    <div className={`${styles.float} ${styles.layoutsMenu}`} role="dialog" aria-label="Saved layouts">
-      <div className={styles.menuHeader}>
+    <div className={`absolute z-15 rounded-xl border border-line bg-float shadow-float backdrop-blur-[10px] bottom-16 left-3 z-20 max-h-[60%] w-[360px] max-w-[calc(100%-24px)] overflow-auto px-3 pt-2.5 pb-3 text-sm`} role="dialog" aria-label="Saved layouts">
+      <div className="mb-1.5 flex items-center justify-between">
         <b>Saved layouts</b>
-        <button type="button" className={styles.iconButton} onClick={onClose} aria-label="Close saved layouts">
+        <button type="button" className="grid size-8.5 flex-none place-items-center rounded-md text-fg-2 hover:bg-surface-3 hover:text-fg" onClick={onClose} aria-label="Close saved layouts">
           <Icon name="close" />
         </button>
       </div>
       <form
-        className={styles.saveRow}
+        className="flex gap-2"
         onSubmit={(e) => {
           e.preventDefault();
           void save();
         }}
       >
-        <label htmlFor={nameId} className="visually-hidden">
+        <label htmlFor={nameId} className="sr-only">
           Layout name
         </label>
         <input
           id={nameId}
-          className={styles.input}
+          className="h-8 min-w-0 flex-1 rounded-md border border-control bg-surface-2 px-2.5 text-fg placeholder:text-fg-3"
           placeholder="Name this layout"
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={80}
         />
-        <button type="submit" className={styles.primary} disabled={!name.trim()}>
+        <button type="submit" className="inline-flex h-8 items-center gap-1.5 rounded-md bg-accent px-3.5 font-semibold whitespace-nowrap text-on-accent hover:brightness-110 disabled:opacity-50" disabled={!name.trim()}>
           Save
         </button>
       </form>
       {message && (
-        <p className={styles.menuMessage} role="status">
+        <p className="mt-2 mb-0 text-fg-2" role="status">
           {message}
         </p>
       )}
       {layouts === null ? (
-        <p className={styles.menuMessage}>Loading…</p>
+        <p className="mt-2 mb-0 text-fg-2">Loading…</p>
       ) : layouts.length === 0 ? (
-        <p className={styles.menuMessage}>No saved layouts yet. Positions, collapsed groups, mode, environment, and filters are saved.</p>
+        <p className="mt-2 mb-0 text-fg-2">No saved layouts yet. Positions, collapsed groups, mode, environment, and filters are saved.</p>
       ) : (
-        <ul className={styles.layoutList}>
+        <ul className="m-0 mt-2.5 list-none p-0 [&_li]:flex [&_li]:items-center [&_li]:gap-1 [&_li]:border-t [&_li]:border-line [&_li]:py-1.5">
           {layouts.map((layout) => (
             <li key={layout.id}>
-              <span className={styles.layoutText}>
+              <span className="flex min-w-0 flex-1 flex-col [&_b]:truncate [&_span]:truncate [&_span]:text-[10.5px] [&_span]:text-fg-3">
                 <b>{layout.name}</b>
-                <span className="mono">
+                <span className="font-mono">
                   {layout.view.environmentId} · {layout.view.layoutMode} · {formatTimestamp(layout.createdAt)}
                 </span>
               </span>
               <button
                 type="button"
-                className={styles.textButton}
+                className="h-7.5 rounded-md px-2.5 text-sm text-fg-2 hover:bg-surface-3 hover:text-fg aria-pressed:bg-surface-3 aria-pressed:text-fg aria-expanded:bg-surface-3 aria-expanded:text-fg disabled:opacity-50"
                 onClick={() => {
                   onApply(layout);
                   setMessage(`Applied “${layout.name}”.`);
@@ -117,7 +116,7 @@ export function LayoutsMenu({ currentPositions, collapsedGroupIds, onApply, onCl
               </button>
               <button
                 type="button"
-                className={styles.textButton}
+                className="h-7.5 rounded-md px-2.5 text-sm text-fg-2 hover:bg-surface-3 hover:text-fg aria-pressed:bg-surface-3 aria-pressed:text-fg aria-expanded:bg-surface-3 aria-expanded:text-fg disabled:opacity-50"
                 onClick={() => {
                   void repository.remove(layout.id).then(refresh);
                 }}

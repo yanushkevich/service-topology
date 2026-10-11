@@ -37,7 +37,6 @@ import { useSimulationStore } from '../../state/simulationStore';
 import { useUiStore } from '../../state/uiStore';
 import { PROPAGATION_RULES } from '../../domain/propagation';
 import { formatClock } from '../../shared/format';
-import styles from './inspector.module.css';
 
 /** Details for the shared selection, resolved from canonical data. Used by every view. */
 export function InspectorPanel() {
@@ -47,15 +46,15 @@ export function InspectorPanel() {
   let content: ReactNode;
   if (topology.status !== 'ready') {
     content = (
-      <div className={styles.padded}>
+      <div className="px-3.5">
         <LoadState state={topology} />
       </div>
     );
   } else if (!selection) {
     content = (
-      <div className={styles.empty}>
-        <h2 className={styles.emptyTitle}>Nothing selected</h2>
-        <p className={styles.emptyBody}>
+      <div className="m-auto px-6.5 py-5.5 text-center">
+        <h2 className="m-0 mb-1.5 text-lg font-semibold">Nothing selected</h2>
+        <p className="m-0 mb-3 text-fg-2">
           Select a service, resource, or connection on the map or in the registry to see its details here.
         </p>
       </div>
@@ -65,7 +64,7 @@ export function InspectorPanel() {
   }
 
   return (
-    <aside className={styles.inspector} aria-label="Inspector">
+    <aside className="m-3 ml-0 flex w-[332px] flex-none flex-col overflow-hidden rounded-xl border border-line bg-float shadow-float max-md:m-2 max-md:mt-0 max-md:max-h-[45%] max-md:w-auto" aria-label="Inspector">
       {content}
     </aside>
   );
@@ -129,7 +128,7 @@ function InstanceDetails({ index, instance }: { index: TopologyIndex; instance: 
         <MapActions entityId={instance.id} />
         <SimulationSection index={index} entityId={instance.id} />
         <EnvironmentNotice index={index} entityId={instance.id} />
-        {definition?.description && <p className={styles.description}>{definition.description}</p>}
+        {definition?.description && <p className="m-0 mb-3 text-fg-2">{definition.description}</p>}
         <Fields>
           <Field label="Environment" mono>
             {index.environments.get(instance.environmentId)?.name ?? instance.environmentId}
@@ -153,7 +152,7 @@ function InstanceDetails({ index, instance }: { index: TopologyIndex; instance: 
           {instance.resourceId ? (
             <ContainmentPath index={index} resourceId={instance.resourceId} includeSelf />
           ) : (
-            <p className={styles.muted}>Hosting resource not modeled.</p>
+            <p className="m-0 px-2 py-1 text-sm text-fg-3">Hosting resource not modeled.</p>
           )}
         </Section>
 
@@ -163,16 +162,16 @@ function InstanceDetails({ index, instance }: { index: TopologyIndex; instance: 
         <Section title="Logical service" count={siblings.length + 1}>
           {definition && (
             <EntityButton target={{ kind: 'service-definition', id: definition.id }}>
-              <span className={styles.linkName}>{definition.name}</span>
-              <span className={`mono ${styles.kind}`}>definition</span>
+              <span className="min-w-0 flex-1 truncate text-[12.5px]">{definition.name}</span>
+              <span className={`font-mono text-[10px] whitespace-nowrap text-fg-3`}>definition</span>
             </EntityButton>
           )}
           {siblings.map((sibling) => (
             <EntityButton key={sibling.id} target={{ kind: 'service-instance', id: sibling.id }}>
-              <span className={styles.linkName}>
+              <span className="min-w-0 flex-1 truncate text-[12.5px]">
                 {index.environments.get(sibling.environmentId)?.name ?? sibling.environmentId}
               </span>
-              <span className={`mono ${styles.kind}`}>{sibling.version ?? ''}</span>
+              <span className={`font-mono text-[10px] whitespace-nowrap text-fg-3`}>{sibling.version ?? ''}</span>
               <StatusShape health={sibling.health} />
             </EntityButton>
           ))}
@@ -218,7 +217,7 @@ function ResourceDetails({ index, resource }: { index: TopologyIndex; resource: 
           {resource.parentResourceId ? (
             <ContainmentPath index={index} resourceId={resource.id} />
           ) : (
-            <p className={styles.muted}>Top-level resource.</p>
+            <p className="m-0 px-2 py-1 text-sm text-fg-3">Top-level resource.</p>
           )}
         </Section>
 
@@ -227,16 +226,16 @@ function ResourceDetails({ index, resource }: { index: TopologyIndex; resource: 
             {childResources.map((child) => (
               <EntityButton key={child.id} target={{ kind: 'resource', id: child.id }}>
                 <TypeGlyph type={child.type} size={13} />
-                <span className={styles.linkName}>{child.name}</span>
-                <span className={`mono ${styles.kind}`}>{typeLabel(child.type)}</span>
+                <span className="min-w-0 flex-1 truncate text-[12.5px]">{child.name}</span>
+                <span className={`font-mono text-[10px] whitespace-nowrap text-fg-3`}>{typeLabel(child.type)}</span>
                 {child.health && <StatusShape health={child.health} />}
               </EntityButton>
             ))}
             {hostedInstances.map((instance) => (
               <EntityButton key={instance.id} target={{ kind: 'service-instance', id: instance.id }}>
                 <TypeGlyph type={index.definitions.get(instance.serviceDefinitionId)?.category ?? 'other'} size={13} />
-                <span className={styles.linkName}>{endpointName(index, instance.id)}</span>
-                <span className={`mono ${styles.kind}`}>instance</span>
+                <span className="min-w-0 flex-1 truncate text-[12.5px]">{endpointName(index, instance.id)}</span>
+                <span className={`font-mono text-[10px] whitespace-nowrap text-fg-3`}>instance</span>
                 <StatusShape health={instance.health} />
               </EntityButton>
             ))}
@@ -298,7 +297,7 @@ function DefinitionDetails({ index, definition }: { index: TopologyIndex; defini
         subtitle={`Logical service · ${definition.id}`}
       />
       <Body>
-        {definition.description && <p className={styles.description}>{definition.description}</p>}
+        {definition.description && <p className="m-0 mb-3 text-fg-2">{definition.description}</p>}
         <Fields>
           <Field label="Category">{typeLabel(definition.category)}</Field>
           <Field label="Owner">{definition.owner ?? 'Unassigned'}</Field>
@@ -306,13 +305,13 @@ function DefinitionDetails({ index, definition }: { index: TopologyIndex; defini
           <Field label="Protocols">{definition.protocols.map(protocolLabel).join(', ') || '—'}</Field>
         </Fields>
         <Section title="Deployed instances" count={instances.length}>
-          {instances.length === 0 && <p className={styles.muted}>Not deployed in any environment.</p>}
+          {instances.length === 0 && <p className="m-0 px-2 py-1 text-sm text-fg-3">Not deployed in any environment.</p>}
           {instances.map((instance) => (
             <EntityButton key={instance.id} target={{ kind: 'service-instance', id: instance.id }}>
-              <span className={styles.linkName}>
+              <span className="min-w-0 flex-1 truncate text-[12.5px]">
                 {index.environments.get(instance.environmentId)?.name ?? instance.environmentId}
               </span>
-              <span className={`mono ${styles.kind}`}>
+              <span className={`font-mono text-[10px] whitespace-nowrap text-fg-3`}>
                 {providerLabel(instance.provider)} · {instance.version ?? '—'}
               </span>
               <StatusShape health={instance.health} />
@@ -328,13 +327,13 @@ function DefinitionDetails({ index, definition }: { index: TopologyIndex; defini
 function MissingSelection({ selection }: { selection: EntityRef }) {
   const select = useUiStore((s) => s.select);
   return (
-    <div className={styles.empty} role="status">
-      <h2 className={styles.emptyTitle}>Selection not found</h2>
-      <p className={styles.emptyBody}>
-        No {selection.kind.replace('-', ' ')} with ID <span className="mono">{selection.id}</span> exists in the
+    <div className="m-auto px-6.5 py-5.5 text-center" role="status">
+      <h2 className="m-0 mb-1.5 text-lg font-semibold">Selection not found</h2>
+      <p className="m-0 mb-3 text-fg-2">
+        No {selection.kind.replace('-', ' ')} with ID <span className="font-mono">{selection.id}</span> exists in the
         current data.
       </p>
-      <button type="button" className={styles.secondary} onClick={() => select(null)}>
+      <button type="button" className="inline-flex h-7 items-center gap-[7px] rounded-md border border-line-strong px-3 whitespace-nowrap text-fg hover:bg-surface-3" onClick={() => select(null)}>
         Clear selection
       </button>
     </div>
@@ -362,24 +361,24 @@ function Header({
 }) {
   const select = useUiStore((s) => s.select);
   return (
-    <div className={styles.header}>
-      <div className={styles.headerRow}>
-        <span className={styles.glyphTile}>
+    <div className="flex-none border-b border-line px-3.5 pt-3.5 pb-3">
+      <div className="flex items-start gap-[11px]">
+        <span className="grid size-[38px] flex-none place-items-center rounded-lg border border-line bg-surface-3">
           <TypeGlyph type={glyph} size={20} />
         </span>
-        <div className={styles.headerText}>
-          <h2 className={styles.name}>{name}</h2>
-          <div className={`mono ${styles.subtitle}`}>{subtitle}</div>
+        <div className="min-w-0 flex-1">
+          <h2 className="m-0 truncate text-lg font-semibold">{name}</h2>
+          <div className={`font-mono truncate text-xs text-fg-3`}>{subtitle}</div>
         </div>
-        <button type="button" className={styles.close} onClick={() => select(null)} aria-label="Close inspector">
+        <button type="button" className="grid size-7.5 flex-none place-items-center rounded-md text-fg-2 hover:bg-surface-3 hover:text-fg" onClick={() => select(null)} aria-label="Close inspector">
           <Icon name="close" />
         </button>
       </div>
       {health && (
-        <div className={styles.statusBar}>
+        <div className="mt-3 flex items-center gap-2 rounded-[9px] bg-surface-3 px-2.5 py-2 text-[12.5px]">
           <StatusShape health={health} />
           <b>{healthText ?? healthLabel(health)}</b>
-          {note && <span className={styles.statusNote}>{note}</span>}
+          {note && <span className="min-w-0 truncate text-sm text-fg-2">{note}</span>}
         </div>
       )}
     </div>
@@ -387,26 +386,26 @@ function Header({
 }
 
 function Body({ children }: { children: ReactNode }) {
-  return <div className={styles.body}>{children}</div>;
+  return <div className="min-h-0 flex-1 overflow-auto px-3.5 pt-3 pb-4">{children}</div>;
 }
 
 function Fields({ children }: { children: ReactNode }) {
-  return <dl className={styles.fields}>{children}</dl>;
+  return <dl className="m-0 grid grid-cols-2 gap-2">{children}</dl>;
 }
 
 function Field({ label, mono, children }: { label: string; mono?: boolean; children: ReactNode }) {
   return (
-    <div className={styles.card}>
-      <dt className={styles.k}>{label}</dt>
-      <dd className={`${styles.v} ${mono ? 'mono' : ''}`}>{children}</dd>
+    <div className="min-w-0 rounded-lg border border-line bg-surface-3/60 px-[11px] py-[9px]">
+      <dt className="text-[10px] tracking-[0.07em] text-fg-3 uppercase">{label}</dt>
+      <dd className={`m-0 mt-0.5 text-[12.5px] wrap-anywhere ${mono ? 'font-mono' : ''}`}>{children}</dd>
     </div>
   );
 }
 
 function Section({ title, count, children }: { title: string; count?: number; children: ReactNode }) {
   return (
-    <section className={styles.section}>
-      <h3 className={styles.h4}>
+    <section className="mt-4">
+      <h3 className="m-0 mb-1.5 flex items-center justify-between gap-2 text-[10px] font-normal tracking-[0.08em] text-fg-3 uppercase">
         <span>{title}</span>
         {count !== undefined && <span>{count}</span>}
       </h3>
@@ -417,9 +416,9 @@ function Section({ title, count, children }: { title: string; count?: number; ch
 
 function KeyValue({ label, value }: { label: string; value: string }) {
   return (
-    <div className={styles.kv}>
-      <span className={styles.kvKey}>{label}</span>
-      <span className={`mono ${styles.kvValue}`}>{value}</span>
+    <div className="flex justify-between gap-3 border-b border-line py-1.5 text-sm">
+      <span className="text-fg-3">{label}</span>
+      <span className={`font-mono min-w-0 text-right wrap-anywhere`}>{value}</span>
     </div>
   );
 }
@@ -427,7 +426,7 @@ function KeyValue({ label, value }: { label: string; value: string }) {
 function EntityButton({ target, children }: { target: EntityRef; children: ReactNode }) {
   const select = useUiStore((s) => s.select);
   return (
-    <button type="button" className={styles.link} onClick={() => select(target)}>
+    <button type="button" className="flex min-h-[34px] w-full items-center gap-[9px] rounded-md px-2 text-left enabled:hover:bg-surface-3" onClick={() => select(target)}>
       {children}
     </button>
   );
@@ -436,7 +435,7 @@ function EntityButton({ target, children }: { target: EntityRef; children: React
 function EndpointButton({ index, id, role }: { index: TopologyIndex; id: EntityId; role: string }) {
   const kind = kindOfId(index, id);
   if (kind !== 'service-instance' && kind !== 'resource') {
-    return <p className={styles.muted}>{role}: unknown entity {id}</p>;
+    return <p className="m-0 px-2 py-1 text-sm text-fg-3">{role}: unknown entity {id}</p>;
   }
   const instance = index.instances.get(id);
   const resource = index.resources.get(id);
@@ -447,8 +446,8 @@ function EndpointButton({ index, id, role }: { index: TopologyIndex; id: EntityI
   return (
     <EntityButton target={{ kind, id }}>
       <TypeGlyph type={type} size={13} />
-      <span className={styles.linkName}>{endpointName(index, id)}</span>
-      <span className={`mono ${styles.kind}`}>{role}</span>
+      <span className="min-w-0 flex-1 truncate text-[12.5px]">{endpointName(index, id)}</span>
+      <span className={`font-mono text-[10px] whitespace-nowrap text-fg-3`}>{role}</span>
       {health && <StatusShape health={health} />}
     </EntityButton>
   );
@@ -466,12 +465,12 @@ function ContainmentPath({
   const self = index.resources.get(resourceId);
   const chain = [...resourceAncestors(index, resourceId), ...(includeSelf && self ? [self] : [])];
   return (
-    <ol className={styles.path} aria-label="Containment path">
+    <ol className="m-0 list-none p-0 [&>li+li]:ml-3 [&>li+li]:border-l [&>li+li]:border-line-strong [&>li+li]:pl-1" aria-label="Containment path">
       {chain.map((resource) => (
         <li key={resource.id}>
           <EntityButton target={{ kind: 'resource', id: resource.id }}>
-            <span className={styles.linkName}>{resource.name}</span>
-            <span className={`mono ${styles.kind}`}>{typeLabel(resource.type)}</span>
+            <span className="min-w-0 flex-1 truncate text-[12.5px]">{resource.name}</span>
+            <span className={`font-mono text-[10px] whitespace-nowrap text-fg-3`}>{typeLabel(resource.type)}</span>
           </EntityButton>
         </li>
       ))}
@@ -485,13 +484,13 @@ function Relationships({ index, entityId }: { index: TopologyIndex; entityId: En
   return (
     <>
       <Section title="Outgoing (calls, publishes to)" count={outgoing.length}>
-        {outgoing.length === 0 && <p className={styles.muted}>No outgoing connections modeled.</p>}
+        {outgoing.length === 0 && <p className="m-0 px-2 py-1 text-sm text-fg-3">No outgoing connections modeled.</p>}
         {outgoing.map((r) => (
           <RelationshipRow key={r.id} index={index} relationship={r} peerId={r.targetEntityId} />
         ))}
       </Section>
       <Section title="Incoming (called by, delivers to)" count={incoming.length}>
-        {incoming.length === 0 && <p className={styles.muted}>No incoming connections modeled.</p>}
+        {incoming.length === 0 && <p className="m-0 px-2 py-1 text-sm text-fg-3">No incoming connections modeled.</p>}
         {incoming.map((r) => (
           <RelationshipRow key={r.id} index={index} relationship={r} peerId={r.sourceEntityId} />
         ))}
@@ -513,20 +512,20 @@ function RelationshipRow({
   const peerKind = kindOfId(index, peerId);
   const peerName = endpointName(index, peerId);
   return (
-    <div className={styles.relRow}>
+    <div className="flex items-center gap-0.5">
       <button
         type="button"
-        className={styles.link}
+        className="flex min-h-[34px] w-full items-center gap-[9px] rounded-md px-2 text-left enabled:hover:bg-surface-3"
         onClick={() => peerKind && select({ kind: peerKind, id: peerId })}
         disabled={!peerKind}
       >
-        <span className={styles.linkName}>{peerName}</span>
-        <span className={`mono ${styles.kind}`}>{protocolLabel(relationship.protocol)}</span>
+        <span className="min-w-0 flex-1 truncate text-[12.5px]">{peerName}</span>
+        <span className={`font-mono text-[10px] whitespace-nowrap text-fg-3`}>{protocolLabel(relationship.protocol)}</span>
         <StatusShape health={relationshipStatusHealth(relationship.status)} />
       </button>
       <button
         type="button"
-        className={styles.relDetails}
+        className="grid size-7 flex-none place-items-center rounded-sm text-fg-3 hover:bg-surface-3 hover:text-fg"
         onClick={() => select({ kind: 'relationship', id: relationship.id })}
         aria-label={`Connection details: ${protocolLabel(relationship.protocol)} with ${peerName}`}
         title="Connection details"
@@ -539,34 +538,34 @@ function RelationshipRow({
 
 function MetricsSection({ metrics }: { metrics: Metrics | undefined }) {
   return (
-    <section className={styles.section} aria-label="Telemetry">
-      <h3 className={styles.h4}>
+    <section className="mt-4" aria-label="Telemetry">
+      <h3 className="m-0 mb-1.5 flex items-center justify-between gap-2 text-[10px] font-normal tracking-[0.08em] text-fg-3 uppercase">
         <span>Telemetry</span>
         {metrics && <SimulatedTag simulated={metrics.isSimulated} />}
       </h3>
       {metrics ? (
         <>
-          <dl className={styles.metrics}>
-            <div className={styles.card}>
-              <dt className={styles.k}>Latency</dt>
-              <dd className={`${styles.metricValue} mono`}>{formatNumber(metrics.latencyMs, ' ms')}</dd>
+          <dl className="m-0 mb-1.5 grid grid-cols-3 gap-2">
+            <div className="min-w-0 rounded-lg border border-line bg-surface-3/60 px-[11px] py-[9px]">
+              <dt className="text-[10px] tracking-[0.07em] text-fg-3 uppercase">Latency</dt>
+              <dd className={`m-0 mt-0.5 text-lg font-medium font-mono`}>{formatNumber(metrics.latencyMs, ' ms')}</dd>
             </div>
-            <div className={styles.card}>
-              <dt className={styles.k}>Throughput</dt>
-              <dd className={`${styles.metricValue} mono`}>{formatNumber(metrics.throughputPerSecond, '/s')}</dd>
+            <div className="min-w-0 rounded-lg border border-line bg-surface-3/60 px-[11px] py-[9px]">
+              <dt className="text-[10px] tracking-[0.07em] text-fg-3 uppercase">Throughput</dt>
+              <dd className={`m-0 mt-0.5 text-lg font-medium font-mono`}>{formatNumber(metrics.throughputPerSecond, '/s')}</dd>
             </div>
-            <div className={styles.card}>
-              <dt className={styles.k}>Errors</dt>
-              <dd className={`${styles.metricValue} mono`}>{formatNumber(metrics.errorRatePercent, '%')}</dd>
+            <div className="min-w-0 rounded-lg border border-line bg-surface-3/60 px-[11px] py-[9px]">
+              <dt className="text-[10px] tracking-[0.07em] text-fg-3 uppercase">Errors</dt>
+              <dd className={`m-0 mt-0.5 text-lg font-medium font-mono`}>{formatNumber(metrics.errorRatePercent, '%')}</dd>
             </div>
           </dl>
-          <p className={styles.muted}>
+          <p className="m-0 px-2 py-1 text-sm text-fg-3">
             {metrics.isSimulated ? 'Simulated values, not observed telemetry' : 'Observed'} · as of{' '}
             {formatTimestamp(metrics.observedAt)}
           </p>
         </>
       ) : (
-        <p className={styles.muted}>No telemetry available.</p>
+        <p className="m-0 px-2 py-1 text-sm text-fg-3">No telemetry available.</p>
       )}
     </section>
   );
@@ -602,22 +601,22 @@ function SimulationSection({ index, entityId }: { index: TopologyIndex; entityId
   const rule = impact ? PROPAGATION_RULES.find((r) => r.id === impact.ruleId) : undefined;
 
   return (
-    <section className={styles.simulation} aria-label="Simulation">
-      <h3 className={styles.h4}>
+    <section className="mb-3 rounded-[9px] border border-dashed border-warn px-[11px] py-[9px]" aria-label="Simulation">
+      <h3 className="m-0 mb-1.5 flex items-center justify-between gap-2 text-[10px] font-normal tracking-[0.08em] text-fg-3 uppercase">
         <span>Simulation</span>
         <SimulatedTag simulated />
       </h3>
       {failure && (
-        <p className={styles.simText}>
+        <p className="m-0 mb-2 text-sm text-fg-2 [&_b]:text-fg">
           Simulated <b>{failure.mode}</b> failure since tick {failure.injectedTick}
           {failure.recoverAtTick !== undefined ? `, auto-recovers at tick ${failure.recoverAtTick}` : ''}. Affects {affects}{' '}
           {affects === 1 ? 'entity' : 'entities'}.
         </p>
       )}
       {impact && (
-        <p className={styles.simText}>
+        <p className="m-0 mb-2 text-sm text-fg-2 [&_b]:text-fg">
           <b>{healthLabel(impact.effect)}</b> because{' '}
-          <button type="button" className={styles.inlineLink} onClick={() => select(refFor(impact.causeId))}>
+          <button type="button" className="font-semibold text-fg underline" onClick={() => select(refFor(impact.causeId))}>
             {endpointName(index, impact.causeId)}
           </button>{' '}
           failed{via ? ` (${protocolLabel(via.protocol)}, ${patternLabel(via.pattern).toLowerCase()})` : ' (contains it)'}. Rule:{' '}
@@ -626,7 +625,7 @@ function SimulationSection({ index, entityId }: { index: TopologyIndex; entityId
             <>
               {' '}
               Root failure:{' '}
-              <button type="button" className={styles.inlineLink} onClick={() => select(refFor(impact.rootId))}>
+              <button type="button" className="font-semibold text-fg underline" onClick={() => select(refFor(impact.rootId))}>
                 {endpointName(index, impact.rootId)}
               </button>
               .
@@ -634,18 +633,18 @@ function SimulationSection({ index, entityId }: { index: TopologyIndex; entityId
           )}
         </p>
       )}
-      {!failure && !impact && <p className={styles.simText}>Not affected by simulated failures at {formatClock(sim.clock)}.</p>}
-      <div className={styles.actions}>
+      {!failure && !impact && <p className="m-0 mb-2 text-sm text-fg-2 [&_b]:text-fg">Not affected by simulated failures at {formatClock(sim.clock)}.</p>}
+      <div className="mb-3 flex flex-wrap gap-2">
         {failure ? (
-          <button type="button" className={styles.secondary} onClick={() => recover(entityId)}>
+          <button type="button" className="inline-flex h-7 items-center gap-[7px] rounded-md border border-line-strong px-3 whitespace-nowrap text-fg hover:bg-surface-3" onClick={() => recover(entityId)}>
             Recover
           </button>
         ) : (
           <>
-            <button type="button" className={styles.danger} onClick={() => inject(entityId, 'unavailable')}>
+            <button type="button" className="h-7 rounded-md border border-crit px-3 font-semibold whitespace-nowrap text-crit-fg hover:bg-crit/10" onClick={() => inject(entityId, 'unavailable')}>
               Simulate outage
             </button>
-            <button type="button" className={styles.secondary} onClick={() => inject(entityId, 'degraded')}>
+            <button type="button" className="inline-flex h-7 items-center gap-[7px] rounded-md border border-line-strong px-3 whitespace-nowrap text-fg hover:bg-surface-3" onClick={() => inject(entityId, 'degraded')}>
               Simulate degradation
             </button>
           </>
@@ -672,11 +671,11 @@ function MapActions({ entityId }: { entityId: EntityId }) {
   const exitScopeTo = useUiStore((s) => s.exitScopeTo);
   const activeView = useUiStore((s) => s.activeView);
   return (
-    <div className={styles.actions}>
+    <div className="mb-3 flex flex-wrap gap-2">
       {!(onMap && activeView === '3d') && (
         <button
           type="button"
-          className={styles.secondary}
+          className="inline-flex h-7 items-center gap-[7px] rounded-md border border-line-strong px-3 whitespace-nowrap text-fg hover:bg-surface-3"
           onClick={() => {
             exitScopeTo(0);
             enterScope(entityId);
@@ -689,14 +688,14 @@ function MapActions({ entityId }: { entityId: EntityId }) {
         </button>
       )}
       {!onMap && (
-        <button type="button" className={styles.primary} onClick={toMap}>
+        <button type="button" className="inline-flex h-7.5 items-center gap-[7px] rounded-md bg-accent px-3 font-semibold text-on-accent hover:brightness-110" onClick={toMap}>
           <Icon name="focus" />
           Show on map
         </button>
       )}
       <button
         type="button"
-        className={exploring ? styles.secondary : onMap ? styles.primary : styles.secondary}
+        className={exploring ? 'inline-flex h-7 items-center gap-[7px] rounded-md border border-line-strong px-3 whitespace-nowrap text-fg hover:bg-surface-3' : onMap ? 'inline-flex h-7.5 items-center gap-[7px] rounded-md bg-accent px-3 font-semibold text-on-accent hover:brightness-110' : 'inline-flex h-7 items-center gap-[7px] rounded-md border border-line-strong px-3 whitespace-nowrap text-fg hover:bg-surface-3'}
         aria-pressed={exploring}
         onClick={() => {
           setNeighborhood(exploring ? null : { centerId: entityId, depth: neighborhood?.depth ?? 1 });
@@ -718,11 +717,11 @@ function EnvironmentNotice({ index, entityId }: { index: TopologyIndex; entityId
   if (entityEnvironment === undefined || entityEnvironment === environmentId) return null;
   const name = index.environments.get(entityEnvironment)?.name ?? entityEnvironment;
   return (
-    <div className={styles.note} role="status">
+    <div className="mb-3 flex flex-wrap items-center gap-2 rounded-[9px] border border-dashed border-line-strong px-[11px] py-[9px] text-sm text-fg-2" role="status">
       <span>
         This belongs to <b>{name}</b>, not the current environment.
       </span>
-      <button type="button" className={styles.secondary} onClick={() => setEnvironmentId(entityEnvironment)}>
+      <button type="button" className="inline-flex h-7 items-center gap-[7px] rounded-md border border-line-strong px-3 whitespace-nowrap text-fg hover:bg-surface-3" onClick={() => setEnvironmentId(entityEnvironment)}>
         Switch to {name}
       </button>
     </div>

@@ -16,12 +16,11 @@ const canvasClick = (element: HTMLElement) => fireEvent.click(element);
 /** React Flow node wrapper for an entity (aria-label starts with its display name). */
 const findNode = (name: string) => screen.findByLabelText(new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}, `));
 const nodeBox = (wrapper: HTMLElement) => wrapper.firstElementChild as HTMLElement;
-/** 'selected' | 'highlighted' | 'dimmed' (dimmed = neither, while the canvas dims others) | 'none'. */
+/** 'selected' | 'highlighted' | 'dimmed' (none while the canvas dims others) | 'none'. */
 const emphasis = (wrapper: HTMLElement) => {
-  const cls = nodeBox(wrapper).className;
-  if (/selected/.test(cls)) return 'selected';
-  if (/highlighted/.test(cls)) return 'highlighted';
-  return wrapper.closest('.topology-dim-others') ? 'dimmed' : 'none';
+  const value = nodeBox(wrapper).dataset.emphasis;
+  if (value === 'none' && wrapper.closest('.topology-dim-others')) return 'dimmed';
+  return value;
 };
 
 describe('2D topology map', () => {

@@ -8,7 +8,6 @@ import { useSimulationTicker } from '../state/useSimulationTicker';
 import { HistoryBanner } from './HistoryBanner';
 import { Header } from './Header';
 import { NavRail } from './NavRail';
-import styles from './shell.module.css';
 
 export function AppShell() {
   const theme = useUiStore((s) => s.theme);
@@ -22,7 +21,7 @@ export function AppShell() {
 
   return (
     <TopologyDataProvider>
-    <div className={styles.app}>
+    <div className="flex h-screen min-h-[640px] flex-col overflow-hidden bg-surface-0">
       <a
         className="skip-link"
         href="#main-content"
@@ -36,9 +35,9 @@ export function AppShell() {
       </a>
       <Header />
       <HistoryBanner />
-      <div className={styles.body}>
+      <div className="flex min-h-0 flex-1 max-md:flex-col">
         <NavRail />
-        <main id="main-content" className={styles.main} tabIndex={-1}>
+        <main id="main-content" className="relative min-h-0 min-w-0 flex-1 overflow-auto focus:outline-none" tabIndex={-1}>
           <Outlet />
         </main>
       </div>

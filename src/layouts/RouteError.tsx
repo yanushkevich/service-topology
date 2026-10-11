@@ -1,5 +1,4 @@
 import { isRouteErrorResponse, Link, useRouteError } from 'react-router';
-import styles from './shell.module.css';
 
 /** Last-resort boundary for errors thrown while rendering a route. */
 export function RouteError() {
@@ -11,9 +10,9 @@ export function RouteError() {
       : 'Unknown error';
 
   return (
-    <div className={styles.fatal} role="alert">
+    <div className="mx-auto my-[15vh] max-w-[560px] px-4 text-fg [&_p]:text-crit-fg" role="alert">
       <h1>Something went wrong</h1>
-      <p className="mono">{message}</p>
+      <p className="font-mono">{message}</p>
       <Link to="/map">Return to the Service Map</Link>
     </div>
   );

@@ -6,7 +6,6 @@ import { useTopology } from '../data/topologyContext';
 import { sortEnvironments } from '../domain/topologyIndex';
 import { useUiStore } from '../state/uiStore';
 import { Icon } from '../shared/ui/Icon';
-import styles from './shell.module.css';
 
 export function Header() {
   const theme = useUiStore((s) => s.theme);
@@ -30,25 +29,25 @@ export function Header() {
   const nextTheme = theme === 'dark' ? 'light' : 'dark';
 
   return (
-    <header className={styles.header}>
-      <div className={styles.brand}>
+    <header className="relative z-30 flex min-h-[52px] flex-none flex-wrap items-center gap-2.5 border-b border-line bg-surface-1 px-3.5 py-2">
+      <div className="flex items-center gap-[9px]">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" aria-hidden="true">
           <ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(-28 12 12)" stroke="var(--color-ice)" />
           <ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(42 12 12)" stroke="var(--color-indigo)" />
           <circle cx="12" cy="12" r="2.2" fill="var(--color-accent)" stroke="var(--color-accent)" />
         </svg>
-        <span className={styles.brandName}>Orrery</span>
+        <span className="text-lg font-semibold tracking-[-0.01em]">Orrery</span>
       </div>
-      <div className={`${styles.divider} ${styles.hideSmall}`} aria-hidden="true" />
+      <div className={`mx-1 h-5 w-px bg-line-strong max-md:hidden`} aria-hidden="true" />
 
-      <div className={styles.headerControl}>
-        <label htmlFor={envSelectId} className="visually-hidden">
+      <div className="relative flex h-8 items-center gap-2 rounded-md border border-control bg-surface-2 px-2.5 whitespace-nowrap text-fg-2 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
+        <label htmlFor={envSelectId} className="sr-only">
           Environment
         </label>
-        <span className={styles.envSwatch} aria-hidden="true" />
+        <span className="size-[7px] rounded-[2px] bg-ok" aria-hidden="true" />
         <select
           id={envSelectId}
-          className={`${styles.envSelect} mono`}
+          className={`cursor-pointer appearance-none border-0 bg-transparent pr-5 text-sm text-fg focus-visible:outline-none [&_option]:bg-surface-2 [&_option]:text-fg font-mono`}
           value={environmentId}
           onChange={(e) => setEnvironmentId(e.target.value)}
           disabled={environments.length === 0}
@@ -60,17 +59,17 @@ export function Header() {
             </option>
           ))}
         </select>
-        <Icon name="chevronDown" className={styles.selectChevron} />
+        <Icon name="chevronDown" className="pointer-events-none absolute right-2" />
       </div>
 
-      <div className={`${styles.headerControl} ${styles.search}`}>
+      <div className={`relative flex h-8 items-center gap-2 rounded-md border border-control bg-surface-2 px-2.5 whitespace-nowrap text-fg-2 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent max-w-[440px] flex-[1_1_260px]`}>
         <Icon name="search" />
-        <label htmlFor={searchId} className="visually-hidden">
+        <label htmlFor={searchId} className="sr-only">
           Search services and resources
         </label>
         <input
           id={searchId}
-          className={styles.searchInput}
+          className="min-w-0 flex-1 border-0 bg-transparent text-fg placeholder:text-fg-3 focus-visible:outline-none disabled:cursor-not-allowed"
           type="search"
           placeholder="Search services, resources, owners…"
           value={query}
@@ -84,18 +83,18 @@ export function Header() {
         />
       </div>
 
-      <div className={styles.headerEnd}>
+      <div className="ml-auto flex items-center gap-1.5">
         <SimulationChip search={location.search} />
         <button
           type="button"
-          className={styles.iconButton}
+          className="grid size-8.5 place-items-center rounded-md text-fg-2 transition-colors hover:bg-surface-3 hover:text-fg"
           onClick={toggleTheme}
           aria-label={`Switch to ${nextTheme} theme`}
           title={`Switch to ${nextTheme} theme`}
         >
           <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
         </button>
-        <button type="button" className={styles.avatar} aria-label="Account menu (placeholder)" disabled>
+        <button type="button" className="size-7.5 rounded-full border border-line-strong bg-surface-3 text-xs font-semibold text-fg-2 disabled:cursor-default" aria-label="Account menu (placeholder)" disabled>
           <span aria-hidden="true">—</span>
         </button>
       </div>
@@ -112,15 +111,15 @@ function SimulationChip({ search }: { search: string }) {
   return (
     <Link
       to={{ pathname: '/events', search }}
-      className={styles.simChip}
+      className="inline-flex h-7.5 items-center gap-1.5 rounded-full border border-dashed border-warn px-2.5 text-sm whitespace-nowrap text-warn-fg no-underline hover:bg-warn/10"
       title="Simulated clock and status. Open Events & Traffic"
     >
       {/* Visible text first, so the accessible name contains it (WCAG 2.5.3). */}
       <span aria-hidden="true">{running ? '▶' : '❚❚'}</span>
       <span>Simulated</span>
-      <span className="mono">{formatClock(sim.clock)}</span>
-      {failures > 0 && <span className="mono">· {failures} failing</span>}
-      <span className="visually-hidden">, simulation {running ? 'running' : 'paused'}. Open Events &amp; Traffic</span>
+      <span className="font-mono">{formatClock(sim.clock)}</span>
+      {failures > 0 && <span className="font-mono">· {failures} failing</span>}
+      <span className="sr-only">, simulation {running ? 'running' : 'paused'}. Open Events &amp; Traffic</span>
     </Link>
   );
 }

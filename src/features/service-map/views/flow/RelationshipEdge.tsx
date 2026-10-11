@@ -3,7 +3,6 @@ import { memo } from 'react';
 import { protocolLabel, relationshipStatusHealth } from '../../../../shared/mappings';
 import { StatusShape } from '../../../../shared/ui/StatusShape';
 import type { RelationshipFlowEdge } from '../../adapters/reactFlowAdapter';
-import styles from './flow.module.css';
 
 /** Communication relationship. Kind → color + dash pattern; problems get a status shape at the midpoint. */
 export const RelationshipEdge = memo(function RelationshipEdge(props: EdgeProps<RelationshipFlowEdge>) {
@@ -22,17 +21,18 @@ export const RelationshipEdge = memo(function RelationshipEdge(props: EdgeProps<
         path={path}
         {...(markerEnd ? { markerEnd } : {})}
         interactionWidth={14}
-        className={`${styles.edge} ${styles[`kind-${edge.kind}`] ?? ''} ${styles[`edge-${emphasis}`] ?? ''}`}
+        className={`flow-edge kind-${edge.kind} emphasis-${emphasis}`}
       />
       {showLabel && (
         <EdgeLabelRenderer>
           <div
-            className={`${styles.edgeLabel} ${emphasis === 'none' ? styles.edgeLabelDim : ''}`}
+            className="flow-edge-label pointer-events-none absolute inline-flex items-center gap-[5px] rounded-sm border border-line bg-float px-1.5 py-0.5 text-[10px] text-fg-2"
+            data-emphasis={emphasis}
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
           >
             {problem && <StatusShape health={relationshipStatusHealth(edge.status)} />}
             {(emphasis === 'selected' || emphasis === 'highlighted') && (
-              <span className="mono">
+              <span className="font-mono">
                 {protocolLabel(edge.protocol)}
                 {merged ? ` ×${edge.relationshipIds.length}` : ''}
               </span>
