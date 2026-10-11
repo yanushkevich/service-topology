@@ -230,7 +230,7 @@ The galaxy view is more than a rotatable overview: it supports hierarchical expl
 **Source:** product owner direction after Milestone 5 review. Authoritative where it conflicts with earlier text (it supersedes the "CSS variables" styling expectation in §10 and ADR-007's rejection of a utility framework). Delivery: Milestone 6 (`docs/milestones/MILESTONE_06_TAILWIND_SECTIONS.md`).
 
 ## J. Styling: Tailwind CSS
-- The UI is styled with **Tailwind CSS (v4)**. The existing design tokens (`src/styles/tokens.css`: surfaces, text, accents, status, edges, radii, type scale, light/dark) remain the single source of values and are exposed as the Tailwind theme. Tailwind's default color palette is disabled, so only tokens that passed the WCAG contrast test can be used.
+- The UI is styled with **Tailwind CSS (v4)**. The existing design tokens (`apps/web/src/styles/tokens.css`: surfaces, text, accents, status, edges, radii, type scale, light/dark) remain the single source of values and are exposed as the Tailwind theme. Tailwind's default color palette is disabled, so only tokens that passed the WCAG contrast test can be used.
 - All components are migrated from CSS Modules to Tailwind utilities. Repeated patterns (buttons, chips, segmented controls, floating panels, cards) become shared components. Bespoke artwork that utilities cannot express (resource glyphs, status shapes) and third-party overrides (React Flow, 3D labels) live in Tailwind `@layer components` / base CSS, not CSS Modules.
 - No visual or accessibility regression: contrast, axe, keyboard, and reduced-motion checks must still pass, and both themes must render as before.
 

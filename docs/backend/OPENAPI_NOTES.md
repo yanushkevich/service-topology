@@ -1,7 +1,7 @@
 # OpenAPI Contract Notes
 
 - **One contract for the monorepo:** `docs/api/openapi.json` (OpenAPI 3.1.0, `jsonSchemaDialect` JSON Schema 2020-12). Payload schemas live in `docs/schemas/` and are referenced, not duplicated. Do not create a second `openapi.yaml` under `backend/`.
-- Every operation has an `operationId`, an `x-repository` mapping to the frontend interface it backs, and an error response. Every example validates against its schema. These are enforced by `src/contract/contract.test.ts` (`npm test`).
+- Every operation has an `operationId`, an `x-repository` mapping to the frontend interface it backs, and an error response. Every example validates against its schema. These are enforced by `apps/web/src/contract/contract.test.ts` (`npm test`).
 - JSON names are camelCase, exactly as in the schemas. Prefer explicit DTOs over serializing persistence records.
 - Reuse schema components for IDs, timestamps, health, provider, `EntityRef`, problems, and pagination.
 - Each endpoint documents filters, defaults, maximums, sort order, status codes, error codes, and provenance (`isSimulated`, snapshot `source`).

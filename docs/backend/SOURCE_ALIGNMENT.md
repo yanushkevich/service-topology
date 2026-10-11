@@ -5,7 +5,7 @@ The backend extends the product; it does not redefine it. The v4 pack was writte
 ## Precedence (same as the root `CLAUDE.md`)
 1. Explicit user direction for the current task.
 2. Approved decisions in `docs/DECISIONS.md` (ADR-001…ADR-015) and the latest revisions of `docs/PRODUCT_SPEC.md` / `docs/ARCHITECTURE.md`.
-3. The implemented, tested contract: `docs/api/openapi.json`, `docs/schemas/*`, `src/domain/*`.
+3. The implemented, tested contract: `docs/api/openapi.json`, `docs/schemas/*`, `apps/web/src/domain/*`.
 4. These backend docs. Backend-only decisions are recorded as `ADR-DB-*` in `DATABASE_DECISIONS.md`; a backend decision that changes product behavior or the contract needs a root ADR.
 
 ## Product requirements to preserve
@@ -26,7 +26,7 @@ The backend extends the product; it does not redefine it. The v4 pack was writte
 | Instance/host environment | Must match | ADR-008 |
 | Workloads and replicas | The instance is the workload; replicas not modeled | ADR-008 |
 | RabbitMQ bindings | Relationships with `metadata.bindingKey`; exchange → queue/exchange only | ADR-008 |
-| Propagation rules | Rule-based, explainable, in `src/domain/propagation.ts` | ADR-010 |
+| Propagation rules | Rule-based, explainable, in `apps/web/src/domain/propagation.ts` | ADR-010 |
 | Simulation | Pure engine running client-side; snapshots `source: simulation` | ADR-010 |
 | API standards | OpenAPI 3.1, JSON Schema 2020-12, RFC 9457 problems, cursor pagination | ADR-012, `docs/API_CONTRACT.md` |
 | Event types | Logical contracts on channels; validated against relationships | ADR-014 |

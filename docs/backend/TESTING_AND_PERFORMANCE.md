@@ -4,7 +4,7 @@
 1. **Domain unit tests:** validation, stable IDs, enum/unknown handling, parent-cycle detection, typed references, dependency traversal, failure propagation.
 2. **Application tests:** filtering, pagination, topology scope, snapshot immutability, deterministic simulation, provenance propagation.
 3. **Repository integration tests:** ArcadeDB constraints, transaction rollback, migration compatibility, indexes/query semantics.
-4. **HTTP contract tests:** responses validated against `docs/api/openapi.json` and `docs/schemas/*` (the same documents `src/contract/contract.test.ts` uses), status/problem behavior, invalid input and bounds.
+4. **HTTP contract tests:** responses validated against `docs/api/openapi.json` and `docs/schemas/*` (the same documents `apps/web/src/contract/contract.test.ts` uses), status/problem behavior, invalid input and bounds.
 4a. **Conformance (parity) tests:** shared fixtures under `fixtures/` (planned): the mock topology, the scale datasets, snapshots, layouts, and one invalid topology per validation rule with its expected codes. The Go validator and `validateTopology` must return identical codes; traversal, neighborhood, dependency, containment, and event-flow results on the mock must equal the TypeScript functions' results.
 5. **End-to-end smoke:** startup, readiness, seeded topology, service search, details, relationships, neighborhood, snapshot and layout workflow.
 6. **Security tests:** injection-shaped inputs, oversized requests, unauthorized access once auth exists, scope isolation once tenancy exists.

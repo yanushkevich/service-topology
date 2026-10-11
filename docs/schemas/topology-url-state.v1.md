@@ -1,6 +1,6 @@
 # TopologyUrlState v1 — query parameters
 
-Shareable view state for `/map`, `/registry`, and other sections. Implemented in `src/state/urlState.ts` (codec) and `src/state/useUrlStateSync.ts` (history sync).
+Shareable view state for `/map`, `/registry`, and other sections. Implemented in `apps/web/src/state/urlState.ts` (codec) and `apps/web/src/state/useUrlStateSync.ts` (history sync).
 
 | Param | Meaning | Values | Default (omitted) |
 |---|---|---|---|

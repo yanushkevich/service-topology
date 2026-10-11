@@ -1,6 +1,6 @@
 # REST API Specification
 
-**Status:** The HTTP contract is `docs/api/openapi.json` (OpenAPI 3.1, JSON Schema 2020-12), explained in `docs/API_CONTRACT.md` and enforced by `src/contract/contract.test.ts`. This file does not define a second contract. It lists how the Go backend implements that contract and which **proposed additions** may be added to it. An addition is implementable only after it is in `openapi.json` with examples and contract tests.
+**Status:** The HTTP contract is `docs/api/openapi.json` (OpenAPI 3.1, JSON Schema 2020-12), explained in `docs/API_CONTRACT.md` and enforced by `apps/web/src/contract/contract.test.ts`. This file does not define a second contract. It lists how the Go backend implements that contract and which **proposed additions** may be added to it. An addition is implementable only after it is in `openapi.json` with examples and contract tests.
 
 ## General rules (from the contract)
 - Base path `/api/v1`. JSON, UTF-8, UTC RFC 3339 timestamps.
@@ -25,7 +25,7 @@
 | `GET /layouts`, `POST /layouts` | Saved layouts | `SavedLayoutRepository.list` / `.save` |
 | `PUT /layouts/{id}`, `DELETE /layouts/{id}` | Replace / delete (concurrency via `ETag`/`If-Match` is an open decision) | `SavedLayoutRepository.save` / `.remove` |
 
-Each operation names its frontend interface in `x-repository`. The frontend switches from mock to HTTP by implementing those interfaces (`src/data/selectRepository.ts`); no UI code changes.
+Each operation names its frontend interface in `x-repository`. The frontend switches from mock to HTTP by implementing those interfaces (`apps/web/src/data/selectRepository.ts`); no UI code changes.
 
 `GET /topology` returns plain `TopologyData` v1. Response metadata that is not part of `TopologyData` (generation time, provenance summary, truncation) goes in headers or a documented envelope added as v1-compatible change, never by changing the payload shape. Proposed: the full topology is bounded by environment; a response over the configured maximum returns a documented error rather than a silently truncated graph (add the limit and error to the contract).
 
@@ -39,10 +39,10 @@ Each operation names its frontend interface in `x-repository`. The frontend swit
 ### Environments and entities
 - `GET /environments/{environmentId}`.
 
-### Traversal (bounded; mirrors the client rules in `src/domain/traversal.ts`)
+### Traversal (bounded; mirrors the client rules in `apps/web/src/domain/traversal.ts`)
 - `GET /topology/neighborhood?entityId=&depth=1..3&environmentId=`: undirected neighborhood, as the URL `nh` parameter (depth 1–3).
 - `GET /topology/dependencies?entityId=&direction=upstream|downstream&maxDepth=&limit=`: transitive dependencies with hop count, path, and relationship per hop (as `dependencyTree`). `maxDepth` default 10, `limit` default 500; responses state `truncated`.
-- `GET /topology/impact?entityId=&mode=unavailable|degraded`: read-only propagation preview using the rules in `src/domain/propagation.ts` (same rule IDs). Only if server-side analysis is needed; the client computes it today.
+- `GET /topology/impact?entityId=&mode=unavailable|degraded`: read-only propagation preview using the rules in `apps/web/src/domain/propagation.ts` (same rule IDs). Only if server-side analysis is needed; the client computes it today.
 
 ### Event catalog (ADR-014)
 - `GET /event-types?environmentId=&q=&cursor=&limit=`: event types present in the environment with channel and counts.

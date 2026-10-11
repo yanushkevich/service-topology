@@ -4,24 +4,23 @@
 
 The backend serves the **existing** HTTP contract (`docs/api/openapi.json`, `docs/API_CONTRACT.md`) and the **existing** canonical domain (`src/domain`, `docs/schemas`). It does not define its own contract or domain. Preserve: mock-first delivery, stable IDs, provenance labeling, scale targets, and the distinction between containment and communication.
 
-## Monorepo layout (planned)
+## Monorepo layout
 
 ```text
 service_topology/
-├── src/, package.json, …        frontend (React + TypeScript), unchanged location for now
-├── backend/                     Go module (created in Milestone B1; does not exist yet)
+├── apps/web/                    frontend (React + TypeScript + Vite)
+├── backend/                     Go module (Milestone B1)
 │   ├── cmd/api, cmd/seed
 │   ├── internal/…
-│   ├── CLAUDE.md                from scaffold/backend-CLAUDE.md
-│   └── Makefile, docker-compose.yml, .env.example, .gitignore   from scaffold/
+│   ├── CLAUDE.md                backend agent rules
+│   └── Makefile, docker-compose.yml, .env.example, .gitignore
 ├── docs/
 │   ├── api/openapi.json         the one HTTP contract (frontend and backend)
 │   ├── schemas/                 payload schemas shared by both
 │   └── backend/                 this folder
-└── fixtures/                    planned: shared JSON fixtures exported from the frontend mock (B2)
+├── fixtures/                    shared JSON fixtures exported from the frontend mock
+└── package.json                 forwards npm scripts to apps/web
 ```
-
-Moving the frontend into `frontend/` or `apps/web/` is not part of this change; decide it separately if wanted.
 
 ## Start here
 1. `SOURCE_ALIGNMENT.md`: what the backend must preserve and which decisions are binding.

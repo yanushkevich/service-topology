@@ -205,8 +205,8 @@ Evidence: `npm run check` (typecheck, lint, 50 tests, build) passes. Visual chec
 | Criterion | Result | Evidence |
 |---|---|---|
 | App starts, type-checks, builds | Pass | `npm run check`; preview server screenshots |
-| React Flow and ELK.js pinned | Pass | `package.json` (`@xyflow/react` 12.12.0, `elkjs` 0.12.0); not used yet |
-| Definitions / instances / resources / relationships distinct | Pass | `src/domain/types.ts`; registry and inspector tests |
+| React Flow and ELK.js pinned | Pass | `apps/web/package.json` (`@xyflow/react` 12.12.0, `elkjs` 0.12.0); not used yet |
+| Definitions / instances / resources / relationships distinct | Pass | `apps/web/src/domain/types.ts`; registry and inspector tests |
 | Kafka topics and RabbitMQ queues/exchanges first-class | Pass | `validation.test.ts` (producer → resource → consumer relationships) |
 | Containment explicit and validated (no missing parents, no cycles) | Pass | `validation.test.ts` (missing-parent, parent-cycle, self-parent) |
 | Unique IDs and valid references | Pass | `validation.test.ts`; mock validates with 0 issues |
@@ -239,7 +239,7 @@ Evidence: `npm run check` passes (counts in the closeout commit); visual check i
 
 | Criterion | Result | Evidence |
 |---|---|---|
-| Simulation independent of React/React Flow/Three.js | Pass | `src/simulation/boundaries.test.ts` (imports only the domain) |
+| Simulation independent of React/React Flow/Three.js | Pass | `apps/web/src/simulation/boundaries.test.ts` (imports only the domain) |
 | Deterministic results for the same fixture and actions | Pass | `engine.test.ts` (seeded; equal state for equal action sequences; drift and anomaly events reproducible) |
 | Propagation rules explicit, explainable, testable | Pass | `PROPAGATION_RULES` shown in the UI with non-propagation notes; `propagation.test.ts` covers each rule; events and inspector name rule, cause, and root |
 | A simulated event appears consistently in registry, inspector, graph, event list | Pass | `EventsPage.test.tsx` ("reflects one injected failure consistently…") |
@@ -292,7 +292,7 @@ Evidence: `npm run check` passes (typecheck, lint, 327 tests passed / 1 skipped,
 
 | Criterion | Result | Evidence |
 |---|---|---|
-| No `*.module.css`; Tailwind utilities plus layered component CSS | Pass | `find src -name '*.module.css'` → 0; `src/styles/global.css`, `components.css` |
+| No `*.module.css`; Tailwind utilities plus layered component CSS | Pass | `find src -name '*.module.css'` → 0; `apps/web/src/styles/global.css`, `components.css` |
 | Only token colors as utilities; contrast test passes | Pass | `--color-*: initial` + `@theme inline`; `contrast.test.ts` |
 | Both themes without visual regression | Pass (screenshot review) | Before/after captures of map, registry, events; new pages in both themes. 3D checked in the browser audit run, not pixel-compared |
 | New pages meet §K, use canonical data and shared state, honor history, have empty states | Pass | `sectionPages.test.tsx` (14 tests, incl. history mode on Overview and Dependencies); empty states in each page; domain selectors tested in `pages.test.ts` |

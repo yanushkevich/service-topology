@@ -1,6 +1,6 @@
 # Claude Code Prompt — Implement the Go Backend (ArcadeDB)
 
-You are implementing the backend for the Service Topology & Registry Platform. This is a monorepo: the frontend is at the root, the Go backend goes in `backend/`. First inspect the root `CLAUDE.md`, `docs/backend/README.md`, `docs/backend/SOURCE_ALIGNMENT.md`, `docs/backend/BACKEND_SPEC.md`, `docs/backend/DOMAIN_MODEL.md`, `docs/backend/PERSISTENCE.md`, `docs/backend/DATABASE_DECISIONS.md`, `docs/backend/API_SPEC.md`, `docs/backend/TESTING_AND_PERFORMANCE.md`, `docs/backend/IMPLEMENTATION_PLAN.md`, the contract (`docs/api/openapi.json`, `docs/API_CONTRACT.md`, `docs/schemas/`), and the canonical domain in `src/domain/`.
+You are implementing the backend for the Service Topology & Registry Platform. This is a monorepo: the frontend is in `apps/web/`, the Go backend in `backend/`, shared fixtures in `fixtures/`. First inspect the root `CLAUDE.md`, `docs/backend/README.md`, `docs/backend/SOURCE_ALIGNMENT.md`, `docs/backend/BACKEND_SPEC.md`, `docs/backend/DOMAIN_MODEL.md`, `docs/backend/PERSISTENCE.md`, `docs/backend/DATABASE_DECISIONS.md`, `docs/backend/API_SPEC.md`, `docs/backend/TESTING_AND_PERFORMANCE.md`, `docs/backend/IMPLEMENTATION_PLAN.md`, the contract (`docs/api/openapi.json`, `docs/API_CONTRACT.md`, `docs/schemas/`), and the canonical domain in `apps/web/src/domain/`.
 
 ## Non-negotiable architecture
 - Use Go and a modular monolith.

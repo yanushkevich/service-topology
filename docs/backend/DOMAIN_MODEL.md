@@ -1,6 +1,6 @@
 # Canonical Backend Domain Model
 
-**Status:** Proposed backend representation of the **implemented** canonical domain. The source of truth is `src/domain/types.ts`, `src/domain/validation.ts`, the JSON Schemas in `docs/schemas/`, and decisions ADR-004, ADR-008, and ADR-014 in `docs/DECISIONS.md`. Where this file and those disagree, they win; fix this file.
+**Status:** Proposed backend representation of the **implemented** canonical domain. The source of truth is `apps/web/src/domain/types.ts`, `apps/web/src/domain/validation.ts`, the JSON Schemas in `docs/schemas/`, and decisions ADR-004, ADR-008, and ADR-014 in `docs/DECISIONS.md`. Where this file and those disagree, they win; fix this file.
 
 The backend must accept, store, and return exactly the `TopologyData` v1 payload (`docs/schemas/topology.v1.schema.json`). Backend-only fields (provenance detail, source identity, audit timestamps) are stored alongside it and exposed only through additive, documented extensions.
 
@@ -64,7 +64,7 @@ A logical message contract (e.g. `OrderPlaced`), environment-independent like a 
 - **TopologyEvent:** `id`, `eventType`, subject ID, severity, summary, payload, `provenance`, `occurredAt`, `recordedAt`. Simulated failure/recovery events stay simulated end to end. Note: the current simulation runs client-side (ADR-010); whether the server records simulation events is an open decision.
 
 ## Validation rules
-The backend implements **the same rules and codes** as `validateTopology` (`src/domain/validation.ts`) and rejects invalid topologies with `422` problem details listing them (`docs/API_CONTRACT.md`):
+The backend implements **the same rules and codes** as `validateTopology` (`apps/web/src/domain/validation.ts`) and rejects invalid topologies with `422` problem details listing them (`docs/API_CONTRACT.md`):
 
 | Code | Rule |
 |---|---|

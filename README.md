@@ -3,15 +3,18 @@
 This package is the product/architecture guide and staged implementation plan for a mock-first Service Topology and Registry Platform. It is documentation, not a completed application or proof that a backend exists.
 
 ## Development setup
-All seven milestones are implemented: application shell, canonical domain model with validation, a mock multi-cloud repository, the service registry, the shared inspector, the 2D map (React Flow + ELK) with grouped infrastructure mode, shareable URLs, and saved layouts, a deterministic simulation with explainable failure propagation and snapshot history (Events & Traffic page), and a secondary 3D galaxy view (React Three Fiber) with "Explore inside" navigation, plus Overview, Dependencies, Infrastructure, and Settings pages (Milestone 6), and an Events catalog of event types with producer/consumer flows highlighted on the map (Milestone 7). Built with React 19 + strict TypeScript + Vite, Tailwind CSS v4, React Router, Zustand, React Flow + ELK.js (2D), and Three.js + React Three Fiber (3D). All data is mock and all telemetry is simulated. Requires Node.js 22+.
+All seven milestones are implemented: application shell, canonical domain model with validation, a mock multi-cloud repository, the service registry, the shared inspector, the 2D map (React Flow + ELK) with grouped infrastructure mode, shareable URLs, and saved layouts, a deterministic simulation with explainable failure propagation and snapshot history (Simulation page), and a secondary 3D galaxy view (React Three Fiber) with "Explore inside" navigation, plus Overview, Dependencies, Infrastructure, and Settings pages (Milestone 6), and an Events catalog of event types with producer/consumer flows highlighted on the map (Milestone 7). Built with React 19 + strict TypeScript + Vite, Tailwind CSS v4, React Router, Zustand, React Flow + ELK.js (2D), and Three.js + React Three Fiber (3D). All data is mock and all telemetry is simulated. Requires Node.js 22+.
+
+Monorepo layout: the frontend is in `apps/web/`, the Go backend in `backend/`, shared contract and docs in `docs/`, shared fixtures in `fixtures/`.
 
 ```sh
-npm install
-npm run dev        # start the dev server
-npm run check      # typecheck + lint + tests + production build
+cd apps/web && npm install && cd ../..
+npm run dev        # start the frontend dev server (forwards to apps/web)
+npm run check      # frontend: typecheck + lint + tests + production build
+npm run check:backend   # backend: gofmt, go vet, go test (needs Go, see docs/backend/LOCAL_DEVELOPMENT.md)
 ```
 
-Individual scripts: `typecheck`, `lint`, `test`, `test:watch`, `build`, `preview`, `bench`, `bench:browser`, `bench:3d` (see `docs/BENCHMARKS.md`), and `audit:a11y`. Start with `docs/DEVELOPER_GUIDE.md`; the backend contract is `docs/API_CONTRACT.md`. Append `?dataset=scale-250` or `?dataset=inventory-1000` to a URL to load generated scale fixtures. Dependency versions are pinned exactly (`.npmrc` sets `save-exact`).
+Individual frontend scripts (run in `apps/web/`): `typecheck`, `lint`, `test`, `test:watch`, `build`, `preview`, `bench`, `bench:browser`, `bench:3d` (see `docs/BENCHMARKS.md`), and `audit:a11y`. Start with `docs/DEVELOPER_GUIDE.md`; the backend contract is `docs/API_CONTRACT.md`. Append `?dataset=scale-250` or `?dataset=inventory-1000` to a URL to load generated scale fixtures. Dependency versions are pinned exactly (`.npmrc` sets `save-exact`).
 
 ## Start here
 1. `CLAUDE.md` — concise project-wide instructions for Claude Code.

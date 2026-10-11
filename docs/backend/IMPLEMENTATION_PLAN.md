@@ -23,7 +23,7 @@ Scope: simulated vs observed distinction, telemetry/event persistence, snapshot 
 Acceptance: no simulated event is presented as observed; snapshot and simulation tests; retention policy documented; oversized payloads rejected or bounded.
 
 ## Milestone B6 — Security, hardening and frontend integration
-Scope: auth decision, authorization boundaries, request limits, rate limits where needed, secrets handling, observability, backup/restore exercises, integration tests, performance tests and docs. Frontend integration: HTTP implementations of `TopologyRepository`, `SnapshotRepository`, and `SavedLayoutRepository` selected in `src/data/selectRepository.ts`, with the UI labeling the source accurately (`isMock: false` only for real data).
+Scope: auth decision, authorization boundaries, request limits, rate limits where needed, secrets handling, observability, backup/restore exercises, integration tests, performance tests and docs. Frontend integration: HTTP implementations of `TopologyRepository`, `SnapshotRepository`, and `SavedLayoutRepository` selected in `apps/web/src/data/selectRepository.ts`, with the UI labeling the source accurately (`isMock: false` only for real data).
 Acceptance: security tests, full integration suite, measured performance against targets, and runbook for local reset, backup/restore and recovery.
 
 ## Future milestone — provider integrations

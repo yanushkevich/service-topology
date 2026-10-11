@@ -9,7 +9,7 @@ Recorded measurements for ADR-005 (250 visible nodes / 750 edges; 1,000 entities
   npm run build && npx vite preview --port 4173 &
   npm run bench:browser -- --url http://localhost:4173 --runs 20
   ```
-- Fixtures: `?dataset=scale-250` (exactly 250 nodes / 750 edges in production) and `?dataset=inventory-1000` (1,007 service instances and resources over three environments; 321 registry rows in production). Generator: `src/data/mock/generateTopology.ts` (deterministic).
+- Fixtures: `?dataset=scale-250` (exactly 250 nodes / 750 edges in production) and `?dataset=inventory-1000` (1,007 service instances and resources over three environments; 321 registry rows in production). Generator: `apps/web/src/data/mock/generateTopology.ts` (deterministic).
 
 ## 2026-10-11 — Milestone 2
 
@@ -53,7 +53,7 @@ Optimizations applied during measurement: ELK in a Web Worker; lazy-loaded map c
 
 ## 2026-10-11 — Milestone 4 (3D galaxy)
 
-Run: `npm run bench:3d -- --url <preview-url>` (`scripts/bench-3d.mjs`; add `--gpu` on a machine with a GPU).
+Run: `npm run bench:3d -- --url <preview-url>` (`apps/web/scripts/bench-3d.mjs`; add `--gpu` on a machine with a GPU).
 
 **Environment:** Apple M2, 8 cores, 8 GB, macOS, Chrome 154 headless, 1440×900, scene DPR capped at 1.75, production build. **WebGL renderer: SwiftShader (CPU software rendering)**, because headless Chrome here has no GPU. The machine was heavily loaded by other apps (load average ≈ 20). These numbers are a pessimistic floor, not representative of a GPU-equipped browser.
 

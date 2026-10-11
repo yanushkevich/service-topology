@@ -3,7 +3,7 @@
 **Status:** Required product constraint plus proposed backend extension pattern.
 
 ## Phase 1: deterministic seed/mock source
-- Seed from the same mock topology as the frontend (`src/data/mock/topology.ts`: 15+ connected entities across AWS, Azure, GCP, on-prem, and SaaS, three environments, Kafka and RabbitMQ, event types), exported to shared JSON fixtures validated by `docs/schemas/topology.v1.schema.json`. The generated scale datasets (`scale-250`, `inventory-1000`) are exported the same way for benchmarks.
+- Seed from the same mock topology as the frontend (`apps/web/src/data/mock/topology.ts`: 15+ connected entities across AWS, Azure, GCP, on-prem, and SaaS, three environments, Kafka and RabbitMQ, event types), exported to shared JSON fixtures validated by `docs/schemas/topology.v1.schema.json`. The generated scale datasets (`scale-250`, `inventory-1000`) are exported the same way for benchmarks.
 - Seed IDs are the fixture IDs, stable across restarts, tests, and the frontend.
 - Seed data is reproducible; avoid random values in tests. Any optional demo variation must use a fixed seed and be visibly marked simulated.
 - API responses identify dataset/source and provenance. UI labels simulated events/metrics clearly.
@@ -30,7 +30,7 @@ Store `mock`, `simulated`, `observed`, and `imported` provenance values; the API
 - Every generated event/metric has `provenance=simulated` and timestamps.
 - Support traffic/latency changes and health transitions including fail/recover.
 - Tests use a fixed clock/seed and assert exact state/event changes.
-- Today the simulation engine (`src/simulation/engine.ts`, ADR-010) runs in the browser, and propagation rules live in `src/domain/propagation.ts`. A server-side simulation must reuse the same rule IDs and semantics, verified by shared fixtures.
+- Today the simulation engine (`apps/web/src/simulation/engine.ts`, ADR-010) runs in the browser, and propagation rules live in `apps/web/src/domain/propagation.ts`. A server-side simulation must reuse the same rule IDs and semantics, verified by shared fixtures.
 - Decide whether simulation is ephemeral per session, persisted globally, or isolated per user/workspace before concurrent multi-user use. Do not implement global shared mutation accidentally.
 
 

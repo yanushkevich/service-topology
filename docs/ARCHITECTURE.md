@@ -356,18 +356,18 @@ What exists in code, so readers do not have to infer it. Contract extensions and
 
 | Concern | Location |
 |---|---|
-| Canonical types and enums | `src/domain/types.ts` |
-| Lookup index, ancestors, environment inheritance | `src/domain/topologyIndex.ts` |
-| Integrity validation | `src/domain/validation.ts` |
-| Registry rows, shared filters, sorting (renderer-agnostic) | `src/domain/registry.ts` |
-| Repository interface / mock implementation / fixture | `src/data/repositories/`, `src/data/mock/topology.ts` |
-| Loading, validation on load, React context | `src/data/TopologyDataProvider.tsx`, `src/data/topologyContext.ts` |
-| Cross-view state (selection, filters, environment, view, theme) | `src/state/uiStore.ts` |
-| Presentation mappings with fallbacks | `src/shared/mappings.ts` |
-| Registry and shared inspector | `src/features/service-registry/`, `src/features/inspector/` |
+| Canonical types and enums | `apps/web/src/domain/types.ts` |
+| Lookup index, ancestors, environment inheritance | `apps/web/src/domain/topologyIndex.ts` |
+| Integrity validation | `apps/web/src/domain/validation.ts` |
+| Registry rows, shared filters, sorting (renderer-agnostic) | `apps/web/src/domain/registry.ts` |
+| Repository interface / mock implementation / fixture | `apps/web/src/data/repositories/`, `apps/web/src/data/mock/topology.ts` |
+| Loading, validation on load, React context | `apps/web/src/data/TopologyDataProvider.tsx`, `apps/web/src/data/topologyContext.ts` |
+| Cross-view state (selection, filters, environment, view, theme) | `apps/web/src/state/uiStore.ts` |
+| Presentation mappings with fallbacks | `apps/web/src/shared/mappings.ts` |
+| Registry and shared inspector | `apps/web/src/features/service-registry/`, `apps/web/src/features/inspector/` |
 
 - Topology data is held in React context (loaded once per repository), not in Zustand. Zustand holds only the canonical selection and filters.
-- `src/domain` imports only its own modules; `boundaries.test.ts` enforces this.
+- `apps/web/src/domain` imports only its own modules; `boundaries.test.ts` enforces this.
 - If a filter or the environment hides the selected entity, the registry shows a notice with a "Show it" action and the inspector offers to switch environment. Selection is never cleared silently.
 - Not yet implemented (as of Milestone 1): URL state, snapshots, saved layouts, simulation, and the 2D/3D renderers.
 
@@ -377,15 +377,15 @@ Decisions: `DECISIONS.md` ADR-009. Measurements: `docs/BENCHMARKS.md`.
 
 | Concern | Location |
 |---|---|
-| Dependency traversal (direct/upstream/downstream, neighborhood) | `src/domain/traversal.ts` |
-| Renderer-agnostic graph model (scoping, filters, grouping, collapse) | `src/features/service-map/graph/topologyGraph.ts` |
-| Layout boundary, ELK implementation, worker loading | `src/features/service-map/layout/` |
-| React Flow adapter (view models, highlight, object reuse) | `src/features/service-map/adapters/reactFlowAdapter.ts` |
-| Map view, custom nodes/edges, layouts menu | `src/features/service-map/views/` |
-| Shared filter UI (registry + map) | `src/features/filters/FilterBar.tsx` |
-| URL state codec and history sync | `src/state/urlState.ts`, `src/state/useUrlStateSync.ts` |
-| Saved layout schema and repositories | `src/data/savedLayouts/` |
-| Scale fixtures and runtime dataset switch (`?dataset=`) | `src/data/mock/generateTopology.ts`, `src/data/selectRepository.ts` |
+| Dependency traversal (direct/upstream/downstream, neighborhood) | `apps/web/src/domain/traversal.ts` |
+| Renderer-agnostic graph model (scoping, filters, grouping, collapse) | `apps/web/src/features/service-map/graph/topologyGraph.ts` |
+| Layout boundary, ELK implementation, worker loading | `apps/web/src/features/service-map/layout/` |
+| React Flow adapter (view models, highlight, object reuse) | `apps/web/src/features/service-map/adapters/reactFlowAdapter.ts` |
+| Map view, custom nodes/edges, layouts menu | `apps/web/src/features/service-map/views/` |
+| Shared filter UI (registry + map) | `apps/web/src/features/filters/FilterBar.tsx` |
+| URL state codec and history sync | `apps/web/src/state/urlState.ts`, `apps/web/src/state/useUrlStateSync.ts` |
+| Saved layout schema and repositories | `apps/web/src/data/savedLayouts/` |
+| Scale fixtures and runtime dataset switch (`?dataset=`) | `apps/web/src/data/mock/generateTopology.ts`, `apps/web/src/data/selectRepository.ts` |
 
 Data flow for the map: `TopologyIndex` + shared state → `buildTopologyGraph` → `toLayoutRequest` → `GraphLayoutService` (worker) → `toFlowNodes`/`toFlowEdges` → React Flow. Graph IDs are canonical entity/relationship IDs (group IDs for groups); selection flows back through `refForNode`/`refForEdge` into the shared store. Drag positions and collapsed groups are local to the map, except when saved as a layout.
 
@@ -395,14 +395,14 @@ Decisions: `DECISIONS.md` ADR-010.
 
 | Concern | Location |
 |---|---|
-| Propagation rules and impact analysis | `src/domain/propagation.ts` |
-| Snapshot contract, validator, diff | `src/domain/snapshot.ts` |
-| Simulation engine (pure) | `src/simulation/engine.ts` |
-| Simulation runtime state and timer | `src/state/simulationStore.ts`, `src/state/useSimulationTicker.ts` |
-| Snapshot repository and fixtures | `src/data/snapshots/`, `src/data/mock/snapshots.ts` |
-| One index for all views (current simulated state or snapshot) | `src/data/TopologyDataProvider.tsx` |
-| Simulation page (controls, log, history, rules); formerly "Events & Traffic" at `/events` | `src/features/simulation/` |
-| History banner, header simulation status | `src/layouts/HistoryBanner.tsx`, `src/layouts/Header.tsx` |
+| Propagation rules and impact analysis | `apps/web/src/domain/propagation.ts` |
+| Snapshot contract, validator, diff | `apps/web/src/domain/snapshot.ts` |
+| Simulation engine (pure) | `apps/web/src/simulation/engine.ts` |
+| Simulation runtime state and timer | `apps/web/src/state/simulationStore.ts`, `apps/web/src/state/useSimulationTicker.ts` |
+| Snapshot repository and fixtures | `apps/web/src/data/snapshots/`, `apps/web/src/data/mock/snapshots.ts` |
+| One index for all views (current simulated state or snapshot) | `apps/web/src/data/TopologyDataProvider.tsx` |
+| Simulation page (controls, log, history, rules); formerly "Events & Traffic" at `/events` | `apps/web/src/features/simulation/` |
+| History banner, header simulation status | `apps/web/src/layouts/HistoryBanner.tsx`, `apps/web/src/layouts/Header.tsx` |
 
 Data flow: repository → baseline → `useSimulationStore.initialize` → engine `data` → `TopologyDataProvider` index → registry/map/inspector. With `asOf` set, the provider builds the index from the snapshot instead; the engine is untouched.
 
@@ -412,13 +412,13 @@ Decisions: `DECISIONS.md` ADR-011. Measurements: `docs/BENCHMARKS.md`.
 
 | Concern | Location |
 |---|---|
-| Scope resolution (overview, container, leaf, logical service) | `src/features/service-map/galaxy/scope.ts` |
-| Deterministic 3D layout | `src/features/service-map/galaxy/layout3d.ts` |
-| Scene view models, label LOD, motion policy | `src/features/service-map/galaxy/sceneModel.ts` |
-| Camera math and per-scope camera memory | `src/features/service-map/galaxy/cameraMath.ts` |
-| WebGL detection, context loss | `src/features/service-map/galaxy/webgl.ts` |
-| Three.js scene and camera rig | `src/features/service-map/galaxy/GalaxyScene.tsx` |
-| Lazy boundary, fallbacks, overlay, entity list | `src/features/service-map/galaxy/Network3DView.tsx` |
+| Scope resolution (overview, container, leaf, logical service) | `apps/web/src/features/service-map/galaxy/scope.ts` |
+| Deterministic 3D layout | `apps/web/src/features/service-map/galaxy/layout3d.ts` |
+| Scene view models, label LOD, motion policy | `apps/web/src/features/service-map/galaxy/sceneModel.ts` |
+| Camera math and per-scope camera memory | `apps/web/src/features/service-map/galaxy/cameraMath.ts` |
+| WebGL detection, context loss | `apps/web/src/features/service-map/galaxy/webgl.ts` |
+| Three.js scene and camera rig | `apps/web/src/features/service-map/galaxy/GalaxyScene.tsx` |
+| Lazy boundary, fallbacks, overlay, entity list | `apps/web/src/features/service-map/galaxy/Network3DView.tsx` |
 
 Pipeline (Revision 4): shared state (environment, filters, neighborhood, `galaxyScope`, selection) → `resolveGalaxyScope` → `layoutGalaxy` → `buildScene` → React Three Fiber. Actions (select, enter, back) go through the shared store; the render loop only moves particles, toggles label visibility, and runs camera tweens.
 
@@ -428,15 +428,15 @@ Decisions: `DECISIONS.md` ADR-013. Requirements: `PRODUCT_SPEC.md` Revision 5 (�
 
 | Concern | Location |
 |---|---|
-| Tailwind entry, theme mapping (`@theme inline`, default palette disabled), base styles | `src/styles/global.css` |
-| Design tokens (single source of values, both themes) | `src/styles/tokens.css` |
-| Layered component CSS: glyphs, status shapes, tags, React Flow and 3D label overrides | `src/styles/components.css` |
-| Shared class helpers and primitives (Button, Chip, Segmented, Panel, Kicker) | `src/shared/ui/classes.ts`, `src/shared/ui/primitives.tsx` |
-| Section page layout (content + shared inspector), Card, Note | `src/features/pages/PageShell.tsx` |
-| Overview summary selector | `src/domain/summary.ts` → `src/features/overview/OverviewPage.tsx` |
-| Dependency trees (direct/transitive with paths) | `src/domain/traversal.ts` (`dependencyTree`) → `src/features/dependencies/DependenciesPage.tsx` |
-| Containment forest with roll-ups and inherited environments | `src/domain/containment.ts` → `src/features/infrastructure/InfrastructurePage.tsx` |
-| Local preferences (repository, store), motion helper | `src/state/preferencesStore.ts`, `src/state/motion.ts` → `src/features/settings/SettingsPage.tsx` |
+| Tailwind entry, theme mapping (`@theme inline`, default palette disabled), base styles | `apps/web/src/styles/global.css` |
+| Design tokens (single source of values, both themes) | `apps/web/src/styles/tokens.css` |
+| Layered component CSS: glyphs, status shapes, tags, React Flow and 3D label overrides | `apps/web/src/styles/components.css` |
+| Shared class helpers and primitives (Button, Chip, Segmented, Panel, Kicker) | `apps/web/src/shared/ui/classes.ts`, `apps/web/src/shared/ui/primitives.tsx` |
+| Section page layout (content + shared inspector), Card, Note | `apps/web/src/features/pages/PageShell.tsx` |
+| Overview summary selector | `apps/web/src/domain/summary.ts` → `apps/web/src/features/overview/OverviewPage.tsx` |
+| Dependency trees (direct/transitive with paths) | `apps/web/src/domain/traversal.ts` (`dependencyTree`) → `apps/web/src/features/dependencies/DependenciesPage.tsx` |
+| Containment forest with roll-ups and inherited environments | `apps/web/src/domain/containment.ts` → `apps/web/src/features/infrastructure/InfrastructurePage.tsx` |
+| Local preferences (repository, store), motion helper | `apps/web/src/state/preferencesStore.ts`, `apps/web/src/state/motion.ts` → `apps/web/src/features/settings/SettingsPage.tsx` |
 
 State: preferences are local and per browser (localStorage behind `PreferencesRepository`); they set defaults only (initial theme, view, simulation speed, 3D labels/traffic) and never enter URLs, snapshots, or canonical data. `AppShell` applies the effective theme (following the OS for "system") and `data-motion="reduce"` on `<html>`; renderers read `isMotionReduced()` / `useMotionReduced()`. The new pages read the same `TopologyIndex` as the other views (a snapshot when `asOf` is set) and act only through the shared store; the Dependencies impact preview calls `analyzeImpact` read-only.
 
@@ -446,16 +446,16 @@ Decisions: `DECISIONS.md` ADR-014. Requirements: `PRODUCT_SPEC.md` Revision 6 (�
 
 | Concern | Location |
 |---|---|
-| `EventType`, `EVENT_CHANNEL_TYPES` | `src/domain/types.ts` |
-| Index maps `eventTypes`, `eventTypesByChannel` | `src/domain/topologyIndex.ts` |
-| Flow resolver (per environment; exchange → bound queue → consumer), highlight reach | `src/domain/eventFlow.ts` |
-| Event-type validation rules | `src/domain/validation.ts` |
-| Mock event types | `src/data/mock/topology.ts` |
-| Events catalog page (`/events`, `/events/:eventTypeId`) | `src/features/event-catalog/EventsPage.tsx` |
-| Shared highlight hook and map chip | `src/features/event-catalog/useEventHighlight.ts`, `EventHighlightChip.tsx` |
+| `EventType`, `EVENT_CHANNEL_TYPES` | `apps/web/src/domain/types.ts` |
+| Index maps `eventTypes`, `eventTypesByChannel` | `apps/web/src/domain/topologyIndex.ts` |
+| Flow resolver (per environment; exchange → bound queue → consumer), highlight reach | `apps/web/src/domain/eventFlow.ts` |
+| Event-type validation rules | `apps/web/src/domain/validation.ts` |
+| Mock event types | `apps/web/src/data/mock/topology.ts` |
+| Events catalog page (`/events`, `/events/:eventTypeId`) | `apps/web/src/features/event-catalog/EventsPage.tsx` |
+| Shared highlight hook and map chip | `apps/web/src/features/event-catalog/useEventHighlight.ts`, `EventHighlightChip.tsx` |
 | 2D / 3D emphasis from an event reach | `computeHighlight` (`reactFlowAdapter.ts`), `buildScene` (`sceneModel.ts`) |
-| Inspector "Events carried" | `src/features/inspector/InspectorPanel.tsx` |
-| Simulation page (moved from `/events`) | `src/features/simulation/` |
+| Inspector "Events carried" | `apps/web/src/features/inspector/InspectorPanel.tsx` |
+| Simulation page (moved from `/events`) | `apps/web/src/features/simulation/` |
 
 Pipeline: `uiStore.eventHighlight` (URL `ev`) → `useEventHighlight(index)` → `resolveEventFlow` → `eventFlowReach` (a `Reach`, the same shape as selection reach) → 2D `computeHighlight` / 3D `buildScene`, used only when nothing is selected. Event types never add graph nodes or edges and do not change propagation; they select existing relationships. The catalog reads the same `TopologyIndex` as every view, so history mode works unchanged.
 

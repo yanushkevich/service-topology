@@ -59,7 +59,7 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 
 ## ADR-008 — Milestone 1 domain implementation choices and open data-model questions (2026-10-11)
 - **Status:** Accepted. All items confirmed by the product owner on 2026-10-11.
-- **Context:** `ARCHITECTURE.md` Revision 2 §2 marks its interfaces as illustrative. Implementing them in `src/domain/types.ts` required a few explicit extensions.
+- **Context:** `ARCHITECTURE.md` Revision 2 §2 marks its interfaces as illustrative. Implementing them in `apps/web/src/domain/types.ts` required a few explicit extensions.
 - **Decision (implemented):**
   - IDs are unique across *all* collections (environments, definitions, instances, resources, relationships), so a bare ID resolves to one entity. Selection is still `{ kind, id }`.
   - `ServiceInstance.environmentId` is a single required string; validation also rejects non-string values from untyped adapters.
@@ -78,7 +78,7 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 - **Workloads (confirmed 2026-10-11):** the service instance *is* the workload. `ServiceInstance.resourceId` points to the most specific known host (namespace, cluster, VM host, or datacenter), and no `workload` resource is created per instance. Reasons: a per-instance workload resource would be a 1:1 duplicate (two IDs, two health values, and two nodes for the same thing in grouped views), and most inventories (service catalogs, APM) know the namespace but not the Deployment/StatefulSet. Keep the `workload` resource type for runtime units that are *not* modeled as a service instance (e.g. an unowned VM or sidecar found by infrastructure discovery). Revisit if a real adapter shows one workload hosting several service definitions, or several workloads (e.g. canary + stable) per instance. In that case add `ServiceInstance.workloadResourceIds` rather than changing `resourceId`.
 - **Open questions:** none outstanding.
 - **Alternatives:** Per-collection ID scopes (rejected: ambiguous lookups); a separate `MessagingResource` entity (rejected: Revision 2 §3 says topics/queues are `InfrastructureResource`s).
-- **Verification:** `src/domain/validation.test.ts`, `src/domain/registry.test.ts`, `src/domain/boundaries.test.ts`.
+- **Verification:** `apps/web/src/domain/validation.test.ts`, `apps/web/src/domain/registry.test.ts`, `apps/web/src/domain/boundaries.test.ts`.
 
 ## ADR-009 — Milestone 2 map implementation choices (2026-10-11)
 - **Status:** Accepted
@@ -99,9 +99,9 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 - **Status:** Accepted
 - **Context:** Milestone 3 requires deterministic simulation separate from renderers, explicit propagation rules, a versioned snapshot contract with an "as of"/compare workflow, and no mock data presented as live.
 - **Decision:**
-  - **Engine:** `src/simulation/engine.ts` is pure (no React, timers, or renderer types; enforced by a boundary test). State = immutable baseline + active failures + seeded metric drift + simulated clock (10 s per tick). Every view renders the engine's derived `data`; recovery recomputes from the baseline, so it is exact.
+  - **Engine:** `apps/web/src/simulation/engine.ts` is pure (no React, timers, or renderer types; enforced by a boundary test). State = immutable baseline + active failures + seeded metric drift + simulated clock (10 s per tick). Every view renders the engine's derived `data`; recovery recomputes from the baseline, so it is exact.
   - **Runtime:** a Zustand store holds the engine state and run controls; one interval at the app shell (`useSimulationTicker`) steps it. The simulation starts paused, so the app shows recorded mock data until the user acts.
-  - **Propagation** (`src/domain/propagation.ts`): rules are data and are listed in the UI. Containment makes contained entities unavailable. Synchronous calls, data access, and scheduled jobs make callers degraded, transitively. A failed topic/queue/exchange degrades producers and consumers. A failed consumer only backs up its channel (terminal). Producers never affect consumers. Communication rules never escalate past degraded. Only simulated failures propagate; recorded baseline health does not.
+  - **Propagation** (`apps/web/src/domain/propagation.ts`): rules are data and are listed in the UI. Containment makes contained entities unavailable. Synchronous calls, data access, and scheduled jobs make callers degraded, transitively. A failed topic/queue/exchange degrades producers and consumers. A failed consumer only backs up its channel (terminal). Producers never affect consumers. Communication rules never escalate past degraded. Only simulated failures propagate; recorded baseline health does not.
   - **Relationship status:** a connection to a failed or impacted target becomes `degraded`; a connection from an unavailable source becomes `inactive` (no traffic).
   - **Events:** typed and attributed (rule, root, cause, relationship); generated from a diff of derived states, so every visible change has an event. Latency anomalies come from drift crossing 1.35× and clear below 1.2×. The log is capped at 500 events.
   - **History:** `TopologySnapshot` v1 (`docs/schemas/topology-snapshot.v1.schema.json`) behind `SnapshotRepository`. Fixtures are derived from the mock (before incident → replica lag → recorded outage). The simulation can be captured as a snapshot. `asOf` (URL `asof`) switches every view to a snapshot index; the simulation keeps running separately and is never modified. Compare uses `diffTopology`.
@@ -125,13 +125,13 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - **Fallbacks:** WebGL detection, context-loss handling with retry, and an error boundary. All offer the 2D map and registry.
 - **Alternatives:** troika SDF text (rejected: runtime font fetch); per-edge fat lines (rejected: 750 objects); full-screen bloom (rejected by spec; muddies labels).
 - **Consequences:** frame rate needs GPU measurement (BENCHMARKS.md); grouped 2D mode and 3D share data but not positions; deeper descendants than grandchildren are reached by entering further.
-- **Verification:** `scope.test.ts`, `layout3d.test.ts`, `sceneModel.test.ts`, `runtime.test.ts`, `GalaxyScene.test.tsx` (canonical IDs, click/double-click, arrows, particles vs motion policy, containment toggle, disposal, camera fit/dive/restore), `App.test.tsx` (WebGL fallback and return to 2D), `scripts/bench-3d.mjs`.
+- **Verification:** `scope.test.ts`, `layout3d.test.ts`, `sceneModel.test.ts`, `runtime.test.ts`, `GalaxyScene.test.tsx` (canonical IDs, click/double-click, arrows, particles vs motion policy, containment toggle, disposal, camera fit/dive/restore), `App.test.tsx` (WebGL fallback and return to 2D), `apps/web/scripts/bench-3d.mjs`.
 
 ## ADR-012 — Accessibility hardening, API contract, and positioning (2026-10-11, Milestone 5)
 - **Status:** Accepted
 - **Context:** Milestone 5 requires WCAG 2.2 AA verification, an OpenAPI 3.1 / JSON Schema contract, and positioning without unsupported claims.
 - **Decision:**
-  - **Tokens deviate from the UI mock where it failed AA:** the light theme's status fills (`--color-ok/warn/crit`), edge colors (rendered at 62% opacity), and the dark `--color-text-3` were adjusted. A new `--color-control-border` gives form controls a 3:1 boundary. Pressed toggles get an accent underline (state ≥ 3:1). `src/styles/contrast.test.ts` computes every required pair from `tokens.css`, so regressions fail the build.
+  - **Tokens deviate from the UI mock where it failed AA:** the light theme's status fills (`--color-ok/warn/crit`), edge colors (rendered at 62% opacity), and the dark `--color-text-3` were adjusted. A new `--color-control-border` gives form controls a 3:1 boundary. Pressed toggles get an accent underline (state ≥ 3:1). `apps/web/src/styles/contrast.test.ts` computes every required pair from `tokens.css`, so regressions fail the build.
   - **Accessible names contain visible labels** (WCAG 2.5.3): rail links read "Deps (Dependencies)"; the simulation chip's name starts with its visible text.
   - **2D edges are not tab stops:** connections are reached through the inspector's relationship lists ("Connection details"), which avoids 30+ invisible-focus stops.
   - **Target size (2.5.8):** in-canvas controls scale with the user's zoom. The full-size Groups panel (grouped mode) and the 3D entity list are the equivalent controls. The browser audit checks target size everywhere except zoomable canvas content.
@@ -140,12 +140,12 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - **Positioning:** documented as an unvalidated hypothesis with a workflow comparison by publicly stated focus, explicit gaps, a validation plan, and kill criteria (`POSITIONING.md`).
 - **Alternatives:** keep mock colors and document exceptions (rejected: fails AA for required indicators); make edges focusable with a custom focus style (rejected: tab-order burden); generate types from the schemas (deferred: hand-written types plus enum-equality tests are enough for now).
 - **Consequences:** light theme reads slightly darker than the mock; the design source should be updated to match. Competitor cells marked "?" must be verified before external use.
-- **Verification:** `src/styles/contrast.test.ts`, `src/test/a11y.test.tsx`, `src/test/keyboard.test.tsx`, `src/test/frameLoop.test.ts`, `scripts/audit-a11y.mjs`, `src/contract/contract.test.ts`.
+- **Verification:** `apps/web/src/styles/contrast.test.ts`, `apps/web/src/test/a11y.test.tsx`, `apps/web/src/test/keyboard.test.tsx`, `apps/web/src/test/frameLoop.test.ts`, `apps/web/scripts/audit-a11y.mjs`, `apps/web/src/contract/contract.test.ts`.
 
 ## ADR-013 — Tailwind CSS replaces CSS Modules (2026-10-11, Milestone 6)
 - **Status:** Accepted (product owner direction); supersedes the styling part of ADR-007 ("CSS variables + CSS Modules (no … utility framework)").
 - **Context:** Product requirement (PRODUCT_SPEC Revision 5 §J): use Tailwind. ADR-007 had rejected a utility framework.
-- **Decision:** Tailwind CSS v4 via `@tailwindcss/vite`. `tokens.css` stays the single source of values; Tailwind's theme maps them with `@theme inline` and the default palette is disabled (`--color-*: initial`), so utilities can only use tokens that pass `contrast.test.ts`. Full migration: CSS Modules are removed; repeated patterns become shared components (`src/shared/ui`); glyph artwork and third-party overrides (React Flow, 3D labels) live in layered CSS in `src/styles`.
+- **Decision:** Tailwind CSS v4 via `@tailwindcss/vite`. `tokens.css` stays the single source of values; Tailwind's theme maps them with `@theme inline` and the default palette is disabled (`--color-*: initial`), so utilities can only use tokens that pass `contrast.test.ts`. Full migration: CSS Modules are removed; repeated patterns become shared components (`apps/web/src/shared/ui`); glyph artwork and third-party overrides (React Flow, 3D labels) live in layered CSS in `apps/web/src/styles`.
 - **Alternatives:** keep CSS Modules (rejected by product owner); adopt Tailwind only for new UI (rejected: two styling systems).
 - **Consequences:** class-name-based test hooks are replaced by data attributes (e.g. `data-emphasis`); the design-token contract is unchanged.
 - **Verification:** no `*.module.css` remains; contrast, axe (jsdom + browser), keyboard tests pass; screenshot review in both themes.
@@ -166,3 +166,8 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 - **Decision:** Keep the pack in `docs/backend/`, reviewed so the backend implements the existing contract and canonical domain instead of defining parallel ones. One OpenAPI document serves both sides. ArcadeDB is the only database (`docs/backend/DATABASE_DECISIONS.md` ADR-DB-001), with one `COMMUNICATES` edge per canonical relationship. Go code will live in `backend/`; the frontend stays at the root for now. Seeds and parity tests use shared JSON fixtures exported from the frontend mock. Backend milestones are B1–B6, committed with scopes `b1`…`b6`.
 - **Alternatives:** adopt the pack's API as-is (rejected: two contracts, breaking the frontend repositories); move the frontend into `apps/web` now (deferred: not requested, and it touches every path).
 - **Consequences:** contract changes update `openapi.json`, the TypeScript types, and the Go DTOs together. Backend-only decisions are `ADR-DB-*`; anything that changes product behavior or the contract needs a root ADR. The review changes are listed in `docs/backend/README.md`.
+
+## ADR-016 — Monorepo layout: `apps/web` and `backend` (2026-10-11)
+- **Status:** Accepted (product owner direction); supersedes ADR-015's "frontend stays at the root".
+- **Decision:** The frontend moves to `apps/web/` (unchanged code; `git mv`). The Go backend lives in `backend/`. Shared contract and docs stay in `docs/`, shared fixtures in `fixtures/`. A root `package.json` forwards `dev`, `build`, `test`, `check` to `apps/web` and adds `check:backend` / `check:all`. No npm workspaces: `apps/web` keeps its own lockfile and `node_modules`, so the move needed no dependency changes. Vite's `server.fs.allow` admits `../../docs` and `../../fixtures` for the contract tests.
+- **Consequences:** paths in docs are `apps/web/src/…`; npm commands run in `apps/web/` (or via the root). Archived Revision 1 docs keep their original paths.

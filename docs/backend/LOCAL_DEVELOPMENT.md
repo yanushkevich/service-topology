@@ -35,7 +35,7 @@ The implementation should expose Makefile targets or equivalent scripts:
 - `make reset-local` — destructive local-only reset, requiring explicit confirmation
 
 ## Running with the frontend
-The frontend (`npm run dev`, port 5173) uses mock repositories until an HTTP repository is selected in `src/data/selectRepository.ts` (Milestone B6). The API listens on `HTTP_ADDR` (default `:8080`); use a Vite dev proxy for `/api` rather than permissive CORS.
+The frontend (`npm run dev`, port 5173) uses mock repositories until an HTTP repository is selected in `apps/web/src/data/selectRepository.ts` (Milestone B6). The API listens on `HTTP_ADDR` (default `:8080`); use a Vite dev proxy for `/api` rather than permissive CORS.
 
 ## Startup and readiness
 - Liveness indicates the Go process is running.

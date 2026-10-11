@@ -5,7 +5,7 @@ import { LAYOUT_MODES } from '../../state/uiStore';
 import { SAVED_LAYOUT_SCHEMA_VERSION } from './savedLayout';
 
 // The published JSON Schema must describe exactly what the runtime validator accepts.
-const schemaFiles = import.meta.glob<string>('../../../docs/schemas/saved-layout.v1.schema.json', {
+const schemaFiles = import.meta.glob<string>('../../../../../docs/schemas/saved-layout.v1.schema.json', {
   query: '?raw',
   import: 'default',
   eager: true,

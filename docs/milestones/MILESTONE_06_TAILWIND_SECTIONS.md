@@ -18,7 +18,7 @@
 
 ## Acceptance criteria
 - No `*.module.css` files remain; Tailwind utilities (plus layered component CSS for glyphs and third-party overrides) style the app.
-- Only token colors are available as utilities; `src/styles/contrast.test.ts` passes.
+- Only token colors are available as utilities; `apps/web/src/styles/contrast.test.ts` passes.
 - Both themes render without visual regression (screenshot review of map, registry, events, 3D, and the new pages).
 - Each new page meets its §K requirements, uses canonical data and shared state, honors history mode, and has empty states.
 - Dependencies' impact preview uses the propagation rules and never changes simulation state.

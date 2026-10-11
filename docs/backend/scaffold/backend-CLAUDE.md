@@ -4,7 +4,7 @@ Becomes `backend/CLAUDE.md` in Milestone B1. The root `CLAUDE.md` still applies;
 
 
 - Follow `docs/backend/SOURCE_ALIGNMENT.md`; do not silently redefine product behavior.
-- Implement the existing contract `docs/api/openapi.json` and schemas in `docs/schemas/`; the validation rules and codes match `src/domain/validation.ts`. Change the contract only together with the frontend types and contract tests.
+- Implement the existing contract `docs/api/openapi.json` and schemas in `docs/schemas/`; the validation rules and codes match `apps/web/src/domain/validation.ts`. Change the contract only together with the frontend types and contract tests.
 - Backend language: Go. Architecture: modular monolith with REST/OpenAPI.
 - ArcadeDB is the sole authoritative database in the v4 specification. Do not add MongoDB, ArangoDB, graph projections, or cross-database synchronization without a user-approved architecture decision record.
 - Keep domain types independent from HTTP and ArcadeDB driver packages. Use repository/query interfaces and stable application IDs.

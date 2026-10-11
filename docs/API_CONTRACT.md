@@ -9,7 +9,7 @@
 | `docs/schemas/topology-snapshot.v1.schema.json` | `TopologySnapshot` v1 (wraps `TopologyData`) |
 | `docs/schemas/saved-layout.v1.schema.json` | `SavedLayout` v1 |
 | `docs/schemas/topology-url-state.v1.md` | Query-parameter contract for shareable links (not an HTTP API) |
-| `src/contract/contract.test.ts` | Contract tests (see "How the contract is enforced") |
+| `apps/web/src/contract/contract.test.ts` | Contract tests (see "How the contract is enforced") |
 
 ## Standards
 - **OpenAPI 3.1** for HTTP endpoints; **JSON Schema 2020-12** for every payload. OpenAPI references the published schemas instead of duplicating them, so each payload has one source of truth.
@@ -41,7 +41,7 @@
 | `GET /layouts` / `POST /layouts` | Saved layouts | `SavedLayoutRepository.list()` / `.save()` |
 | `PUT /layouts/{id}` / `DELETE /layouts/{id}` | Replace / delete a layout | `SavedLayoutRepository.save()` / `.remove()` |
 
-Each operation in `openapi.json` names its interface in `x-repository`. An HTTP adapter implements the existing interfaces (`src/data/repositories/TopologyRepository.ts`, `src/data/snapshots/SnapshotRepository.ts`, `src/data/savedLayouts/SavedLayoutRepository.ts`), so UI code does not change.
+Each operation in `openapi.json` names its interface in `x-repository`. An HTTP adapter implements the existing interfaces (`apps/web/src/data/repositories/TopologyRepository.ts`, `apps/web/src/data/snapshots/SnapshotRepository.ts`, `apps/web/src/data/savedLayouts/SavedLayoutRepository.ts`), so UI code does not change.
 
 ## Example payloads
 
@@ -70,10 +70,10 @@ Error (`GET /entities/service-instance/ghost`):
 { "type": "https://topology.example.test/problems/not-found", "title": "Entity not found", "status": 404, "detail": "No service-instance with ID \"ghost\"." }
 ```
 
-Full topology, snapshot, and layout examples: `src/data/mock/topology.ts`, `src/data/mock/snapshots.ts`, and the `createLayout` example in `openapi.json`. All are validated by the contract tests.
+Full topology, snapshot, and layout examples: `apps/web/src/data/mock/topology.ts`, `apps/web/src/data/mock/snapshots.ts`, and the `createLayout` example in `openapi.json`. All are validated by the contract tests.
 
 ## How the contract is enforced
-`src/contract/contract.test.ts` (runs with `npm test`):
+`apps/web/src/contract/contract.test.ts` (runs with `npm test`):
 - The mock inventory, both generated scale datasets, every snapshot fixture, and a frontend-generated registry page validate against the schemas (ajv, draft 2020-12, formats on).
 - Invalid payloads (unknown enum, unknown field, missing `isSimulated`, fixture claiming to be observed) are rejected.
 - Schema enums equal the TypeScript constants (`PROVIDERS`, `RESOURCE_TYPES`, …), so code and contract cannot drift silently.

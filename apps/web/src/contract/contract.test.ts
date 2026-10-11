@@ -22,7 +22,7 @@ import {
  * Contract tests: the published JSON Schemas and OpenAPI document (docs/schemas, docs/api) must
  * describe exactly what the frontend produces and accepts.
  */
-const files = import.meta.glob<string>(['../../docs/schemas/*.json', '../../docs/api/openapi.json'], {
+const files = import.meta.glob<string>(['../../../../docs/schemas/*.json', '../../../../docs/api/openapi.json'], {
   query: '?raw',
   import: 'default',
   eager: true,
