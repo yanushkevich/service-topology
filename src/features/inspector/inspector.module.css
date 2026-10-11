@@ -1,0 +1,311 @@
+/* Matches .insp, .float, .card, .k, .vv, .h4, .note, .dr in docs/ui-frontend-mock/Main.dc.html. */
+.inspector {
+  width: var(--inspector-width);
+  flex: none;
+  margin: 12px 12px 12px 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-float);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-float);
+  overflow: hidden;
+}
+
+.padded {
+  padding: 0 14px;
+}
+
+.empty {
+  margin: auto;
+  padding: 22px 26px;
+  text-align: center;
+}
+
+.emptyTitle {
+  margin: 0 0 6px;
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.emptyBody {
+  margin: 0 0 12px;
+  color: var(--color-text-2);
+}
+
+.header {
+  flex: none;
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.glyphTile {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-3);
+  border: 1px solid var(--color-line);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtitle {
+  font-size: var(--text-xs);
+  color: var(--color-text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.close {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-md);
+  display: grid;
+  place-items: center;
+  color: var(--color-text-2);
+  flex: none;
+}
+
+.close:hover {
+  background: var(--color-bg-3);
+  color: var(--color-text);
+}
+
+.statusBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--color-bg-3);
+  font-size: 12.5px;
+}
+
+.statusNote {
+  min-width: 0;
+  color: var(--color-text-2);
+  font-size: var(--text-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 14px 16px;
+}
+
+.description {
+  margin: 0 0 12px;
+  color: var(--color-text-2);
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.card {
+  min-width: 0;
+  padding: 9px 11px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-line);
+  background: color-mix(in srgb, var(--color-bg-3) 60%, transparent);
+}
+
+.k {
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-text-3);
+}
+
+.v {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+
+.section {
+  margin-top: 16px;
+}
+
+.h4 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-3);
+}
+
+.kv {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-line);
+  font-size: var(--text-sm);
+}
+
+.kvKey {
+  color: var(--color-text-3);
+}
+
+.kvValue {
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.link {
+  width: 100%;
+  min-height: 34px;
+  padding: 0 8px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+}
+
+.link:hover:not(:disabled) {
+  background: var(--color-bg-3);
+}
+
+.linkName {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kind {
+  font-size: 10px;
+  color: var(--color-text-3);
+  white-space: nowrap;
+}
+
+.relRow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.relDetails {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  color: var(--color-text-3);
+}
+
+.relDetails:hover {
+  background: var(--color-bg-3);
+  color: var(--color-text);
+}
+
+.path {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.path li {
+  position: relative;
+}
+
+.path li + li {
+  margin-left: 12px;
+  padding-left: 4px;
+  border-left: 1px solid var(--color-line-strong);
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 6px;
+}
+
+.metricValue {
+  margin: 2px 0 0;
+  font-size: var(--text-lg);
+  font-weight: 500;
+}
+
+.muted {
+  margin: 0;
+  padding: 4px 8px;
+  color: var(--color-text-3);
+  font-size: var(--text-sm);
+}
+
+.note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  border: 1px dashed var(--color-line-strong);
+  color: var(--color-text-2);
+  font-size: var(--text-sm);
+}
+
+.secondary {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line-strong);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.secondary:hover {
+  background: var(--color-bg-3);
+}
+
+@media (max-width: 760px) {
+  .inspector {
+    width: auto;
+    margin: 0 8px 8px;
+    max-height: 45%;
+  }
+}

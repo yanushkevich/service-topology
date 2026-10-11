@@ -5,8 +5,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Service Topology & Registry Platform — Claude Code Instructions
 
 ## Current repository state
-- This repository is **documentation only**: no `package.json`, `src/`, build scripts, tests, or git history exist yet. There are no build/lint/test commands to run until Milestone 1 scaffolds the app.
-- When the app is scaffolded, the planned toolchain is React + strict TypeScript + Vite, Zustand for shared state, React Flow + ELK.js for 2D, React Three Fiber for 3D (`docs/IMPLEMENTATION_PLAN.md` Phase 1, `docs/ARCHITECTURE.md` §2). Discover actual scripts from `package.json` before invoking anything, then record them in this file.
+- Milestone 1 is implemented (2026-10-11): shell, canonical domain model + validation (`src/domain`), mock repository (`src/data`), registry, and shared inspector. React 19 + strict TypeScript + Vite 8, React Router 8, Zustand 5; `@xyflow/react` and `elkjs` are pinned but not used yet (Milestone 2). Three.js/R3F/GSAP are not installed (Milestone 4). Code map: `docs/ARCHITECTURE.md` → "Milestone 1 implementation notes"; contract extensions and open data-model questions: ADR-008.
+- Scripts (from `package.json`): `npm run dev`, `npm run typecheck` (`tsc -b`), `npm run lint` (ESLint 10 + typescript-eslint), `npm test` (Vitest + Testing Library, jsdom), `npm run build`, `npm run preview`, and `npm run check` (all of typecheck → lint → test → build). Single test file: `npx vitest run src/domain/validation.test.ts`. Integration tests render the app through `src/test/renderApp.tsx` (memory router + injectable repository) and reset the store with `resetUiStore()`.
+- TypeScript is pinned to 6.0.x because typescript-eslint 8.71 supports `<6.1`; do not bump to TS 7 until it does.
+- Styling: CSS variables in `src/styles/tokens.css` (dark/light via `data-theme` on `<html>`) and CSS Modules per component. Use `--color-*-text` tokens for text in status/accent colors; the raw light-theme status colors fail 4.5:1.
 - `README.md` lists `/topology-*` skills in `.claude/skills/`, but that directory does not exist yet. Do not assume those skills are available.
 - `docs/ui-frontend-mock/` is a design reference exported from a design tool, not production code. Replicate its values (colors, spacing, type, radii, layout from inline styles in `Main.dc.html`) in real components; do not copy its markup or runtime. To view it, serve the folder (`python3 -m http.server`) and open `Main.dc.html`.
 
@@ -43,6 +45,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 4. Verify with the repository's actual scripts: focused tests first, then relevant typecheck/lint/build and UI checks where available.
 5. Update documentation when behavior, contracts, decisions, or acceptance status changes.
 6. Finish with changed files, exact commands and observed outcomes, unresolved risks, and next prerequisites. Stop at the requested scope.
+7. **Commit after every completed milestone or phase** (standing instruction from the product owner). Commit only once its checks pass and status docs are updated. Use Conventional Commits with the milestone/phase as scope (e.g. `feat(m2): add React Flow topology with ELK layout`). Stage only that unit's files. Full procedure: `docs/AGENT_WORKFLOW.md` §6.
 
 ## Source-of-truth precedence
 1. Explicit user direction for the current task.

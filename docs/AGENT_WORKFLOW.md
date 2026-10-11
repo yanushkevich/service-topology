@@ -43,7 +43,42 @@ Record exact commands and outcomes. If a command is unavailable, blocked, or not
 - Compare implementation against every acceptance criterion; mark each pass/fail/not-run with evidence.
 - Update milestone status, architecture decisions, API contracts, or user docs only if the actual state changed.
 - Report changed files, checks run, observed results, limitations, risks, and next prerequisites.
-- Stop at the requested milestone. Do not begin the next milestone without instruction.
+- Commit the unit of work (§6), then stop at the requested milestone. Do not begin the next milestone without instruction.
+
+## 6. Commit
+Standing instruction: make a git commit after **every completed milestone or phase**. This instruction authorizes the commit; there is no need to ask each time.
+
+**When**
+- After the unit's checks pass (`npm run check`) and status docs (`IMPLEMENTATION_PLAN.md` tables, ADRs) are updated, so the commit contains the code and its documentation together.
+- If checks fail and cannot be fixed within scope, do not commit the unit as complete. Report the failure and ask.
+- Do not mix two milestones or phases in one commit. Several small commits inside one unit are fine. The final one completes it.
+
+**Where**
+- If on `main`, first create a branch named `milestone-<n>-<slug>` (e.g. `milestone-2-map-inspector`), or `phase-<nn>-<slug>` for standalone phase work. Keep committing phases of a milestone on its branch.
+- Do not push, open a PR, or merge into `main` unless asked.
+
+**What to stage**
+- Stage explicit paths that belong to the unit (`git add src/... docs/...`). Never `git add -A` or `git add .` blindly.
+- Leave unrelated user changes (e.g. edits in `docs/ui-frontend-mock/`) unstaged. Check `git status` and `git diff --cached --stat` before committing.
+- Never commit `node_modules/`, `dist/`, secrets, or local screenshots.
+
+**Message format** ([Conventional Commits](https://www.conventionalcommits.org/))
+```
+<type>(<scope>): <imperative summary, ≤ 72 chars, no trailing period>
+
+<what was delivered and why, 2–6 lines or bullets>
+
+Acceptance: <criteria met; anything partial or not run, stated plainly>
+Checks: <exact commands and observed results, e.g. "npm run check — 53 tests pass, build ok">
+Refs: <milestone/phase doc, ADRs touched>
+```
+- `type`: `feat` (new capability), `fix`, `refactor`, `test`, `docs`, `build` (deps/tooling), `chore`.
+- `scope`: `m1`–`m5` for milestones, `phase-01`–`phase-11` for phases. Use a domain area (e.g. `domain`, `registry`) for changes outside a milestone.
+- Example: `feat(m1): add domain model, mock repository, registry and inspector`.
+- Never amend or rewrite published commits, force-push, or skip hooks (`--no-verify`).
+
+**After committing**
+- Report the commit hash and subject. Record the subject (or hash) in the `Commit/PR` column of the status table in the next docs update, since a commit cannot contain its own hash.
 
 ## UI-specific evidence
 For substantial UI changes, inspect the running app at representative viewport sizes and capture screenshots when available. Check loading, empty, error, and populated states; keyboard focus; reduced-motion behavior; and interactions between selection, filtering, URL state, and inspector. A successful build alone does not establish visual correctness.

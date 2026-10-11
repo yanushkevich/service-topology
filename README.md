@@ -2,6 +2,17 @@
 
 This package is the product/architecture guide and staged implementation plan for a mock-first Service Topology and Registry Platform. It is documentation, not a completed application or proof that a backend exists.
 
+## Development setup
+Milestone 1 is implemented: application shell, canonical domain model with validation, a mock multi-cloud repository, the service registry, and the shared inspector. Built with React 19 + strict TypeScript + Vite, React Router, and Zustand. React Flow and ELK.js are pinned for Milestone 2. All data is mock and all telemetry is simulated. Requires Node.js 22+.
+
+```sh
+npm install
+npm run dev        # start the dev server
+npm run check      # typecheck + lint + tests + production build
+```
+
+Individual scripts: `typecheck`, `lint`, `test`, `test:watch`, `build`, `preview`. Dependency versions are pinned exactly (`.npmrc` sets `save-exact`).
+
 ## Start here
 1. `CLAUDE.md` — concise project-wide instructions for Claude Code.
 3. `docs/ui-frontend-mock/README.md` - document, frontend mock generated 

@@ -347,3 +347,27 @@ The camera rig owns orbit, pan, zoom, fit, focus, dive-in, and restoration trans
 ### Graph rendering and quality
 
 Use semantic clusters and deterministic layout; reduce detail as node/edge density grows. Labels, selection, status, and direction cannot depend solely on color or bloom. Edge animation must bind to a known traffic/status field and visibly distinguish mock data. Lazy-load the scene, cap DPR, clean up resources, and provide a WebGL/context-loss fallback to the registry or 2D map. Performance claims require a documented benchmark.
+
+---
+
+## Milestone 1 implementation notes (2026-10-11)
+
+What exists in code, so readers do not have to infer it. Contract extensions and open questions are in `DECISIONS.md` ADR-008.
+
+| Concern | Location |
+|---|---|
+| Canonical types and enums | `src/domain/types.ts` |
+| Lookup index, ancestors, environment inheritance | `src/domain/topologyIndex.ts` |
+| Integrity validation | `src/domain/validation.ts` |
+| Registry rows, shared filters, sorting (renderer-agnostic) | `src/domain/registry.ts` |
+| Repository interface / mock implementation / fixture | `src/data/repositories/`, `src/data/mock/topology.ts` |
+| Loading, validation on load, React context | `src/data/TopologyDataProvider.tsx`, `src/data/topologyContext.ts` |
+| Cross-view state (selection, filters, environment, view, theme) | `src/state/uiStore.ts` |
+| Presentation mappings with fallbacks | `src/shared/mappings.ts` |
+| Registry and shared inspector | `src/features/service-registry/`, `src/features/inspector/` |
+
+- Topology data is held in React context (loaded once per repository), not in Zustand. Zustand holds only the canonical selection and filters.
+- `src/domain` imports only its own modules; `boundaries.test.ts` enforces this.
+- If a filter or the environment hides the selected entity, the registry shows a notice with a "Show it" action and the inspector offers to switch environment. Selection is never cleared silently.
+- Not yet implemented: URL state, snapshots, saved layouts, simulation, and the 2D/3D renderers.
+

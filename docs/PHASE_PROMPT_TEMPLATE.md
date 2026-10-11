@@ -38,8 +38,9 @@ Use this template for each implementation iteration. Keep the product spec and a
 4. Run type checking, lint, tests, and build where available.
 5. Fix regressions introduced by this phase.
 6. Update architecture and status docs where needed.
-7. Report changed files, actual checks/results, known limitations, and next-phase prerequisites.
-8. Stop; do not automatically begin the next phase.
+7. Commit the phase (Conventional Commits, scope `phase-NN`; see `docs/AGENT_WORKFLOW.md` §6).
+8. Report changed files, the commit, actual checks/results, known limitations, and next-phase prerequisites.
+9. Stop; do not automatically begin the next phase.
 
 ### Definition of done
 Acceptance criteria pass, integration points work, previous functionality remains intact, and limitations are documented.

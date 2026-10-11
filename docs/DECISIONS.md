@@ -48,3 +48,34 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 - **Rationale:** The view should support spatial orientation and progressive disclosure, not merely present a decorative 3D graph.
 - **Constraints:** The graph remains data-backed; containment is not communication; traffic animation must bind to explicit observed or labeled simulated data; leaf entities must not invent children. Stable canonical IDs and shared state remain renderer-independent. 2D remains primary and must be fully usable without WebGL.
 - **Specification:** `docs/3D_GALAXY_EXPERIENCE.md`.
+
+## ADR-007 — Initial toolchain and pinned versions (2026-10-11, Milestone 1)
+- **Status:** Accepted
+- **Context:** Phase 1 scaffold; the spec asks for mutually compatible pinned versions and React 19 where supported.
+- **Decision:** React 19.3, Vite 8.3, React Router 8.4 (library/data-router mode, not framework mode), Zustand 5, `@xyflow/react` 12.12, `elkjs` 0.12, Vitest 5 + Testing Library, ESLint 10 + typescript-eslint 8.71. TypeScript is pinned to 6.0.3 rather than 7.x because typescript-eslint supports `<6.1`. Exact versions only (`save-exact`). Styling uses CSS variables + CSS Modules (no CSS-in-JS or utility framework). Three.js/R3F/Drei/GSAP are deferred to Milestone 4.
+- **Alternatives:** TypeScript 7 without type-aware linting; Tailwind; React Router framework mode (adds SSR/build conventions not needed for a mock-first SPA).
+- **Consequences:** Revisit the TS pin when typescript-eslint supports 7.x. The shell's 2D/3D switch plus Topology/Grouped-infrastructure mode follows Revision 2 §C (Infrastructure is a grouped 2D layout mode) and the UI mock; the Infrastructure nav route is a separate placeholder for the containment hierarchy.
+- **Verification:** `npm run check`.
+
+## ADR-008 — Milestone 1 domain implementation choices and open data-model questions (2026-10-11)
+- **Status:** Accepted for Milestone 1; updated 2026-10-11 with product-owner answers. Workloads and the items under *Open questions* are **Proposed**.
+- **Context:** `ARCHITECTURE.md` Revision 2 §2 marks its interfaces as illustrative. Implementing them in `src/domain/types.ts` required a few explicit extensions.
+- **Decision (implemented):**
+  - IDs are unique across *all* collections (environments, definitions, instances, resources, relationships), so a bare ID resolves to one entity. Selection is still `{ kind, id }`.
+  - `ServiceInstance.environmentId` is a single required string; validation also rejects non-string values from untyped adapters.
+  - `InfrastructureResource` gains optional `health`, `owner`, `team`, `metrics`, `updatedAt`, so data stores, topics, queues, and SaaS APIs can appear in the registry with health and labeled telemetry. Absent `health` renders as "Unknown".
+  - Resource types add `datacenter` (on-prem containment), `cache`, `search-index`, and `exchange` (RabbitMQ). Containment-only types (`account`, `subscription`, `project`, `region`, `datacenter`, `cluster`, `namespace`) cannot be communication endpoints; validation enforces this.
+  - Service categories are executable kinds only (`api`, `gateway`, `application`, `worker`, `scheduled-job`, `other`). Databases and brokers are resources, not service categories.
+  - A resource without `environmentId` inherits the nearest ancestor's environment; with none it is environment-independent (e.g. SaaS) and appears in every environment's registry. **Confirmed by product owner 2026-10-11 (former open question 5).**
+  - **Environments are isolated (confirmed 2026-10-11, former open question 1):** a communication relationship whose endpoints resolve, directly or through inheritance, to different environments is a validation **error**. Only environment-independent entities (no environment on themselves or any ancestor, e.g. a SaaS API) may be shared across environments.
+  - Validation errors: empty/duplicate ID, missing environment/definition/resource/parent/endpoint, parent cycle, self-relationship, invalid endpoint kind, cross-environment relationship. Warning: instance environment ≠ hosting resource environment.
+  - The inspector labels relationship direction by flow ("Outgoing: calls, publishes to" / "Incoming: called by, delivers to") instead of "upstream/downstream", because producer → topic → consumer makes "depends on" ambiguous.
+- **Workloads (former open question 3) — Proposed, recommended default, no code change needed:** the service instance *is* the workload. `ServiceInstance.resourceId` points to the most specific known host (namespace, cluster, VM host, or datacenter), and no `workload` resource is created per instance. Reasons: a per-instance workload resource would be a 1:1 duplicate (two IDs, two health values, and two nodes for the same thing in grouped views), and most inventories (service catalogs, APM) know the namespace but not the Deployment/StatefulSet. Keep the `workload` resource type for runtime units that are *not* modeled as a service instance (e.g. an unowned VM or sidecar found by infrastructure discovery). Revisit if a real adapter shows one workload hosting several service definitions, or several workloads (e.g. canary + stable) per instance. In that case add `ServiceInstance.workloadResourceIds` rather than changing `resourceId`. This matches the current mock, so it stands unless the product owner objects.
+- **Open questions (still Proposed):**
+  1. Are RabbitMQ exchange → queue bindings communication relationships (current) or a separate binding/routing relationship type?
+  2. Replica-level state ("2 of 4 replicas crash-looping") lives only in `metadata.note`. Do replicas need modeling?
+  3. `EnvironmentRecord` has no display order; the header lists environments in repository order.
+  4. Follow-up from environment inheritance: should a resource that sets an `environmentId` different from its ancestor's be a validation error? Not validated today.
+- **Alternatives:** Per-collection ID scopes (rejected: ambiguous lookups); a separate `MessagingResource` entity (rejected: Revision 2 §3 says topics/queues are `InfrastructureResource`s).
+- **Verification:** `src/domain/validation.test.ts`, `src/domain/registry.test.ts`, `src/domain/boundaries.test.ts`.
+

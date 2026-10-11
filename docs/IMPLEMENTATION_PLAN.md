@@ -11,8 +11,9 @@ At phase end:
 2. Fix regressions introduced by the phase.
 3. Report commands actually run and their actual results.
 4. Update architecture decisions and phase status where needed.
-5. Report changed files, acceptance criteria, known limitations, and next-phase prerequisites.
-6. Stop.
+5. Commit the phase or milestone (Conventional Commits, scope `phase-NN` / `mN`; see `AGENT_WORKFLOW.md` §6).
+6. Report changed files, commit, acceptance criteria, known limitations, and next-phase prerequisites.
+7. Stop.
 
 ## Phase overview
 | Phase | Name | Deliverable |
@@ -87,13 +88,13 @@ Update only from actual repository state and checks.
 | Phase | Status | Commit/PR | Checks | Notes |
 |---|---|---|---|---|
 | 0 | Not started | — | — | |
-| 1 | Not started | — | — | |
-| 2 | Not started | — | — | |
-| 3 | Not started | — | — | |
+| 1 | Done (2026-10-11) | `feat(m1): …` (see git log) | typecheck, lint, test (7/7), build pass | Shell, tokens, routing, 2D/3D placeholders + Topology/Grouped-infrastructure mode switch, inspector region. Visual check via headless Chrome screenshots (dark/light, 1440 and 700 px). |
+| 2 | Done (2026-10-11) | `feat(m1): …` (see git log) | domain/repository tests pass | Types, validation, index, repository interface + mock (14 definitions, 21 instances, 41 resources, 39 relationships across AWS/Azure/GCP/on-prem/SaaS and 3 environments). |
+| 3 | Partial (2026-10-11) | `feat(m1): …` (see git log) | store covered by integration tests | Selection (kind + ID), filters, environment, view, theme. Visible layers and simulation controls not yet needed. |
 | 4 | Not started | — | — | |
 | 5 | Not started | — | — | |
 | 6 | Not started | — | — | |
-| 7 | Not started | — | — | |
+| 7 | Partial (2026-10-11) | `feat(m1): …` (see git log) | registry integration tests pass | Registry search/filter/sort/selection and inspector done. Registry-to-map focus waits for the 2D map (Milestone 2). |
 | 8 | Not started | — | — | |
 | 9 | Not started | — | — | |
 | 10 | Not started | — | — | |
@@ -180,3 +181,26 @@ Update only from actual repository state and checks.
 
 ## Status tracking
 Track both milestones and original phases. A milestone is not complete until its acceptance criteria are checked against the actual implementation. Do not claim performance or accessibility criteria pass without measurement or test evidence.
+
+| Milestone | Status | Notes |
+|---|---|---|
+| 1 | Implemented, pending review (2026-10-11) | All acceptance criteria checked; see the Milestone 1 closeout below. Open data-model questions: ADR-008. |
+| 2–5 | Not started | |
+
+### Milestone 1 closeout (2026-10-11)
+Evidence: `npm run check` (typecheck, lint, 50 tests, build) passes. Visual check via headless Chrome at 1440×900 (dark/light) and 700×900.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| App starts, type-checks, builds | Pass | `npm run check`; preview server screenshots |
+| React Flow and ELK.js pinned | Pass | `package.json` (`@xyflow/react` 12.12.0, `elkjs` 0.12.0); not used yet |
+| Definitions / instances / resources / relationships distinct | Pass | `src/domain/types.ts`; registry and inspector tests |
+| Kafka topics and RabbitMQ queues/exchanges first-class | Pass | `validation.test.ts` (producer → resource → consumer relationships) |
+| Containment explicit and validated (no missing parents, no cycles) | Pass | `validation.test.ts` (missing-parent, parent-cycle, self-parent) |
+| Unique IDs and valid references | Pass | `validation.test.ts`; mock validates with 0 issues |
+| One environment per instance; definitions span environments | Pass | `validation.test.ts` |
+| Registry search/filter/selection use canonical IDs | Pass | `RegistryPage.test.tsx` |
+| WCAG contrast and keyboard/focus foundations | Partial | Token contrast ratios computed (text ≥ 4.5:1 both themes after adding `--color-*-text`); native buttons/inputs, visible focus, skip link, `aria-sort`/`aria-pressed`. No automated axe audit or screen-reader pass yet. |
+| Mock telemetry labeled simulated | Pass | Registry "Mock inventory · simulated telemetry" tag; inspector "Simulated" tag + caption; repository test asserts `isSimulated` on all fixture metrics |
+| Unresolved data-model questions documented | Pass | `DECISIONS.md` ADR-008 |
+

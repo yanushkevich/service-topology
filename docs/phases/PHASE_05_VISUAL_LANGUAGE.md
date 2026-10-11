@@ -9,6 +9,7 @@
 - If a major architecture change is necessary, explain its reason and downstream impact before making it.
 - Run relevant type checks, lint, tests, and build. Report only commands actually run and their actual results.
 - Update `docs/ARCHITECTURE.md` for material decisions and `docs/IMPLEMENTATION_PLAN.md` status when work is complete.
+- Commit the completed phase with a Conventional Commits message (scope `phase-05`), staging only its files; see `docs/AGENT_WORKFLOW.md` §6.
 - At the end, report changed files, acceptance criteria, actual check results, known limitations, and next-phase prerequisites.
 
 ## Objective

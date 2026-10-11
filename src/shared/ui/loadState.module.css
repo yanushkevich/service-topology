@@ -1,0 +1,17 @@
+.box {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--color-line-strong);
+  color: var(--color-text-2);
+}
+
+.error {
+  border-style: solid;
+  border-color: var(--color-crit);
+  color: var(--color-text);
+}
+
+.error :global(.mono) {
+  color: var(--color-crit-text);
+}

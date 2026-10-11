@@ -14,6 +14,7 @@
 - If an architectural decision conflicts with the documented contract, explain the impact before changing it.
 - Run checks and report only results actually observed.
 - Update the milestone/phase status and architecture decision log when complete.
+- Commit the completed milestone with a Conventional Commits message (scope `m3`), staging only its files; see `docs/AGENT_WORKFLOW.md` §6.
 - Report changed files, tests and benchmarks, known limitations, and next milestone prerequisites.
 - Stop after this milestone; do not automatically start the next.
 
