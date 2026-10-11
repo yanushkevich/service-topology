@@ -26,8 +26,27 @@ SEED_MODE=demo
 
 Do not hardcode credentials in Go source. Configuration validation should fail fast if required settings are missing or malformed. Never commit the populated secret file.
 
+## Configuration (implemented in B1, `backend/internal/config`)
+
+| Variable | Default | Notes |
+|---|---|---|
+| `HTTP_ADDR` | `:8080` | `host:port` or `:port` |
+| `SHUTDOWN_TIMEOUT` | `10s` | graceful shutdown budget |
+| `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
+| `LOG_FORMAT` | `json` | `json` or `text` |
+| `SEED_MODE` | `demo` | `demo` or `none` |
+| `ARCADEDB_BASE_URL` | unset | when unset the API runs without a database and `/readyz` is 503 |
+| `ARCADEDB_DATABASE` | `topology` | |
+| `ARCADEDB_USERNAME` | — | required with `ARCADEDB_BASE_URL` |
+| `ARCADEDB_PASSWORD_FILE` | — | required with `ARCADEDB_BASE_URL`; `ARCADEDB_PASSWORD` is rejected, and URLs with credentials are rejected |
+| `ARCADEDB_QUERY_LANGUAGE` | `sql` | `sql` or `cypher` |
+| `ARCADEDB_REQUEST_TIMEOUT` | `10s` | |
+
+Invalid configuration exits with status 2 and lists every problem. Secrets and file paths are never logged.
+
 ## Required developer commands
 The implementation should expose Makefile targets or equivalent scripts:
+Run from `backend/` (`GO=/path/to/go` if Go is not on `PATH`). Implemented in B1: `make check` (gofmt, vet, tests), `make run`, `make seed` (validates the shared mock fixture). Database targets work once B2 lands.
 - `make dev-up` / `make dev-down`
 - `make test` / `make test-integration`
 - `make seed` — deterministic, idempotent mock dataset

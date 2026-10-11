@@ -82,6 +82,7 @@ Rules that keep this working (enforced by tests where marked):
 | Integration (registry, map, events, URL sync, keyboard) | `*.test.tsx`, `apps/web/src/test/` | `renderApp(path, topologyRepo?, layoutRepo?, snapshotRepo?)` + `resetUiStore()`; use `fireEvent.click` inside the React Flow canvas (user-event's `mousedown` has `view: null`, which d3 cannot handle in jsdom) |
 | 3D scene | `GalaxyScene.test.tsx` | `@react-three/test-renderer` (no WebGL); jsdom app tests see the WebGL fallback |
 | Contract | `apps/web/src/contract/contract.test.ts` | ajv against `docs/schemas` and `docs/api/openapi.json` |
+| Shared fixtures | `apps/web/src/contract/fixtures.test.ts` | Exports `fixtures/` for the Go backend and fails on drift; `npm run fixtures:update` after changing the mock or validation |
 | Accessibility | `apps/web/src/test/a11y.test.tsx`, `keyboard.test.tsx`, `apps/web/src/styles/contrast.test.ts`; `npm run audit:a11y` in a real browser | jsdom cannot compute contrast; the token test and the browser audit cover it |
 | Performance | `npm run bench`, `bench:browser`, `bench:3d` | Results go to `docs/BENCHMARKS.md`, appended, with machine and conditions |
 

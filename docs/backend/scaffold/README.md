@@ -1,14 +1,7 @@
-# Backend scaffold (not active)
+# Backend scaffold
 
-Files that belong at the root of the future `backend/` Go module. They live here until Milestone B1 creates `backend/` and moves them:
+Milestone B1 moved the scaffold files into `backend/` (`Makefile`, `docker-compose.yml`, `.env.example`, `.gitignore`, `CLAUDE.md`). What remains:
 
-| File here | Becomes | Notes |
+| File | Where it would go | Notes |
 |---|---|---|
-| `Makefile` | `backend/Makefile` | targets assume commands run from `backend/` |
-| `docker-compose.yml` | `backend/docker-compose.yml` | ArcadeDB `26.10.1`, bound to `127.0.0.1:2480` |
-| `.env.example` | `backend/.env.example` | no secrets; password via `secrets/` file |
-| `.gitignore` | `backend/.gitignore` | ignores `secrets/` and `.env` (also protects this folder) |
-| `backend-CLAUDE.md` | `backend/CLAUDE.md` | backend agent rules; the root `CLAUDE.md` still applies |
-| `topology-backend-SKILL.md` | `.claude/skills/topology-backend/SKILL.md` (optional) | install only if wanted |
-
-Nothing here is run by the frontend toolchain. Do not create `secrets/` here.
+| `topology-backend-SKILL.md` | `.claude/skills/topology-backend/SKILL.md` | Optional Claude Code skill; not installed. Install only if wanted. |

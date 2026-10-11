@@ -1,4 +1,4 @@
-# Local development only. Moves to backend/docker-compose.yml in Milestone B1.
+# Local development only (run from backend/: make dev-up).
 # Image tag verified on Docker Hub 2026-10-11 (published 2026-10-05); not yet tested with this project.
 services:
   arcadedb:

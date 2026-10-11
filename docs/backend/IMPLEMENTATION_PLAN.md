@@ -1,6 +1,6 @@
 # Go Backend Implementation Plan (ArcadeDB)
 
-**Status:** Proposed plan; not started. Execute one milestone at a time; do not automatically start the next. Backend milestones are B1–B6, a separate track from frontend Milestones 1–7. Code lives in `backend/`. Commit each milestone with scope `b1`…`b6`. Track status in the root `docs/IMPLEMENTATION_PLAN.md`.
+**Status:** B1 implemented (closeout below); B2–B6 not started. Execute one milestone at a time; do not automatically start the next. Backend milestones are B1–B6, a separate track from frontend Milestones 1–7. Code lives in `backend/`. Commit each milestone with scope `b1`…`b6`. Track status in the root `docs/IMPLEMENTATION_PLAN.md`.
 
 ## Milestone B1 — Go service foundation and domain
 Scope: `backend/` Go module (scaffold files moved in from `docs/backend/scaffold/`), configuration validation, HTTP lifecycle, health/readiness skeleton, structured logging, domain types and the full `validateTopology` rule set, repository/query interfaces, shared fixture export (`fixtures/`, from the frontend mock via a script) and the conformance fixture format.
@@ -35,3 +35,21 @@ Cloud, Kubernetes, Kafka and other adapters are out of initial milestones. Intro
 - ArcadeDB is the sole database in the initial architecture; do not introduce MongoDB, ArangoDB, or a second persistence engine without a new architecture decision record.
 - Use parameterized queries and an allowlist for dynamic labels/relationship types.
 - Record architecture changes as ADRs and update OpenAPI/domain docs with behavior changes.
+
+## Milestone B1 closeout (2026-10-11)
+Toolchain: Go 1.27.2 (`go.mod` `go 1.27.2`), standard library only (no third-party modules). Evidence, run in `backend/` with `/usr/local/go/bin/go`: `make check` exit 0 (gofmt clean, `go vet ./...`, `go test ./...`); `go test -race -count=1 ./...` passes; manual smoke run of the built `cmd/api` binary: `/healthz` 200, `/readyz` 503 (`database: not configured`), unknown path 404 `application/problem+json` with `requestId`, JSON request logs, clean exit on SIGTERM, exit 2 on invalid `HTTP_ADDR`. Frontend: `npm run check` passes in `apps/web` (fixture drift test included).
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| `go test ./...`, `go vet ./...` | Pass | `make check` |
+| Liveness/readiness tests | Pass | `internal/adapters/httpapi/server_test.go` (incl. bounded readiness), `internal/app/app_test.go` (serve + graceful shutdown) |
+| No HTTP/database dependencies in `internal/domain` | Pass | `internal/domain/boundaries_test.go` (standard library only; no `net`, `database`, adapters, config) |
+| Go validation returns the same codes as `validateTopology` on every conformance fixture | Pass | `internal/domain/conformance_test.go`: 24 cases, exact order; shown to fail when an expected code is altered |
+| Domain types cover `TopologyData` v1 | Pass | mock fixture decodes strictly (unknown fields rejected) and re-encodes to identical JSON |
+| Config validation fails fast | Pass | `internal/config/config_test.go` (all problems reported at once, secrets not leaked) |
+| Repository/query interfaces | Done | `internal/ports` (topology, snapshots, layouts, readiness), mirroring the frontend repositories |
+| Shared fixture export | Done | `fixtures/topology/mock.v1.json`, `fixtures/conformance/validation/*.json` |
+| Root `npm run check` still passes | Pass | see evidence |
+
+Known limitations: no database (readiness is always 503); no API routes from `openapi.json` yet (B3); `seed load` and `schema-check` exit with "available in B2"; no third-party linter (staticcheck/golangci-lint) configured; the lifecycle test uses a client without keep-alives because Go's `Shutdown` leaves never-used client connections open for 5 s, longer than the test's 2 s timeout (production default is 10 s).
+

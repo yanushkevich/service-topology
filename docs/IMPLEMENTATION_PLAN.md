@@ -197,7 +197,8 @@ Track both milestones and original phases. A milestone is not complete until its
 | 5 | Implemented (2026-10-11) | See the Milestone 5 closeout below. |
 | 6 | Implemented (2026-10-11) | See the Milestone 6 closeout below. |
 | 7 | Implemented (2026-10-11) | See the Milestone 7 closeout below. |
-| B1–B6 (backend) | Specified, not started (2026-10-11) | Go + ArcadeDB backend in `backend/`; plan in `docs/backend/IMPLEMENTATION_PLAN.md`, ADR-015. |
+| B1 (backend) | Implemented (2026-10-11) | Go foundation in `backend/`; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
+| B2–B6 (backend) | Not started | ArcadeDB persistence, API, traversal, provenance, hardening (`docs/backend/IMPLEMENTATION_PLAN.md`). |
 
 ### Milestone 1 closeout (2026-10-11)
 Evidence: `npm run check` (typecheck, lint, 50 tests, build) passes. Visual check via headless Chrome at 1440×900 (dark/light) and 700×900.

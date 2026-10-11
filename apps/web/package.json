@@ -18,6 +18,7 @@
     "bench:browser": "node scripts/bench-browser.mjs",
     "bench:3d": "node scripts/bench-3d.mjs",
     "audit:a11y": "node scripts/audit-a11y.mjs",
+    "fixtures:update": "UPDATE_FIXTURES=1 vitest run src/contract/fixtures.test.ts",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build"
   },
   "dependencies": {

@@ -1,0 +1,267 @@
+{
+  "description": "Resource parent does not exist",
+  "topology": {
+    "environments": [
+      {
+        "id": "prod",
+        "name": "Production",
+        "kind": "production"
+      },
+      {
+        "id": "stg",
+        "name": "Staging",
+        "kind": "staging"
+      }
+    ],
+    "serviceDefinitions": [
+      {
+        "id": "svc-api",
+        "name": "API",
+        "category": "api",
+        "protocols": [
+          "https",
+          "kafka",
+          "rabbitmq",
+          "postgresql"
+        ]
+      },
+      {
+        "id": "svc-worker",
+        "name": "Worker",
+        "category": "worker",
+        "protocols": [
+          "kafka",
+          "rabbitmq"
+        ]
+      }
+    ],
+    "resources": [
+      {
+        "id": "acct",
+        "name": "account",
+        "type": "account",
+        "provider": "aws",
+        "environmentId": "prod"
+      },
+      {
+        "id": "cluster",
+        "name": "cluster",
+        "type": "cluster",
+        "provider": "aws",
+        "parentResourceId": "acct"
+      },
+      {
+        "id": "ns",
+        "name": "namespace",
+        "type": "namespace",
+        "provider": "aws",
+        "parentResourceId": "cluster"
+      },
+      {
+        "id": "db",
+        "name": "db",
+        "type": "database",
+        "provider": "aws",
+        "parentResourceId": "acct",
+        "health": "healthy"
+      },
+      {
+        "id": "broker",
+        "name": "broker",
+        "type": "broker",
+        "provider": "on-prem",
+        "parentResourceId": "acct"
+      },
+      {
+        "id": "topic",
+        "name": "orders",
+        "type": "topic",
+        "provider": "on-prem",
+        "parentResourceId": "broker"
+      },
+      {
+        "id": "exchange",
+        "name": "notify",
+        "type": "exchange",
+        "provider": "on-prem",
+        "parentResourceId": "broker"
+      },
+      {
+        "id": "queue",
+        "name": "notify.email",
+        "type": "queue",
+        "provider": "on-prem",
+        "parentResourceId": "broker"
+      },
+      {
+        "id": "saas",
+        "name": "Payments SaaS",
+        "type": "external-resource",
+        "provider": "saas"
+      },
+      {
+        "id": "acct-stg",
+        "name": "account-stg",
+        "type": "account",
+        "provider": "aws",
+        "environmentId": "stg"
+      },
+      {
+        "id": "ns-stg",
+        "name": "namespace-stg",
+        "type": "namespace",
+        "provider": "aws",
+        "parentResourceId": "ghost-parent"
+      }
+    ],
+    "serviceInstances": [
+      {
+        "id": "api.prod",
+        "serviceDefinitionId": "svc-api",
+        "environmentId": "prod",
+        "provider": "aws",
+        "health": "healthy",
+        "resourceId": "ns",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      },
+      {
+        "id": "worker.prod",
+        "serviceDefinitionId": "svc-worker",
+        "environmentId": "prod",
+        "provider": "aws",
+        "health": "degraded",
+        "resourceId": "ns",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      },
+      {
+        "id": "api.stg",
+        "serviceDefinitionId": "svc-api",
+        "environmentId": "stg",
+        "provider": "aws",
+        "health": "healthy",
+        "resourceId": "ns-stg",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      }
+    ],
+    "relationships": [
+      {
+        "id": "r-db",
+        "sourceEntityId": "api.prod",
+        "targetEntityId": "db",
+        "protocol": "postgresql",
+        "pattern": "database",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      },
+      {
+        "id": "r-pub",
+        "sourceEntityId": "api.prod",
+        "targetEntityId": "topic",
+        "protocol": "kafka",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      },
+      {
+        "id": "r-sub",
+        "sourceEntityId": "topic",
+        "targetEntityId": "worker.prod",
+        "protocol": "kafka",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      },
+      {
+        "id": "r-ex",
+        "sourceEntityId": "api.prod",
+        "targetEntityId": "exchange",
+        "protocol": "rabbitmq",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      },
+      {
+        "id": "r-bind",
+        "sourceEntityId": "exchange",
+        "targetEntityId": "queue",
+        "protocol": "rabbitmq",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T08:00:00Z",
+        "metadata": {
+          "bindingKey": "notify.email.*"
+        }
+      },
+      {
+        "id": "r-read",
+        "sourceEntityId": "queue",
+        "targetEntityId": "worker.prod",
+        "protocol": "rabbitmq",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      },
+      {
+        "id": "r-saas",
+        "sourceEntityId": "api.prod",
+        "targetEntityId": "saas",
+        "protocol": "https",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      },
+      {
+        "id": "r-saas-stg",
+        "sourceEntityId": "api.stg",
+        "targetEntityId": "saas",
+        "protocol": "https",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      }
+    ],
+    "eventTypes": [
+      {
+        "id": "evt-created",
+        "name": "Created",
+        "channelResourceIds": [
+          "topic"
+        ],
+        "producerServiceIds": [
+          "svc-api"
+        ],
+        "consumerServiceIds": [
+          "svc-worker"
+        ]
+      },
+      {
+        "id": "evt-notify",
+        "name": "NotifyRequested",
+        "channelResourceIds": [
+          "exchange"
+        ],
+        "producerServiceIds": [
+          "svc-api"
+        ],
+        "consumerServiceIds": [
+          "svc-worker"
+        ]
+      }
+    ]
+  },
+  "expected": [
+    {
+      "severity": "error",
+      "code": "missing-parent",
+      "entityId": "ns-stg"
+    }
+  ]
+}
