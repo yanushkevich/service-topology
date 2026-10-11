@@ -1,6 +1,9 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterEach } from 'vitest';
+
+// Map tests wait for ELK layout (bundled build in jsdom); 1 s is too tight when test files run in parallel.
+configure({ asyncUtilTimeout: 5000 });
 
 // jsdom does not implement matchMedia.
 if (!window.matchMedia) {

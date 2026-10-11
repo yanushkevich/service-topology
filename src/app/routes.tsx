@@ -1,5 +1,6 @@
-import { Navigate, type RouteObject } from 'react-router';
+import type { RouteObject } from 'react-router';
 import { AppShell } from '../layouts/AppShell';
+import { RedirectToMap } from '../layouts/RedirectToMap';
 import { RouteError } from '../layouts/RouteError';
 import { ServiceMapPage } from '../features/service-map/ServiceMapPage';
 import { PlaceholderPage } from '../features/placeholders/PlaceholderPage';
@@ -12,7 +13,7 @@ export const routes: RouteObject[] = [
     element: <AppShell />,
     errorElement: <RouteError />,
     children: [
-      { index: true, element: <Navigate to="/map" replace /> },
+      { index: true, element: <RedirectToMap /> },
       { path: 'map', element: <ServiceMapPage /> },
       {
         path: 'overview',

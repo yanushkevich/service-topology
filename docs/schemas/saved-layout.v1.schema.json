@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.test/schemas/saved-layout.v1.schema.json",
+  "title": "SavedLayout v1",
+  "description": "A saved 2D map layout. Plain data only: canonical IDs, numbers, and option values. Mirrors src/data/savedLayouts/savedLayout.ts (parseSavedLayout is the runtime validator).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "name", "createdAt", "view", "positions"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "view": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["environmentId", "layoutMode", "filters", "collapsedGroupIds"],
+      "properties": {
+        "environmentId": { "type": "string" },
+        "layoutMode": { "enum": ["topology", "infrastructure"] },
+        "filters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["query", "providers", "health", "groups"],
+          "properties": {
+            "query": { "type": "string" },
+            "providers": { "type": "array", "items": { "enum": ["aws", "azure", "gcp", "on-prem", "saas", "internal", "unknown"] }, "uniqueItems": true },
+            "health": { "type": "array", "items": { "enum": ["healthy", "degraded", "unavailable", "unknown"] }, "uniqueItems": true },
+            "groups": { "type": "array", "items": { "enum": ["service", "data", "messaging", "external", "other"] }, "uniqueItems": true }
+          }
+        },
+        "collapsedGroupIds": {
+          "description": "Infrastructure resource IDs, or provider:<provider> for provider-level groups.",
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "positions": {
+      "description": "Node positions keyed by canonical entity ID (or collapsed group ID). Relative to the containing group in infrastructure mode; absolute in topology mode.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["x", "y"],
+        "properties": { "x": { "type": "number" }, "y": { "type": "number" } }
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useEffect, useId } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useTopology } from '../data/topologyContext';
 import { sortEnvironments } from '../domain/topologyIndex';
@@ -17,6 +17,12 @@ export function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const environments = topology.status === 'ready' ? sortEnvironments(topology.index.data.environments) : [];
+  const fallbackEnvironment = environments[0]?.id;
+  const environmentKnown = environments.length === 0 || environments.some((env) => env.id === environmentId);
+  // An unknown environment (e.g. from an old deep link) falls back to the first one, visibly in the selector.
+  useEffect(() => {
+    if (!environmentKnown && fallbackEnvironment) setEnvironmentId(fallbackEnvironment);
+  }, [environmentKnown, fallbackEnvironment, setEnvironmentId]);
   const envSelectId = useId();
   const searchId = useId();
   const nextTheme = theme === 'dark' ? 'light' : 'dark';

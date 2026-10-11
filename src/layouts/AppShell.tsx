@@ -2,12 +2,14 @@ import { useEffect } from 'react';
 import { Outlet } from 'react-router';
 import { TopologyDataProvider } from '../data/TopologyDataProvider';
 import { useUiStore } from '../state/uiStore';
+import { useUrlStateSync } from '../state/useUrlStateSync';
 import { Header } from './Header';
 import { NavRail } from './NavRail';
 import styles from './shell.module.css';
 
 export function AppShell() {
   const theme = useUiStore((s) => s.theme);
+  useUrlStateSync();
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;

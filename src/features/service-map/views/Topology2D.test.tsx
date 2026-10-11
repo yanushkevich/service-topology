@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { generateTopology, INVENTORY_1000 } from '../../../data/mock/generateTopology';
 import { createMockTopologyRepository } from '../../../data/repositories/mockTopologyRepository';
+import { createInMemorySavedLayoutRepository } from '../../../data/savedLayouts/SavedLayoutRepository';
 import { useUiStore } from '../../../state/uiStore';
 import { renderApp, resetUiStore } from '../../../test/renderApp';
 
@@ -120,5 +121,54 @@ describe('2D topology map', () => {
     await user.click(screen.getByRole('button', { name: 'Group by provider (collapsed)' }));
     expect(useUiStore.getState().layoutMode).toBe('infrastructure');
     expect(await screen.findByLabelText(/^AWS, \d+ entities collapsed/)).toBeInTheDocument();
+  });
+});
+
+describe('saved layouts on the map', () => {
+  beforeEach(resetUiStore);
+
+  it('saves positions keyed by canonical IDs with view options, and applies them back', async () => {
+    const user = userEvent.setup();
+    const repo = createInMemorySavedLayoutRepository();
+    renderApp('/map', undefined, repo);
+    await findNode('Order Service');
+    await user.click(screen.getByRole('button', { name: 'Layouts' }));
+    const menu = screen.getByRole('dialog', { name: 'Saved layouts' });
+    await user.type(within(menu).getByLabelText('Layout name'), 'Incident review');
+    await user.click(within(menu).getByRole('button', { name: 'Save' }));
+    expect(await within(menu).findByText('Saved “Incident review”.')).toBeInTheDocument();
+
+    const [saved] = await repo.list();
+    expect(saved).toMatchObject({ schemaVersion: 1, name: 'Incident review', view: { environmentId: 'production', layoutMode: 'topology' } });
+    expect(Object.keys(saved!.positions)).toContain('order-service.production');
+    expect(Object.values(saved!.positions).every((p) => Object.keys(p).sort().join() === 'x,y')).toBe(true);
+
+    // Edit the stored position and apply: the node moves there (saved positions override layout).
+    await repo.save({ ...saved!, positions: { ...saved!.positions, 'order-service.production': { x: 1234, y: 567 } } });
+    await user.click(screen.getByRole('button', { name: 'Layouts' }));
+    await user.click(screen.getByRole('button', { name: 'Layouts' }));
+    await user.click(await screen.findByRole('button', { name: 'Apply Incident review' }));
+    await waitFor(async () => expect((await findNode('Order Service')).style.transform).toContain('translate(1234px,567px)'));
+    expect(screen.getByRole('button', { name: 'Reset positions' })).toBeInTheDocument();
+  });
+
+  it('restores mode, environment, filters, and collapsed groups from a layout', async () => {
+    const user = userEvent.setup();
+    const repo = createInMemorySavedLayoutRepository([
+      {
+        schemaVersion: 1,
+        id: 'l1',
+        name: 'Staging grouped',
+        createdAt: '2026-10-11T09:00:00.000Z',
+        view: { environmentId: 'staging', layoutMode: 'infrastructure', filters: { query: '', providers: [], health: [], groups: ['service', 'messaging'] }, collapsedGroupIds: ['provider:azure'] },
+        positions: {},
+      },
+    ]);
+    renderApp('/map', undefined, repo);
+    await findNode('Order Service');
+    await user.click(screen.getByRole('button', { name: 'Layouts' }));
+    await user.click(await screen.findByRole('button', { name: 'Apply Staging grouped' }));
+    expect(useUiStore.getState()).toMatchObject({ environmentId: 'staging', layoutMode: 'infrastructure', filters: { groups: ['service', 'messaging'] } });
+    expect(await screen.findByLabelText(/^Azure, 1 entity collapsed/)).toBeInTheDocument();
   });
 });

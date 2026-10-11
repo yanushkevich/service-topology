@@ -3,6 +3,8 @@ import { createMemoryRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 import { routes } from '../app/routes';
 import { RepositoryProvider } from '../data/TopologyDataProvider';
+import { SavedLayoutRepositoryContext } from '../data/savedLayouts/savedLayoutContext';
+import { createInMemorySavedLayoutRepository, type SavedLayoutRepository } from '../data/savedLayouts/SavedLayoutRepository';
 import type { TopologyRepository } from '../data/repositories/TopologyRepository';
 import { createMockTopologyRepository } from '../data/repositories/mockTopologyRepository';
 import { EMPTY_FILTERS } from '../domain/registry';
@@ -21,11 +23,17 @@ export function resetUiStore() {
   });
 }
 
-export function renderApp(path: string, repository: TopologyRepository = createMockTopologyRepository()) {
+export function renderApp(
+  path: string,
+  repository: TopologyRepository = createMockTopologyRepository(),
+  savedLayouts: SavedLayoutRepository = createInMemorySavedLayoutRepository(),
+) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
   render(
     <RepositoryProvider repository={repository}>
-      <RouterProvider router={router} />
+      <SavedLayoutRepositoryContext.Provider value={savedLayouts}>
+        <RouterProvider router={router} />
+      </SavedLayoutRepositoryContext.Provider>
     </RepositoryProvider>,
   );
   return router;

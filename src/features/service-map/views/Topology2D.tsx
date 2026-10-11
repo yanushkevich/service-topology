@@ -39,6 +39,8 @@ import { EntityNode } from './flow/EntityNode';
 import { GroupNode } from './flow/GroupNode';
 import { MapActionsContext, type MapActions } from './flow/mapActions';
 import { RelationshipEdge } from './flow/RelationshipEdge';
+import { LayoutsMenu } from './LayoutsMenu';
+import type { SavedLayout } from '../../../data/savedLayouts/savedLayout';
 import styles from './topology2d.module.css';
 
 /** Above this many visible nodes the map asks the user to narrow the view (ADR-005 target: 250). */
@@ -93,6 +95,7 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
   const [laidOut, setLaidOut] = useState<LaidOut | null>(null);
   const [layoutError, setLayoutError] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [layoutsOpen, setLayoutsOpen] = useState(false);
 
   const graph = useMemo(
     () =>
@@ -276,7 +279,29 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
         />
         {filtersOpen && <MapFilters index={index} onClose={() => setFiltersOpen(false)} />}
         <HiddenSelectionNotice index={index} graph={graph} />
+        {layoutsOpen && (
+          <LayoutsMenu
+            collapsedGroupIds={collapsed}
+            currentPositions={() =>
+              Object.fromEntries(
+                nodes.filter((n) => n.type === 'entity').map((n) => [n.id, { x: Math.round(n.position.x), y: Math.round(n.position.y) }]),
+              )
+            }
+            onApply={(layout: SavedLayout) => {
+              useUiStore.setState({
+                environmentId: layout.view.environmentId,
+                layoutMode: layout.view.layoutMode,
+                filters: layout.view.filters,
+              });
+              setCollapsed(new Set(layout.view.collapsedGroupIds));
+              setManual((prev) => ({ ...prev, [layout.view.layoutMode]: layout.positions }));
+            }}
+            onClose={() => setLayoutsOpen(false)}
+          />
+        )}
         <CanvasControls
+          layoutsOpen={layoutsOpen}
+          onToggleLayouts={() => setLayoutsOpen((open) => !open)}
           onResetLayout={() => setManual((prev) => ({ ...prev, [mode]: {} }))}
           hasManualPositions={Object.keys(manual[mode]).length > 0}
           collapsedCount={collapsed.size}
@@ -406,11 +431,15 @@ function MapFilters({ index, onClose }: { index: TopologyIndex; onClose: () => v
 }
 
 function CanvasControls({
+  layoutsOpen,
+  onToggleLayouts,
   onResetLayout,
   hasManualPositions,
   collapsedCount,
   onExpandAll,
 }: {
+  layoutsOpen: boolean;
+  onToggleLayouts: () => void;
   onResetLayout: () => void;
   hasManualPositions: boolean;
   collapsedCount: number;
@@ -436,6 +465,9 @@ function CanvasControls({
         title="Fit to screen"
       >
         <Icon name="fit" />
+      </button>
+      <button type="button" className={styles.textButton} aria-expanded={layoutsOpen} onClick={onToggleLayouts}>
+        Layouts
       </button>
       {hasManualPositions && (
         <button type="button" className={styles.textButton} onClick={onResetLayout}>
