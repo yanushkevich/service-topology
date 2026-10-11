@@ -308,7 +308,7 @@ const relationships: CommunicationRelationship[] = [
   rel('topic-inventory-updates-prod', 'catalog-service.production', 'kafka', 'asynchronous', { metrics: sim(16, 95, 0) }),
   rel('catalog-service.production', 'search-catalog-prod', 'https', 'synchronous', { metrics: sim(21, 640, 0.1) }),
   rel('notification-service.production', 'exchange-notifications-prod', 'rabbitmq', 'asynchronous', { status: 'inactive', metrics: sim(0, 0, 0) }),
-  rel('exchange-notifications-prod', 'queue-notifications-email-prod', 'rabbitmq', 'asynchronous', { metadata: { routingKey: 'notify.email.*' }, metrics: sim(1, 60, 0) }),
+  rel('exchange-notifications-prod', 'queue-notifications-email-prod', 'rabbitmq', 'asynchronous', { metadata: { bindingKey: 'notify.email.*' }, metrics: sim(1, 60, 0) }),
   rel('queue-notifications-email-prod', 'email-dispatcher.production', 'rabbitmq', 'asynchronous', { metrics: sim(3, 16, 0) }),
   rel('email-dispatcher.production', 'ext-email-delivery', 'https', 'synchronous', { authenticationType: 'API key', metrics: sim(90, 16, 0.5) }),
   rel('legacy-report-cron.production', 'rds-orders-prod', 'postgresql', 'scheduled', { status: 'unknown', metadata: { note: 'cross-site: on-prem → AWS' } }),

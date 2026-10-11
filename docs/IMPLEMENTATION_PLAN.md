@@ -184,7 +184,7 @@ Track both milestones and original phases. A milestone is not complete until its
 
 | Milestone | Status | Notes |
 |---|---|---|
-| 1 | Implemented, pending review (2026-10-11) | All acceptance criteria checked; see the Milestone 1 closeout below. Open data-model questions: ADR-008. |
+| 1 | Implemented, pending review (2026-10-11) | All acceptance criteria checked; see the Milestone 1 closeout below. Data-model decisions resolved 2026-10-11 (ADR-008). |
 | 2–5 | Not started | |
 
 ### Milestone 1 closeout (2026-10-11)
@@ -202,5 +202,5 @@ Evidence: `npm run check` (typecheck, lint, 50 tests, build) passes. Visual chec
 | Registry search/filter/selection use canonical IDs | Pass | `RegistryPage.test.tsx` |
 | WCAG contrast and keyboard/focus foundations | Partial | Token contrast ratios computed (text ≥ 4.5:1 both themes after adding `--color-*-text`); native buttons/inputs, visible focus, skip link, `aria-sort`/`aria-pressed`. No automated axe audit or screen-reader pass yet. |
 | Mock telemetry labeled simulated | Pass | Registry "Mock inventory · simulated telemetry" tag; inspector "Simulated" tag + caption; repository test asserts `isSimulated` on all fixture metrics |
-| Unresolved data-model questions documented | Pass | `DECISIONS.md` ADR-008 |
+| Unresolved data-model questions documented | Pass | `DECISIONS.md` ADR-008; all resolved by the product owner on 2026-10-11 |
 

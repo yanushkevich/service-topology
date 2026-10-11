@@ -15,7 +15,9 @@ export type ValidationCode =
   | 'invalid-relationship-endpoint'
   | 'self-relationship'
   | 'environment-mismatch'
-  | 'cross-environment-relationship';
+  | 'environment-conflict'
+  | 'cross-environment-relationship'
+  | 'invalid-binding-target';
 
 export interface ValidationIssue {
   severity: ValidationSeverity;
@@ -87,6 +89,17 @@ export function validateTopology(data: TopologyData): ValidationIssue[] {
       error('missing-environment', resource.id, `Resource references unknown environment "${resource.environmentId}"`);
     }
     if (resource.parentResourceId === undefined) continue;
+    // Environment is inherited through containment (ADR-008); a child may restate it but not change it.
+    if (resource.environmentId !== undefined) {
+      const inherited = environmentOf(index, resource.parentResourceId);
+      if (inherited !== undefined && inherited !== resource.environmentId) {
+        error(
+          'environment-conflict',
+          resource.id,
+          `Resource sets environment "${resource.environmentId}" but its ancestors are in "${inherited}"`,
+        );
+      }
+    }
     if (!index.resources.has(resource.parentResourceId)) {
       error('missing-parent', resource.id, `Resource references unknown parent "${resource.parentResourceId}"`);
       continue;
@@ -124,6 +137,12 @@ export function validateTopology(data: TopologyData): ValidationIssue[] {
           `Endpoint "${endpoint}" is a ${resource.type}; containment is not communication`,
         );
       }
+    }
+    // RabbitMQ bindings: an exchange routes only to queues or other exchanges, never straight to a consumer.
+    const source = index.resources.get(sourceEntityId);
+    const target = index.resources.get(targetEntityId);
+    if (source?.type === 'exchange' && target?.type !== 'queue' && target?.type !== 'exchange') {
+      error('invalid-binding-target', id, 'An exchange can only be bound to a queue or another exchange');
     }
     const sourceEnvironment = environmentOf(index, sourceEntityId);
     const targetEnvironment = environmentOf(index, targetEntityId);

@@ -1,5 +1,6 @@
 import type {
   CommunicationRelationship,
+  EnvironmentKind,
   EntityId,
   EntityKind,
   EntityRef,
@@ -119,4 +120,15 @@ export function environmentOf(index: TopologyIndex, id: EntityId): EntityId | un
   return resourceAncestors(index, id)
     .reverse()
     .find((r) => r.environmentId !== undefined)?.environmentId;
+}
+
+/** Display order for environments: production, staging, development, then other kinds (ADR-008). */
+const ENVIRONMENT_KIND_ORDER: Record<EnvironmentKind, number> = { production: 0, staging: 1, development: 2, other: 3 };
+
+export function sortEnvironments(environments: readonly EnvironmentRecord[]): EnvironmentRecord[] {
+  return [...environments].sort(
+    (a, b) =>
+      (ENVIRONMENT_KIND_ORDER[a.kind] ?? 3) - (ENVIRONMENT_KIND_ORDER[b.kind] ?? 3) ||
+      a.name.localeCompare(b.name, 'en'),
+  );
 }

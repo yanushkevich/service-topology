@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useTopology } from '../data/topologyContext';
+import { sortEnvironments } from '../domain/topologyIndex';
 import { useUiStore } from '../state/uiStore';
 import { Icon } from '../shared/ui/Icon';
 import styles from './shell.module.css';
@@ -15,7 +16,7 @@ export function Header() {
   const topology = useTopology();
   const navigate = useNavigate();
   const location = useLocation();
-  const environments = topology.status === 'ready' ? topology.index.data.environments : [];
+  const environments = topology.status === 'ready' ? sortEnvironments(topology.index.data.environments) : [];
   const envSelectId = useId();
   const searchId = useId();
   const nextTheme = theme === 'dark' ? 'light' : 'dark';

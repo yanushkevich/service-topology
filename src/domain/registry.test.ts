@@ -8,7 +8,7 @@ import {
   sortRegistryRows,
   type RegistryRow,
 } from './registry';
-import { buildTopologyIndex } from './topologyIndex';
+import { buildTopologyIndex, sortEnvironments } from './topologyIndex';
 
 const index = buildTopologyIndex(mockTopology);
 const rows = buildRegistryRows(index);
@@ -89,3 +89,17 @@ describe('sortRegistryRows', () => {
     expect(input).toEqual(rows);
   });
 });
+
+describe('sortEnvironments', () => {
+  it('orders production, staging, development, then other kinds, regardless of input order', () => {
+    const shuffled = [
+      { id: 'dev', name: 'Development', kind: 'development' as const },
+      { id: 'sandbox', name: 'Sandbox', kind: 'other' as const },
+      { id: 'prod', name: 'Production', kind: 'production' as const },
+      { id: 'stage', name: 'Staging', kind: 'staging' as const },
+    ];
+    expect(sortEnvironments(shuffled).map((e) => e.id)).toEqual(['prod', 'stage', 'dev', 'sandbox']);
+    expect(shuffled[0]!.id).toBe('dev'); // input not mutated
+  });
+});
+

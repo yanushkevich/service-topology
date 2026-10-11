@@ -69,6 +69,11 @@ describe('application shell', () => {
     const user = userEvent.setup();
     renderAt('/map');
     await screen.findByRole('option', { name: 'staging' });
+    expect(within(screen.getByLabelText('Environment')).getAllByRole('option').map((o) => o.textContent)).toEqual([
+      'production',
+      'staging',
+      'development',
+    ]);
     await user.selectOptions(screen.getByLabelText('Environment'), 'staging');
     expect(useUiStore.getState().environmentId).toBe('staging');
   });

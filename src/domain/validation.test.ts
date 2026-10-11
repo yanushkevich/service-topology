@@ -156,6 +156,23 @@ describe('validateTopology', () => {
     expect(environments).toEqual(new Set(['production', 'staging']));
   });
 
+  it('rejects a resource whose environment conflicts with the one it inherits', () => {
+    const data = clone();
+    data.resources.find((r) => r.id === 'ns-commerce-prod')!.environmentId = 'staging';
+    // Restating the inherited environment is allowed.
+    data.resources.find((r) => r.id === 'ns-edge-prod')!.environmentId = 'production';
+    const result = codes(data);
+    expect(result).toContain('error:environment-conflict:ns-commerce-prod');
+    expect(result).not.toContain('error:environment-conflict:ns-edge-prod');
+  });
+
+  it('only allows exchanges to be bound to queues or exchanges', () => {
+    const data = clone();
+    const binding = data.relationships.find((r) => r.sourceEntityId === 'exchange-notifications-prod')!;
+    data.relationships.push({ ...binding, id: 'r-exchange-to-consumer', targetEntityId: 'email-dispatcher.production' });
+    expect(codes(data)).toEqual(['error:invalid-binding-target:r-exchange-to-consumer']);
+  });
+
   it('warns when an instance runs in a resource assigned to another environment', () => {
     const data = clone();
     data.serviceInstances.find((i) => i.id === 'order-service.staging')!.resourceId = 'ns-commerce-prod';
