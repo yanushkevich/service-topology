@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Orrery — status, empty and fallback states</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#05070d}
+a{color:#8fd8ff}a:hover{color:#c5ecff}
+.sh{display:inline-block;width:1em;height:1em;position:relative;flex:none}
+.sv{border-radius:50%;background:radial-gradient(circle at 34% 30%,#fff 0,#b9d0ff 16%,#5b78e6 55%,#1b2558 100%);box-shadow:0 0 .45em rgba(125,160,255,.5)}
+.ca{transform:rotate(45deg) scale(.74);border-radius:.14em;background:linear-gradient(135deg,#f0eaff,#a78bfa 45%,#3d2f85)}
+.cl{border-radius:50%;border:.1em solid #8fa2ff;background:radial-gradient(circle,#dfe6ff 0 18%,transparent 22%)}
+.st{flex:none;display:inline-block;width:15px;height:15px;font-size:10px;font-weight:700;line-height:15px;text-align:center;color:#06101a}
+.st.ok{border-radius:50%;background:#3dd6b0}
+.st.warn{clip-path:polygon(50% 0,100% 100%,0 100%);background:#f5b454;line-height:19px}
+.st.crit{clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%);background:#ff7b7b}
+.tile{border:1px solid #1e2640;border-radius:14px;background:#070a13;position:relative;overflow:hidden;height:300px}
+.cap{font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#7f8cab;margin-bottom:8px}
+.pn{background:rgba(13,18,32,.94);border:1px solid #1e2640;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.bt{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;border:1px solid #2b3558;background:none;color:#e7ecf8;font:inherit;cursor:pointer}
+.bp{background:#5fe1ff;border-color:#5fe1ff;color:#04121a;font-weight:600}
+.sk{background:#151b2d;border-radius:10px;position:absolute}
+.dots{background:radial-gradient(circle,rgba(125,139,255,.13) 1px,transparent 1.4px) 0 0/28px 28px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1180px; box-sizing: border-box; padding: 44px 48px; background: #05070d; color: #e7ecf8; font-family: 'Geist', system-ui, sans-serif; font-size: 13px; line-height: 1.45">
+<h1 style="margin: 0 0 6px; font-size: 30px; font-weight: 600; letter-spacing: -.02em">States</h1>
+<div style="color: #a7b1ca; margin-bottom: 26px; max-width: 760px">Each state says what happened and offers one way forward. Populated, filtered, selected, degraded and nested states are live in the prototype.</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; flex: 1; min-height: 0">
+
+<div style="display: flex; flex-direction: column; gap: 24px">
+<div style="border: 1px solid #1e2640; border-radius: 14px; background: #090d17; padding: 20px">
+<div style="font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #7f8cab; margin-bottom: 12px">Surfaces</div>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px">
+<div><div style="height: 52px; border-radius: 8px; background: #05070d; border: 1px solid #2b3558"></div><div style="font-family: 'Geist Mono', monospace; font-size: 10px; color: #a7b1ca; margin-top: 5px">#05070D<br>void</div></div>
+<div><div style="height: 52px; border-radius: 8px; background: #090d17; border: 1px solid #2b3558"></div><div style="font-family: 'Geist Mono', monospace; font-size: 10px; color: #a7b1ca; margin-top: 5px">#090D17<br>chrome</div></div>
+<div><div style="height: 52px; border-radius: 8px; background: #0e1321; border: 1px solid #2b3558"></div><div style="font-family: 'Geist Mono', monospace; font-size: 10px; color: #a7b1ca; margin-top: 5px">#0E1321<br>panel</div></div>
+<div><div style="height: 52px; border-radius: 8px; background: #151b2d; border: 1px solid #2b3558"></div><div style="font-family: 'Geist Mono', monospace; font-size: 10px; color: #a7b1ca; margin-top: 5px">#151B2D<br>raised</div></div>
+<div><div style="height: 52px; border-radius: 8px; background: #2b3558"></div><div style="font-family: 'Geist Mono', monospace; font-size: 10px; color: #a7b1ca; margin-top: 5px">#2B3558<br>line</div></div>
+</div>
+<div style="font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #7f8cab; margin: 20px 0 12px">Signal</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<div><div style="height: 52px; border-radius: 8px; background: #5fe1ff"></div><div style="font-family: 'Geist Mono', monospace; font-size: 10px; color: #a7b1ca; margin-top: 5px">#5FE1FF<br>focus, active path</div></div>
+<div><div style="height: 52px; border-radius: 8px; background: #a9c8ff"></div><div style="font-family: 'Geist Mono', monospace; font-size: 10px; color: #a7b1ca; margin-top: 5px">#A9C8FF<br>connection</div></div>
+<div><div style="height: 52px; border-radius: 8px; background: #7d8bff"></div><div style="font-family: 'Geist Mono', monospace; font-size: 10px; color: #a7b1ca; margin-top: 5px">#7D8BFF<br>grouping</div></div>
+<div><div style="height: 52px; border-radius: 8px; background: #a78bfa"></div><div style="font-family: 'Geist Mono', monospace; font-size: 10px; color: #a7b1ca; margin-top: 5px">#A78BFA<br>data stores</div></div>
+</div>
+</div>
+
+<div style="border: 1px solid #1e2640; border-radius: 14px; background: #090d17; padding: 20px; flex: 1">
+<div style="font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #7f8cab; margin-bottom: 12px">Typography</div>
+<div style="font-size: 30px; font-weight: 600; letter-spacing: -.02em">Geist 600</div>
+<div style="color: #a7b1ca; margin-bottom: 14px">Screen titles 18, panel titles 15, body 13, captions 11.5</div>
+<div style="font-family: 'Geist Mono', monospace; font-size: 18px">Geist Mono 400</div>
+<div style="color: #a7b1ca; margin-bottom: 14px">Identifiers, environments, protocols, counts</div>
+<div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid #1e2640; padding-top: 14px">
+<div style="font-size: 15px; font-weight: 600">Payment Service</div>
+<div style="font-family: 'Geist Mono', monospace; font-size: 11px; color: #7f8cab">Service · payment-service · production</div>
+<div style="font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #7f8cab">Upstream dependencies</div>
+</div>
+</div>
+</div>
+
+<div style="border: 1px solid #1e2640; border-radius: 14px; background: #090d17; padding: 20px; display: flex; flex-direction: column">
+<div style="font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #7f8cab; margin-bottom: 4px">Resource type language</div>
+<div style="color: #a7b1ca; margin-bottom: 14px">Silhouette first, colour second. The same glyph is the 2D node icon and the 3D body.</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; flex: 1; align-content: start">
+<div style="display: flex; align-items: center; gap: 14px; padding: 12px; border: 1px solid #1e2640; border-radius: 10px"><span style="width: 44px; display: grid; place-items: center; font-size: 30px"><span class="sh sv"></span></span><div><b>Service</b><div style="color: #7f8cab; font-size: 11.5px">Luminous sphere</div></div></div>
+<div style="display: flex; align-items: center; gap: 14px; padding: 12px; border: 1px solid #1e2640; border-radius: 10px"><span style="width: 44px; display: grid; place-items: center; font-size: 32px"><span class="sh gw"></span></span><div><b>API Gateway</b><div style="color: #7f8cab; font-size: 11.5px">Hexagonal core</div></div></div>
+<div style="display: flex; align-items: center; gap: 14px; padding: 12px; border: 1px solid #1e2640; border-radius: 10px"><span style="width: 44px; display: grid; place-items: center; font-size: 30px"><span class="sh db"></span></span><div><b>PostgreSQL</b><div style="color: #7f8cab; font-size: 11.5px">Layered cylinder</div></div></div>
+<div style="display: flex; align-items: center; gap: 14px; padding: 12px; border: 1px solid #1e2640; border-radius: 10px"><span style="width: 44px; display: grid; place-items: center; font-size: 30px"><span class="sh ca"></span></span><div><b>Redis Cache</b><div style="color: #7f8cab; font-size: 11.5px">Faceted diamond</div></div></div>
+<div style="display: flex; align-items: center; gap: 14px; padding: 12px; border: 1px solid #1e2640; border-radius: 10px"><span style="width: 44px; display: grid; place-items: center; font-size: 26px"><span class="sh tp"></span></span><div><b>Kafka Topic</b><div style="color: #7f8cab; font-size: 11.5px">Segmented log capsule</div></div></div>
+<div style="display: flex; align-items: center; gap: 14px; padding: 12px; border: 1px solid #1e2640; border-radius: 10px"><span style="width: 44px; display: grid; place-items: center; font-size: 26px"><span class="sh qu"></span></span><div><b>Queue</b><div style="color: #7f8cab; font-size: 11.5px">Open capsule, waiting items</div></div></div>
+<div style="display: flex; align-items: center; gap: 14px; padding: 12px; border: 1px solid #1e2640; border-radius: 10px"><span style="width: 44px; display: grid; place-items: center; font-size: 30px"><span class="sh cl"></span></span><div><b>Kubernetes Cluster</b><div style="color: #7f8cab; font-size: 11.5px">Orbital ring, enclosing volume</div></div></div>
+<div style="display: flex; align-items: center; gap: 14px; padding: 12px; border: 1px solid #1e2640; border-radius: 10px"><span style="width: 44px; display: grid; place-items: center; font-size: 30px"><span class="sh ns"></span></span><div><b>Namespace</b><div style="color: #7f8cab; font-size: 11.5px">Dashed inner boundary</div></div></div>
+<div style="display: flex; align-items: center; gap: 14px; padding: 12px; border: 1px solid #1e2640; border-radius: 10px"><span style="width: 44px; display: grid; place-items: center; font-size: 26px"><span class="sh in"></span></span><div><b>Service Instance</b><div style="color: #7f8cab; font-size: 11.5px">Small satellite</div></div></div>
+<div style="display: flex; align-items: center; gap: 14px; padding: 12px; border: 1px solid #1e2640; border-radius: 10px"><span style="width: 44px; display: grid; place-items: center; font-size: 30px"><span class="sh ex"></span></span><div><b>External API</b><div style="color: #7f8cab; font-size: 11.5px">Unlit, dashed outline</div></div></div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 24px">
+<div style="border: 1px solid #1e2640; border-radius: 14px; background: #090d17; padding: 20px">
+<div style="font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #7f8cab; margin-bottom: 12px">Status — never colour alone</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 12px"><span class="st ok">✓</span><b style="width: 78px">Healthy</b><span style="flex: 1; height: 30px; border-radius: 8px; border: 1px solid #2b3558; background: #0f1526"></span><span style="color: #7f8cab; font-size: 11.5px; width: 150px">Circle, check, solid border</span></div>
+<div style="display: flex; align-items: center; gap: 12px"><span class="st warn">!</span><b style="width: 78px">Degraded</b><span style="flex: 1; height: 30px; border-radius: 8px; border: 1px dashed rgba(245,180,84,.7); background: #0f1526"></span><span style="color: #7f8cab; font-size: 11.5px; width: 150px">Triangle, dashed border or ring</span></div>
+<div style="display: flex; align-items: center; gap: 12px"><span class="st crit">×</span><b style="width: 78px">Critical</b><span style="flex: 1; height: 30px; border-radius: 8px; border: 3px double rgba(255,123,123,.75); background: #0f1526"></span><span style="color: #7f8cab; font-size: 11.5px; width: 150px">Octagon, double border or ring</span></div>
+</div>
+</div>
+
+<div style="border: 1px solid #1e2640; border-radius: 14px; background: #090d17; padding: 20px">
+<div style="font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #7f8cab; margin-bottom: 12px">Connections</div>
+<div style="display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; gap: 14px"><svg viewBox="0 0 150 26" style="width: 150px; height: 26px; flex: none" aria-hidden="true"><path d="M4 20C50 20 90 6 142 6" style="fill: none; stroke: rgba(95,225,255,.24); stroke-width: 7; stroke-linecap: round"></path><path d="M4 20C50 20 90 6 142 6" style="fill: none; stroke: #c4f4ff; stroke-width: 1.6"></path><path d="M146 6l-8 -4v8z" style="fill: #c4f4ff"></path></svg><div><b>Selected path</b><div style="color: #7f8cab; font-size: 11.5px">Fine core, soft halo, arrow for direction</div></div></div>
+<div style="display: flex; align-items: center; gap: 14px"><svg viewBox="0 0 150 26" style="width: 150px; height: 26px; flex: none" aria-hidden="true"><path d="M4 20C50 20 90 6 142 6" style="fill: none; stroke: rgba(150,190,255,.5); stroke-width: 1"></path><path d="M146 6l-8 -4v8z" style="fill: rgba(160,196,255,.8)"></path></svg><div><b>Resting relationship</b><div style="color: #7f8cab; font-size: 11.5px">Weight shows hierarchy, never traffic</div></div></div>
+<div style="display: flex; align-items: center; gap: 14px"><svg viewBox="0 0 150 26" style="width: 150px; height: 26px; flex: none" aria-hidden="true"><path d="M4 20C50 20 90 6 142 6" style="fill: none; stroke: rgba(140,155,200,.22); stroke-width: 1"></path></svg><div><b>Unrelated, dimmed</b><div style="color: #7f8cab; font-size: 11.5px">Kept for context, can be hidden</div></div></div>
+<div style="display: flex; align-items: center; gap: 14px"><svg viewBox="0 0 150 26" style="width: 150px; height: 26px; flex: none" aria-hidden="true"><path d="M4 13H146" style="fill: none; stroke: rgba(169,200,255,.4); stroke-width: 1; stroke-dasharray: 3 5"></path></svg><div><b>Containment spoke</b><div style="color: #7f8cab; font-size: 11.5px">Parent to child inside a node, undirected</div></div></div>
+</div>
+</div>
+
+<div style="border: 1px solid #1e2640; border-radius: 14px; background: #090d17; padding: 20px; flex: 1">
+<div style="font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: #7f8cab; margin-bottom: 12px">Motion</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 18px; font-size: 12px">
+<div><b>Focus</b><div style="color: #a7b1ca">650 ms ease-in-out, camera reframes without changing angle</div></div>
+<div><b>Enter node</b><div style="color: #a7b1ca">620 ms approach, shell opens, 780 ms settle</div></div>
+<div><b>Layout change</b><div style="color: #a7b1ca">720 ms, nodes travel to their grouped positions</div></div>
+<div><b>Reduced motion</b><div style="color: #a7b1ca">Instant cuts, no particles, hierarchy unchanged</div></div>
+</div>
+</div>
+</div>
+
+</div><div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px 28px">
+
+<div><div class="cap">Initial loading</div>
+<div class="tile dots">
+<div class="sk" style="left: 30px; top: 120px; width: 110px; height: 34px"></div>
+<div class="sk" style="left: 180px; top: 60px; width: 110px; height: 34px; opacity: .8"></div>
+<div class="sk" style="left: 180px; top: 170px; width: 110px; height: 34px; opacity: .8"></div>
+<div class="sk" style="left: 320px; top: 110px; width: 90px; height: 34px; opacity: .55"></div>
+<svg viewBox="0 0 430 300" style="position: absolute; inset: 0; width: 100%; height: 100%" aria-hidden="true"><path d="M140 137C160 137 160 77 180 77M140 137C160 137 160 187 180 187M290 77C305 77 305 127 320 127" style="fill: none; stroke: #2b3558; stroke-width: 1; stroke-dasharray: 3 4"></path></svg>
+<div class="pn" style="position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); padding: 10px 16px; white-space: nowrap; display: flex; align-items: center; gap: 12px"><span style="width: 120px; height: 4px; border-radius: 2px; background: #1e2640; position: relative; overflow: hidden"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: 62%; background: #5fe1ff"></span></span><span>Resolving topology · <span style="font-family: 'Geist Mono', monospace">14 of 23</span> resources</span></div>
+</div></div>
+
+<div><div class="cap">No search results</div>
+<div class="tile" style="display: grid; place-items: center; background: rgba(3,5,10,.6)">
+<div class="pn" style="width: 360px">
+<div style="padding: 12px 14px; border-bottom: 1px solid #1e2640; display: flex; justify-content: space-between"><span>checkout-v2</span><span style="font-family: 'Geist Mono', monospace; font-size: 10.5px; color: #7f8cab; border: 1px solid #2b3558; border-radius: 5px; padding: 1px 6px">esc</span></div>
+<div style="padding: 26px 18px; text-align: center"><b>No resources match “checkout-v2”</b><div style="color: #a7b1ca; font-size: 12px; margin-top: 4px">Try a service name, a type such as “topic”, or an owning team.</div></div>
+</div>
+</div></div>
+
+<div><div class="cap">Critical node selected</div>
+<div class="tile" style="padding: 18px">
+<div class="pn" style="padding: 14px; height: 100%; box-sizing: border-box">
+<div style="display: flex; gap: 11px; align-items: center"><span style="width: 38px; height: 38px; border-radius: 10px; background: #151b2d; display: grid; place-items: center; font-size: 22px"><span class="sh sv"></span></span><div><div style="font-size: 15px; font-weight: 600">Notification Service</div><div style="font-family: 'Geist Mono', monospace; font-size: 11px; color: #7f8cab">Service · notification-service</div></div></div>
+<div style="display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 8px 10px; border-radius: 9px; background: #151b2d; border: 3px double rgba(255,123,123,.75)"><span class="st crit">×</span><b>Critical</b><span style="color: #a7b1ca; font-size: 12px">2 of 4 instances unavailable</span></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px">
+<div style="border: 1px solid #1e2640; border-radius: 10px; padding: 8px 10px"><div style="font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: #7f8cab">Contains</div><div style="font-size: 18px; font-weight: 600">4</div></div>
+<div style="border: 1px solid #1e2640; border-radius: 10px; padding: 8px 10px"><div style="font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: #7f8cab">Incoming</div><div style="font-size: 18px; font-weight: 600">2</div></div>
+<div style="border: 1px solid #1e2640; border-radius: 10px; padding: 8px 10px"><div style="font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: #7f8cab">Outgoing</div><div style="font-size: 18px; font-weight: 600">1</div></div>
+</div>
+<div style="display: flex; gap: 8px; margin-top: 12px"><button class="bt bp">Explore inside</button><button class="bt">Open in 2D</button></div>
+</div>
+</div></div>
+
+<div><div class="cap">Resource with no children</div>
+<div class="tile" style="padding: 18px; background: #04060b">
+<div class="pn" style="padding: 14px">
+<div style="display: flex; gap: 11px; align-items: center"><span style="width: 38px; height: 38px; border-radius: 10px; background: #151b2d; display: grid; place-items: center; font-size: 22px"><span class="sh ca"></span></span><div><div style="font-size: 15px; font-weight: 600">Redis Cache</div><div style="font-family: 'Geist Mono', monospace; font-size: 11px; color: #7f8cab">Redis Cache · redis-cache</div></div></div>
+<div style="display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 8px 10px; border-radius: 9px; background: #151b2d"><span class="st ok">✓</span><b>Healthy</b><span style="color: #a7b1ca; font-size: 12px">All checks passing</span></div>
+<div style="margin-top: 12px; border: 1px dashed #2b3558; border-radius: 9px; padding: 10px 12px; color: #a7b1ca; font-size: 12px">Leaf resource — no modeled children, so there is nothing to explore inside. Its 2 incoming relationships stay visible in the galaxy.</div>
+<div style="display: flex; gap: 8px; margin-top: 12px"><button class="bt">Open in 2D</button></div>
+</div>
+</div></div>
+
+<div><div class="cap">Isolated resource</div>
+<div class="tile dots">
+<div style="position: absolute; left: 127px; top: 96px; width: 176px; height: 46px; border-radius: 10px; border: 1px solid #5fe1ff; box-shadow: 0 0 0 1px #5fe1ff, 0 0 26px rgba(95,225,255,.28); background: #121c33; display: flex; align-items: center; gap: 8px; padding: 0 10px 0 6px; box-sizing: border-box"><span style="width: 30px; display: grid; place-items: center; font-size: 22px"><span class="sh sv"></span></span><span style="flex: 1; min-width: 0"><span style="display: block; font-size: 12.5px; font-weight: 600">Legacy Report Cron</span><span style="display: block; font-family: 'Geist Mono', monospace; font-size: 10px; color: #7f8cab">Service · commerce</span></span><span class="st ok">✓</span></div>
+<div style="position: absolute; left: 97px; top: 76px; width: 236px; height: 86px; border-radius: 50px; border: 1px dashed #2b3558"></div>
+<div style="position: absolute; left: 0; right: 0; top: 184px; text-align: center; padding: 0 40px"><b>Isolated</b><div style="color: #a7b1ca; font-size: 12px; margin-top: 2px">No relationships are modeled for this resource. It may be unused, or its dependencies are not yet discovered.</div></div>
+</div></div>
+
+<div><div class="cap">Large, dense topology</div>
+<div class="tile dots">
+<svg viewBox="0 0 430 300" style="position: absolute; inset: 0; width: 100%; height: 100%" aria-hidden="true"><path d="M92 120C150 120 150 78 204 78M92 120C150 120 150 190 204 190M254 78C300 78 300 130 336 130M254 190C300 190 300 130 336 130" style="fill: none; stroke: rgba(150,190,255,.5); stroke-width: 1"></path></svg>
+<div style="position: absolute; left: 34px; top: 92px; width: 58px; height: 58px; border-radius: 50%; border: 1px solid #7d8bff; background: rgba(125,139,255,.12); display: grid; place-items: center; font-weight: 600">38</div>
+<div style="position: absolute; left: 198px; top: 44px; width: 68px; height: 68px; border-radius: 50%; border: 1px solid #7d8bff; background: rgba(125,139,255,.12); display: grid; place-items: center; font-weight: 600">61</div>
+<div style="position: absolute; left: 204px; top: 165px; width: 50px; height: 50px; border-radius: 50%; border: 1px solid #7d8bff; background: rgba(125,139,255,.12); display: grid; place-items: center; font-weight: 600">24</div>
+<div style="position: absolute; left: 336px; top: 106px; width: 48px; height: 48px; border-radius: 50%; border: 1px solid #7d8bff; background: rgba(125,139,255,.12); display: grid; place-items: center; font-weight: 600">19</div>
+<div class="pn" style="position: absolute; left: 16px; right: 16px; bottom: 16px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px"><span><b>142 resources</b> collapsed into 4 domains to stay readable</span><button class="bt" style="height: 28px">Expand a domain</button></div>
+</div></div>
+
+<div><div class="cap">Empty registry</div>
+<div class="tile" style="display: flex; flex-direction: column">
+<div style="height: 34px; background: #0e1321; border-bottom: 1px solid #1e2640; display: flex; align-items: center; gap: 60px; padding: 0 14px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #7f8cab"><span>Resource</span><span>Type</span><span>Owner</span><span>Health</span></div>
+<div style="flex: 1; display: grid; place-items: center; text-align: center; padding: 0 36px"><div><div style="font-size: 15px; font-weight: 600">Nothing registered in staging yet</div><div style="color: #a7b1ca; margin: 6px 0 14px">Resources appear here once a discovery source is connected to this environment.</div><button class="bt">Switch to production</button></div></div>
+</div></div>
+
+<div><div class="cap">3D rendering unavailable</div>
+<div class="tile" style="display: grid; place-items: center; background: #04060b">
+<div class="pn" style="width: 350px; padding: 20px 22px; text-align: center">
+<span style="font-size: 30px"><span class="sh cl"></span></span>
+<div style="font-size: 15px; font-weight: 600; margin-top: 8px">The galaxy can’t be drawn on this device</div>
+<div style="color: #a7b1ca; margin: 6px 0 14px; font-size: 12px">Hardware-accelerated graphics are turned off or unsupported. Your selection and filters carry over to the 2D workbench.</div>
+<div style="display: flex; gap: 8px; justify-content: center"><button class="bt bp">Open in 2D workbench</button><button class="bt">Try again</button></div>
+</div>
+</div></div>
+
+<div><div class="cap">Reduced-motion mode</div>
+<div class="tile" style="padding: 18px; background: #04060b">
+<div class="pn" style="padding: 10px 12px; display: flex; align-items: center; gap: 8px; font-size: 12px"><span style="color: #7f8cab">Global Galaxy</span><span style="color: #7f8cab">/</span><span style="color: #7f8cab">payments-prod</span><span style="color: #7f8cab">/</span><b>production</b></div>
+<div style="display: flex; flex-direction: column; gap: 9px; margin-top: 14px; font-size: 12.5px">
+<div style="display: flex; gap: 10px"><span class="st ok">✓</span><span>Entering and leaving a node cuts directly to the new scope</span></div>
+<div style="display: flex; gap: 10px"><span class="st ok">✓</span><span>Breadcrumb, level label and Back to parent carry the hierarchy</span></div>
+<div style="display: flex; gap: 10px"><span class="st ok">✓</span><span>Direction particles and halo pulses are off; arrows remain</span></div>
+<div style="display: flex; gap: 10px"><span class="st ok">✓</span><span>Every action is reachable from search, the inspector and Tab</span></div>
+</div>
+<div style="position: absolute; left: 18px; bottom: 18px; font-family: 'Geist Mono', monospace; font-size: 11px; color: #7f8cab">Follows the system setting; toggle in the header</div>
+</div></div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
