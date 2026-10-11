@@ -14,6 +14,7 @@ Use this file to navigate the project without loading every document into contex
 | Add 3D galaxy view | `3D_GALAXY_EXPERIENCE.md`, `PRODUCT_SPEC.md`, `ARCHITECTURE.md` | Milestone 4; do not block 2D delivery |
 | Prepare release or report status | Relevant milestone | `AGENT_WORKFLOW.md`, Milestone 5 |
 | Change future backend/API assumptions | `API_CONTRACT.md` | `DECISIONS.md` |
+| Styling (Tailwind) or the section pages | `PRODUCT_SPEC.md` Revision 5 | Milestone 6, ADR-013 |
 | Set up, test, scale, or extend the app | `DEVELOPER_GUIDE.md` | `ARCHITECTURE.md` milestone notes, `BENCHMARKS.md` |
 | Backend/API work | `API_CONTRACT.md` | `api/openapi.json`, `schemas/` |
 | Positioning or competitor questions | `POSITIONING.md` | `PRODUCT_SPEC.md` §I |

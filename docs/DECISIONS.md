@@ -142,3 +142,11 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 - **Consequences:** light theme reads slightly darker than the mock; the design source should be updated to match. Competitor cells marked "?" must be verified before external use.
 - **Verification:** `src/styles/contrast.test.ts`, `src/test/a11y.test.tsx`, `src/test/keyboard.test.tsx`, `src/test/frameLoop.test.ts`, `scripts/audit-a11y.mjs`, `src/contract/contract.test.ts`.
 
+## ADR-013 — Tailwind CSS replaces CSS Modules (2026-10-11, Milestone 6)
+- **Status:** Accepted (product owner direction); supersedes the styling part of ADR-007 ("CSS variables + CSS Modules (no … utility framework)").
+- **Context:** Product requirement (PRODUCT_SPEC Revision 5 §J): use Tailwind. ADR-007 had rejected a utility framework.
+- **Decision:** Tailwind CSS v4 via `@tailwindcss/vite`. `tokens.css` stays the single source of values; Tailwind's theme maps them with `@theme inline` and the default palette is disabled (`--color-*: initial`), so utilities can only use tokens that pass `contrast.test.ts`. Full migration: CSS Modules are removed; repeated patterns become shared components (`src/shared/ui`); glyph artwork and third-party overrides (React Flow, 3D labels) live in layered CSS in `src/styles`.
+- **Alternatives:** keep CSS Modules (rejected by product owner); adopt Tailwind only for new UI (rejected: two styling systems).
+- **Consequences:** class-name-based test hooks are replaced by data attributes (e.g. `data-emphasis`); the design-token contract is unchanged.
+- **Verification:** no `*.module.css` remains; contrast, axe (jsdom + browser), keyboard tests pass; screenshot review in both themes.
+

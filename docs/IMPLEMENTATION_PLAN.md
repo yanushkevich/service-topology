@@ -179,6 +179,9 @@ Update only from actual repository state and checks.
 - Product differentiation is described as a hypothesis and validated through competitor/workflow comparison rather than unsupported claims.
 - Setup, architecture, scale targets, and known limitations are documented.
 
+## Milestone 6 — Tailwind migration and complete section pages (Revision 5)
+**Deliver:** Tailwind CSS v4 over the existing tokens with all CSS Modules migrated; Overview, Dependencies, Infrastructure, and Settings pages; local preferences. Acceptance criteria: `docs/milestones/MILESTONE_06_TAILWIND_SECTIONS.md`.
+
 ## Status tracking
 Track both milestones and original phases. A milestone is not complete until its acceptance criteria are checked against the actual implementation. Do not claim performance or accessibility criteria pass without measurement or test evidence.
 
@@ -189,6 +192,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 3 | Implemented (2026-10-11) | See the Milestone 3 closeout below. |
 | 4 | Implemented (2026-10-11) | See the Milestone 4 closeout below. |
 | 5 | Implemented (2026-10-11) | See the Milestone 5 closeout below. |
+| 6 | In progress (2026-10-11) | Tailwind migration and section pages (PRODUCT_SPEC Revision 5, `milestones/MILESTONE_06_TAILWIND_SECTIONS.md`). |
 
 ### Milestone 1 closeout (2026-10-11)
 Evidence: `npm run check` (typecheck, lint, 50 tests, build) passes. Visual check via headless Chrome at 1440×900 (dark/light) and 700×900.

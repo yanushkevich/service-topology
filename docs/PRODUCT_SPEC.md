@@ -222,3 +222,49 @@ This is a positioning hypothesis, not a proven market advantage. Before treating
 ## E. 3D galaxy interaction contract
 
 The galaxy view is more than a rotatable overview: it supports hierarchical exploration into modeled service/resource contents, a clear breadcrumb path, and return to overview. See `docs/3D_GALAXY_EXPERIENCE.md` for the complete specification and test checklist. These requirements refine the 3D view without changing the milestone order or making 3D a prerequisite for 2D.
+
+---
+
+# Revision 5 Addendum — Tailwind CSS and complete section pages (2026-10-11)
+
+**Source:** product owner direction after Milestone 5 review. Authoritative where it conflicts with earlier text (it supersedes the "CSS variables" styling expectation in §10 and ADR-007's rejection of a utility framework). Delivery: Milestone 6 (`docs/milestones/MILESTONE_06_TAILWIND_SECTIONS.md`).
+
+## J. Styling: Tailwind CSS
+- The UI is styled with **Tailwind CSS (v4)**. The existing design tokens (`src/styles/tokens.css`: surfaces, text, accents, status, edges, radii, type scale, light/dark) remain the single source of values and are exposed as the Tailwind theme. Tailwind's default color palette is disabled, so only tokens that passed the WCAG contrast test can be used.
+- All components are migrated from CSS Modules to Tailwind utilities. Repeated patterns (buttons, chips, segmented controls, floating panels, cards) become shared components. Bespoke artwork that utilities cannot express (resource glyphs, status shapes) and third-party overrides (React Flow, 3D labels) live in Tailwind `@layer components` / base CSS, not CSS Modules.
+- No visual or accessibility regression: contrast, axe, keyboard, and reduced-motion checks must still pass, and both themes must render as before.
+
+## K. Section pages (no placeholders)
+Every navigation section is a working page built on the canonical data and shared state (environment, filters, selection, simulation, history mode). Placeholders are no longer acceptable.
+
+### K.1 Overview
+- Environment summary for the selected environment: counts of service instances, resources, relationships, and entities by health; providers present; data source and simulation status (labeled simulated).
+- "Needs attention": unhealthy instances/resources (worst first), including simulated impacts with their cause; each opens the entity (selection + inspector) and offers "Show on map".
+- Provider breakdown (entities and unhealthy per provider) and recent simulated events.
+- Quick actions: open the 2D map, open the 3D galaxy, open the registry filtered to unhealthy.
+- Honors history mode (`asOf`): shows the snapshot and says so.
+
+### K.2 Dependencies
+- Pick an entity (defaults to the shared selection; searchable picker).
+- Upstream (what it depends on, transitively) and downstream (what depends on it) with hop count, path, and protocol per hop; direct vs. transitive clearly marked.
+- Failure impact preview: "if this entity became unavailable", the entities affected per the propagation rules, each with rule and cause. A read-only what-if that does not change simulation state.
+- Actions: select, show on map (neighborhood), simulate the failure (explicit, labeled simulated).
+- Keyboard-operable, with empty states (no selection, no dependencies, leaf).
+
+### K.3 Infrastructure
+- Containment hierarchy browser: provider → account/subscription/project/datacenter → region → cluster → namespace/broker → hosted instances and resources, from explicit `parentResourceId` (never inferred).
+- Per node: type, environment (explicit or inherited), health roll-up (worst of descendants) with counts, and contained-entity counts.
+- Expand/collapse (keyboard tree semantics), search and shared filters, environment scoping (environment-independent resources shown separately).
+- Select → inspector; "Show grouped on map" (grouped infrastructure mode) and "Explore in 3D".
+
+### K.4 Settings
+- Appearance: theme (system, dark, light), persisted; motion preference (follow system or always reduce), which overrides animations app-wide.
+- 2D/3D defaults: default view, 3D label density, simulated-traffic particles on/off.
+- Simulation: default speed; reset simulation.
+- Saved layouts: list and delete (same repository as the map).
+- Data: current data source label (mock), switch between the mock inventory and generated datasets, link to the API contract; reset all view state.
+- Preferences are stored locally behind an interface and are never treated as shared/canonical state.
+
+## L. Acceptance additions
+- No placeholder pages remain; each section page has integration tests and an axe audit case, and is in the real-browser audit.
+- The Tailwind theme exposes only token colors; the contrast test continues to gate the build.
