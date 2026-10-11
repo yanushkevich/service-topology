@@ -73,3 +73,12 @@ describe('URL state codec', () => {
     expect(decodeUrlState('v=1&sel=service-instance:ghost').state.selection).toEqual({ kind: 'service-instance', id: 'ghost' });
   });
 });
+
+describe('startup parameters', () => {
+  it('keeps source and dataset when the view state is rewritten', async () => {
+    const { withStartupParams } = await import('./useUrlStateSync');
+    expect(withStartupParams('v=1&env=production', '?source=api&q=x')).toBe('v=1&env=production&source=api');
+    expect(withStartupParams('v=1', '?dataset=scale-250')).toBe('v=1&dataset=scale-250');
+    expect(withStartupParams('v=1', '?other=1')).toBe('v=1');
+  });
+});

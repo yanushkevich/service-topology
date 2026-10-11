@@ -82,6 +82,7 @@ async function check(name, method, path, url, { status, body } = {}) {
 }
 
 const stamp = Date.now();
+await check('meta', 'get', '/meta', '/meta', { status: 200 });
 const topology = await check('topology', 'get', '/topology', '/topology', { status: 200 });
 await check('environments', 'get', '/environments', '/environments', { status: 200 });
 await check('topology for one environment', 'get', '/topology', '/topology?environmentId=staging', { status: 200 });

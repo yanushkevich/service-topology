@@ -35,6 +35,18 @@ func (d Deps) apiRoutes(mux *http.ServeMux) {
 		})
 	}
 	s := d.API
+	h("GET /api/v1/meta", func(w http.ResponseWriter, r *http.Request) error {
+		mode := d.AuthMode
+		if mode == "" {
+			mode = "none"
+		}
+		meta, err := s.Meta(r.Context(), d.SchemaVersion, mode)
+		if err != nil {
+			return err
+		}
+		writeJSON(w, http.StatusOK, meta)
+		return nil
+	})
 	h("GET /api/v1/environments", func(w http.ResponseWriter, r *http.Request) error {
 		envs, err := s.Environments(r.Context())
 		if err != nil {

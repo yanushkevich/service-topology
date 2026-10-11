@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,6 +25,13 @@ type Deps struct {
 	CheckTimeout time.Duration
 	// API serves /api/v1; nil (no database configured) makes every API route return 503.
 	API *application.Service
+	// Security configures authentication, rate limiting, and CORS (zero value: none, as AUTH_MODE=none).
+	Security Security
+	// Metrics, if set, records request counts and durations by route pattern.
+	Metrics *observability.Metrics
+	// SchemaVersion and AuthMode are reported by GET /api/v1/meta.
+	SchemaVersion int
+	AuthMode      string
 }
 
 // NewHandler returns the HTTP handler with middleware applied.
@@ -96,22 +104,53 @@ func (s *statusRecorder) WriteHeader(code int) {
 	s.ResponseWriter.WriteHeader(code)
 }
 
-// middleware assigns a request ID, recovers panics as 500 problems, and logs each request.
+// middleware assigns a request ID, sets security headers, recovers panics as 500 problems, logs and
+// measures each request, and applies CORS, rate limiting, and authentication (in that order).
 func (d Deps) middleware(next http.Handler) http.Handler {
+	lim := newLimiter(d.Security.RateLimitRPS, d.Security.RateLimitBurst)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		id := observability.RequestID(r.Header.Get("X-Request-ID"))
 		r = r.WithContext(observability.WithRequestID(r.Context(), id))
 		w.Header().Set("X-Request-ID", id)
+		securityHeaders(w)
 		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+		principal := ""
 		defer func() {
 			if v := recover(); v != nil {
 				d.Logger.ErrorContext(r.Context(), "panic", "requestId", id, "panic", v)
 				WriteProblem(rec, r, Problem{Title: "Internal server error", Status: http.StatusInternalServerError})
 			}
+			route := r.Pattern
+			if route == "" {
+				route = "unmatched"
+			}
 			d.Logger.InfoContext(r.Context(), "request",
-				"requestId", id, "method", r.Method, "path", r.URL.Path, "status", rec.status, "durationMs", time.Since(start).Milliseconds())
+				"requestId", id, "method", r.Method, "path", r.URL.Path, "route", route, "status", rec.status, "principal", principal,
+				"durationMs", time.Since(start).Milliseconds())
+			if d.Metrics != nil {
+				status := strconv.Itoa(rec.status)
+				d.Metrics.Inc("http_requests_total", "HTTP requests by route pattern, method, and status.", "route", route, "method", r.Method, "status", status)
+				d.Metrics.Observe("http_request_duration_seconds", "HTTP request duration by route pattern.", time.Since(start), "route", route)
+			}
 		}()
+		if d.Security.cors(rec, r) {
+			return
+		}
+		if lim != nil && !isOperational(r.URL.Path) {
+			if ok, wait := lim.allow(d.Security.clientKey(r), time.Now()); !ok {
+				tooManyRequests(rec, r, wait)
+				return
+			}
+		}
+		authed := d.Security.authenticate(rec, r)
+		if authed == nil {
+			return // problem written; keep r for the deferred log line
+		}
+		r = authed
+		if p, ok := PrincipalFrom(r.Context()); ok {
+			principal = p.Name
+		}
 		next.ServeHTTP(rec, r)
 	})
 }

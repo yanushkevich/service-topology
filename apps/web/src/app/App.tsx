@@ -3,17 +3,20 @@ import { RouterProvider } from 'react-router/dom';
 import { RepositoryProvider } from '../data/TopologyDataProvider';
 import { selectRepository } from '../data/selectRepository';
 import { SnapshotRepositoryContext } from '../data/snapshots/snapshotContext';
+import { SavedLayoutRepositoryContext } from '../data/savedLayouts/savedLayoutContext';
 import { routes } from './routes';
 
 const router = createBrowserRouter(routes);
-// Chosen once at startup; the URL-state sync later rewrites the query string without `dataset`.
+// Chosen once at startup from `source`/`dataset`, which the URL-state sync keeps in the URL.
 const repositories = selectRepository(window.location.search);
 
 export function App() {
   return (
     <RepositoryProvider repository={repositories.topology}>
       <SnapshotRepositoryContext.Provider value={repositories.snapshots}>
-        <RouterProvider router={router} />
+        <SavedLayoutRepositoryContext.Provider value={repositories.layouts}>
+          <RouterProvider router={router} />
+        </SavedLayoutRepositoryContext.Provider>
       </SnapshotRepositoryContext.Provider>
     </RepositoryProvider>
   );

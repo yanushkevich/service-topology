@@ -202,7 +202,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | B3 (backend) | Implemented (2026-10-11) | REST API for contract v1, registry parity, contract check; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B4 (backend) | Implemented (2026-10-11) | Bounded traversal, impact, event types, revision cache, benchmarks; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B5 (backend) | Implemented (2026-10-11) | Isolated simulation runs (ADR-017), events/telemetry with provenance, snapshot diff, retention; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
-| B6 (backend) | Not started | Security, hardening, frontend integration (`docs/backend/IMPLEMENTATION_PLAN.md`). |
+| B6 (backend) | Implemented (2026-10-11) | Auth (ADR-018), rate limits, CORS, metrics, backup/restore runbook, frontend HTTP integration (`?source=api`); closeout and open production decisions in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 
 ### Milestone 1 closeout (2026-10-11)
 Evidence: `npm run check` (typecheck, lint, 50 tests, build) passes. Visual check via headless Chrome at 1440×900 (dark/light) and 700×900.

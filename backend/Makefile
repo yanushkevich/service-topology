@@ -11,7 +11,7 @@ export ARCADEDB_DATABASE ?= topology
 export ARCADEDB_USERNAME ?= root
 export ARCADEDB_PASSWORD_FILE ?= $(CURDIR)/secrets/arcadedb_root_password.txt
 
-.PHONY: check fmt fmt-check vet test test-integration contract-check bench run seed validate schema-check dev-up dev-down reset-local
+.PHONY: check fmt fmt-check vet test test-integration contract-check bench backup restore vulncheck token run seed validate schema-check dev-up dev-down reset-local
 
 ## check: formatting, vet, and unit/conformance tests (the B1 quality gate)
 check: fmt-check vet test
@@ -40,7 +40,23 @@ contract-check:
 
 ## bench: API latency against ArcadeDB on a generated dataset (temporary database); see docs/BENCHMARKS.md
 bench:
-	$(GO) run ./cmd/apibench -dataset inventory-1000
+	$(GO) run ./cmd/apibench -dataset inventory-1000 $(BENCHFLAGS)
+
+## backup: online backup of $(ARCADEDB_DATABASE) into backups/ (see docs/backend/RUNBOOK.md)
+backup:
+	./scripts/backup.sh
+
+## restore: offline restore into a NEW database; make restore BACKUP=backups/x.zip TARGET=topology_restored [SOURCE=topology]
+restore:
+	GO=$(GO) ./scripts/restore.sh "$(BACKUP)" "$(TARGET)" "$(SOURCE)"
+
+## vulncheck: known-vulnerability scan of the Go code and dependencies (pinned govulncheck)
+vulncheck:
+	$(GO) run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
+
+## token: create an API token (prints it once); make token NAME=ci ROLE=editor
+token:
+	$(GO) run ./cmd/token -name "$(NAME)" -role "$(or $(ROLE),reader)"
 
 ## run: start the API on HTTP_ADDR (default :8080) against the local ArcadeDB
 run:

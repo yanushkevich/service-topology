@@ -4,7 +4,7 @@
     "title": "Service Topology API",
     "version": "1.0.0-draft",
     "summary": "Illustrative contract for the future backend. No server implements it yet.",
-    "description": "Draft contract (see docs/API_CONTRACT.md). Each operation lists the frontend repository method it backs in `x-repository`. Payload schemas are the published JSON Schemas in docs/schemas; contract tests validate the mock data and the examples here against them. Authentication, tenancy, rate limits and retention are open decisions and intentionally not specified."
+    "description": "Draft contract (see docs/API_CONTRACT.md). Each operation lists the frontend repository method it backs in `x-repository`. Payload schemas are the published JSON Schemas in docs/schemas; contract tests validate the mock data and the examples here against them. Authentication, tenancy, rate limits and retention are open decisions and intentionally not specified. Every operation may also return 401/403 (authentication, ADR-018), 429 with Retry-After (rate limit), and 503 (database unavailable) as problem details."
   },
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "servers": [
@@ -1375,6 +1375,28 @@
           }
         }
       }
+    },
+    "/meta": {
+      "get": {
+        "operationId": "getMeta",
+        "x-repository": "HTTP TopologyRepository: sourceLabel / isMock",
+        "summary": "API version, stored-topology provenance (for honest data-source labels), auth mode, and limits.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiMeta"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2361,6 +2383,75 @@
             }
           }
         }
+      },
+      "ApiMeta": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "apiVersion",
+          "schemaVersion",
+          "topology",
+          "auth",
+          "limits"
+        ],
+        "properties": {
+          "apiVersion": {
+            "const": "v1"
+          },
+          "schemaVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "topology": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "required": [
+              "revision",
+              "recordedAt",
+              "sourceType",
+              "isMock"
+            ],
+            "properties": {
+              "revision": {
+                "type": "string"
+              },
+              "recordedAt": {
+                "type": "string"
+              },
+              "sourceType": {
+                "type": "string",
+                "description": "Where the stored topology came from, e.g. \"fixture\". Only \"observed\" data is not mock."
+              },
+              "isMock": {
+                "type": "boolean"
+              }
+            }
+          },
+          "auth": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "mode"
+            ],
+            "properties": {
+              "mode": {
+                "enum": [
+                  "none",
+                  "token"
+                ]
+              }
+            }
+          },
+          "limits": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          }
+        }
       }
     },
     "responses": {
@@ -2384,6 +2475,19 @@
           }
         }
       }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Required on /api/v1 when the server runs with AUTH_MODE=token (ADR-018): reader tokens may call GET operations, editor tokens all operations. Missing/invalid token: 401; read-only token on a write: 403. With AUTH_MODE=none the API must only listen on loopback or behind an authenticating proxy."
+      }
     }
-  }
+  },
+  "security": [
+    {},
+    {
+      "bearerAuth": []
+    }
+  ]
 }

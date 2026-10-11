@@ -25,6 +25,16 @@ type Config struct {
 	// the newest SimulationMaxRuns, are deleted after each new run.
 	SimulationRetention time.Duration
 	SimulationMaxRuns   int
+	// Security (B6, ADR-018).
+	AuthMode             string // "none" or "token"
+	AuthTokensFile       string
+	AllowUnauthenticated bool // permit AuthMode none on a non-loopback HTTP_ADDR
+	RateLimitRPS         float64
+	RateLimitBurst       int
+	TrustProxyHeaders    bool
+	CORSAllowedOrigins   []string
+	MetricsAddr          string // "" disables /metrics
+	TraversalSource      string // "memory" (default) or "database" (ADR-DB-003)
 	// ArcadeDB is nil when ARCADEDB_BASE_URL is unset (B1 runs without a database).
 	ArcadeDB *ArcadeDB
 }
@@ -39,6 +49,19 @@ type ArcadeDB struct {
 	RequestTimeout time.Duration
 }
 
+// IsLoopback reports whether a listen address only accepts local connections.
+func IsLoopback(addr string) bool {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return false
+	}
+	if host == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
 // LogValue keeps secrets and file paths out of logs.
 func (c Config) LogValue() slog.Value {
 	attrs := []slog.Attr{
@@ -48,6 +71,10 @@ func (c Config) LogValue() slog.Value {
 		slog.String("seedMode", c.SeedMode),
 		slog.String("simulationRetention", c.SimulationRetention.String()),
 		slog.Int("simulationMaxRuns", c.SimulationMaxRuns),
+		slog.String("authMode", c.AuthMode),
+		slog.Float64("rateLimitRPS", c.RateLimitRPS),
+		slog.Any("corsAllowedOrigins", c.CORSAllowedOrigins),
+		slog.Bool("metrics", c.MetricsAddr != ""),
 	}
 	if c.ArcadeDB != nil {
 		attrs = append(attrs, slog.Group("arcadedb",
@@ -90,7 +117,7 @@ func Load(getenv func(string) string) (Config, error) {
 	}
 
 	cfg := Config{
-		HTTPAddr:            get("HTTP_ADDR", ":8080"),
+		HTTPAddr:            get("HTTP_ADDR", "127.0.0.1:8080"),
 		ShutdownTimeout:     duration("SHUTDOWN_TIMEOUT", "10s"),
 		LogFormat:           oneOf("LOG_FORMAT", "json", "json", "text"),
 		SeedMode:            oneOf("SEED_MODE", "demo", "demo", "none"),
@@ -104,6 +131,43 @@ func Load(getenv func(string) string) (Config, error) {
 	}
 	if _, port, err := net.SplitHostPort(cfg.HTTPAddr); err != nil || port == "" {
 		errs = append(errs, fmt.Errorf("HTTP_ADDR: %q must be host:port or :port", cfg.HTTPAddr))
+	}
+
+	cfg.AuthMode = oneOf("AUTH_MODE", "none", "none", "token")
+	cfg.AuthTokensFile = get("AUTH_TOKENS_FILE", "")
+	cfg.AllowUnauthenticated = get("ALLOW_UNAUTHENTICATED", "false") == "true"
+	cfg.TrustProxyHeaders = get("TRUST_PROXY_HEADERS", "false") == "true"
+	if cfg.AuthMode == "token" && cfg.AuthTokensFile == "" {
+		errs = append(errs, errors.New("AUTH_TOKENS_FILE: required when AUTH_MODE=token"))
+	}
+	if cfg.AuthMode == "none" && !cfg.AllowUnauthenticated && !IsLoopback(cfg.HTTPAddr) {
+		errs = append(errs, fmt.Errorf("HTTP_ADDR: %q is reachable from other machines but AUTH_MODE=none; use AUTH_MODE=token, a loopback address, or ALLOW_UNAUTHENTICATED=true behind an authenticating proxy", cfg.HTTPAddr))
+	}
+	if rps, err := strconv.ParseFloat(get("RATE_LIMIT_RPS", "50"), 64); err != nil || rps < 0 {
+		errs = append(errs, errors.New("RATE_LIMIT_RPS: must be a non-negative number (0 disables rate limiting)"))
+	} else {
+		cfg.RateLimitRPS = rps
+	}
+	if burst, err := strconv.Atoi(get("RATE_LIMIT_BURST", "100")); err != nil || burst < 1 {
+		errs = append(errs, errors.New("RATE_LIMIT_BURST: must be a positive integer"))
+	} else {
+		cfg.RateLimitBurst = burst
+	}
+	for _, o := range strings.Split(get("CORS_ALLOWED_ORIGINS", ""), ",") {
+		o = strings.TrimSpace(o)
+		if o == "" {
+			continue
+		}
+		if u, err := url.Parse(o); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.Path != "" || o == "*" {
+			errs = append(errs, fmt.Errorf("CORS_ALLOWED_ORIGINS: %q must be an origin like https://app.example.com (no wildcard)", o))
+			continue
+		}
+		cfg.CORSAllowedOrigins = append(cfg.CORSAllowedOrigins, o)
+	}
+	cfg.TraversalSource = oneOf("TRAVERSAL_SOURCE", "memory", "memory", "database")
+	cfg.MetricsAddr = get("METRICS_ADDR", "")
+	if cfg.MetricsAddr != "" && !IsLoopback(cfg.MetricsAddr) && !cfg.AllowUnauthenticated {
+		errs = append(errs, fmt.Errorf("METRICS_ADDR: %q must be a loopback address (metrics are unauthenticated)", cfg.MetricsAddr))
 	}
 	if err := cfg.LogLevel.UnmarshalText([]byte(get("LOG_LEVEL", "info"))); err != nil {
 		errs = append(errs, fmt.Errorf("LOG_LEVEL: %q must be debug, info, warn, or error", get("LOG_LEVEL", "info")))

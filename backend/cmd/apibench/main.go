@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"sync"
 	"time"
 
 	"servicetopology/backend/internal/adapters/arcadedb"
@@ -29,15 +30,17 @@ import (
 
 func main() {
 	dataset := flag.String("dataset", "inventory-1000", "fixtures/topology/<name>.v1.json")
-	n := flag.Int("n", 30, "timed requests per scenario (after 3 warm-ups)")
+	n := flag.Int("n", 30, "timed requests per scenario per client (after 3 warm-ups)")
+	traversal := flag.String("traversal", "memory", "memory or database (TRAVERSAL_SOURCE)")
+	c := flag.Int("c", 1, "concurrent clients")
 	flag.Parse()
-	if err := run(*dataset, *n); err != nil {
+	if err := run(*dataset, *n, *c, *traversal == "database"); err != nil {
 		fmt.Fprintln(os.Stderr, "apibench:", err)
 		os.Exit(1)
 	}
 }
 
-func run(dataset string, n int) error {
+func run(dataset string, n, clients int, traversalInDB bool) error {
 	ctx := context.Background()
 	cfg, err := config.Load(os.Getenv)
 	if err != nil {
@@ -71,7 +74,7 @@ func run(dataset string, n int) error {
 	loadTime := time.Since(start)
 
 	svc := &application.Service{TopologyRepo: arcadedb.NewTopologyRepository(c), SnapshotRepo: arcadedb.NewSnapshotRepository(c),
-		LayoutRepo: arcadedb.NewLayoutRepository(c), GraphRepo: arcadedb.NewGraphRepository(c)}
+		LayoutRepo: arcadedb.NewLayoutRepository(c), GraphRepo: arcadedb.NewGraphRepository(c), TraversalInDatabase: traversalInDB}
 	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Deps{Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), API: svc}))
 	defer srv.Close()
 
@@ -91,32 +94,56 @@ func run(dataset string, n int) error {
 		{"impact, unavailable (" + container + ")", "/api/v1/topology/impact?entityId=" + container},
 		{"event types (one environment)", "/api/v1/event-types?environmentId=" + env},
 	}
-	fmt.Println("| Request | p50 | p95 | max | response |")
-	fmt.Println("|---|---|---|---|---|")
+	fmt.Printf("%d concurrent client(s), %d timed requests each per scenario; traversal in %s\n\n", clients, n, map[bool]string{true: "database", false: "memory"}[traversalInDB])
+	fmt.Println("| Request | p50 | p95 | max | requests/s | response |")
+	fmt.Println("|---|---|---|---|---|---|")
+	httpClient := &http.Client{Transport: &http.Transport{MaxIdleConnsPerHost: clients * 2}}
 	for _, sc := range scenarios {
+		var mu sync.Mutex
 		var times []time.Duration
 		size := 0
-		for i := 0; i < n+3; i++ {
-			t0 := time.Now()
-			resp, err := http.Get(srv.URL + sc.path)
-			if err != nil {
-				return err
-			}
-			body, _ := io.ReadAll(resp.Body)
-			resp.Body.Close()
-			if resp.StatusCode != 200 {
-				return fmt.Errorf("%s: HTTP %d %s", sc.path, resp.StatusCode, body)
-			}
-			if i >= 3 {
-				times = append(times, time.Since(t0))
-			}
-			size = len(body)
+		var firstErr error
+		var wg sync.WaitGroup
+		wall := time.Now()
+		for w := 0; w < clients; w++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for i := 0; i < n+3; i++ {
+					t0 := time.Now()
+					resp, err := httpClient.Get(srv.URL + sc.path)
+					if err != nil {
+						mu.Lock()
+						firstErr = err
+						mu.Unlock()
+						return
+					}
+					body, _ := io.ReadAll(resp.Body)
+					resp.Body.Close()
+					d := time.Since(t0)
+					mu.Lock()
+					if resp.StatusCode != 200 && firstErr == nil {
+						firstErr = fmt.Errorf("%s: HTTP %d %s", sc.path, resp.StatusCode, body)
+					}
+					if i >= 3 {
+						times = append(times, d)
+					}
+					size = len(body)
+					mu.Unlock()
+				}
+			}()
+		}
+		wg.Wait()
+		elapsed := time.Since(wall)
+		if firstErr != nil {
+			return firstErr
 		}
 		sort.Slice(times, func(i, j int) bool { return times[i] < times[j] })
 		q := func(p float64) time.Duration {
 			return times[int(p*float64(len(times)-1))].Round(100 * time.Microsecond)
 		}
-		fmt.Printf("| %s | %v | %v | %v | %d KB |\n", sc.name, q(0.5), q(0.95), times[len(times)-1].Round(100*time.Microsecond), size/1024)
+		fmt.Printf("| %s | %v | %v | %v | %.0f | %d KB |\n", sc.name, q(0.5), q(0.95), times[len(times)-1].Round(100*time.Microsecond),
+			float64(clients*(n+3))/elapsed.Seconds(), size/1024)
 	}
 
 	// Where the full-topology endpoints spend their time.

@@ -39,7 +39,10 @@ type Service struct {
 	SnapshotRepo ports.SnapshotRepository
 	LayoutRepo   ports.SavedLayoutRepository
 	GraphRepo    ports.GraphRepository
-	SimRepo      ports.SimulationRepository
+	// TraversalInDatabase runs dependency/neighbourhood traversals with ArcadeDB TRAVERSE instead of
+	// the cached in-memory index (ADR-DB-003 amendment: memory is the default, measured faster).
+	TraversalInDatabase bool
+	SimRepo             ports.SimulationRepository
 	// Retention for simulation runs (zero values disable pruning).
 	SimulationRetention time.Duration
 	SimulationMaxRuns   int
@@ -56,6 +59,35 @@ func (s *Service) index(ctx context.Context) (*domain.Index, error) {
 		return nil, err
 	}
 	return domain.BuildIndex(data), nil
+}
+
+// Meta describes the API and the stored topology (GET /meta).
+type Meta struct {
+	APIVersion    string              `json:"apiVersion"`
+	SchemaVersion int                 `json:"schemaVersion"`
+	Topology      *ports.TopologyMeta `json:"topology"`
+	Auth          struct {
+		Mode string `json:"mode"`
+	} `json:"auth"`
+	Limits map[string]int `json:"limits"`
+}
+
+// Meta returns API metadata. SchemaVersion and AuthMode are set by the caller (app wiring).
+func (s *Service) Meta(ctx context.Context, schemaVersion int, authMode string) (*Meta, error) {
+	m := &Meta{APIVersion: "v1", SchemaVersion: schemaVersion, Limits: map[string]int{
+		"registryPageMax": MaxRegistryLimit, "dependencyLimitMax": MaxDependencyLimit, "maxDepth": MaxMaxDepth,
+		"neighborhoodDepthMax": MaxNeighborhoodDepth, "traversalVisitedMax": MaxVisited,
+		"simulationActionsMax": MaxSimulationActions, "simulationTicksMax": MaxSimulationTicks, "simulationWatchMax": MaxWatchedEntities,
+	}}
+	m.Auth.Mode = authMode
+	if repo, ok := s.TopologyRepo.(ports.TopologyMetaRepository); ok {
+		tm, err := repo.TopologyMeta(ctx)
+		if err != nil {
+			return nil, err
+		}
+		m.Topology = tm
+	}
+	return m, nil
 }
 
 // Environments returns environments in display order.

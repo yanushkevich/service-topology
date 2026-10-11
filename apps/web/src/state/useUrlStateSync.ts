@@ -38,6 +38,23 @@ function applyToStore(url: TopologyUrlState) {
 const bare = (search: string) => (search.startsWith('?') ? search.slice(1) : search);
 
 /**
+ * Startup parameters choose the data source when the app loads (`source=api`, `dataset=…`;
+ * selectRepository). They are not view state, but they are kept in the URL so a reload or a shared
+ * link stays on the same data source.
+ */
+const STARTUP_PARAMS = ['source', 'dataset'] as const;
+
+export function withStartupParams(canonical: string, currentSearch: string): string {
+  const current = new URLSearchParams(currentSearch);
+  const out = new URLSearchParams(canonical);
+  for (const name of STARTUP_PARAMS) {
+    const value = current.get(name);
+    if (value) out.set(name, value);
+  }
+  return out.toString();
+}
+
+/**
  * Keeps shared view state and the URL in step:
  * - Deep links and back/forward (POP) apply the URL to the store.
  * - Store changes write the URL: a new history entry for discrete changes (selection, view,
@@ -69,7 +86,7 @@ export function useUrlStateSync() {
       applyToStore(decoded.state);
       applying.current = false;
     }
-    const canonical = encodeUrlState(fromStore(useUiStore.getState()));
+    const canonical = withStartupParams(encodeUrlState(fromStore(useUiStore.getState())), location.search);
     if (canonical !== bare(location.search)) {
       navigate({ pathname: location.pathname, search: canonical }, { replace: true });
     }
@@ -82,8 +99,8 @@ export function useUrlStateSync() {
     () =>
       useUiStore.subscribe((state, previous) => {
         if (applying.current) return;
-        const next = encodeUrlState(fromStore(state));
         const current = locationRef.current;
+        const next = withStartupParams(encodeUrlState(fromStore(state)), current.search);
         if (next === bare(current.search)) return;
         const onlyQueryChanged =
           encodeUrlState(fromStore({ ...state, filters: { ...state.filters, query: previous.filters.query } })) ===

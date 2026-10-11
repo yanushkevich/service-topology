@@ -1,6 +1,6 @@
 # Go Backend Specification (ArcadeDB)
 
-**Status (2026-10-11):** B1–B5 are implemented in `backend/`: foundation, ArcadeDB persistence, REST API for contract v1, bounded traversal/impact/event types, and isolated simulation runs with provenance-labelled events and telemetry (ADR-017). Hardening and frontend integration (B6) are not yet.
+**Status (2026-10-11):** B1–B6 are implemented in `backend/`. Remaining production decisions (browser SSO, tenancy, observed telemetry ingestion, deployment) are listed in the B6 closeout of `IMPLEMENTATION_PLAN.md`. Operations: `RUNBOOK.md`.
 
 The backend serves the **existing** HTTP contract (`docs/api/openapi.json`, `docs/API_CONTRACT.md`) and the **existing** canonical domain (`src/domain`, `docs/schemas`). It does not define its own contract or domain. Preserve: mock-first delivery, stable IDs, provenance labeling, scale targets, and the distinction between containment and communication.
 
@@ -34,7 +34,8 @@ service_topology/
 9. `INTEGRATIONS_AND_PROVENANCE.md`: mock source now, adapters later.
 10. `SECURITY.md`: security baseline and unresolved deployment decisions.
 11. `TESTING_AND_PERFORMANCE.md`: quality gates, contract and conformance tests.
-12. `IMPLEMENTATION_PLAN.md`: Milestones B1–B6.
+12. `IMPLEMENTATION_PLAN.md`: Milestones B1–B6 with closeouts.
+12a. `RUNBOOK.md`: start/stop, seed, backup, restore, recovery.
 13. `CLAUDE_CODE_PROMPT.md`: agent prompt for implementing a backend milestone.
 14. `scaffold/`: files that move into `backend/` in B1 (see `scaffold/README.md`).
 

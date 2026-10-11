@@ -1,6 +1,6 @@
 # Go Backend Implementation Plan (ArcadeDB)
 
-**Status:** B1–B5 implemented (closeouts below); B6 not started. Execute one milestone at a time; do not automatically start the next. Backend milestones are B1–B6, a separate track from frontend Milestones 1–7. Code lives in `backend/`. Commit each milestone with scope `b1`…`b6`. Track status in the root `docs/IMPLEMENTATION_PLAN.md`.
+**Status:** B1–B6 implemented (closeouts below). Open decisions that block production are listed in the B6 closeout. Execute one milestone at a time; do not automatically start the next. Backend milestones are B1–B6, a separate track from frontend Milestones 1–7. Code lives in `backend/`. Commit each milestone with scope `b1`…`b6`. Track status in the root `docs/IMPLEMENTATION_PLAN.md`.
 
 ## Milestone B1 — Go service foundation and domain
 Scope: `backend/` Go module (scaffold files moved in from `docs/backend/scaffold/`), configuration validation, HTTP lifecycle, health/readiness skeleton, structured logging, domain types and the full `validateTopology` rule set, repository/query interfaces, shared fixture export (`fixtures/`, from the frontend mock via a script) and the conformance fixture format.
@@ -113,4 +113,27 @@ Evidence: `make check` exit 0; `make test-integration` passes; `make contract-ch
 | Oversized payloads rejected or bounded | Pass | 413 body limits, 400 for action/tick/watch bounds, stored events capped at 5,000 per run with `eventsTruncated` |
 
 Notes: exact float parity needed explicit conversions to stop Go fusing `x*y±z` into FMA on arm64, and a `toFixed` port that rounds exact binary ties up. Known limitations: runs are one-shot (no incremental sessions); telemetry exists only for simulation runs; snapshots are not pruned and cannot be deleted yet.
+
+## Milestone B6 closeout (2026-10-11)
+Evidence: backend `make check` exit 0; `go test -race -count=1 ./...` passes; `make test-integration` passes; `make contract-check` 59/59; `make vulncheck` (govulncheck v1.8.0): no vulnerabilities; frontend `npm run check` passes (361 tests) and `npm audit`: 0 vulnerabilities; live end-to-end run: Go API on ArcadeDB + production frontend build (`vite preview` proxy) in headless Chrome with `?source=api`: map rendered 27 nodes, registry 9 staging rows labelled "Backend API · mock inventory · simulated telemetry", event catalog 9 entries, API access log shows `/api/v1/meta` and `/api/v1/topology`; backup → restore into a new database → schema check and equal record counts for 14 types.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Auth decision and authorization boundaries | Pass (scoped) | ADR-018: optional hashed bearer tokens, reader/editor, loopback default, refusal to expose unauthenticated; OIDC/tenancy still open |
+| Request limits and rate limits | Pass | body/parameter caps (B3–B5), per-client token bucket with 429 + `Retry-After` |
+| Secrets handling | Pass | password file only, digests for tokens, nothing secret in logs/errors/bundle (tests) |
+| Observability | Pass | structured logs with request ID, route, principal; Prometheus `/metrics` (HTTP by route pattern, ArcadeDB by endpoint, cache hits) on loopback |
+| Backup/restore exercised | Pass | `make backup` / `make restore` run end to end; `docs/backend/RUNBOOK.md` |
+| Security tests | Pass | auth/roles, exposure guard, rate limit, CORS, headers, injection-shaped IDs (memory and ArcadeDB), error hygiene |
+| Full integration suite | Pass | `make test-integration` (all ArcadeDB tests, temporary databases) |
+| Measured performance against targets | Pass | 1,000 entities (ADR-005 navigation target): every endpoint ≤ 10 ms p50 single-client and ≤ 30 ms p50 with 8 clients after moving traversal to the cached index (`docs/BENCHMARKS.md`) |
+| Frontend integration | Pass | HTTP repositories (`apps/web/src/data/http/`), `?source=api`, Vite proxy, honest labels from `/meta`, startup parameters kept in the URL |
+| Runbook | Pass | `docs/backend/RUNBOOK.md` (start/stop, seed, backup, restore, recovery, reset, tokens) |
+
+### Still open before production (not implemented, by design)
+- Identity for browsers (OIDC/SSO), tenancy, per-user layout ownership and concurrency (`ETag`/`If-Match`), audit trail.
+- Observed telemetry ingestion and provider adapters (future milestone; provenance rules are in place).
+- Snapshot retention/deletion; incremental (non-replacing) imports.
+- TLS termination and deployment topology (reverse proxy), production ArcadeDB sizing and backups off-host.
+- Measurements on production-like hardware (all numbers here come from a 2 GB laptop VM).
 

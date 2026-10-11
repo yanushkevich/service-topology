@@ -29,7 +29,19 @@ type DependencyResult struct {
 	Items     []domain.DependencyEntry `json:"items"`
 }
 
+// subgraph returns an index to traverse: the cached full topology (default), or the bounded
+// subgraph fetched from the database. Both give identical results for depths up to the bound.
 func (s *Service) subgraph(ctx context.Context, id domain.EntityID, direction string, depth int) (*domain.Index, error) {
+	if !s.TraversalInDatabase || s.GraphRepo == nil {
+		ix, err := s.index(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if ix.Instances[id] == nil && ix.Resources[id] == nil {
+			return nil, &NotFound{Detail: fmt.Sprintf("No service instance or resource with ID %q.", id)}
+		}
+		return ix, nil
+	}
 	sub, err := s.GraphRepo.Subgraph(ctx, id, direction, depth, MaxVisited)
 	switch {
 	case errors.Is(err, ports.ErrNotFound):

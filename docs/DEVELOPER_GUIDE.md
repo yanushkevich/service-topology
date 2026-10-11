@@ -15,6 +15,8 @@ npm run check              # typecheck → lint → test → build (run before e
 
 From the repository root, `npm run dev|build|test|check` forward to `apps/web`, and `npm run check:all` runs the frontend and backend checks.
 
+**Run against the Go backend:** in `backend/`, `make dev-up && make seed && make run` (see `docs/backend/LOCAL_DEVELOPMENT.md`), then open `http://localhost:5173/map?source=api`. The HTTP repositories (`apps/web/src/data/http/`) replace the in-memory ones; simulation still runs in the browser (ADR-017). The `source` parameter stays in the URL across navigation and reloads.
+
 | Script | Purpose |
 |---|---|
 | `dev`, `build`, `preview` | Vite dev server, production build (`dist/`), serve the build |
@@ -58,7 +60,7 @@ Rules that keep this working (enforced by tests where marked):
 
 | State | Owner |
 |---|---|
-| Topology data | `TopologyDataProvider` (React context), fed by repository + simulation |
+| Topology data | `TopologyDataProvider` (React context), fed by repository (in-memory mock or HTTP backend with `?source=api`) + simulation |
 | Selection `{kind,id}`, environment, filters, view, layout mode, highlight mode, neighborhood, `asOf`, `galaxyScope`, `eventHighlight`, effective theme, motion pause | `useUiStore` (Zustand), mirrored to the URL except theme and pause |
 | Preferences: theme (incl. system), motion override, default view, 3D labels/traffic, default simulation speed | `usePreferencesStore`, saved locally via `PreferencesRepository`; defaults only, never in URLs or canonical data |
 | Simulation state and run controls | `useSimulationStore` |
@@ -128,12 +130,7 @@ Next steps if inventories grow: server-side registry search, incremental topolog
 
 The Events page and inspector explain the new rule automatically.
 
-**Connect a real backend:**
-1. Implement `TopologyRepository` (and `SnapshotRepository`, `SavedLayoutRepository`) over HTTP per `API_CONTRACT.md`, validating responses at the boundary.
-2. Choose it in `apps/web/src/data/selectRepository.ts`.
-3. Set `isMock: false` and a real `sourceLabel`, and populate `metrics.isSimulated: false` only for observed telemetry.
-
-Nothing in the UI needs to change.
+**Backend integration (done in B6):** HTTP implementations of `TopologyRepository`, `SnapshotRepository`, and `SavedLayoutRepository` live in `apps/web/src/data/http/` and are chosen by `selectRepository` (`?source=api` / `VITE_DATA_SOURCE=api`). Responses are validated at the boundary (`parseSnapshot`, `parseSavedLayout`, `validateTopology` in the provider). The label and `isMock` come from `GET /api/v1/meta`: data stays labelled mock unless the backend reports an observed source.
 
 **Add a page:**
 1. Add the route in `apps/web/src/app/routes.tsx` and an entry in `NAV_ITEMS`; the page title is automatic.

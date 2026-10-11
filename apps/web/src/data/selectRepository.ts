@@ -3,20 +3,37 @@ import { createMockTopologyRepository } from './repositories/mockTopologyReposit
 import type { TopologyRepository } from './repositories/TopologyRepository';
 import { mockSnapshots } from './mock/snapshots';
 import { createInMemorySnapshotRepository, type SnapshotRepository } from './snapshots/SnapshotRepository';
+import { createLocalSavedLayoutRepository, type SavedLayoutRepository } from './savedLayouts/SavedLayoutRepository';
+import { createHttpSavedLayoutRepository, createHttpSnapshotRepository, createHttpTopologyRepository } from './http/httpRepositories';
+import { createApiClient } from './http/apiClient';
+
+export interface Repositories {
+  topology: TopologyRepository;
+  snapshots: SnapshotRepository;
+  layouts: SavedLayoutRepository;
+}
 
 /**
- * Picks the data source at startup. `?dataset=scale-250` or `?dataset=inventory-1000` loads a
- * generated fixture (benchmarks, scale checks); anything else uses the hand-written mock inventory.
+ * Picks the data source at startup. `?source=api` (or the build variable VITE_DATA_SOURCE=api)
+ * uses the backend HTTP API through `/api/v1`. `?dataset=scale-250` or `?dataset=inventory-1000`
+ * loads a generated fixture (benchmarks, scale checks); anything else uses the hand-written mock
+ * inventory. Simulation always runs in the browser (ADR-017).
  */
-export function selectRepository(search: string): { topology: TopologyRepository; snapshots: SnapshotRepository } {
-  const name = new URLSearchParams(search).get('dataset');
+export function selectRepository(search: string, defaultSource: string | undefined = import.meta.env.VITE_DATA_SOURCE): Repositories {
+  const params = new URLSearchParams(search);
+  if ((params.get('source') ?? defaultSource) === 'api') {
+    const api = createApiClient();
+    return { topology: createHttpTopologyRepository(api), snapshots: createHttpSnapshotRepository(api), layouts: createHttpSavedLayoutRepository(api) };
+  }
+  const name = params.get('dataset');
   if (name && name in GENERATED_DATASETS) {
     const options = GENERATED_DATASETS[name as GeneratedDatasetName];
     return {
       topology: createMockTopologyRepository(generateTopology(options), `Generated dataset “${name}”`),
       // History fixtures describe the hand-written mock; generated datasets start without history.
       snapshots: createInMemorySnapshotRepository(),
+      layouts: createLocalSavedLayoutRepository(),
     };
   }
-  return { topology: createMockTopologyRepository(), snapshots: createInMemorySnapshotRepository(mockSnapshots()) };
+  return { topology: createMockTopologyRepository(), snapshots: createInMemorySnapshotRepository(mockSnapshots()), layouts: createLocalSavedLayoutRepository() };
 }

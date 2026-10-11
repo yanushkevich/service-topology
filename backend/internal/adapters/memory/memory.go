@@ -295,3 +295,8 @@ func (m *sims) Prune(_ context.Context, olderThan string, keep int) (int, error)
 	m.runs = kept
 	return removed, nil
 }
+
+// TopologyMeta implements ports.TopologyMetaRepository (in-memory data is fixture data).
+func (s *Store) TopologyMeta(context.Context) (*ports.TopologyMeta, error) {
+	return &ports.TopologyMeta{Revision: "memory", SourceType: "fixture", IsMock: true}, nil
+}

@@ -92,7 +92,7 @@ Full topology, snapshot, and layout examples: `apps/web/src/data/mock/topology.t
 - The OpenAPI document is 3.1, every `$ref` resolves, every operation has an `operationId`, an `x-repository` mapping, and an error response, and every example validates against its schema.
 
 ## Open decisions (required before implementation or publication)
-- **Authentication and authorization:** method (OIDC/OAuth2 assumed), scopes for read vs. write (snapshots, layouts).
+- **Authentication and authorization:** partly decided in ADR-018 (optional hashed bearer tokens with reader/editor roles, loopback by default). Still open: OIDC/SSO for browsers, tenancy, per-user ownership.
 - **Tenancy:** tenant boundary (organization, account?) and how IDs are scoped.
 - **Retention and history:** snapshot retention, event sourcing vs. periodic snapshots, `from`/`to` limits.
 - **Saved-layout ownership:** per user or shared, and conflict handling (ETags / `If-Match` on `PUT`).

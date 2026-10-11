@@ -3,13 +3,18 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
+const apiProxy = { target: process.env.VITE_API_PROXY_TARGET ?? 'http://127.0.0.1:8080', changeOrigin: false };
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     // Monorepo: contract tests read the shared schemas/OpenAPI in <repo>/docs (and fixtures in
     // <repo>/fixtures). Allow exactly those besides this app.
     fs: { allow: ['.', '../../docs', '../../fixtures'] },
+    // Same-origin access to the Go backend (?source=api); no CORS needed. Target: VITE_API_PROXY_TARGET.
+    proxy: { '/api': apiProxy },
   },
+  preview: { proxy: { '/api': apiProxy } },
   build: {
     // The ELK layout engine is ~1.5 MB minified; it ships as a Web Worker (plus a bundled fallback
     // chunk used only without Worker support). App chunks stay well below this limit.

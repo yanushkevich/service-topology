@@ -393,7 +393,7 @@ func TestTraversalOnTheDatabaseEqualsTheFullGraph(t *testing.T) {
 			t.Fatal(err)
 		}
 		full := domain.BuildIndex(data)
-		svc := &application.Service{TopologyRepo: arcadedb.NewTopologyRepository(c), GraphRepo: arcadedb.NewGraphRepository(c)}
+		svc := &application.Service{TopologyRepo: arcadedb.NewTopologyRepository(c), GraphRepo: arcadedb.NewGraphRepository(c), TraversalInDatabase: true}
 		var starts []string
 		for _, i := range data.ServiceInstances {
 			starts = append(starts, i.ID)
@@ -538,5 +538,43 @@ func TestSimulationRunsOnTheDatabase(t *testing.T) {
 	}
 	if n := count(t, c, "TelemetryObservation"); n != 0 {
 		t.Fatalf("%d telemetry rows remain (only the pruned run watched entities)", n)
+	}
+}
+
+// Hostile-looking identifiers are bound parameters: they match nothing (or round-trip literally)
+// and never alter queries.
+func TestInjectionShapedIdentifiersOnTheDatabase(t *testing.T) {
+	c := tempClient(t)
+	ctx := context.Background()
+	if err := arcadedb.EnsureSchema(ctx, c); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := mockTopology(t)
+	if _, err := arcadedb.NewTopologyRepository(c).ReplaceTopology(ctx, data, "fixture"); err != nil {
+		t.Fatal(err)
+	}
+	hostile := []string{`x' OR '1'='1`, `x"); DELETE VERTEX FROM Resource; --`, `#1:0`, `' UNION SELECT FROM SchemaInfo --`}
+	graph := arcadedb.NewGraphRepository(c)
+	snaps := arcadedb.NewSnapshotRepository(c)
+	for _, id := range hostile {
+		if _, err := graph.Subgraph(ctx, id, "upstream", 2, 100); !errors.Is(err, ports.ErrNotFound) {
+			t.Errorf("subgraph %q: %v", id, err)
+		}
+		if _, err := snaps.Get(ctx, id); !errors.Is(err, ports.ErrNotFound) {
+			t.Errorf("snapshot %q: %v", id, err)
+		}
+	}
+	layouts := arcadedb.NewLayoutRepository(c)
+	l := &domain.SavedLayout{SchemaVersion: 1, ID: hostile[1], Name: hostile[0], CreatedAt: "2026-10-11T09:00:00Z", View: domain.LayoutView{EnvironmentID: "production", LayoutMode: "topology"}}
+	domain.NormalizeSavedLayout(l)
+	if err := layouts.Create(ctx, l); err != nil {
+		t.Fatal(err)
+	}
+	got, err := layouts.List(ctx)
+	if err != nil || len(got) != 1 || got[0].ID != hostile[1] || got[0].Name != hostile[0] {
+		t.Fatalf("hostile strings did not round-trip literally: %v %+v", err, got)
+	}
+	if n := count(t, c, "Resource"); n != len(data.Resources) {
+		t.Fatalf("resources changed: %d", n)
 	}
 }

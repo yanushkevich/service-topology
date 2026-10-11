@@ -1,6 +1,21 @@
 # Security and Deployment Requirements
 
-**Status:** Baseline recommendations; production policy remains to be selected.
+**Status:** Baseline implemented in Milestone B6 (ADR-018); production identity (OIDC/SSO), tenancy, and audit remain to be selected. Implemented controls are listed first.
+
+## Implemented (B6, verified by tests)
+| Control | Implementation | Evidence |
+|---|---|---|
+| Authentication / roles | `AUTH_MODE=token`: bearer tokens, SHA-256 digests in `AUTH_TOKENS_FILE`, reader/editor | `security_test.go`, `auth_test.go` |
+| No accidental exposure | default `127.0.0.1:8080`; refuses `AUTH_MODE=none` on non-loopback without `ALLOW_UNAUTHENTICATED=true`; metrics loopback-only | `config_test.go` |
+| Parameterized queries, allowlisted names | all SQL binds values; type/property/edge names are constants or validated | injection tests (memory and ArcadeDB) |
+| Input bounds | body limits (16 MB / 1 MB), strict JSON, page/depth/limit/roots/ticks caps, 5,000 visited entities | `api_test.go`, contract check |
+| Rate limiting | per-client token bucket, 429 + `Retry-After`, health exempt | `security_test.go` |
+| CORS | exact-origin allowlist, no wildcard, no credentials; preflight 403 for others | `security_test.go` |
+| Response headers | `nosniff`, CSP `default-src 'none'; frame-ancestors 'none'`, `no-referrer`, `no-store` | `security_test.go` |
+| Error hygiene | RFC 9457 problems; no SQL, stack traces, credentials, or internal addresses; `requestId` for correlation | `api_test.go`, `client_test.go` |
+| Secrets | database password only via file; `ARCADEDB_PASSWORD` and credentials in URLs rejected; never logged | `config_test.go` |
+| Database exposure | ArcadeDB bound to `127.0.0.1:2480`; online file-URL restore left disabled | Compose file, RUNBOOK |
+| Dependency scanning | `make vulncheck` (govulncheck v1.8.0): no vulnerabilities; `npm audit`: 0 (2026-10-11) | closeout |
 
 ## Non-negotiable safeguards
 - Do not deploy production data endpoints without authentication and authorization, even if the initial local prototype has no identity provider.

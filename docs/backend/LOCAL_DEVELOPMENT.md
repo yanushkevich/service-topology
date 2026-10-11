@@ -14,7 +14,7 @@ ArcadeDB Studio and HTTP API are available at `http://localhost:2480` (bound to 
 
 Example environment variables (adjust to the implementation/config loader):
 ```dotenv
-HTTP_ADDR=:8080
+HTTP_ADDR=127.0.0.1:8080
 ARCADEDB_BASE_URL=http://localhost:2480
 ARCADEDB_DATABASE=topology
 ARCADEDB_USERNAME=root
@@ -30,11 +30,19 @@ Do not hardcode credentials in Go source. Configuration validation should fail f
 
 | Variable | Default | Notes |
 |---|---|---|
-| `HTTP_ADDR` | `:8080` | `host:port` or `:port` |
+| `HTTP_ADDR` | `127.0.0.1:8080` | `host:port` or `:port`; non-loopback needs `AUTH_MODE=token` or `ALLOW_UNAUTHENTICATED=true` |
 | `SHUTDOWN_TIMEOUT` | `10s` | graceful shutdown budget |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 | `LOG_FORMAT` | `json` | `json` or `text` |
 | `SEED_MODE` | `demo` | `demo` or `none` |
+| `AUTH_MODE` | `none` | `token` enables bearer tokens (ADR-018) |
+| `AUTH_TOKENS_FILE` | — | required with `AUTH_MODE=token`; lines `name reader|editor sha256` (`make token`) |
+| `ALLOW_UNAUTHENTICATED` | `false` | allow `AUTH_MODE=none` on a non-loopback address (behind an authenticating proxy only) |
+| `RATE_LIMIT_RPS` / `RATE_LIMIT_BURST` | `50` / `100` | per client; `0` disables |
+| `TRUST_PROXY_HEADERS` | `false` | use `X-Forwarded-For` for the client address |
+| `CORS_ALLOWED_ORIGINS` | empty | comma-separated exact origins |
+| `METRICS_ADDR` | empty | e.g. `127.0.0.1:9090` for Prometheus `/metrics` (loopback only) |
+| `TRAVERSAL_SOURCE` | `memory` | `database` runs traversals with ArcadeDB TRAVERSE (ADR-DB-003) |
 | `SIMULATION_RETENTION` | `168h` | simulation runs, events, telemetry older than this are pruned after each run (ADR-017) |
 | `SIMULATION_MAX_RUNS` | `200` | keep at most this many runs |
 | `ARCADEDB_BASE_URL` | unset | when unset the API runs without a database and `/readyz` is 503 |
@@ -76,7 +84,7 @@ Findings from the first run:
 - Wrong credentials return HTTP 403, an unknown database 404.
 
 ## Running with the frontend
-The frontend (`npm run dev`, port 5173) uses mock repositories until an HTTP repository is selected in `apps/web/src/data/selectRepository.ts` (Milestone B6). The API listens on `HTTP_ADDR` (default `:8080`); use a Vite dev proxy for `/api` rather than permissive CORS.
+Start the API (`make run`, `127.0.0.1:8080`), then open the frontend with `?source=api` (e.g. `http://localhost:5173/map?source=api`) or build with `VITE_DATA_SOURCE=api`. The Vite dev and preview servers proxy `/api` to `VITE_API_PROXY_TARGET` (default `http://127.0.0.1:8080`), so no CORS is needed. The data-source tag reads "Backend API · mock inventory" because the stored data is the seeded fixture.
 
 ## Startup and readiness
 - Liveness indicates the Go process is running.

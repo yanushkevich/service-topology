@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"servicetopology/backend/internal/domain"
@@ -49,6 +50,8 @@ type TopologyRepository struct {
 	mu       sync.Mutex
 	revision string
 	cached   *domain.TopologyData
+	hits     atomic.Uint64
+	misses   atomic.Uint64
 }
 
 var _ ports.TopologyRepository = (*TopologyRepository)(nil)
@@ -213,18 +216,39 @@ func (r *TopologyRepository) ReplaceTopology(ctx context.Context, data *domain.T
 	}
 	var b [16]byte
 	_, _ = rand.Read(b[:])
-	if _, err := tx.Command(ctx, "UPDATE TopologyState SET id = 'topology', revision = :rev, recordedAt = :at UPSERT WHERE id = 'topology'",
-		map[string]any{"rev": hex.EncodeToString(b[:]), "at": recordedAt}); err != nil {
+	if _, err := tx.Command(ctx, "UPDATE TopologyState SET id = 'topology', revision = :rev, recordedAt = :at, sourceType = :src UPSERT WHERE id = 'topology'",
+		map[string]any{"rev": hex.EncodeToString(b[:]), "at": recordedAt, "src": sourceType}); err != nil {
 		return res, err
 	}
 	return res, tx.Commit(ctx)
 }
 
+// TopologyMeta returns the stored topology's revision and source (ports.TopologyMetaRepository).
+func (r *TopologyRepository) TopologyMeta(ctx context.Context) (*ports.TopologyMeta, error) {
+	rows, err := r.c.Query(ctx, "SELECT revision, recordedAt, sourceType FROM TopologyState WHERE id = 'topology'", nil)
+	if err != nil {
+		return nil, err
+	}
+	m := &ports.TopologyMeta{IsMock: true}
+	if len(rows) > 0 {
+		m.Revision, _ = rows[0]["revision"].(string)
+		m.RecordedAt, _ = rows[0]["recordedAt"].(string)
+		m.SourceType, _ = rows[0]["sourceType"].(string)
+	}
+	m.IsMock = m.SourceType != "observed"
+	return m, nil
+}
+
+// CacheStats returns read-cache hits and misses since start (metrics).
+func (r *TopologyRepository) CacheStats() (hits, misses uint64) {
+	return r.hits.Load(), r.misses.Load()
+}
+
 // GetTopology returns the stored canonical topology in its original collection order. Environment
-// filtering is not implemented yet (it is defined with the API in Milestone B3).
+// projection is done by the application layer on the full (cached) topology (domain.FilterEnvironment).
 func (r *TopologyRepository) GetTopology(ctx context.Context, environmentID domain.EntityID) (*domain.TopologyData, error) {
 	if environmentID != "" {
-		return nil, fmt.Errorf("arcadedb: environment filtering is not implemented yet (Milestone B3)")
+		return nil, fmt.Errorf("arcadedb: environment projection happens in the application layer; call GetTopology with an empty environment")
 	}
 	// Read every collection inside one transaction so the parts come from the same state.
 	tx, err := r.c.Begin(ctx)
@@ -244,9 +268,11 @@ func (r *TopologyRepository) GetTopology(ctx context.Context, environmentID doma
 	if revision != "" && revision == r.revision && r.cached != nil {
 		cached := r.cached
 		r.mu.Unlock()
+		r.hits.Add(1)
 		return cached, nil
 	}
 	r.mu.Unlock()
+	r.misses.Add(1)
 	data := &domain.TopologyData{}
 	reads := []struct {
 		from string

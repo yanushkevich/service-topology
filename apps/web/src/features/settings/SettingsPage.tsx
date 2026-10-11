@@ -14,11 +14,19 @@ import { Card, Note } from '../pages/PageShell';
  * source. Preferences are per browser and never part of shared links or canonical data.
  */
 
-const DATASETS = [
-  { id: null, label: 'Mock inventory (hand-written, with history fixtures)' },
-  { id: 'scale-250', label: 'Generated: 250 entities' },
-  { id: 'inventory-1000', label: 'Generated: 1,000 entities' },
+const SOURCES = [
+  { key: 'mock', href: '/map', label: 'Mock inventory in the browser (hand-written, with history fixtures)' },
+  { key: 'dataset:scale-250', href: '/map?dataset=scale-250', label: 'Generated: 250 entities' },
+  { key: 'dataset:inventory-1000', href: '/map?dataset=inventory-1000', label: 'Generated: 1,000 entities' },
+  { key: 'api', href: '/map?source=api', label: 'Backend API (Go + ArcadeDB; run the backend first)' },
 ] as const;
+
+function currentSource(search: string): string {
+  const params = new URLSearchParams(search);
+  if (params.get('source') === 'api') return 'api';
+  const dataset = params.get('dataset');
+  return dataset ? `dataset:${dataset}` : 'mock';
+}
 
 function Choice<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: readonly { id: T; label: string }[]; onChange: (value: T) => void }) {
   return (
@@ -198,7 +206,7 @@ function SavedLayoutsCard() {
 
 function DataCard() {
   const topology = useTopology();
-  const current = new URLSearchParams(window.location.search).get('dataset');
+  const current = currentSource(window.location.search);
   const [message, setMessage] = useState('');
   const resetViewState = () => {
     const ui = useUiStore.getState();
@@ -214,26 +222,26 @@ function DataCard() {
   };
   return (
     <Card title="Data source">
-      <Row label="Current source" hint="All data is mock and all telemetry is simulated. No backend is connected.">
+      <Row label="Current source" hint="All data is mock and all telemetry is simulated, including data served by the backend (seeded from the same fixtures).">
         {topology.status === 'ready' ? <DataSourceTag sourceLabel={topology.sourceLabel} isMock={topology.isMock} /> : <span className="text-sm text-fg-2">Loading…</span>}
       </Row>
       <Row label="Dataset" hint="Switching reloads the app.">
         <ul className="m-0 flex list-none flex-col gap-1 p-0">
-          {DATASETS.map((d) => (
-            <li key={d.id ?? 'default'}>
+          {SOURCES.map((d) => (
+            <li key={d.key}>
               <a
-                href={d.id ? `/map?dataset=${d.id}` : '/map'}
-                aria-current={current === d.id ? 'true' : undefined}
+                href={d.href}
+                aria-current={current === d.key ? 'true' : undefined}
                 className="text-sm text-accent-fg underline-offset-2 hover:underline aria-[current]:font-semibold aria-[current]:text-fg"
               >
                 {d.label}
-                {current === d.id ? ' (current)' : ''}
+                {current === d.key ? ' (current)' : ''}
               </a>
             </li>
           ))}
         </ul>
       </Row>
-      <Row label="Backend contract" hint="A future backend is described in docs/API_CONTRACT.md (OpenAPI 3.1). It is not implemented.">
+      <Row label="Backend contract" hint="The Go + ArcadeDB backend in backend/ implements docs/api/openapi.json (OpenAPI 3.1).">
         <code className="font-mono text-sm text-fg-2">docs/API_CONTRACT.md</code>
       </Row>
       <Row label="Reset all view state" hint="Clears selection, filters, layout mode, history, and 3D scope. Preferences are kept.">

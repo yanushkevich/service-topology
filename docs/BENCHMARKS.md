@@ -99,3 +99,19 @@ Query-plan review (`EXPLAIN`, printed by `make bench`):
 - Loading relationships between traversed entities did a **full scan of `COMMUNICATES`**; schema v3 adds indexes on `sourceEntityId`/`targetEntityId` (plan now `FETCH FROM INDEX COMMUNICATES[targetEntityId]`). No measurable latency change at 2,100 relationships; it keeps the query from growing with the total edge count.
 
 Assessment: with the revision cache, every full-topology endpoint answers in under 7 ms (p95) at 1,000 entities. Bounded traversals (11–56 ms) are now the slowest; their cost follows the size of the traversed neighbourhood, not the inventory (ADR-DB-003). Not yet measured: concurrency, larger inventories, a production-like database host.
+
+## 2026-10-11 — Backend B6 (concurrency, traversal source)
+
+Same machine and conditions as "Backend B4" (`make bench BENCHFLAGS="-c 8 -n 25"`, 8 concurrent clients × 25 timed requests per row after 3 warm-ups; requests/s is wall-clock throughput for the row).
+
+| Request (1,000 entities) | 8 clients, traversal in database: p50 / p95 / req/s | 8 clients, traversal in memory (default): p50 / p95 / req/s | 1 client, memory: p50 / p95 |
+|---|---|---|---|
+| `GET /topology` (all) | 21.3 / 33.1 ms / 177 | 18.1 / 26.0 ms / 184 | 9.1 / 16.7 ms |
+| `GET /registry` page of 100 | 13.0 / 19.2 ms / 590 | 15.9 / 26.3 ms / 468 | 3.9 / 5.5 ms |
+| `GET /topology/dependencies` upstream, depth 10 | 135.1 / 269.4 ms / 52 | 16.5 / 28.8 ms / 422 | 3.9 / 5.2 ms |
+| `GET /topology/dependencies` downstream, depth 10 | 382.1 / 907.1 ms / 18 | 20.1 / 27.4 ms / 377 | 5.5 / 6.7 ms |
+| `GET /topology/neighborhood` depth 3 | 69.8 / 123.2 ms / 106 | 10.6 / 20.0 ms / 687 | 2.7 / 7.1 ms |
+| `GET /topology/impact` | 21.8 / 33.3 ms / 332 | 19.6 / 30.3 ms / 378 | 7.0 / 10.3 ms |
+| `GET /event-types` | 13.6 / 25.0 ms / 542 | 8.1 / 14.6 ms / 870 | 2.9 / 5.6 ms |
+
+Outcome: traversal now runs on the cached index by default (ADR-DB-003 amendment). No ArcadeDB restarts or OOM kills during the runs. Rows without traversal differ between columns only by run-to-run noise on a shared VM.

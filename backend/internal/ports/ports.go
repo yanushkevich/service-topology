@@ -27,6 +27,20 @@ type TopologyRepository interface {
 	GetTopology(ctx context.Context, environmentID domain.EntityID) (*domain.TopologyData, error)
 }
 
+// TopologyMeta describes the stored topology (GET /meta). SourceType says where it came from
+// ("fixture" for seeded mock data); only observed sources are not mock.
+type TopologyMeta struct {
+	Revision   string `json:"revision"`
+	RecordedAt string `json:"recordedAt"`
+	SourceType string `json:"sourceType"`
+	IsMock     bool   `json:"isMock"`
+}
+
+// TopologyMetaRepository is implemented by topology repositories that can describe their data.
+type TopologyMetaRepository interface {
+	TopologyMeta(ctx context.Context) (*TopologyMeta, error)
+}
+
 // SnapshotQuery bounds a history listing (GET /topology/snapshots?from=&to=).
 type SnapshotQuery struct {
 	From, To string // RFC 3339; empty = unbounded

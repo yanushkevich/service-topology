@@ -76,3 +76,7 @@ The product needs a registry for heterogeneous resources and flexible provider-s
 ### Consequences and alternatives
 - With the cache, an in-memory traversal on the cached index would be faster at 1,000 entities (milliseconds instead of 11–56 ms). The database traversal is kept because its cost follows the neighbourhood size rather than the inventory size, and it does not require the whole topology in memory. Revisit if traversal latency matters more than memory at the target size (switching is a small change behind `ports.GraphRepository`).
 - Imports are one statement per record (about 5 s for 3,100 records). Batch them (e.g. `sqlscript`) if import time matters.
+
+### Amendment (2026-10-11, Milestone B6): traversal in memory by default
+Measured with 8 concurrent clients on 1,000 entities (`docs/BENCHMARKS.md` "Backend B6"): database traversal degraded to 382 ms p50 / 907 ms p95 (18 requests/s) for the widest downstream query, while the revision cache already keeps the whole topology in memory, so the database traversal saved no memory. The default is now in-memory traversal on the cached index (`TRAVERSAL_SOURCE=memory`): 20 ms p50 / 27 ms p95 (377 requests/s) for the same query, and 3.9–5.5 ms single-client. `TRAVERSAL_SOURCE=database` keeps the TRAVERSE path for inventories too large to cache; its parity test (918 traversals) still runs. Results are identical by construction (same Go functions, conformance-tested against the client).
+
