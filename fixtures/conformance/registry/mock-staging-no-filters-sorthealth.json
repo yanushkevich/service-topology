@@ -1,0 +1,167 @@
+{
+  "description": "mock staging, no-filters, sort health",
+  "topology": "topology/mock.v1.json",
+  "environmentId": "staging",
+  "filters": {
+    "query": "",
+    "providers": [],
+    "health": [],
+    "groups": []
+  },
+  "sort": "health",
+  "expected": [
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "payment-service.staging"
+      },
+      "name": "Payment Service",
+      "type": "api",
+      "group": "service",
+      "provider": "azure",
+      "environmentId": "staging",
+      "owner": "Payments",
+      "team": "Payments",
+      "health": "degraded",
+      "outgoingCount": 1,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:45:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "ext-email-delivery"
+      },
+      "name": "Email Delivery API",
+      "type": "external-resource",
+      "group": "external",
+      "provider": "saas",
+      "environmentId": null,
+      "owner": "Third party",
+      "team": null,
+      "health": "unknown",
+      "outgoingCount": 0,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "api-gateway.staging"
+      },
+      "name": "API Gateway",
+      "type": "gateway",
+      "group": "service",
+      "provider": "aws",
+      "environmentId": "staging",
+      "owner": "Platform",
+      "team": "Platform Edge",
+      "health": "healthy",
+      "outgoingCount": 2,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "catalog-service.staging"
+      },
+      "name": "Catalog Service",
+      "type": "api",
+      "group": "service",
+      "provider": "aws",
+      "environmentId": "staging",
+      "owner": "Commerce",
+      "team": "Catalog",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "ext-card-processor"
+      },
+      "name": "Card Processor API",
+      "type": "external-resource",
+      "group": "external",
+      "provider": "saas",
+      "environmentId": null,
+      "owner": "Third party",
+      "team": null,
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 3,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "inventory-service.staging"
+      },
+      "name": "Inventory Service",
+      "type": "api",
+      "group": "service",
+      "provider": "aws",
+      "environmentId": "staging",
+      "owner": "Commerce",
+      "team": "Fulfilment",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "kafka-events-staging"
+      },
+      "name": "events-kafka-staging",
+      "type": "broker",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "staging",
+      "owner": "Platform",
+      "team": "Data Platform",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "order-service.staging"
+      },
+      "name": "Order Service",
+      "type": "api",
+      "group": "service",
+      "provider": "aws",
+      "environmentId": "staging",
+      "owner": "Commerce",
+      "team": "Orders",
+      "health": "healthy",
+      "outgoingCount": 2,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "topic-orders-events-staging"
+      },
+      "name": "orders.events",
+      "type": "topic",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "staging",
+      "owner": "Commerce",
+      "team": "Orders",
+      "health": "healthy",
+      "outgoingCount": 1,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    }
+  ]
+}

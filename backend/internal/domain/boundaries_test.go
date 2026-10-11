@@ -27,7 +27,8 @@ func TestDomainImportsOnlyPureStandardLibrary(t *testing.T) {
 		}
 		for _, imp := range f.Imports {
 			path, _ := strconv.Unquote(imp.Path.Value)
-			if strings.Contains(strings.Split(path, "/")[0], ".") {
+			// golang.org/x/text is allowed: pure collation tables, needed for client-identical sorting.
+			if strings.Contains(strings.Split(path, "/")[0], ".") && !strings.HasPrefix(path, "golang.org/x/text/") {
 				t.Errorf("%s imports third-party package %q", file, path)
 			}
 			for _, bad := range forbidden {

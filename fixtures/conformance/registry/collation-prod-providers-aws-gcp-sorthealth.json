@@ -1,0 +1,136 @@
+{
+  "description": "collation prod, providers-aws-gcp, sort health",
+  "topology": "topology/collation.v1.json",
+  "environmentId": "prod",
+  "filters": {
+    "query": "",
+    "providers": [
+      "aws",
+      "gcp"
+    ],
+    "health": [],
+    "groups": []
+  },
+  "sort": "health",
+  "expected": [
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-02"
+      },
+      "name": "alpha",
+      "type": "queue",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "prod",
+      "owner": "Payments",
+      "team": null,
+      "health": "unavailable",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-03T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-10"
+      },
+      "name": "_hidden",
+      "type": "database",
+      "group": "data",
+      "provider": "aws",
+      "environmentId": "prod",
+      "owner": "Payments",
+      "team": null,
+      "health": "unavailable",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-02T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-05"
+      },
+      "name": "beta-2",
+      "type": "database",
+      "group": "data",
+      "provider": "aws",
+      "environmentId": "prod",
+      "owner": "ops_team",
+      "team": null,
+      "health": "degraded",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-06T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-07"
+      },
+      "name": "beta.2",
+      "type": "queue",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "prod",
+      "owner": "Zed",
+      "team": null,
+      "health": "unknown",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-08T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-15"
+      },
+      "name": "omega",
+      "type": "database",
+      "group": "data",
+      "provider": "aws",
+      "environmentId": "prod",
+      "owner": "Zed",
+      "team": null,
+      "health": "unknown",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": null
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-00"
+      },
+      "name": "zeta",
+      "type": "database",
+      "group": "data",
+      "provider": "aws",
+      "environmentId": null,
+      "owner": null,
+      "team": null,
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": null
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-12"
+      },
+      "name": "ALPHA-ONE",
+      "type": "queue",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": null,
+      "owner": "Ops-Team",
+      "team": null,
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": null
+    }
+  ]
+}

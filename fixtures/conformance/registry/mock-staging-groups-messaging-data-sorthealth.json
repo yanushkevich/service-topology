@@ -1,0 +1,51 @@
+{
+  "description": "mock staging, groups-messaging-data, sort health",
+  "topology": "topology/mock.v1.json",
+  "environmentId": "staging",
+  "filters": {
+    "query": "",
+    "providers": [],
+    "health": [],
+    "groups": [
+      "messaging",
+      "data"
+    ]
+  },
+  "sort": "health",
+  "expected": [
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "kafka-events-staging"
+      },
+      "name": "events-kafka-staging",
+      "type": "broker",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "staging",
+      "owner": "Platform",
+      "team": "Data Platform",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "topic-orders-events-staging"
+      },
+      "name": "orders.events",
+      "type": "topic",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "staging",
+      "owner": "Commerce",
+      "team": "Orders",
+      "health": "healthy",
+      "outgoingCount": 1,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    }
+  ]
+}

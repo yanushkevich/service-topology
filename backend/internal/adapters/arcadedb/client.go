@@ -56,7 +56,7 @@ func (e *Error) Unwrap() error { return e.kind }
 
 var (
 	// ErrConflict reports a uniqueness violation (duplicate stable ID).
-	ErrConflict = errors.New("conflict")
+	ErrConflict = ports.ErrConflict
 	// ErrAuth reports rejected credentials.
 	ErrAuth = errors.New("database credentials rejected")
 	// ErrDatabaseNotFound reports a missing database.

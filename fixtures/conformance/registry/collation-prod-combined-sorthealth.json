@@ -1,0 +1,41 @@
+{
+  "description": "collation prod, combined, sort health",
+  "topology": "topology/collation.v1.json",
+  "environmentId": "prod",
+  "filters": {
+    "query": "e",
+    "providers": [
+      "aws",
+      "on-prem",
+      "gcp"
+    ],
+    "health": [
+      "healthy",
+      "degraded"
+    ],
+    "groups": [
+      "service",
+      "messaging"
+    ]
+  },
+  "sort": "health",
+  "expected": [
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-12"
+      },
+      "name": "ALPHA-ONE",
+      "type": "queue",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": null,
+      "owner": "Ops-Team",
+      "team": null,
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": null
+    }
+  ]
+}

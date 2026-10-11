@@ -1,0 +1,65 @@
+{
+  "description": "mock production, query-two-terms-upper, sort health",
+  "topology": "topology/mock.v1.json",
+  "environmentId": "production",
+  "filters": {
+    "query": "  ORDER   prod ",
+    "providers": [],
+    "health": [],
+    "groups": []
+  },
+  "sort": "health",
+  "expected": [
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "order-service.production"
+      },
+      "name": "Order Service",
+      "type": "api",
+      "group": "service",
+      "provider": "aws",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Orders",
+      "health": "healthy",
+      "outgoingCount": 4,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "rds-orders-prod"
+      },
+      "name": "orders-db",
+      "type": "database",
+      "group": "data",
+      "provider": "aws",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Orders",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 2,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "topic-orders-events-prod"
+      },
+      "name": "orders.events",
+      "type": "topic",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Orders",
+      "health": "healthy",
+      "outgoingCount": 2,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    }
+  ]
+}

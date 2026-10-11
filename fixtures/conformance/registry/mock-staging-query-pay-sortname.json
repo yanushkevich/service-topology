@@ -1,0 +1,31 @@
+{
+  "description": "mock staging, query-pay, sort name",
+  "topology": "topology/mock.v1.json",
+  "environmentId": "staging",
+  "filters": {
+    "query": "pay",
+    "providers": [],
+    "health": [],
+    "groups": []
+  },
+  "sort": "name",
+  "expected": [
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "payment-service.staging"
+      },
+      "name": "Payment Service",
+      "type": "api",
+      "group": "service",
+      "provider": "azure",
+      "environmentId": "staging",
+      "owner": "Payments",
+      "team": "Payments",
+      "health": "degraded",
+      "outgoingCount": 1,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:45:00Z"
+    }
+  ]
+}

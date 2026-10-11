@@ -1,0 +1,13 @@
+{
+  "description": "collation prod, query-two-terms-upper, sort health",
+  "topology": "topology/collation.v1.json",
+  "environmentId": "prod",
+  "filters": {
+    "query": "  ORDER   prod ",
+    "providers": [],
+    "health": [],
+    "groups": []
+  },
+  "sort": "health",
+  "expected": []
+}

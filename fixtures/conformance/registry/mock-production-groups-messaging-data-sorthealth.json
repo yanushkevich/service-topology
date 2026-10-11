@@ -1,0 +1,238 @@
+{
+  "description": "mock production, groups-messaging-data, sort health",
+  "topology": "topology/mock.v1.json",
+  "environmentId": "production",
+  "filters": {
+    "query": "",
+    "providers": [],
+    "health": [],
+    "groups": [
+      "messaging",
+      "data"
+    ]
+  },
+  "sort": "health",
+  "expected": [
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "queue-notifications-email-prod"
+      },
+      "name": "notifications.email",
+      "type": "queue",
+      "group": "messaging",
+      "provider": "on-prem",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Engagement",
+      "health": "degraded",
+      "outgoingCount": 1,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:45:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "rds-inventory-prod"
+      },
+      "name": "inventory-db",
+      "type": "database",
+      "group": "data",
+      "provider": "aws",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Fulfilment",
+      "health": "degraded",
+      "outgoingCount": 0,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:45:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "exchange-notifications-prod"
+      },
+      "name": "notifications",
+      "type": "exchange",
+      "group": "messaging",
+      "provider": "on-prem",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Engagement",
+      "health": "healthy",
+      "outgoingCount": 1,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "kafka-events-prod"
+      },
+      "name": "events-kafka",
+      "type": "broker",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "production",
+      "owner": "Platform",
+      "team": "Data Platform",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "pg-ledger-prod"
+      },
+      "name": "ledger-db",
+      "type": "database",
+      "group": "data",
+      "provider": "on-prem",
+      "environmentId": "production",
+      "owner": "Payments",
+      "team": "Payments",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "pg-payments-prod"
+      },
+      "name": "payments-db",
+      "type": "database",
+      "group": "data",
+      "provider": "azure",
+      "environmentId": "production",
+      "owner": "Payments",
+      "team": "Payments",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "rabbitmq-fra-prod"
+      },
+      "name": "rabbitmq-fra",
+      "type": "broker",
+      "group": "messaging",
+      "provider": "on-prem",
+      "environmentId": "production",
+      "owner": "Platform",
+      "team": "Messaging",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "rds-orders-prod"
+      },
+      "name": "orders-db",
+      "type": "database",
+      "group": "data",
+      "provider": "aws",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Orders",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 2,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "redis-sessions-prod"
+      },
+      "name": "sessions-cache",
+      "type": "cache",
+      "group": "data",
+      "provider": "aws",
+      "environmentId": "production",
+      "owner": "Platform",
+      "team": "Identity",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 2,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "search-catalog-prod"
+      },
+      "name": "catalog-search",
+      "type": "search-index",
+      "group": "data",
+      "provider": "gcp",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Catalog",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "topic-inventory-updates-prod"
+      },
+      "name": "inventory.updates",
+      "type": "topic",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Fulfilment",
+      "health": "healthy",
+      "outgoingCount": 1,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "topic-orders-events-prod"
+      },
+      "name": "orders.events",
+      "type": "topic",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Orders",
+      "health": "healthy",
+      "outgoingCount": 2,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "topic-payments-events-prod"
+      },
+      "name": "payments.events",
+      "type": "topic",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "production",
+      "owner": "Payments",
+      "team": "Payments",
+      "health": "healthy",
+      "outgoingCount": 1,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    }
+  ]
+}

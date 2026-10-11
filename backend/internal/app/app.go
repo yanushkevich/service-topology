@@ -12,6 +12,7 @@ import (
 
 	"servicetopology/backend/internal/adapters/arcadedb"
 	"servicetopology/backend/internal/adapters/httpapi"
+	"servicetopology/backend/internal/application"
 	"servicetopology/backend/internal/config"
 	"servicetopology/backend/internal/ports"
 )
@@ -28,6 +29,7 @@ func (notConfigured) Check(context.Context) error {
 // HTTP_ADDR=127.0.0.1:0).
 func Run(ctx context.Context, cfg config.Config, logger *slog.Logger, onListen func(addr string)) error {
 	var dbCheck ports.ReadinessCheck = notConfigured{}
+	var api *application.Service
 	if cfg.ArcadeDB != nil {
 		client, err := arcadedb.NewClient(cfg.ArcadeDB)
 		if err != nil {
@@ -36,10 +38,16 @@ func Run(ctx context.Context, cfg config.Config, logger *slog.Logger, onListen f
 		init := arcadedb.NewInitializer(client, logger)
 		go init.Run(ctx, 5*time.Second)
 		dbCheck = init
+		api = &application.Service{
+			TopologyRepo: arcadedb.NewTopologyRepository(client),
+			SnapshotRepo: arcadedb.NewSnapshotRepository(client),
+			LayoutRepo:   arcadedb.NewLayoutRepository(client),
+		}
 	}
 	handler := httpapi.NewHandler(httpapi.Deps{
 		Logger: logger,
 		Checks: []ports.ReadinessCheck{dbCheck},
+		API:    api,
 	})
 	srv := &http.Server{
 		Handler:           handler,

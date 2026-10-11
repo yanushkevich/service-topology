@@ -1,0 +1,82 @@
+{
+  "description": "mock development, no-filters, sort -name",
+  "topology": "topology/mock.v1.json",
+  "environmentId": "development",
+  "filters": {
+    "query": "",
+    "providers": [],
+    "health": [],
+    "groups": []
+  },
+  "sort": "-name",
+  "expected": [
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "order-service.development"
+      },
+      "name": "Order Service",
+      "type": "api",
+      "group": "service",
+      "provider": "aws",
+      "environmentId": "development",
+      "owner": "Commerce",
+      "team": "Orders",
+      "health": "unknown",
+      "outgoingCount": 1,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "ext-email-delivery"
+      },
+      "name": "Email Delivery API",
+      "type": "external-resource",
+      "group": "external",
+      "provider": "saas",
+      "environmentId": null,
+      "owner": "Third party",
+      "team": null,
+      "health": "unknown",
+      "outgoingCount": 0,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "catalog-service.development"
+      },
+      "name": "Catalog Service",
+      "type": "api",
+      "group": "service",
+      "provider": "aws",
+      "environmentId": "development",
+      "owner": "Commerce",
+      "team": "Catalog",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "ext-card-processor"
+      },
+      "name": "Card Processor API",
+      "type": "external-resource",
+      "group": "external",
+      "provider": "saas",
+      "environmentId": null,
+      "owner": "Third party",
+      "team": null,
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 3,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    }
+  ]
+}

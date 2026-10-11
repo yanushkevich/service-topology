@@ -1,0 +1,272 @@
+{
+  "description": "mock production, providers-aws-gcp, sort health",
+  "topology": "topology/mock.v1.json",
+  "environmentId": "production",
+  "filters": {
+    "query": "",
+    "providers": [
+      "aws",
+      "gcp"
+    ],
+    "health": [],
+    "groups": []
+  },
+  "sort": "health",
+  "expected": [
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "inventory-service.production"
+      },
+      "name": "Inventory Service",
+      "type": "api",
+      "group": "service",
+      "provider": "aws",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Fulfilment",
+      "health": "degraded",
+      "outgoingCount": 2,
+      "incomingCount": 2,
+      "updatedAt": "2026-10-11T08:45:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "rds-inventory-prod"
+      },
+      "name": "inventory-db",
+      "type": "database",
+      "group": "data",
+      "provider": "aws",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Fulfilment",
+      "health": "degraded",
+      "outgoingCount": 0,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:45:00Z"
+    },
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "api-gateway.production"
+      },
+      "name": "API Gateway",
+      "type": "gateway",
+      "group": "service",
+      "provider": "aws",
+      "environmentId": "production",
+      "owner": "Platform",
+      "team": "Platform Edge",
+      "health": "healthy",
+      "outgoingCount": 4,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "auth-service.production"
+      },
+      "name": "Auth Service",
+      "type": "api",
+      "group": "service",
+      "provider": "aws",
+      "environmentId": "production",
+      "owner": "Platform",
+      "team": "Identity",
+      "health": "healthy",
+      "outgoingCount": 1,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "cart-service.production"
+      },
+      "name": "Cart Service",
+      "type": "api",
+      "group": "service",
+      "provider": "aws",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Storefront",
+      "health": "healthy",
+      "outgoingCount": 2,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "catalog-service.production"
+      },
+      "name": "Catalog Service",
+      "type": "api",
+      "group": "service",
+      "provider": "aws",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Catalog",
+      "health": "healthy",
+      "outgoingCount": 1,
+      "incomingCount": 4,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "kafka-events-prod"
+      },
+      "name": "events-kafka",
+      "type": "broker",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "production",
+      "owner": "Platform",
+      "team": "Data Platform",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "order-service.production"
+      },
+      "name": "Order Service",
+      "type": "api",
+      "group": "service",
+      "provider": "aws",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Orders",
+      "health": "healthy",
+      "outgoingCount": 4,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "rds-orders-prod"
+      },
+      "name": "orders-db",
+      "type": "database",
+      "group": "data",
+      "provider": "aws",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Orders",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 2,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "redis-sessions-prod"
+      },
+      "name": "sessions-cache",
+      "type": "cache",
+      "group": "data",
+      "provider": "aws",
+      "environmentId": "production",
+      "owner": "Platform",
+      "team": "Identity",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 2,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "search-catalog-prod"
+      },
+      "name": "catalog-search",
+      "type": "search-index",
+      "group": "data",
+      "provider": "gcp",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Catalog",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "topic-inventory-updates-prod"
+      },
+      "name": "inventory.updates",
+      "type": "topic",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Fulfilment",
+      "health": "healthy",
+      "outgoingCount": 1,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "topic-orders-events-prod"
+      },
+      "name": "orders.events",
+      "type": "topic",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Orders",
+      "health": "healthy",
+      "outgoingCount": 2,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "topic-payments-events-prod"
+      },
+      "name": "payments.events",
+      "type": "topic",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "production",
+      "owner": "Payments",
+      "team": "Payments",
+      "health": "healthy",
+      "outgoingCount": 1,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "web-bff.production"
+      },
+      "name": "Web BFF",
+      "type": "api",
+      "group": "service",
+      "provider": "aws",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Storefront",
+      "health": "healthy",
+      "outgoingCount": 2,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    }
+  ]
+}

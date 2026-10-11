@@ -1,0 +1,82 @@
+{
+  "description": "collation prod, query-pay, sort health",
+  "topology": "topology/collation.v1.json",
+  "environmentId": "prod",
+  "filters": {
+    "query": "pay",
+    "providers": [],
+    "health": [],
+    "groups": []
+  },
+  "sort": "health",
+  "expected": [
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-02"
+      },
+      "name": "alpha",
+      "type": "queue",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "prod",
+      "owner": "Payments",
+      "team": null,
+      "health": "unavailable",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-03T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-10"
+      },
+      "name": "_hidden",
+      "type": "database",
+      "group": "data",
+      "provider": "aws",
+      "environmentId": "prod",
+      "owner": "Payments",
+      "team": null,
+      "health": "unavailable",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-02T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-01"
+      },
+      "name": "Alpha",
+      "type": "topic",
+      "group": "messaging",
+      "provider": "azure",
+      "environmentId": "prod",
+      "owner": "payments",
+      "team": null,
+      "health": "degraded",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-02T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-09"
+      },
+      "name": "beta 9",
+      "type": "external-resource",
+      "group": "external",
+      "provider": "saas",
+      "environmentId": "prod",
+      "owner": "payments",
+      "team": null,
+      "health": "degraded",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": null
+    }
+  ]
+}

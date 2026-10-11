@@ -1,0 +1,1873 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture-0730",
+  "label": "Inventory DB replica lag",
+  "takenAt": "2026-10-11T07:30:00Z",
+  "source": "fixture",
+  "isSimulated": true,
+  "data": {
+    "environments": [
+      {
+        "id": "production",
+        "name": "Production",
+        "kind": "production"
+      },
+      {
+        "id": "staging",
+        "name": "Staging",
+        "kind": "staging"
+      },
+      {
+        "id": "development",
+        "name": "Development",
+        "kind": "development"
+      }
+    ],
+    "serviceDefinitions": [
+      {
+        "id": "api-gateway",
+        "name": "API Gateway",
+        "description": "Public ingress; routes and authenticates external traffic.",
+        "owner": "Platform",
+        "team": "Platform Edge",
+        "category": "gateway",
+        "protocols": [
+          "https",
+          "grpc"
+        ]
+      },
+      {
+        "id": "web-bff",
+        "name": "Web BFF",
+        "description": "Backend-for-frontend aggregating storefront calls.",
+        "owner": "Commerce",
+        "team": "Storefront",
+        "category": "api",
+        "protocols": [
+          "http",
+          "grpc"
+        ]
+      },
+      {
+        "id": "auth-service",
+        "name": "Auth Service",
+        "description": "Session and token issuance.",
+        "owner": "Platform",
+        "team": "Identity",
+        "category": "api",
+        "protocols": [
+          "grpc",
+          "redis"
+        ]
+      },
+      {
+        "id": "cart-service",
+        "name": "Cart Service",
+        "description": "Shopping cart state.",
+        "owner": "Commerce",
+        "team": "Storefront",
+        "category": "api",
+        "protocols": [
+          "grpc",
+          "redis"
+        ]
+      },
+      {
+        "id": "catalog-service",
+        "name": "Catalog Service",
+        "description": "Product catalog reads and search.",
+        "owner": "Commerce",
+        "team": "Catalog",
+        "category": "api",
+        "protocols": [
+          "http",
+          "grpc",
+          "kafka"
+        ]
+      },
+      {
+        "id": "order-service",
+        "name": "Order Service",
+        "description": "Order placement and lifecycle; publishes order events.",
+        "owner": "Commerce",
+        "team": "Orders",
+        "category": "api",
+        "protocols": [
+          "https",
+          "grpc",
+          "postgresql",
+          "kafka"
+        ]
+      },
+      {
+        "id": "inventory-service",
+        "name": "Inventory Service",
+        "description": "Stock levels and reservations.",
+        "owner": "Commerce",
+        "team": "Fulfilment",
+        "category": "api",
+        "protocols": [
+          "grpc",
+          "postgresql",
+          "kafka"
+        ]
+      },
+      {
+        "id": "notification-service",
+        "name": "Notification Service",
+        "description": "Turns order events into customer notifications.",
+        "owner": "Commerce",
+        "team": "Engagement",
+        "category": "worker",
+        "protocols": [
+          "kafka",
+          "rabbitmq"
+        ]
+      },
+      {
+        "id": "email-dispatcher",
+        "name": "Email Dispatcher",
+        "description": "Consumes the email queue and calls the email delivery provider.",
+        "owner": "Commerce",
+        "team": "Engagement",
+        "category": "worker",
+        "protocols": [
+          "rabbitmq",
+          "https"
+        ]
+      },
+      {
+        "id": "legacy-report-cron",
+        "name": "Legacy Report Cron",
+        "description": "Nightly order export for finance. Owner unassigned.",
+        "category": "scheduled-job",
+        "protocols": [
+          "postgresql"
+        ]
+      },
+      {
+        "id": "payment-service",
+        "name": "Payment Service",
+        "description": "Payment authorization and capture.",
+        "owner": "Payments",
+        "team": "Payments",
+        "category": "api",
+        "protocols": [
+          "grpc",
+          "https",
+          "postgresql",
+          "kafka"
+        ]
+      },
+      {
+        "id": "fraud-scoring",
+        "name": "Fraud Scoring",
+        "description": "Real-time risk scoring for payment attempts.",
+        "owner": "Payments",
+        "team": "Risk",
+        "category": "api",
+        "protocols": [
+          "grpc"
+        ]
+      },
+      {
+        "id": "ledger-service",
+        "name": "Ledger Service",
+        "description": "Double-entry ledger fed by payment events.",
+        "owner": "Payments",
+        "team": "Payments",
+        "category": "worker",
+        "protocols": [
+          "kafka",
+          "postgresql"
+        ]
+      },
+      {
+        "id": "payout-worker",
+        "name": "Payout Worker",
+        "description": "Scheduled merchant payouts.",
+        "owner": "Payments",
+        "team": "Payments",
+        "category": "scheduled-job",
+        "protocols": [
+          "https",
+          "grpc"
+        ]
+      }
+    ],
+    "serviceInstances": [
+      {
+        "id": "api-gateway.production",
+        "serviceDefinitionId": "api-gateway",
+        "environmentId": "production",
+        "provider": "aws",
+        "health": "healthy",
+        "version": "3.14.2",
+        "endpoint": "https://api.example.test",
+        "resourceId": "ns-edge-prod",
+        "metrics": {
+          "latencyMs": 18,
+          "throughputPerSecond": 2400,
+          "errorRatePercent": 0.1,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "updatedAt": "2026-10-11T07:30:00Z"
+      },
+      {
+        "id": "web-bff.production",
+        "serviceDefinitionId": "web-bff",
+        "environmentId": "production",
+        "provider": "aws",
+        "health": "healthy",
+        "version": "2.8.0",
+        "resourceId": "ns-edge-prod",
+        "metrics": {
+          "latencyMs": 42,
+          "throughputPerSecond": 1300,
+          "errorRatePercent": 0.2,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "updatedAt": "2026-10-11T07:30:00Z"
+      },
+      {
+        "id": "auth-service.production",
+        "serviceDefinitionId": "auth-service",
+        "environmentId": "production",
+        "provider": "aws",
+        "health": "healthy",
+        "version": "5.2.1",
+        "resourceId": "ns-edge-prod",
+        "metrics": {
+          "latencyMs": 9,
+          "throughputPerSecond": 900,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "updatedAt": "2026-10-11T07:30:00Z"
+      },
+      {
+        "id": "cart-service.production",
+        "serviceDefinitionId": "cart-service",
+        "environmentId": "production",
+        "provider": "aws",
+        "health": "healthy",
+        "version": "1.19.0",
+        "resourceId": "ns-commerce-prod",
+        "metrics": {
+          "latencyMs": 14,
+          "throughputPerSecond": 610,
+          "errorRatePercent": 0.1,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "updatedAt": "2026-10-11T07:30:00Z"
+      },
+      {
+        "id": "catalog-service.production",
+        "serviceDefinitionId": "catalog-service",
+        "environmentId": "production",
+        "provider": "aws",
+        "health": "healthy",
+        "version": "4.3.0",
+        "resourceId": "ns-commerce-prod",
+        "metrics": {
+          "latencyMs": 27,
+          "throughputPerSecond": 1500,
+          "errorRatePercent": 0.1,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "updatedAt": "2026-10-11T07:30:00Z"
+      },
+      {
+        "id": "order-service.production",
+        "serviceDefinitionId": "order-service",
+        "environmentId": "production",
+        "provider": "aws",
+        "health": "healthy",
+        "version": "7.0.3",
+        "resourceId": "ns-commerce-prod",
+        "metrics": {
+          "latencyMs": 64,
+          "throughputPerSecond": 220,
+          "errorRatePercent": 0.3,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "updatedAt": "2026-10-11T07:30:00Z"
+      },
+      {
+        "id": "inventory-service.production",
+        "serviceDefinitionId": "inventory-service",
+        "environmentId": "production",
+        "provider": "aws",
+        "health": "degraded",
+        "version": "3.6.1",
+        "resourceId": "ns-commerce-prod",
+        "metrics": {
+          "latencyMs": 210,
+          "throughputPerSecond": 180,
+          "errorRatePercent": 2.4,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metadata": {
+          "note": "p95 latency elevated; waiting on inventory-db replica"
+        }
+      },
+      {
+        "id": "notification-service.production",
+        "serviceDefinitionId": "notification-service",
+        "environmentId": "production",
+        "provider": "on-prem",
+        "health": "healthy",
+        "version": "2.1.0",
+        "resourceId": "ns-messaging-prod",
+        "metrics": {
+          "latencyMs": 0,
+          "throughputPerSecond": 0,
+          "errorRatePercent": 100,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metadata": {
+          "note": "2 of 4 replicas crash-looping"
+        }
+      },
+      {
+        "id": "email-dispatcher.production",
+        "serviceDefinitionId": "email-dispatcher",
+        "environmentId": "production",
+        "provider": "on-prem",
+        "health": "healthy",
+        "version": "1.4.2",
+        "resourceId": "ns-messaging-prod",
+        "metrics": {
+          "latencyMs": 95,
+          "throughputPerSecond": 16,
+          "errorRatePercent": 0.5,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "updatedAt": "2026-10-11T07:30:00Z"
+      },
+      {
+        "id": "legacy-report-cron.production",
+        "serviceDefinitionId": "legacy-report-cron",
+        "environmentId": "production",
+        "provider": "on-prem",
+        "health": "unknown",
+        "version": "0.9.7",
+        "resourceId": "ns-batch-prod",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metadata": {
+          "schedule": "0 2 * * *"
+        }
+      },
+      {
+        "id": "payment-service.production",
+        "serviceDefinitionId": "payment-service",
+        "environmentId": "production",
+        "provider": "azure",
+        "health": "healthy",
+        "version": "6.2.0",
+        "resourceId": "ns-payments-prod",
+        "metrics": {
+          "latencyMs": 120,
+          "throughputPerSecond": 140,
+          "errorRatePercent": 0.2,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "updatedAt": "2026-10-11T07:30:00Z"
+      },
+      {
+        "id": "fraud-scoring.production",
+        "serviceDefinitionId": "fraud-scoring",
+        "environmentId": "production",
+        "provider": "azure",
+        "health": "healthy",
+        "version": "2.0.5",
+        "resourceId": "ns-risk-prod",
+        "metrics": {
+          "latencyMs": 340,
+          "throughputPerSecond": 140,
+          "errorRatePercent": 1.1,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metadata": {
+          "note": "1 of 3 replicas restarting"
+        }
+      },
+      {
+        "id": "ledger-service.production",
+        "serviceDefinitionId": "ledger-service",
+        "environmentId": "production",
+        "provider": "azure",
+        "health": "healthy",
+        "version": "3.1.0",
+        "resourceId": "ns-payments-prod",
+        "metrics": {
+          "latencyMs": 21,
+          "throughputPerSecond": 120,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "updatedAt": "2026-10-11T07:30:00Z"
+      },
+      {
+        "id": "payout-worker.production",
+        "serviceDefinitionId": "payout-worker",
+        "environmentId": "production",
+        "provider": "azure",
+        "health": "healthy",
+        "version": "1.7.4",
+        "resourceId": "ns-payments-prod",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metadata": {
+          "schedule": "0 */6 * * *"
+        }
+      },
+      {
+        "id": "api-gateway.staging",
+        "serviceDefinitionId": "api-gateway",
+        "environmentId": "staging",
+        "provider": "aws",
+        "health": "healthy",
+        "version": "3.15.0-rc.1",
+        "endpoint": "https://api.staging.example.test",
+        "resourceId": "ns-commerce-staging",
+        "metrics": {
+          "latencyMs": 21,
+          "throughputPerSecond": 40,
+          "errorRatePercent": 0.1,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "updatedAt": "2026-10-11T07:30:00Z"
+      },
+      {
+        "id": "catalog-service.staging",
+        "serviceDefinitionId": "catalog-service",
+        "environmentId": "staging",
+        "provider": "aws",
+        "health": "healthy",
+        "version": "4.4.0-rc.2",
+        "resourceId": "ns-commerce-staging",
+        "metrics": {
+          "latencyMs": 30,
+          "throughputPerSecond": 22,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "updatedAt": "2026-10-11T07:30:00Z"
+      },
+      {
+        "id": "order-service.staging",
+        "serviceDefinitionId": "order-service",
+        "environmentId": "staging",
+        "provider": "aws",
+        "health": "healthy",
+        "version": "7.1.0-rc.1",
+        "resourceId": "ns-commerce-staging",
+        "metrics": {
+          "latencyMs": 70,
+          "throughputPerSecond": 6,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "updatedAt": "2026-10-11T07:30:00Z"
+      },
+      {
+        "id": "inventory-service.staging",
+        "serviceDefinitionId": "inventory-service",
+        "environmentId": "staging",
+        "provider": "aws",
+        "health": "healthy",
+        "version": "3.7.0-rc.1",
+        "resourceId": "ns-commerce-staging",
+        "metrics": {
+          "latencyMs": 35,
+          "throughputPerSecond": 5,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "updatedAt": "2026-10-11T07:30:00Z"
+      },
+      {
+        "id": "payment-service.staging",
+        "serviceDefinitionId": "payment-service",
+        "environmentId": "staging",
+        "provider": "azure",
+        "health": "degraded",
+        "version": "6.3.0-rc.3",
+        "resourceId": "ns-payments-staging",
+        "metrics": {
+          "latencyMs": 480,
+          "throughputPerSecond": 4,
+          "errorRatePercent": 6.5,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metadata": {
+          "note": "sandbox card processor rate-limited"
+        }
+      },
+      {
+        "id": "catalog-service.development",
+        "serviceDefinitionId": "catalog-service",
+        "environmentId": "development",
+        "provider": "aws",
+        "health": "healthy",
+        "version": "4.5.0-dev",
+        "resourceId": "ns-commerce-dev",
+        "updatedAt": "2026-10-11T07:30:00Z"
+      },
+      {
+        "id": "order-service.development",
+        "serviceDefinitionId": "order-service",
+        "environmentId": "development",
+        "provider": "aws",
+        "health": "unknown",
+        "version": "7.2.0-dev",
+        "resourceId": "ns-commerce-dev",
+        "updatedAt": "2026-10-11T07:30:00Z"
+      }
+    ],
+    "resources": [
+      {
+        "id": "aws-acct-commerce-prod",
+        "name": "commerce-prod",
+        "type": "account",
+        "provider": "aws",
+        "environmentId": "production",
+        "metadata": {
+          "accountId": "000000000001"
+        }
+      },
+      {
+        "id": "aws-use1-prod",
+        "name": "us-east-1",
+        "type": "region",
+        "provider": "aws",
+        "parentResourceId": "aws-acct-commerce-prod"
+      },
+      {
+        "id": "eks-commerce-prod",
+        "name": "eks-commerce-prod",
+        "type": "cluster",
+        "provider": "aws",
+        "parentResourceId": "aws-use1-prod",
+        "metadata": {
+          "kubernetesVersion": "1.33"
+        }
+      },
+      {
+        "id": "ns-edge-prod",
+        "name": "edge",
+        "type": "namespace",
+        "provider": "aws",
+        "parentResourceId": "eks-commerce-prod"
+      },
+      {
+        "id": "ns-commerce-prod",
+        "name": "commerce",
+        "type": "namespace",
+        "provider": "aws",
+        "parentResourceId": "eks-commerce-prod"
+      },
+      {
+        "id": "rds-orders-prod",
+        "name": "orders-db",
+        "type": "database",
+        "provider": "aws",
+        "parentResourceId": "aws-use1-prod",
+        "health": "healthy",
+        "owner": "Commerce",
+        "team": "Orders",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 4,
+          "throughputPerSecond": 820,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "metadata": {
+          "engine": "PostgreSQL 17",
+          "replicas": 2
+        }
+      },
+      {
+        "id": "rds-inventory-prod",
+        "name": "inventory-db",
+        "type": "database",
+        "provider": "aws",
+        "parentResourceId": "aws-use1-prod",
+        "health": "degraded",
+        "owner": "Commerce",
+        "team": "Fulfilment",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 38,
+          "throughputPerSecond": 410,
+          "errorRatePercent": 0.4,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "metadata": {
+          "engine": "PostgreSQL 17",
+          "replicas": 2,
+          "note": "replica-2 lagging behind primary"
+        }
+      },
+      {
+        "id": "redis-sessions-prod",
+        "name": "sessions-cache",
+        "type": "cache",
+        "provider": "aws",
+        "parentResourceId": "aws-use1-prod",
+        "health": "healthy",
+        "owner": "Platform",
+        "team": "Identity",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 1,
+          "throughputPerSecond": 5400,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "metadata": {
+          "engine": "Redis 7"
+        }
+      },
+      {
+        "id": "aws-acct-commerce-nonprod",
+        "name": "commerce-nonprod",
+        "type": "account",
+        "provider": "aws",
+        "metadata": {
+          "accountId": "000000000002"
+        }
+      },
+      {
+        "id": "aws-use1-nonprod",
+        "name": "us-east-1",
+        "type": "region",
+        "provider": "aws",
+        "parentResourceId": "aws-acct-commerce-nonprod"
+      },
+      {
+        "id": "eks-commerce-staging",
+        "name": "eks-commerce-staging",
+        "type": "cluster",
+        "provider": "aws",
+        "parentResourceId": "aws-use1-nonprod",
+        "environmentId": "staging"
+      },
+      {
+        "id": "ns-commerce-staging",
+        "name": "commerce",
+        "type": "namespace",
+        "provider": "aws",
+        "parentResourceId": "eks-commerce-staging"
+      },
+      {
+        "id": "eks-commerce-dev",
+        "name": "eks-commerce-dev",
+        "type": "cluster",
+        "provider": "aws",
+        "parentResourceId": "aws-use1-nonprod",
+        "environmentId": "development"
+      },
+      {
+        "id": "ns-commerce-dev",
+        "name": "commerce",
+        "type": "namespace",
+        "provider": "aws",
+        "parentResourceId": "eks-commerce-dev"
+      },
+      {
+        "id": "az-sub-payments",
+        "name": "payments",
+        "type": "subscription",
+        "provider": "azure"
+      },
+      {
+        "id": "az-weu",
+        "name": "westeurope",
+        "type": "region",
+        "provider": "azure",
+        "parentResourceId": "az-sub-payments"
+      },
+      {
+        "id": "aks-payments-prod",
+        "name": "aks-payments-prod",
+        "type": "cluster",
+        "provider": "azure",
+        "parentResourceId": "az-weu",
+        "environmentId": "production"
+      },
+      {
+        "id": "ns-payments-prod",
+        "name": "payments",
+        "type": "namespace",
+        "provider": "azure",
+        "parentResourceId": "aks-payments-prod"
+      },
+      {
+        "id": "ns-risk-prod",
+        "name": "risk",
+        "type": "namespace",
+        "provider": "azure",
+        "parentResourceId": "aks-payments-prod"
+      },
+      {
+        "id": "pg-payments-prod",
+        "name": "payments-db",
+        "type": "database",
+        "provider": "azure",
+        "parentResourceId": "az-weu",
+        "environmentId": "production",
+        "health": "healthy",
+        "owner": "Payments",
+        "team": "Payments",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 6,
+          "throughputPerSecond": 310,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "metadata": {
+          "engine": "Azure Database for PostgreSQL"
+        }
+      },
+      {
+        "id": "aks-payments-staging",
+        "name": "aks-payments-staging",
+        "type": "cluster",
+        "provider": "azure",
+        "parentResourceId": "az-weu",
+        "environmentId": "staging"
+      },
+      {
+        "id": "ns-payments-staging",
+        "name": "payments",
+        "type": "namespace",
+        "provider": "azure",
+        "parentResourceId": "aks-payments-staging"
+      },
+      {
+        "id": "gcp-proj-data",
+        "name": "data-platform",
+        "type": "project",
+        "provider": "gcp"
+      },
+      {
+        "id": "gcp-usc1",
+        "name": "us-central1",
+        "type": "region",
+        "provider": "gcp",
+        "parentResourceId": "gcp-proj-data"
+      },
+      {
+        "id": "kafka-events-prod",
+        "name": "events-kafka",
+        "type": "broker",
+        "provider": "gcp",
+        "parentResourceId": "gcp-usc1",
+        "environmentId": "production",
+        "health": "healthy",
+        "owner": "Platform",
+        "team": "Data Platform",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metadata": {
+          "technology": "Apache Kafka",
+          "brokers": 3
+        }
+      },
+      {
+        "id": "topic-orders-events-prod",
+        "name": "orders.events",
+        "type": "topic",
+        "provider": "gcp",
+        "parentResourceId": "kafka-events-prod",
+        "health": "healthy",
+        "owner": "Commerce",
+        "team": "Orders",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 12,
+          "throughputPerSecond": 140,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "metadata": {
+          "partitions": 6,
+          "retention": "7d"
+        }
+      },
+      {
+        "id": "topic-inventory-updates-prod",
+        "name": "inventory.updates",
+        "type": "topic",
+        "provider": "gcp",
+        "parentResourceId": "kafka-events-prod",
+        "health": "healthy",
+        "owner": "Commerce",
+        "team": "Fulfilment",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 15,
+          "throughputPerSecond": 95,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "metadata": {
+          "partitions": 3,
+          "retention": "3d"
+        }
+      },
+      {
+        "id": "topic-payments-events-prod",
+        "name": "payments.events",
+        "type": "topic",
+        "provider": "gcp",
+        "parentResourceId": "kafka-events-prod",
+        "health": "healthy",
+        "owner": "Payments",
+        "team": "Payments",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 11,
+          "throughputPerSecond": 120,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "metadata": {
+          "partitions": 6,
+          "retention": "30d"
+        }
+      },
+      {
+        "id": "search-catalog-prod",
+        "name": "catalog-search",
+        "type": "search-index",
+        "provider": "gcp",
+        "parentResourceId": "gcp-usc1",
+        "environmentId": "production",
+        "health": "healthy",
+        "owner": "Commerce",
+        "team": "Catalog",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 22,
+          "throughputPerSecond": 640,
+          "errorRatePercent": 0.1,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "metadata": {
+          "technology": "OpenSearch"
+        }
+      },
+      {
+        "id": "kafka-events-staging",
+        "name": "events-kafka-staging",
+        "type": "broker",
+        "provider": "gcp",
+        "parentResourceId": "gcp-usc1",
+        "environmentId": "staging",
+        "health": "healthy",
+        "owner": "Platform",
+        "team": "Data Platform",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metadata": {
+          "technology": "Apache Kafka",
+          "brokers": 1
+        }
+      },
+      {
+        "id": "topic-orders-events-staging",
+        "name": "orders.events",
+        "type": "topic",
+        "provider": "gcp",
+        "parentResourceId": "kafka-events-staging",
+        "health": "healthy",
+        "owner": "Commerce",
+        "team": "Orders",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metadata": {
+          "partitions": 1
+        }
+      },
+      {
+        "id": "dc-fra",
+        "name": "Frankfurt DC",
+        "type": "datacenter",
+        "provider": "on-prem",
+        "environmentId": "production"
+      },
+      {
+        "id": "k8s-fra-prod",
+        "name": "fra-k8s-prod",
+        "type": "cluster",
+        "provider": "on-prem",
+        "parentResourceId": "dc-fra",
+        "metadata": {
+          "distribution": "Rancher RKE2"
+        }
+      },
+      {
+        "id": "ns-batch-prod",
+        "name": "batch",
+        "type": "namespace",
+        "provider": "on-prem",
+        "parentResourceId": "k8s-fra-prod"
+      },
+      {
+        "id": "ns-messaging-prod",
+        "name": "messaging",
+        "type": "namespace",
+        "provider": "on-prem",
+        "parentResourceId": "k8s-fra-prod"
+      },
+      {
+        "id": "rabbitmq-fra-prod",
+        "name": "rabbitmq-fra",
+        "type": "broker",
+        "provider": "on-prem",
+        "parentResourceId": "dc-fra",
+        "health": "healthy",
+        "owner": "Platform",
+        "team": "Messaging",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metadata": {
+          "technology": "RabbitMQ 4",
+          "vhost": "/notifications"
+        }
+      },
+      {
+        "id": "exchange-notifications-prod",
+        "name": "notifications",
+        "type": "exchange",
+        "provider": "on-prem",
+        "parentResourceId": "rabbitmq-fra-prod",
+        "health": "healthy",
+        "owner": "Commerce",
+        "team": "Engagement",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 2,
+          "throughputPerSecond": 60,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "metadata": {
+          "exchangeType": "topic"
+        }
+      },
+      {
+        "id": "queue-notifications-email-prod",
+        "name": "notifications.email",
+        "type": "queue",
+        "provider": "on-prem",
+        "parentResourceId": "rabbitmq-fra-prod",
+        "health": "healthy",
+        "owner": "Commerce",
+        "team": "Engagement",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 4200,
+          "throughputPerSecond": 18,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "metadata": {
+          "durable": true,
+          "depth": 12840,
+          "note": "backlog growing: consumers unavailable"
+        }
+      },
+      {
+        "id": "pg-ledger-prod",
+        "name": "ledger-db",
+        "type": "database",
+        "provider": "on-prem",
+        "parentResourceId": "dc-fra",
+        "health": "healthy",
+        "owner": "Payments",
+        "team": "Payments",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 3,
+          "throughputPerSecond": 210,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "metadata": {
+          "engine": "PostgreSQL 16"
+        }
+      },
+      {
+        "id": "ext-card-processor",
+        "name": "Card Processor API",
+        "type": "external-resource",
+        "provider": "saas",
+        "health": "healthy",
+        "owner": "Third party",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 180,
+          "throughputPerSecond": 42,
+          "errorRatePercent": 0.2,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "ext-email-delivery",
+        "name": "Email Delivery API",
+        "type": "external-resource",
+        "provider": "saas",
+        "health": "unknown",
+        "owner": "Third party",
+        "updatedAt": "2026-10-11T07:30:00Z"
+      }
+    ],
+    "relationships": [
+      {
+        "id": "rel:api-gateway.production->web-bff.production",
+        "sourceEntityId": "api-gateway.production",
+        "targetEntityId": "web-bff.production",
+        "protocol": "http",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 40,
+          "throughputPerSecond": 1300,
+          "errorRatePercent": 0.2,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:api-gateway.production->auth-service.production",
+        "sourceEntityId": "api-gateway.production",
+        "targetEntityId": "auth-service.production",
+        "protocol": "grpc",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "authenticationType": "mTLS",
+        "metrics": {
+          "latencyMs": 8,
+          "throughputPerSecond": 900,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:api-gateway.production->order-service.production",
+        "sourceEntityId": "api-gateway.production",
+        "targetEntityId": "order-service.production",
+        "protocol": "https",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "authenticationType": "JWT",
+        "endpoint": "/v1/orders",
+        "metrics": {
+          "latencyMs": 62,
+          "throughputPerSecond": 220,
+          "errorRatePercent": 0.3,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:api-gateway.production->catalog-service.production",
+        "sourceEntityId": "api-gateway.production",
+        "targetEntityId": "catalog-service.production",
+        "protocol": "http",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 25,
+          "throughputPerSecond": 900,
+          "errorRatePercent": 0.1,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:web-bff.production->cart-service.production",
+        "sourceEntityId": "web-bff.production",
+        "targetEntityId": "cart-service.production",
+        "protocol": "grpc",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 13,
+          "throughputPerSecond": 610,
+          "errorRatePercent": 0.1,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:web-bff.production->catalog-service.production",
+        "sourceEntityId": "web-bff.production",
+        "targetEntityId": "catalog-service.production",
+        "protocol": "grpc",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 24,
+          "throughputPerSecond": 600,
+          "errorRatePercent": 0.1,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:auth-service.production->redis-sessions-prod",
+        "sourceEntityId": "auth-service.production",
+        "targetEntityId": "redis-sessions-prod",
+        "protocol": "redis",
+        "pattern": "database",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 1,
+          "throughputPerSecond": 900,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:cart-service.production->redis-sessions-prod",
+        "sourceEntityId": "cart-service.production",
+        "targetEntityId": "redis-sessions-prod",
+        "protocol": "redis",
+        "pattern": "database",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 1,
+          "throughputPerSecond": 1200,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:cart-service.production->catalog-service.production",
+        "sourceEntityId": "cart-service.production",
+        "targetEntityId": "catalog-service.production",
+        "protocol": "grpc",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 20,
+          "throughputPerSecond": 300,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:order-service.production->payment-service.production",
+        "sourceEntityId": "order-service.production",
+        "targetEntityId": "payment-service.production",
+        "protocol": "https",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "authenticationType": "mTLS",
+        "endpoint": "/v2/payments",
+        "metrics": {
+          "latencyMs": 118,
+          "throughputPerSecond": 140,
+          "errorRatePercent": 0.2,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        },
+        "metadata": {
+          "note": "cross-cloud: AWS → Azure"
+        }
+      },
+      {
+        "id": "rel:order-service.production->inventory-service.production",
+        "sourceEntityId": "order-service.production",
+        "targetEntityId": "inventory-service.production",
+        "protocol": "grpc",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "degraded",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 205,
+          "throughputPerSecond": 180,
+          "errorRatePercent": 2.4,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:order-service.production->rds-orders-prod",
+        "sourceEntityId": "order-service.production",
+        "targetEntityId": "rds-orders-prod",
+        "protocol": "postgresql",
+        "pattern": "database",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 4,
+          "throughputPerSecond": 600,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:order-service.production->topic-orders-events-prod",
+        "sourceEntityId": "order-service.production",
+        "targetEntityId": "topic-orders-events-prod",
+        "protocol": "kafka",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 9,
+          "throughputPerSecond": 140,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:topic-orders-events-prod->inventory-service.production",
+        "sourceEntityId": "topic-orders-events-prod",
+        "targetEntityId": "inventory-service.production",
+        "protocol": "kafka",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 14,
+          "throughputPerSecond": 140,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:topic-orders-events-prod->notification-service.production",
+        "sourceEntityId": "topic-orders-events-prod",
+        "targetEntityId": "notification-service.production",
+        "protocol": "kafka",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 0,
+          "throughputPerSecond": 0,
+          "errorRatePercent": 100,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:inventory-service.production->rds-inventory-prod",
+        "sourceEntityId": "inventory-service.production",
+        "targetEntityId": "rds-inventory-prod",
+        "protocol": "postgresql",
+        "pattern": "database",
+        "direction": "unidirectional",
+        "status": "degraded",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 38,
+          "throughputPerSecond": 410,
+          "errorRatePercent": 0.4,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:inventory-service.production->topic-inventory-updates-prod",
+        "sourceEntityId": "inventory-service.production",
+        "targetEntityId": "topic-inventory-updates-prod",
+        "protocol": "kafka",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 12,
+          "throughputPerSecond": 95,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:topic-inventory-updates-prod->catalog-service.production",
+        "sourceEntityId": "topic-inventory-updates-prod",
+        "targetEntityId": "catalog-service.production",
+        "protocol": "kafka",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 16,
+          "throughputPerSecond": 95,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:catalog-service.production->search-catalog-prod",
+        "sourceEntityId": "catalog-service.production",
+        "targetEntityId": "search-catalog-prod",
+        "protocol": "https",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 21,
+          "throughputPerSecond": 640,
+          "errorRatePercent": 0.1,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:notification-service.production->exchange-notifications-prod",
+        "sourceEntityId": "notification-service.production",
+        "targetEntityId": "exchange-notifications-prod",
+        "protocol": "rabbitmq",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 0,
+          "throughputPerSecond": 0,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:exchange-notifications-prod->queue-notifications-email-prod",
+        "sourceEntityId": "exchange-notifications-prod",
+        "targetEntityId": "queue-notifications-email-prod",
+        "protocol": "rabbitmq",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metadata": {
+          "bindingKey": "notify.email.*"
+        },
+        "metrics": {
+          "latencyMs": 1,
+          "throughputPerSecond": 60,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:queue-notifications-email-prod->email-dispatcher.production",
+        "sourceEntityId": "queue-notifications-email-prod",
+        "targetEntityId": "email-dispatcher.production",
+        "protocol": "rabbitmq",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 3,
+          "throughputPerSecond": 16,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:email-dispatcher.production->ext-email-delivery",
+        "sourceEntityId": "email-dispatcher.production",
+        "targetEntityId": "ext-email-delivery",
+        "protocol": "https",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "authenticationType": "API key",
+        "metrics": {
+          "latencyMs": 90,
+          "throughputPerSecond": 16,
+          "errorRatePercent": 0.5,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:legacy-report-cron.production->rds-orders-prod",
+        "sourceEntityId": "legacy-report-cron.production",
+        "targetEntityId": "rds-orders-prod",
+        "protocol": "postgresql",
+        "pattern": "scheduled",
+        "direction": "unidirectional",
+        "status": "unknown",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metadata": {
+          "note": "cross-site: on-prem → AWS"
+        }
+      },
+      {
+        "id": "rel:payment-service.production->fraud-scoring.production",
+        "sourceEntityId": "payment-service.production",
+        "targetEntityId": "fraud-scoring.production",
+        "protocol": "grpc",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 330,
+          "throughputPerSecond": 140,
+          "errorRatePercent": 1.1,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:payment-service.production->pg-payments-prod",
+        "sourceEntityId": "payment-service.production",
+        "targetEntityId": "pg-payments-prod",
+        "protocol": "postgresql",
+        "pattern": "database",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 6,
+          "throughputPerSecond": 310,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:payment-service.production->ext-card-processor",
+        "sourceEntityId": "payment-service.production",
+        "targetEntityId": "ext-card-processor",
+        "protocol": "https",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "authenticationType": "mTLS",
+        "metrics": {
+          "latencyMs": 178,
+          "throughputPerSecond": 42,
+          "errorRatePercent": 0.2,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:payment-service.production->topic-payments-events-prod",
+        "sourceEntityId": "payment-service.production",
+        "targetEntityId": "topic-payments-events-prod",
+        "protocol": "kafka",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 10,
+          "throughputPerSecond": 120,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:topic-payments-events-prod->ledger-service.production",
+        "sourceEntityId": "topic-payments-events-prod",
+        "targetEntityId": "ledger-service.production",
+        "protocol": "kafka",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 13,
+          "throughputPerSecond": 120,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:ledger-service.production->pg-ledger-prod",
+        "sourceEntityId": "ledger-service.production",
+        "targetEntityId": "pg-ledger-prod",
+        "protocol": "postgresql",
+        "pattern": "database",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metadata": {
+          "note": "cross-site: Azure → on-prem"
+        },
+        "metrics": {
+          "latencyMs": 9,
+          "throughputPerSecond": 210,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:payout-worker.production->ledger-service.production",
+        "sourceEntityId": "payout-worker.production",
+        "targetEntityId": "ledger-service.production",
+        "protocol": "grpc",
+        "pattern": "scheduled",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z"
+      },
+      {
+        "id": "rel:payout-worker.production->ext-card-processor",
+        "sourceEntityId": "payout-worker.production",
+        "targetEntityId": "ext-card-processor",
+        "protocol": "https",
+        "pattern": "scheduled",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "authenticationType": "mTLS"
+      },
+      {
+        "id": "rel:api-gateway.staging->order-service.staging",
+        "sourceEntityId": "api-gateway.staging",
+        "targetEntityId": "order-service.staging",
+        "protocol": "https",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 68,
+          "throughputPerSecond": 6,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:api-gateway.staging->catalog-service.staging",
+        "sourceEntityId": "api-gateway.staging",
+        "targetEntityId": "catalog-service.staging",
+        "protocol": "http",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 28,
+          "throughputPerSecond": 22,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:order-service.staging->payment-service.staging",
+        "sourceEntityId": "order-service.staging",
+        "targetEntityId": "payment-service.staging",
+        "protocol": "https",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "degraded",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 470,
+          "throughputPerSecond": 4,
+          "errorRatePercent": 6.5,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:order-service.staging->topic-orders-events-staging",
+        "sourceEntityId": "order-service.staging",
+        "targetEntityId": "topic-orders-events-staging",
+        "protocol": "kafka",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 10,
+          "throughputPerSecond": 6,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:topic-orders-events-staging->inventory-service.staging",
+        "sourceEntityId": "topic-orders-events-staging",
+        "targetEntityId": "inventory-service.staging",
+        "protocol": "kafka",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metrics": {
+          "latencyMs": 12,
+          "throughputPerSecond": 6,
+          "errorRatePercent": 0,
+          "isSimulated": true,
+          "observedAt": "2026-10-11T07:30:00Z"
+        }
+      },
+      {
+        "id": "rel:payment-service.staging->ext-card-processor",
+        "sourceEntityId": "payment-service.staging",
+        "targetEntityId": "ext-card-processor",
+        "protocol": "https",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "degraded",
+        "updatedAt": "2026-10-11T07:30:00Z",
+        "metadata": {
+          "note": "sandbox credentials"
+        }
+      },
+      {
+        "id": "rel:order-service.development->catalog-service.development",
+        "sourceEntityId": "order-service.development",
+        "targetEntityId": "catalog-service.development",
+        "protocol": "grpc",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T07:30:00Z"
+      }
+    ],
+    "eventTypes": [
+      {
+        "id": "event-order-placed",
+        "name": "OrderPlaced",
+        "description": "Emitted when a customer order is accepted and awaiting payment.",
+        "schemaVersion": "v3",
+        "owner": "Commerce",
+        "team": "Orders",
+        "channelResourceIds": [
+          "topic-orders-events-prod",
+          "topic-orders-events-staging"
+        ],
+        "producerServiceIds": [
+          "order-service"
+        ],
+        "consumerServiceIds": [
+          "inventory-service",
+          "notification-service"
+        ]
+      },
+      {
+        "id": "event-order-cancelled",
+        "name": "OrderCancelled",
+        "description": "Emitted when an order is cancelled before fulfilment.",
+        "schemaVersion": "v2",
+        "owner": "Commerce",
+        "team": "Orders",
+        "channelResourceIds": [
+          "topic-orders-events-prod",
+          "topic-orders-events-staging"
+        ],
+        "producerServiceIds": [
+          "order-service"
+        ],
+        "consumerServiceIds": [
+          "inventory-service"
+        ]
+      },
+      {
+        "id": "event-order-shipped",
+        "name": "OrderShipped",
+        "description": "Emitted when an order leaves the warehouse.",
+        "schemaVersion": "v1",
+        "owner": "Commerce",
+        "team": "Orders",
+        "channelResourceIds": [
+          "topic-orders-events-prod",
+          "topic-orders-events-staging"
+        ],
+        "producerServiceIds": [
+          "order-service"
+        ],
+        "consumerServiceIds": [
+          "notification-service"
+        ]
+      },
+      {
+        "id": "event-stock-level-changed",
+        "name": "StockLevelChanged",
+        "description": "Emitted when available stock for an item changes.",
+        "schemaVersion": "v2",
+        "owner": "Commerce",
+        "team": "Fulfilment",
+        "channelResourceIds": [
+          "topic-inventory-updates-prod"
+        ],
+        "producerServiceIds": [
+          "inventory-service"
+        ],
+        "consumerServiceIds": [
+          "catalog-service"
+        ]
+      },
+      {
+        "id": "event-stock-reserved",
+        "name": "StockReserved",
+        "description": "Emitted when stock is held against an open order.",
+        "schemaVersion": "v1",
+        "owner": "Commerce",
+        "team": "Fulfilment",
+        "channelResourceIds": [
+          "topic-inventory-updates-prod"
+        ],
+        "producerServiceIds": [
+          "inventory-service"
+        ],
+        "consumerServiceIds": [
+          "catalog-service"
+        ]
+      },
+      {
+        "id": "event-payment-captured",
+        "name": "PaymentCaptured",
+        "description": "Emitted when funds are captured for an order.",
+        "schemaVersion": "v4",
+        "owner": "Payments",
+        "team": "Payments",
+        "channelResourceIds": [
+          "topic-payments-events-prod"
+        ],
+        "producerServiceIds": [
+          "payment-service"
+        ],
+        "consumerServiceIds": [
+          "ledger-service"
+        ]
+      },
+      {
+        "id": "event-payment-failed",
+        "name": "PaymentFailed",
+        "description": "Emitted when a capture attempt is declined or errors. No consumer is modeled yet.",
+        "schemaVersion": "v2",
+        "owner": "Payments",
+        "team": "Payments",
+        "channelResourceIds": [
+          "topic-payments-events-prod"
+        ],
+        "producerServiceIds": [
+          "payment-service"
+        ],
+        "consumerServiceIds": []
+      },
+      {
+        "id": "event-refund-issued",
+        "name": "RefundIssued",
+        "description": "Emitted when a refund is sent back to the customer.",
+        "schemaVersion": "v1",
+        "owner": "Payments",
+        "team": "Payments",
+        "channelResourceIds": [
+          "topic-payments-events-prod"
+        ],
+        "producerServiceIds": [
+          "payment-service"
+        ],
+        "consumerServiceIds": [
+          "ledger-service"
+        ]
+      },
+      {
+        "id": "event-notification-requested",
+        "name": "NotificationRequested",
+        "description": "Published when a customer message is ready for delivery; routed to the email queue.",
+        "schemaVersion": "v1",
+        "owner": "Commerce",
+        "team": "Engagement",
+        "channelResourceIds": [
+          "exchange-notifications-prod"
+        ],
+        "producerServiceIds": [
+          "notification-service"
+        ],
+        "consumerServiceIds": [
+          "email-dispatcher"
+        ],
+        "metadata": {
+          "routingKey": "notify.email.order"
+        }
+      }
+    ]
+  }
+}

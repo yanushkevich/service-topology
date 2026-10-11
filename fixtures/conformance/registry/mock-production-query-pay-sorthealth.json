@@ -1,0 +1,133 @@
+{
+  "description": "mock production, query-pay, sort health",
+  "topology": "topology/mock.v1.json",
+  "environmentId": "production",
+  "filters": {
+    "query": "pay",
+    "providers": [],
+    "health": [],
+    "groups": []
+  },
+  "sort": "health",
+  "expected": [
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "fraud-scoring.production"
+      },
+      "name": "Fraud Scoring",
+      "type": "api",
+      "group": "service",
+      "provider": "azure",
+      "environmentId": "production",
+      "owner": "Payments",
+      "team": "Risk",
+      "health": "degraded",
+      "outgoingCount": 0,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:45:00Z"
+    },
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "ledger-service.production"
+      },
+      "name": "Ledger Service",
+      "type": "worker",
+      "group": "service",
+      "provider": "azure",
+      "environmentId": "production",
+      "owner": "Payments",
+      "team": "Payments",
+      "health": "healthy",
+      "outgoingCount": 1,
+      "incomingCount": 2,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "payment-service.production"
+      },
+      "name": "Payment Service",
+      "type": "api",
+      "group": "service",
+      "provider": "azure",
+      "environmentId": "production",
+      "owner": "Payments",
+      "team": "Payments",
+      "health": "healthy",
+      "outgoingCount": 4,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "payout-worker.production"
+      },
+      "name": "Payout Worker",
+      "type": "scheduled-job",
+      "group": "service",
+      "provider": "azure",
+      "environmentId": "production",
+      "owner": "Payments",
+      "team": "Payments",
+      "health": "healthy",
+      "outgoingCount": 2,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "pg-ledger-prod"
+      },
+      "name": "ledger-db",
+      "type": "database",
+      "group": "data",
+      "provider": "on-prem",
+      "environmentId": "production",
+      "owner": "Payments",
+      "team": "Payments",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "pg-payments-prod"
+      },
+      "name": "payments-db",
+      "type": "database",
+      "group": "data",
+      "provider": "azure",
+      "environmentId": "production",
+      "owner": "Payments",
+      "team": "Payments",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "topic-payments-events-prod"
+      },
+      "name": "payments.events",
+      "type": "topic",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "production",
+      "owner": "Payments",
+      "team": "Payments",
+      "health": "healthy",
+      "outgoingCount": 1,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    }
+  ]
+}

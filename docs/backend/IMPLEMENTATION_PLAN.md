@@ -1,6 +1,6 @@
 # Go Backend Implementation Plan (ArcadeDB)
 
-**Status:** B1–B2 implemented (closeouts below); B3–B6 not started. Execute one milestone at a time; do not automatically start the next. Backend milestones are B1–B6, a separate track from frontend Milestones 1–7. Code lives in `backend/`. Commit each milestone with scope `b1`…`b6`. Track status in the root `docs/IMPLEMENTATION_PLAN.md`.
+**Status:** B1–B3 implemented (closeouts below); B4–B6 not started. Execute one milestone at a time; do not automatically start the next. Backend milestones are B1–B6, a separate track from frontend Milestones 1–7. Code lives in `backend/`. Commit each milestone with scope `b1`…`b6`. Track status in the root `docs/IMPLEMENTATION_PLAN.md`.
 
 ## Milestone B1 — Go service foundation and domain
 Scope: `backend/` Go module (scaffold files moved in from `docs/backend/scaffold/`), configuration validation, HTTP lifecycle, health/readiness skeleton, structured logging, domain types and the full `validateTopology` rule set, repository/query interfaces, shared fixture export (`fixtures/`, from the frontend mock via a script) and the conformance fixture format.
@@ -69,4 +69,18 @@ Environment: Rancher Desktop (2 GB VM, k3s enabled), Docker 29.1.3, `arcadedata/
 Fixed along the way: scaffold healthcheck used `curl` (absent from the image) → `wget`; ArcadeDB memory defaults caused VM-wide OOM kills → explicit budget (see `LOCAL_DEVELOPMENT.md`); a local password was printed during manual probing and was rotated (container user file reset by recreating the empty volume).
 
 Known limitations: environment filtering of `GET /topology` is defined in B3; imports are whole-topology replacements (ADR-DB-002); snapshots and layouts are not persisted yet (B3/B5); no performance measurement yet (B4).
+
+## Milestone B3 closeout (2026-10-11)
+Evidence: `make check` exit 0; `make test-integration` passes (incl. snapshot and layout repositories against ArcadeDB); `make contract-check`: 32/32 operations and error cases validate against `docs/api/openapi.json` (status, content type, body; ajv, JSON Schema 2020-12) on a disposable, seeded database that is dropped afterwards; the checker was shown to reject extra fields, null arrays, and unknown enum values. Frontend `npm run check` passes (contract tests include the extended `openapi.json`).
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Contract v1 endpoints | Pass | `internal/adapters/httpapi/api.go`: environments, topology (with environment projection), registry, entities, snapshots (list, get, capture), layouts (list, create, replace, delete) |
+| Responses validate against `openapi.json` | Pass | `make contract-check` (`apps/web/scripts/check-api-contract.mjs`) |
+| Registry equals the client's filter/sort | Pass | `TestRegistryConformance`: 104 TypeScript-generated cases (mock and a collation-stress topology, all 14 sort orders, 7 filter sets), exact rows and order; CLDR collation via `golang.org/x/text` v0.42.0 |
+| Pagination and filter tests | Pass | `TestRegistryPaginationAndParameters`: paged rows equal one page, cursor bound to query, 400s for every bad parameter |
+| Clear errors | Pass | RFC 9457 problems for 400/404/405/409/413/415/422/500/503 with `requestId`; database details never returned (`TestDatabaseFailuresAreServiceUnavailable`) |
+| Snapshots and layouts persisted | Pass | ArcadeDB schema v2 (additive; upgraded in place from v1), `TestSnapshotAndLayoutRepositories`; seed loads the 3 history fixtures idempotently and refuses to change an existing snapshot |
+
+Contract changes (additive, v1): documented error responses (400/404/409/413/415), environment projection and cursor semantics, `Problem.requestId`, validation code families. Known limitations: every request reads the full topology from ArcadeDB (fine at mock size; measured in B4); registry cursors are offset-based; layout concurrency control is still open.
 

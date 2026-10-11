@@ -7,8 +7,10 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
+	"servicetopology/backend/internal/application"
 	"servicetopology/backend/internal/observability"
 	"servicetopology/backend/internal/ports"
 )
@@ -20,6 +22,8 @@ type Deps struct {
 	Checks []ports.ReadinessCheck
 	// CheckTimeout bounds the whole readiness probe.
 	CheckTimeout time.Duration
+	// API serves /api/v1; nil (no database configured) makes every API route return 503.
+	API *application.Service
 }
 
 // NewHandler returns the HTTP handler with middleware applied.
@@ -32,7 +36,25 @@ func NewHandler(d Deps) http.Handler {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
 	mux.HandleFunc("GET /readyz", d.ready)
-	mux.HandleFunc("/", notFound)
+	d.apiRoutes(mux)
+	// Catch-all: 405 (with Allow) when the path exists under other methods, else 404. Both are
+	// problem+json. (A "/" pattern matches every method, so the router never sends its own 405.)
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		var allowed []string
+		for _, m := range []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete} {
+			probe := r.Clone(r.Context())
+			probe.Method = m
+			if _, pattern := mux.Handler(probe); pattern != "/" && pattern != "" {
+				allowed = append(allowed, m)
+			}
+		}
+		if len(allowed) == 0 {
+			notFound(w, r)
+			return
+		}
+		w.Header().Set("Allow", strings.Join(allowed, ", "))
+		WriteProblem(w, r, Problem{Type: problemBase + "method-not-allowed", Title: "Method not allowed", Status: http.StatusMethodNotAllowed, Detail: "Allowed: " + strings.Join(allowed, ", ")})
+	})
 	return d.middleware(mux)
 }
 

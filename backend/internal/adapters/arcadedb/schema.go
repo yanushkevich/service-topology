@@ -10,7 +10,9 @@ import (
 
 // SchemaVersion is the version of the types, properties, and indexes below. Bump it with additive
 // changes only; record breaking ones in docs/backend/DATABASE_DECISIONS.md.
-const SchemaVersion = 1
+//
+// History: 1 = canonical topology (B2); 2 = Snapshot and SavedLayout documents (B3, additive).
+const SchemaVersion = 2
 
 // Vertex types for canonical entities (docs/backend/PERSISTENCE.md). Each has a unique `id`.
 var vertexTypes = []string{"Environment", "ServiceDefinition", "ServiceInstance", "Resource", "EventType"}
@@ -21,6 +23,9 @@ var edgeTypes = []string{"COMMUNICATES", "CONTAINS", "HOSTED_IN", "INSTANCE_OF",
 
 // schemaInfoType is a document type holding the applied schema version.
 const schemaInfoType = "SchemaInfo"
+
+// Document types with a unique id (snapshots and layouts store their validated JSON as payload).
+var documentTypes = []string{"Snapshot", "SavedLayout"}
 
 // ddl returns the idempotent schema statements. All names are constants from this file, never input.
 func ddl() []string {
@@ -47,6 +52,14 @@ func ddl() []string {
 		"CREATE PROPERTY Resource.parentResourceId IF NOT EXISTS STRING",
 		"CREATE INDEX IF NOT EXISTS ON Resource (parentResourceId) NOTUNIQUE",
 		"CREATE DOCUMENT TYPE "+schemaInfoType+" IF NOT EXISTS",
+		"CREATE DOCUMENT TYPE Snapshot IF NOT EXISTS",
+		"CREATE PROPERTY Snapshot.id IF NOT EXISTS STRING (mandatory true, notnull true)",
+		"CREATE PROPERTY Snapshot.takenAt IF NOT EXISTS STRING",
+		"CREATE INDEX IF NOT EXISTS ON Snapshot (id) UNIQUE",
+		"CREATE INDEX IF NOT EXISTS ON Snapshot (takenAt) NOTUNIQUE",
+		"CREATE DOCUMENT TYPE SavedLayout IF NOT EXISTS",
+		"CREATE PROPERTY SavedLayout.id IF NOT EXISTS STRING (mandatory true, notnull true)",
+		"CREATE INDEX IF NOT EXISTS ON SavedLayout (id) UNIQUE",
 		"CREATE PROPERTY "+schemaInfoType+".id IF NOT EXISTS STRING (mandatory true, notnull true)",
 		"CREATE INDEX IF NOT EXISTS ON "+schemaInfoType+" (id) UNIQUE",
 	)
@@ -130,12 +143,12 @@ func CheckSchema(ctx context.Context, c *Client) error {
 		}
 	}
 	var missing []string
-	for _, t := range append(append(append([]string{}, vertexTypes...), edgeTypes...), schemaInfoType) {
+	for _, t := range append(append(append(append([]string{}, vertexTypes...), edgeTypes...), documentTypes...), schemaInfoType) {
 		if !present[t] {
 			missing = append(missing, "type "+t)
 		}
 	}
-	for _, t := range append(append([]string{}, vertexTypes...), "COMMUNICATES", schemaInfoType) {
+	for _, t := range append(append(append([]string{}, vertexTypes...), documentTypes...), "COMMUNICATES", schemaInfoType) {
 		if !uniqueID[t] {
 			missing = append(missing, "unique index "+t+"(id)")
 		}

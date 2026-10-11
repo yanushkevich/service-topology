@@ -303,3 +303,73 @@ func TestReadinessAndErrorsDoNotLeakSecrets(t *testing.T) {
 		t.Fatalf("got %v, want unavailable", err)
 	}
 }
+
+func TestSnapshotAndLayoutRepositories(t *testing.T) {
+	c := tempClient(t)
+	ctx := context.Background()
+	if err := arcadedb.EnsureSchema(ctx, c); err != nil {
+		t.Fatal(err)
+	}
+	dir, _ := fixtures.Dir()
+	snaps := arcadedb.NewSnapshotRepository(c)
+	files, _ := filepath.Glob(filepath.Join(dir, "snapshots", "*.json"))
+	for i := len(files) - 1; i >= 0; i-- { // insert newest first; List must still sort oldest first
+		raw, _ := os.ReadFile(files[i])
+		var s domain.Snapshot
+		if err := fixtures.DecodeStrict(raw, &s); err != nil {
+			t.Fatal(err)
+		}
+		if err := snaps.Save(ctx, &s); err != nil {
+			t.Fatal(err)
+		}
+		if err := snaps.Save(ctx, &s); !errors.Is(err, ports.ErrConflict) {
+			t.Fatalf("duplicate snapshot: %v", err)
+		}
+		got, err := snaps.Get(ctx, s.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sameJSON(t, raw, got)
+	}
+	list, err := snaps.List(ctx, ports.SnapshotQuery{})
+	if err != nil || len(list) != len(files) || list[0].ID != "fixture-0600" {
+		t.Fatalf("list: %v %+v", err, list)
+	}
+	if _, err := snaps.Get(ctx, "ghost"); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("missing snapshot: %v", err)
+	}
+
+	layouts := arcadedb.NewLayoutRepository(c)
+	mk := func(id, created string) *domain.SavedLayout {
+		l := &domain.SavedLayout{SchemaVersion: 1, ID: id, Name: id, CreatedAt: created,
+			View: domain.LayoutView{EnvironmentID: "production", LayoutMode: "topology"}, Positions: map[string]domain.Position{"a": {X: 1.5, Y: -2}}}
+		domain.NormalizeSavedLayout(l)
+		return l
+	}
+	for _, l := range []*domain.SavedLayout{mk("old", "2026-10-10T09:00:00Z"), mk("new", "2026-10-11T09:00:00Z")} {
+		if err := layouts.Create(ctx, l); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := layouts.Create(ctx, mk("old", "2026-10-10T09:00:00Z")); !errors.Is(err, ports.ErrConflict) {
+		t.Fatalf("duplicate layout: %v", err)
+	}
+	renamed := mk("old", "2026-10-10T09:00:00Z")
+	renamed.Name = "renamed"
+	if err := layouts.Replace(ctx, renamed); err != nil {
+		t.Fatal(err)
+	}
+	if err := layouts.Replace(ctx, mk("ghost", "2026-10-10T09:00:00Z")); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("replace missing: %v", err)
+	}
+	got, err := layouts.List(ctx)
+	if err != nil || len(got) != 2 || got[0].ID != "new" || got[1].Name != "renamed" || got[1].Positions["a"].X != 1.5 {
+		t.Fatalf("layouts: %v %+v", err, got)
+	}
+	if err := layouts.Remove(ctx, "old"); err != nil {
+		t.Fatal(err)
+	}
+	if err := layouts.Remove(ctx, "old"); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("remove missing: %v", err)
+	}
+}

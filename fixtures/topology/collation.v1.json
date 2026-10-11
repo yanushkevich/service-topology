@@ -1,0 +1,156 @@
+{
+  "environments": [
+    {
+      "id": "prod",
+      "name": "Production",
+      "kind": "production"
+    }
+  ],
+  "serviceDefinitions": [],
+  "serviceInstances": [],
+  "resources": [
+    {
+      "id": "res-00",
+      "name": "zeta",
+      "type": "database",
+      "provider": "aws",
+      "health": "healthy"
+    },
+    {
+      "id": "res-01",
+      "name": "Alpha",
+      "type": "topic",
+      "provider": "azure",
+      "environmentId": "prod",
+      "health": "degraded",
+      "owner": "payments",
+      "updatedAt": "2026-10-02T08:00:00Z"
+    },
+    {
+      "id": "res-02",
+      "name": "alpha",
+      "type": "queue",
+      "provider": "gcp",
+      "environmentId": "prod",
+      "health": "unavailable",
+      "owner": "Payments",
+      "updatedAt": "2026-10-03T08:00:00Z"
+    },
+    {
+      "id": "res-03",
+      "name": "Échange",
+      "type": "cache",
+      "provider": "on-prem",
+      "environmentId": "prod",
+      "owner": "ops"
+    },
+    {
+      "id": "res-04",
+      "name": "echo",
+      "type": "external-resource",
+      "provider": "saas",
+      "health": "healthy",
+      "owner": "Ops-Team",
+      "updatedAt": "2026-10-05T08:00:00Z"
+    },
+    {
+      "id": "res-05",
+      "name": "beta-2",
+      "type": "database",
+      "provider": "aws",
+      "environmentId": "prod",
+      "health": "degraded",
+      "owner": "ops_team",
+      "updatedAt": "2026-10-06T08:00:00Z"
+    },
+    {
+      "id": "res-06",
+      "name": "beta_2",
+      "type": "topic",
+      "provider": "azure",
+      "environmentId": "prod",
+      "health": "unavailable"
+    },
+    {
+      "id": "res-07",
+      "name": "beta.2",
+      "type": "queue",
+      "provider": "gcp",
+      "environmentId": "prod",
+      "owner": "Zed",
+      "updatedAt": "2026-10-08T08:00:00Z"
+    },
+    {
+      "id": "res-08",
+      "name": "Beta 10",
+      "type": "cache",
+      "provider": "on-prem",
+      "health": "healthy",
+      "updatedAt": "2026-10-09T08:00:00Z"
+    },
+    {
+      "id": "res-09",
+      "name": "beta 9",
+      "type": "external-resource",
+      "provider": "saas",
+      "environmentId": "prod",
+      "health": "degraded",
+      "owner": "payments"
+    },
+    {
+      "id": "res-10",
+      "name": "_hidden",
+      "type": "database",
+      "provider": "aws",
+      "environmentId": "prod",
+      "health": "unavailable",
+      "owner": "Payments",
+      "updatedAt": "2026-10-02T08:00:00Z"
+    },
+    {
+      "id": "res-11",
+      "name": "9lives",
+      "type": "topic",
+      "provider": "azure",
+      "environmentId": "prod",
+      "owner": "ops",
+      "updatedAt": "2026-10-03T08:00:00Z"
+    },
+    {
+      "id": "res-12",
+      "name": "ALPHA-ONE",
+      "type": "queue",
+      "provider": "gcp",
+      "health": "healthy",
+      "owner": "Ops-Team"
+    },
+    {
+      "id": "res-13",
+      "name": "alpha.one",
+      "type": "cache",
+      "provider": "on-prem",
+      "environmentId": "prod",
+      "health": "degraded",
+      "owner": "ops_team",
+      "updatedAt": "2026-10-05T08:00:00Z"
+    },
+    {
+      "id": "res-14",
+      "name": "Ölmotor",
+      "type": "external-resource",
+      "provider": "saas",
+      "environmentId": "prod",
+      "health": "unavailable",
+      "updatedAt": "2026-10-06T08:00:00Z"
+    },
+    {
+      "id": "res-15",
+      "name": "omega",
+      "type": "database",
+      "provider": "aws",
+      "environmentId": "prod",
+      "owner": "Zed"
+    }
+  ],
+  "relationships": []
+}

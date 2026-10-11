@@ -64,6 +64,7 @@ make seed              # load fixtures/topology/mock.v1.json (idempotent)
 make schema-check      # types, unique indexes, schema version
 make test-integration  # each test uses and drops its own temporary database
 make run               # API on :8080; /readyz is 200 once the schema is initialized
+make contract-check    # run the API on a disposable database and validate every operation (Node needed)
 ```
 Findings from the first run:
 - **Memory.** The image defaults (generational ZGC, `-XX:MaxRAMPercentage=75`, uncapped page cache) exhausted Rancher Desktop's default 2 GB VM, which also runs k3s: the kernel OOM killer stopped ArcadeDB (Docker's `OOMKilled` stays false for a VM-wide OOM) and requests took seconds. The Compose file therefore sets Serial GC, a 384 MB heap, a 256 MB page cache, and `mem_limit: 768m` (about 150–250 MB in use). If you need more headroom, give the Rancher Desktop VM more memory or disable its Kubernetes.

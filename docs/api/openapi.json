@@ -35,7 +35,7 @@
           "topology"
         ],
         "summary": "Environments, for the environment selector.",
-        "x-repository": "TopologyRepository.getTopology \u2192 environments",
+        "x-repository": "TopologyRepository.getTopology → environments",
         "responses": {
           "200": {
             "description": "Environments",
@@ -97,7 +97,8 @@
             "in": "query",
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "Project the topology onto one environment: that environment record; all service definitions; instances in it; resources in it (own or inherited) plus environment-independent ones; relationships between kept entities; event types carried in it, with channels narrowed to kept ones. The projection passes the same validation. Unknown environment: 404."
           }
         ],
         "responses": {
@@ -110,6 +111,9 @@
                 }
               }
             }
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
           },
           "default": {
             "$ref": "#/components/responses/Problem"
@@ -133,7 +137,8 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "Required. Unknown environment: 404."
           },
           {
             "name": "q",
@@ -207,7 +212,8 @@
             "in": "query",
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "Opaque cursor from a previous page's nextCursor. Valid only with the same environmentId, q, filters, and sort (otherwise 400). Offset-based: if the topology changes between pages, rows may shift."
           },
           {
             "name": "limit",
@@ -256,6 +262,12 @@
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
           },
           "default": {
             "$ref": "#/components/responses/Problem"
@@ -315,6 +327,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
           },
           "404": {
             "$ref": "#/components/responses/Problem"
@@ -388,6 +403,9 @@
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
           "default": {
             "$ref": "#/components/responses/Problem"
           }
@@ -420,6 +438,18 @@
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem"
           },
           "422": {
             "$ref": "#/components/responses/Problem"
@@ -560,6 +590,18 @@
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem"
+          },
           "422": {
             "$ref": "#/components/responses/Problem"
           },
@@ -608,7 +650,16 @@
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
           "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "415": {
             "$ref": "#/components/responses/Problem"
           },
           "422": {
@@ -828,7 +879,7 @@
           },
           "errors": {
             "type": "array",
-            "description": "Validation issues (e.g. from validateTopology or parseSavedLayout).",
+            "description": "Validation issues. Topology codes are those of validateTopology; snapshots add invalid-snapshot, layouts invalid-layout; malformed parameters use invalid-parameter.",
             "items": {
               "type": "object",
               "required": [
@@ -847,6 +898,10 @@
                 }
               }
             }
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Extension member: the request ID (also in the X-Request-ID response header), for correlating with server logs."
           }
         }
       }

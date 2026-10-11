@@ -1,0 +1,41 @@
+{
+  "description": "mock development, combined, sort name",
+  "topology": "topology/mock.v1.json",
+  "environmentId": "development",
+  "filters": {
+    "query": "e",
+    "providers": [
+      "aws",
+      "on-prem",
+      "gcp"
+    ],
+    "health": [
+      "healthy",
+      "degraded"
+    ],
+    "groups": [
+      "service",
+      "messaging"
+    ]
+  },
+  "sort": "name",
+  "expected": [
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "catalog-service.development"
+      },
+      "name": "Catalog Service",
+      "type": "api",
+      "group": "service",
+      "provider": "aws",
+      "environmentId": "development",
+      "owner": "Commerce",
+      "team": "Catalog",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    }
+  ]
+}

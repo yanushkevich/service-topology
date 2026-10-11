@@ -11,7 +11,7 @@
 - Status codes: `400` invalid query/body, `401/403` once auth exists, `404` not found, `409` conflict, `412` failed `If-Match`, `413` payload too large, `422` topology/layout fails validation, `429` rate limited, `500` unexpected, `503` database unavailable.
 - Versioning: URL major version; additive changes stay in v1; removals or meaning changes need v2, an ADR, and a migration note in `docs/API_CONTRACT.md`.
 
-## Contract v1 endpoints (implement exactly)
+## Contract v1 endpoints (implemented in B3)
 
 | Endpoint | Purpose | Frontend interface it backs |
 |---|---|---|

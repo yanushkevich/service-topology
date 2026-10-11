@@ -1,6 +1,6 @@
 # API Contract
 
-**Status:** Draft contract for a future backend (Milestone 5). **No backend exists.** The planned Go + ArcadeDB backend implements this contract (`docs/backend/`, ADR-015). The app runs on in-memory mock repositories that already implement the interfaces this contract maps to. The contract is machine-readable and tested; the prose here explains it.
+**Status:** Contract v1 (Milestone 5), implemented by the Go + ArcadeDB backend in `backend/` since Milestone B3 (`docs/backend/`, ADR-015). The frontend still runs on in-memory repositories until its HTTP adapters land (B6). Conformance is checked by `make contract-check` in `backend/`, which validates every operation against `openapi.json`. The app runs on in-memory mock repositories that already implement the interfaces this contract maps to. The contract is machine-readable and tested; the prose here explains it.
 
 | Artifact | What it is |
 |---|---|
@@ -17,6 +17,13 @@
 - **Versioning:** URL major version (`/api/v1`). Payloads that are persisted or shared (snapshots, saved layouts) also carry `schemaVersion`. Additive changes (new optional fields, new enum values announced in advance) stay within v1. Removals or meaning changes need v2 and a migration note in this file.
 - **Pagination:** cursor-based (`cursor`, `limit` ≤ 500, response `nextCursor`, `null` at the end). Cursors are opaque.
 - **Filtering semantics:** AND across parameters, OR within a list parameter (`provider=aws,gcp`). Search terms are whitespace-separated, all must match, case-insensitive, over name, ID, owner, and team. This is identical to the client-side `matchesFilters`.
+
+## Backend behaviour (Milestone B3)
+- **`GET /topology?environmentId=`** returns a projection that itself passes validation: the environment record; all service definitions; instances in the environment; resources in it (own or inherited) plus environment-independent ones; relationships between kept entities; event types carried in the environment with channels narrowed to kept ones. Unknown environment: 404.
+- **Registry** rows, filters, and order are identical to the client's `buildRegistryRows` / `filterRegistryRows` / `sortRegistryRows`, including `localeCompare('en')` collation (shared conformance fixtures). `environmentId` is required (400 if missing, 404 if unknown). Cursors are opaque, bound to the query (400 otherwise), and offset-based: rows may shift if the topology changes between pages.
+- **Errors:** 400 `invalid-parameter` (bad parameter or malformed body), 404, 405 (with `Allow`), 409 (duplicate snapshot or layout ID), 413 (body over 16 MB for snapshots, 1 MB for layouts), 415 (non-JSON body), 422 (validation: topology codes, `invalid-snapshot`, `invalid-layout`), 503 (database unavailable). Every error is `application/problem+json` with the `requestId` extension.
+- **Snapshots** are immutable: `POST` with an existing ID is 409, never an overwrite. Lists are ordered by `takenAt` instant.
+- **Layouts:** `POST` creates (409 if the ID exists); `PUT` replaces an existing layout (404 if missing; the body ID must equal the path ID, else 422). Concurrency control (`ETag`/`If-Match`) remains an open decision.
 
 ## Identity and semantics
 - **IDs** are stable, opaque strings, unique across all collections of one topology (an instance and a resource never share an ID). Clients never parse IDs. Selection and deep links use `{ kind, id }`.

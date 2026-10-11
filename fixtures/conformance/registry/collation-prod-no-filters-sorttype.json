@@ -1,0 +1,286 @@
+{
+  "description": "collation prod, no-filters, sort type",
+  "topology": "topology/collation.v1.json",
+  "environmentId": "prod",
+  "filters": {
+    "query": "",
+    "providers": [],
+    "health": [],
+    "groups": []
+  },
+  "sort": "type",
+  "expected": [
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-03"
+      },
+      "name": "Échange",
+      "type": "cache",
+      "group": "data",
+      "provider": "on-prem",
+      "environmentId": "prod",
+      "owner": "ops",
+      "team": null,
+      "health": "unknown",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": null
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-08"
+      },
+      "name": "Beta 10",
+      "type": "cache",
+      "group": "data",
+      "provider": "on-prem",
+      "environmentId": null,
+      "owner": null,
+      "team": null,
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-09T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-13"
+      },
+      "name": "alpha.one",
+      "type": "cache",
+      "group": "data",
+      "provider": "on-prem",
+      "environmentId": "prod",
+      "owner": "ops_team",
+      "team": null,
+      "health": "degraded",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-05T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-00"
+      },
+      "name": "zeta",
+      "type": "database",
+      "group": "data",
+      "provider": "aws",
+      "environmentId": null,
+      "owner": null,
+      "team": null,
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": null
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-05"
+      },
+      "name": "beta-2",
+      "type": "database",
+      "group": "data",
+      "provider": "aws",
+      "environmentId": "prod",
+      "owner": "ops_team",
+      "team": null,
+      "health": "degraded",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-06T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-10"
+      },
+      "name": "_hidden",
+      "type": "database",
+      "group": "data",
+      "provider": "aws",
+      "environmentId": "prod",
+      "owner": "Payments",
+      "team": null,
+      "health": "unavailable",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-02T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-15"
+      },
+      "name": "omega",
+      "type": "database",
+      "group": "data",
+      "provider": "aws",
+      "environmentId": "prod",
+      "owner": "Zed",
+      "team": null,
+      "health": "unknown",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": null
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-04"
+      },
+      "name": "echo",
+      "type": "external-resource",
+      "group": "external",
+      "provider": "saas",
+      "environmentId": null,
+      "owner": "Ops-Team",
+      "team": null,
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-05T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-09"
+      },
+      "name": "beta 9",
+      "type": "external-resource",
+      "group": "external",
+      "provider": "saas",
+      "environmentId": "prod",
+      "owner": "payments",
+      "team": null,
+      "health": "degraded",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": null
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-14"
+      },
+      "name": "Ölmotor",
+      "type": "external-resource",
+      "group": "external",
+      "provider": "saas",
+      "environmentId": "prod",
+      "owner": null,
+      "team": null,
+      "health": "unavailable",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-06T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-02"
+      },
+      "name": "alpha",
+      "type": "queue",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "prod",
+      "owner": "Payments",
+      "team": null,
+      "health": "unavailable",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-03T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-07"
+      },
+      "name": "beta.2",
+      "type": "queue",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": "prod",
+      "owner": "Zed",
+      "team": null,
+      "health": "unknown",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-08T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-12"
+      },
+      "name": "ALPHA-ONE",
+      "type": "queue",
+      "group": "messaging",
+      "provider": "gcp",
+      "environmentId": null,
+      "owner": "Ops-Team",
+      "team": null,
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": null
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-01"
+      },
+      "name": "Alpha",
+      "type": "topic",
+      "group": "messaging",
+      "provider": "azure",
+      "environmentId": "prod",
+      "owner": "payments",
+      "team": null,
+      "health": "degraded",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-02T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-06"
+      },
+      "name": "beta_2",
+      "type": "topic",
+      "group": "messaging",
+      "provider": "azure",
+      "environmentId": "prod",
+      "owner": null,
+      "team": null,
+      "health": "unavailable",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": null
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "res-11"
+      },
+      "name": "9lives",
+      "type": "topic",
+      "group": "messaging",
+      "provider": "azure",
+      "environmentId": "prod",
+      "owner": "ops",
+      "team": null,
+      "health": "unknown",
+      "outgoingCount": 0,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-03T08:00:00Z"
+    }
+  ]
+}

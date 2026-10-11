@@ -11,7 +11,7 @@ export ARCADEDB_DATABASE ?= topology
 export ARCADEDB_USERNAME ?= root
 export ARCADEDB_PASSWORD_FILE ?= $(CURDIR)/secrets/arcadedb_root_password.txt
 
-.PHONY: check fmt fmt-check vet test test-integration run seed validate schema-check dev-up dev-down reset-local
+.PHONY: check fmt fmt-check vet test test-integration contract-check run seed validate schema-check dev-up dev-down reset-local
 
 ## check: formatting, vet, and unit/conformance tests (the B1 quality gate)
 check: fmt-check vet test
@@ -32,6 +32,11 @@ test:
 ## its own temporary database, so local data is untouched
 test-integration:
 	$(GO) test -count=1 -tags=integration ./...
+
+## contract-check: run the API on a disposable database and validate every operation against
+## docs/api/openapi.json (Node + apps/web dependencies required)
+contract-check:
+	GO=$(GO) ./scripts/contract-check.sh
 
 ## run: start the API on HTTP_ADDR (default :8080) against the local ArcadeDB
 run:

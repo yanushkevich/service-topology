@@ -1,6 +1,6 @@
 # Go Backend Specification (ArcadeDB)
 
-**Status (2026-10-11):** B1 (foundation) and B2 (ArcadeDB persistence, schema, idempotent seed, integration tests) are implemented in `backend/`. API routes (B3), traversal (B4), provenance/history (B5), and hardening (B6) are not yet.
+**Status (2026-10-11):** B1 (foundation), B2 (ArcadeDB persistence, idempotent seed), and B3 (REST API for contract v1, registry parity, contract check) are implemented in `backend/`. Traversal (B4), provenance/history (B5), and hardening with frontend integration (B6) are not yet.
 
 The backend serves the **existing** HTTP contract (`docs/api/openapi.json`, `docs/API_CONTRACT.md`) and the **existing** canonical domain (`src/domain`, `docs/schemas`). It does not define its own contract or domain. Preserve: mock-first delivery, stable IDs, provenance labeling, scale targets, and the distinction between containment and communication.
 

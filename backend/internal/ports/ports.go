@@ -13,6 +13,9 @@ import (
 // ErrNotFound reports a missing entity, snapshot, or layout. Adapters wrap it.
 var ErrNotFound = errors.New("not found")
 
+// ErrConflict reports a duplicate stable ID (e.g. creating a snapshot or layout that exists).
+var ErrConflict = errors.New("conflict")
+
 // ErrUnavailable reports that a required dependency (the database) cannot be reached. HTTP maps it
 // to 503; callers never treat a partial result as complete.
 var ErrUnavailable = errors.New("dependency unavailable")
@@ -34,16 +37,20 @@ type SnapshotRepository interface {
 	// List returns summaries, oldest first.
 	List(ctx context.Context, q SnapshotQuery) ([]domain.SnapshotSummary, error)
 	Get(ctx context.Context, id string) (*domain.Snapshot, error)
-	// Save stores a new snapshot; an existing ID is a conflict, never an overwrite.
+	// Save stores a new snapshot; an existing ID is ErrConflict, never an overwrite.
 	Save(ctx context.Context, s *domain.Snapshot) error
 }
 
-// SavedLayoutRepository stores presentation layouts.
+// SavedLayoutRepository stores presentation layouts. The frontend's single save() maps to Create
+// (POST, new ID) and Replace (PUT, existing ID).
 type SavedLayoutRepository interface {
-	// List returns layouts, newest first.
+	// List returns layouts, newest first (createdAt descending, then ID).
 	List(ctx context.Context) ([]domain.SavedLayout, error)
-	// Save inserts or replaces by ID.
-	Save(ctx context.Context, l *domain.SavedLayout) error
+	// Create stores a new layout; ErrConflict if the ID exists.
+	Create(ctx context.Context, l *domain.SavedLayout) error
+	// Replace overwrites an existing layout; ErrNotFound if the ID does not exist.
+	Replace(ctx context.Context, l *domain.SavedLayout) error
+	// Remove deletes a layout; ErrNotFound if the ID does not exist.
 	Remove(ctx context.Context, id string) error
 }
 

@@ -2,7 +2,10 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { mockSnapshots } from '../data/mock/snapshots';
 import { mockTopology } from '../data/mock/topology';
+import { buildRegistryRows, filterRegistryRows, REGISTRY_SORT_KEYS, sortRegistryRows, type EntityFilters, type RegistryRow } from '../domain/registry';
+import { buildTopologyIndex } from '../domain/topologyIndex';
 import type { TopologyData } from '../domain/types';
 import { validateTopology, type ValidationIssue } from '../domain/validation';
 
@@ -121,9 +124,88 @@ const expected = (data: TopologyData): Expected[] => validateTopology(data).map(
 
 const json = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`;
 
+/** Valid topology whose names stress collation: case, punctuation, digits, accents, spaces. */
+function collationTopology(): TopologyData {
+  const names = ['zeta', 'Alpha', 'alpha', 'Échange', 'echo', 'beta-2', 'beta_2', 'beta.2', 'Beta 10', 'beta 9', '_hidden', '9lives', 'ALPHA-ONE', 'alpha.one', 'Ölmotor', 'omega'];
+  const owners = [undefined, 'payments', 'Payments', 'ops', 'Ops-Team', 'ops_team', undefined, 'Zed'];
+  return {
+    environments: [{ id: 'prod', name: 'Production', kind: 'production' }],
+    serviceDefinitions: [],
+    serviceInstances: [],
+    resources: names.map((name, i) => ({
+      id: `res-${String(i).padStart(2, '0')}`,
+      name,
+      type: (['database', 'topic', 'queue', 'cache', 'external-resource'] as const)[i % 5]!,
+      provider: (['aws', 'azure', 'gcp', 'on-prem', 'saas'] as const)[i % 5]!,
+      environmentId: i % 4 === 0 ? undefined : 'prod',
+      health: (['healthy', 'degraded', 'unavailable', undefined] as const)[i % 4],
+      owner: owners[i % owners.length],
+      updatedAt: i % 3 === 0 ? undefined : `2026-10-${String(1 + (i % 9)).padStart(2, '0')}T08:00:00Z`,
+    })).map((r) => Object.fromEntries(Object.entries(r).filter(([, v]) => v !== undefined)) as unknown as TopologyData['resources'][number]),
+    relationships: [],
+  };
+}
+
+/** Registry rows as the API returns them (RegistryRow in docs/api/openapi.json). */
+const apiRow = (full: RegistryRow) => {
+  const row: Partial<RegistryRow> = { ...full };
+  delete row.searchText; // client-only search index, not part of the API row
+  return apiRowFields(row as Omit<RegistryRow, 'searchText'>);
+};
+const apiRowFields = (row: Omit<RegistryRow, 'searchText'>) => ({
+  ...row,
+  environmentId: row.environmentId ?? null,
+  owner: row.owner ?? null,
+  team: row.team ?? null,
+  updatedAt: row.updatedAt ?? null,
+});
+
+const SORTS = REGISTRY_SORT_KEYS.flatMap((key) => [
+  { name: key, sort: { key, direction: 'asc' as const } },
+  { name: `-${key}`, sort: { key, direction: 'desc' as const } },
+]);
+
+function registryCases(): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  const topologies: Record<string, TopologyData> = { 'topology/mock.v1.json': mockTopology, 'topology/collation.v1.json': collationTopology() };
+  const filterSets: Record<string, EntityFilters> = {
+    'no-filters': { query: '', providers: [], health: [], groups: [] },
+    'query-pay': { query: 'pay', providers: [], health: [], groups: [] },
+    'query-two-terms-upper': { query: '  ORDER   prod ', providers: [], health: [], groups: [] },
+    'providers-aws-gcp': { query: '', providers: ['aws', 'gcp'], health: [], groups: [] },
+    'health-unhealthy': { query: '', providers: [], health: ['degraded', 'unavailable'], groups: [] },
+    'groups-messaging-data': { query: '', providers: [], health: [], groups: ['messaging', 'data'] },
+    combined: { query: 'e', providers: ['aws', 'on-prem', 'gcp'], health: ['healthy', 'degraded'], groups: ['service', 'messaging'] },
+  };
+  for (const [topologyFile, data] of Object.entries(topologies)) {
+    const rows = buildRegistryRows(buildTopologyIndex(data));
+    const envs = topologyFile.includes('mock') ? ['production', 'staging', 'development'] : ['prod'];
+    const tag = topologyFile.includes('mock') ? 'mock' : 'collation';
+    for (const env of envs) {
+      for (const { name: sortName, sort } of SORTS) {
+        // Every sort on the unfiltered environment; filters on the default sort (health) plus name.
+        const sets = sortName === 'health' || sortName === 'name' ? Object.entries(filterSets) : [['no-filters', filterSets['no-filters']!] as const];
+        for (const [filterName, filters] of sets) {
+          const expected = sortRegistryRows(filterRegistryRows(rows, filters, env), sort).map(apiRow);
+          out[`conformance/registry/${tag}-${env}-${filterName}-sort${sortName}.json`] = {
+            description: `${tag} ${env}, ${filterName}, sort ${sortName}`,
+            topology: topologyFile,
+            environmentId: env,
+            filters,
+            sort: sortName,
+            expected,
+          };
+        }
+      }
+    }
+  }
+  return out;
+}
+
 function files(): Record<string, string> {
   const out: Record<string, string> = {
     'topology/mock.v1.json': json(mockTopology),
+    'topology/collation.v1.json': json(collationTopology()),
     'conformance/validation/valid-base.json': json({ description: 'Valid base topology for the validation cases', topology: base(), expected: [] }),
   };
   for (const [name, { description, mutate }] of Object.entries(CASES)) {
@@ -131,6 +213,8 @@ function files(): Record<string, string> {
     mutate(topology);
     out[`conformance/validation/${name}.json`] = json({ description, topology, expected: expected(topology) });
   }
+  for (const [path, value] of Object.entries(registryCases())) out[path] = json(value);
+  for (const snapshot of mockSnapshots()) out[`snapshots/${snapshot.id}.v1.json`] = json(snapshot);
   return out;
 }
 
@@ -140,6 +224,7 @@ describe('shared fixtures (fixtures/)', () => {
   it('has a valid base and breaks exactly the intended rule in each case', () => {
     expect(validateTopology(base())).toEqual([]);
     expect(validateTopology(mockTopology)).toEqual([]);
+    expect(validateTopology(collationTopology())).toEqual([]);
     for (const name of Object.keys(CASES)) {
       const { expected: issues } = JSON.parse(generated[`conformance/validation/${name}.json`]!) as { expected: Expected[] };
       expect(issues.length, name).toBeGreaterThan(0);

@@ -1,0 +1,51 @@
+{
+  "description": "mock development, providers-aws-gcp, sort health",
+  "topology": "topology/mock.v1.json",
+  "environmentId": "development",
+  "filters": {
+    "query": "",
+    "providers": [
+      "aws",
+      "gcp"
+    ],
+    "health": [],
+    "groups": []
+  },
+  "sort": "health",
+  "expected": [
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "order-service.development"
+      },
+      "name": "Order Service",
+      "type": "api",
+      "group": "service",
+      "provider": "aws",
+      "environmentId": "development",
+      "owner": "Commerce",
+      "team": "Orders",
+      "health": "unknown",
+      "outgoingCount": 1,
+      "incomingCount": 0,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    },
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "catalog-service.development"
+      },
+      "name": "Catalog Service",
+      "type": "api",
+      "group": "service",
+      "provider": "aws",
+      "environmentId": "development",
+      "owner": "Commerce",
+      "team": "Catalog",
+      "health": "healthy",
+      "outgoingCount": 0,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:00:00Z"
+    }
+  ]
+}

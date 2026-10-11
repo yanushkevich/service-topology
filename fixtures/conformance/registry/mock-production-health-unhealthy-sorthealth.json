@@ -1,0 +1,102 @@
+{
+  "description": "mock production, health-unhealthy, sort health",
+  "topology": "topology/mock.v1.json",
+  "environmentId": "production",
+  "filters": {
+    "query": "",
+    "providers": [],
+    "health": [
+      "degraded",
+      "unavailable"
+    ],
+    "groups": []
+  },
+  "sort": "health",
+  "expected": [
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "notification-service.production"
+      },
+      "name": "Notification Service",
+      "type": "worker",
+      "group": "service",
+      "provider": "on-prem",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Engagement",
+      "health": "unavailable",
+      "outgoingCount": 1,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:45:00Z"
+    },
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "fraud-scoring.production"
+      },
+      "name": "Fraud Scoring",
+      "type": "api",
+      "group": "service",
+      "provider": "azure",
+      "environmentId": "production",
+      "owner": "Payments",
+      "team": "Risk",
+      "health": "degraded",
+      "outgoingCount": 0,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:45:00Z"
+    },
+    {
+      "ref": {
+        "kind": "service-instance",
+        "id": "inventory-service.production"
+      },
+      "name": "Inventory Service",
+      "type": "api",
+      "group": "service",
+      "provider": "aws",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Fulfilment",
+      "health": "degraded",
+      "outgoingCount": 2,
+      "incomingCount": 2,
+      "updatedAt": "2026-10-11T08:45:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "queue-notifications-email-prod"
+      },
+      "name": "notifications.email",
+      "type": "queue",
+      "group": "messaging",
+      "provider": "on-prem",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Engagement",
+      "health": "degraded",
+      "outgoingCount": 1,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:45:00Z"
+    },
+    {
+      "ref": {
+        "kind": "resource",
+        "id": "rds-inventory-prod"
+      },
+      "name": "inventory-db",
+      "type": "database",
+      "group": "data",
+      "provider": "aws",
+      "environmentId": "production",
+      "owner": "Commerce",
+      "team": "Fulfilment",
+      "health": "degraded",
+      "outgoingCount": 0,
+      "incomingCount": 1,
+      "updatedAt": "2026-10-11T08:45:00Z"
+    }
+  ]
+}
