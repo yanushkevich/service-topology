@@ -1,6 +1,6 @@
 # Backend Runbook (local and single-host)
 
-Procedures verified on 2026-10-11 against ArcadeDB 26.10.1 in Rancher Desktop (Docker 29.1.3). Run commands in `backend/` (add `GO=/usr/local/go/bin/go` if Go is not on `PATH`).
+Procedures verified on 2026-10-11 against ArcadeDB 26.10.1 in Rancher Desktop (Docker 29.1.3). Run commands in `backend/` (the Makefile finds Go on `PATH` or at `/usr/local/go/bin/go`; override with `GO=...`).
 
 ## Start, stop, health
 | Task | Command | Expected |

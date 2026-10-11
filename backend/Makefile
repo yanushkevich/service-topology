@@ -1,6 +1,7 @@
 # Backend tasks. Run from backend/ (or `make -C backend <target>` from the repo root).
-# GO can point at a toolchain that is not on PATH, e.g. `make check GO=/usr/local/go/bin/go`.
-GO ?= go
+# GO is the go on PATH, else the default macOS/Linux install at /usr/local/go; override with
+# e.g. `make check GO=$$HOME/sdk/go1.27.2/bin/go`.
+GO ?= $(or $(shell command -v go 2>/dev/null),$(wildcard /usr/local/go/bin/go),go)
 GOFMT ?= $(dir $(shell command -v $(GO)))gofmt
 
 # Local ArcadeDB defaults for the database targets; override in the environment or a local .env

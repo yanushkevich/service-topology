@@ -3,7 +3,7 @@
 The root `CLAUDE.md` still applies; specs are in `docs/backend/`.
 
 ## Commands (run in `backend/`)
-- `make check` — gofmt check, `go vet ./...`, `go test ./...` (unit, conformance, lifecycle). If `go` is not on PATH: `make check GO=/usr/local/go/bin/go`.
+- `make check` — gofmt check, `go vet ./...`, `go test ./...` (unit, conformance, lifecycle). The Makefile uses `go` from PATH, else `/usr/local/go/bin/go`; override with `GO=...`.
 - `make dev-up` — local ArcadeDB (needs `secrets/arcadedb_root_password.txt`; see `docs/backend/LOCAL_DEVELOPMENT.md`). Memory is capped for a 2 GB Rancher Desktop VM.
 - `make test-integration` — tests against ArcadeDB; each uses and drops a temporary database.
 - `make run` — API on `HTTP_ADDR` (default `:8080`) against the local database.
