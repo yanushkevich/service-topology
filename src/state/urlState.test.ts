@@ -10,6 +10,7 @@ const full: TopologyUrlState = {
   filters: { query: 'pay ments', providers: ['gcp', 'aws'], health: ['degraded'], groups: ['messaging', 'data'] },
   highlightMode: 'upstream',
   neighborhood: { centerId: 'ledger-service.production', depth: 2 },
+  asOf: 'fixture-0600',
 };
 
 describe('URL state codec', () => {

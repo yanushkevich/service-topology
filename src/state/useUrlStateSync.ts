@@ -14,6 +14,7 @@ function fromStore(state: UiState): TopologyUrlState {
     filters: state.filters,
     highlightMode: state.highlightMode,
     neighborhood: state.neighborhood,
+    asOf: state.asOf,
   };
 }
 
@@ -26,6 +27,7 @@ function applyToStore(url: TopologyUrlState) {
     filters: url.filters,
     highlightMode: url.highlightMode,
     neighborhood: url.neighborhood,
+    asOf: url.asOf,
   }));
 }
 

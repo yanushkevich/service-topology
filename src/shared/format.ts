@@ -25,3 +25,8 @@ export function formatMetadataValue(value: unknown): string {
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
   return JSON.stringify(value);
 }
+
+/** Simulated clock as "08:45:10 UTC". */
+export function formatClock(iso: string): string {
+  return `${new Date(iso).toISOString().slice(11, 19)} UTC`;
+}

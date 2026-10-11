@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import type { SnapshotSummary } from '../domain/snapshot';
 import type { TopologyIndex } from '../domain/topologyIndex';
 import type { ValidationIssue } from '../domain/validation';
 import type { TopologyRepository } from './repositories/TopologyRepository';
@@ -13,6 +14,11 @@ export type TopologyState =
       issues: readonly ValidationIssue[];
       sourceLabel: string;
       isMock: boolean;
+      /**
+       * History browsing: null = current state (simulation applied); `ready` = the index shows this
+       * snapshot, read-only; `missing` = the requested snapshot does not exist (current state shown).
+       */
+      history: null | { status: 'ready'; summary: SnapshotSummary } | { status: 'missing'; id: string };
     };
 
 export const RepositoryContext = createContext<TopologyRepository>(createMockTopologyRepository());

@@ -30,6 +30,8 @@ interface UiState {
   highlightMode: HighlightMode;
   /** When set, graph views show only entities within `depth` hops of `centerId`. */
   neighborhood: Neighborhood | null;
+  /** When set, all views show this snapshot (read-only) instead of the current state. */
+  asOf: string | null;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
   setActiveView: (view: ServiceMapView) => void;
@@ -40,6 +42,7 @@ interface UiState {
   resetFilters: () => void;
   setHighlightMode: (mode: HighlightMode) => void;
   setNeighborhood: (neighborhood: Neighborhood | null) => void;
+  setAsOf: (snapshotId: string | null) => void;
 }
 
 export interface Neighborhood {
@@ -78,6 +81,7 @@ export const useUiStore = create<UiState>()((set, get) => ({
   filters: EMPTY_FILTERS,
   highlightMode: 'direct',
   neighborhood: null,
+  asOf: null,
   setTheme: (theme) => {
     persistTheme(theme);
     set({ theme });
@@ -91,6 +95,7 @@ export const useUiStore = create<UiState>()((set, get) => ({
   resetFilters: () => set({ filters: EMPTY_FILTERS }),
   setHighlightMode: (highlightMode) => set({ highlightMode }),
   setNeighborhood: (neighborhood) => set({ neighborhood }),
+  setAsOf: (asOf) => set({ asOf }),
 }));
 
 /** Toggle membership of a value in a filter list. */

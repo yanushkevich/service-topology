@@ -33,7 +33,10 @@ import { LoadState } from '../../shared/ui/LoadState';
 import { SimulatedTag } from '../../shared/ui/DataSourceTag';
 import { StatusShape } from '../../shared/ui/StatusShape';
 import { TypeGlyph } from '../../shared/ui/TypeGlyph';
+import { useSimulationStore } from '../../state/simulationStore';
 import { useUiStore } from '../../state/uiStore';
+import { PROPAGATION_RULES } from '../../domain/propagation';
+import { formatClock } from '../../shared/format';
 import styles from './inspector.module.css';
 
 /** Details for the shared selection, resolved from canonical data. Used by every view. */
@@ -124,6 +127,7 @@ function InstanceDetails({ index, instance }: { index: TopologyIndex; instance: 
       />
       <Body>
         <MapActions entityId={instance.id} />
+        <SimulationSection index={index} entityId={instance.id} />
         <EnvironmentNotice index={index} entityId={instance.id} />
         {definition?.description && <p className={styles.description}>{definition.description}</p>}
         <Fields>
@@ -197,6 +201,7 @@ function ResourceDetails({ index, resource }: { index: TopologyIndex; resource: 
       />
       <Body>
         {(index.outgoing.has(resource.id) || index.incoming.has(resource.id)) && <MapActions entityId={resource.id} />}
+        <SimulationSection index={index} entityId={resource.id} />
         <EnvironmentNotice index={index} entityId={resource.id} />
         <Fields>
           <Field label="Environment" mono>
@@ -576,6 +581,77 @@ function Metadata({ metadata }: { metadata: Record<string, unknown> | undefined 
         <KeyValue key={key} label={key} value={formatMetadataValue(value)} />
       ))}
     </Section>
+  );
+}
+
+/**
+ * Simulated failure state of the entity: why it is affected (rule + cause), and actions to inject or
+ * recover a failure. Hidden while browsing history, which is read-only.
+ */
+function SimulationSection({ index, entityId }: { index: TopologyIndex; entityId: EntityId }) {
+  const topology = useTopology();
+  const sim = useSimulationStore((s) => s.sim);
+  const select = useUiStore((s) => s.select);
+  if (!sim || (topology.status === 'ready' && topology.history)) return null;
+  const failure = sim.failures.find((f) => f.entityId === entityId);
+  const impact = sim.impacts.find((i) => i.entityId === entityId);
+  const affects = sim.impacts.filter((i) => i.rootId === entityId).length;
+  const { inject, recover } = useSimulationStore.getState();
+  const refFor = (id: EntityId): EntityRef => ({ kind: index.instances.has(id) ? 'service-instance' : 'resource', id });
+  const via = impact?.viaRelationshipId ? index.relationships.get(impact.viaRelationshipId) : undefined;
+  const rule = impact ? PROPAGATION_RULES.find((r) => r.id === impact.ruleId) : undefined;
+
+  return (
+    <section className={styles.simulation} aria-label="Simulation">
+      <h3 className={styles.h4}>
+        <span>Simulation</span>
+        <SimulatedTag simulated />
+      </h3>
+      {failure && (
+        <p className={styles.simText}>
+          Simulated <b>{failure.mode}</b> failure since tick {failure.injectedTick}
+          {failure.recoverAtTick !== undefined ? `, auto-recovers at tick ${failure.recoverAtTick}` : ''}. Affects {affects}{' '}
+          {affects === 1 ? 'entity' : 'entities'}.
+        </p>
+      )}
+      {impact && (
+        <p className={styles.simText}>
+          <b>{healthLabel(impact.effect)}</b> because{' '}
+          <button type="button" className={styles.inlineLink} onClick={() => select(refFor(impact.causeId))}>
+            {endpointName(index, impact.causeId)}
+          </button>{' '}
+          failed{via ? ` (${protocolLabel(via.protocol)}, ${patternLabel(via.pattern).toLowerCase()})` : ' (contains it)'}. Rule:{' '}
+          {rule?.title ?? impact.ruleId}.
+          {impact.rootId !== impact.causeId && (
+            <>
+              {' '}
+              Root failure:{' '}
+              <button type="button" className={styles.inlineLink} onClick={() => select(refFor(impact.rootId))}>
+                {endpointName(index, impact.rootId)}
+              </button>
+              .
+            </>
+          )}
+        </p>
+      )}
+      {!failure && !impact && <p className={styles.simText}>Not affected by simulated failures at {formatClock(sim.clock)}.</p>}
+      <div className={styles.actions}>
+        {failure ? (
+          <button type="button" className={styles.secondary} onClick={() => recover(entityId)}>
+            Recover
+          </button>
+        ) : (
+          <>
+            <button type="button" className={styles.danger} onClick={() => inject(entityId, 'unavailable')}>
+              Simulate outage
+            </button>
+            <button type="button" className={styles.secondary} onClick={() => inject(entityId, 'degraded')}>
+              Simulate degradation
+            </button>
+          </>
+        )}
+      </div>
+    </section>
   );
 }
 

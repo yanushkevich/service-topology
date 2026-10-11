@@ -159,6 +159,45 @@
   cursor: default;
 }
 
+.historyBanner {
+  flex: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 7px 14px;
+  border-bottom: 1px dashed var(--color-warn);
+  background: color-mix(in srgb, var(--color-warn) 10%, var(--color-bg-1));
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+
+.bannerButton {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-bg-2);
+}
+
+.simChip {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 15px;
+  border: 1px dashed var(--color-warn);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-warn-text);
+  font-size: var(--text-sm);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.simChip:hover {
+  background: color-mix(in srgb, var(--color-warn) 10%, transparent);
+}
+
 .body {
   flex: 1;
   min-height: 0;

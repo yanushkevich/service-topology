@@ -296,6 +296,43 @@
   margin-bottom: 12px;
 }
 
+.simulation {
+  margin-bottom: 12px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  border: 1px dashed var(--color-warn);
+}
+
+.simText {
+  margin: 0 0 8px;
+  font-size: var(--text-sm);
+  color: var(--color-text-2);
+}
+
+.simText b {
+  color: var(--color-text);
+}
+
+.inlineLink {
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.danger {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-crit);
+  color: var(--color-crit-text);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.danger:hover {
+  background: color-mix(in srgb, var(--color-crit) 12%, transparent);
+}
+
 .primary {
   height: 30px;
   padding: 0 12px;

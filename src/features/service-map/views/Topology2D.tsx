@@ -10,7 +10,7 @@ import {
   type NodeChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/base.css';
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTopology } from '../../../data/topologyContext';
 import { buildRegistryRows, hasActiveFilters, inEnvironment } from '../../../domain/registry';
 import type { TopologyIndex } from '../../../domain/topologyIndex';
@@ -55,6 +55,15 @@ const HIGHLIGHT_LABELS: Record<HighlightMode, { label: string; hint: string }> =
   downstream: { label: 'Downstream', hint: 'Everything that depends on this' },
 };
 
+/** Ref that always holds the latest value (read inside async callbacks). */
+function useLatest<T>(value: T) {
+  const ref = useRef(value);
+  useLayoutEffect(() => {
+    ref.current = value;
+  });
+  return ref;
+}
+
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
@@ -75,6 +84,8 @@ export function Topology2D() {
 }
 
 interface LaidOut {
+  /** Structural key of the graph that was laid out (see layoutKey). */
+  key: string;
   graph: TopologyGraph;
   result: LayoutResult;
 }
@@ -110,19 +121,25 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
     [index, environmentId, filters, mode, collapsed, neighborhood],
   );
   const tooMany = graph.nodes.length > MAX_VISIBLE_NODES && !renderAnyway;
+  // Layout depends only on structure (nodes, groups, edges, sizes). Health/metric changes from the
+  // simulation rebuild the graph but keep the key, so they never trigger a relayout.
+  const layoutRequest = useMemo(() => toLayoutRequest(graph), [graph]);
+  const layoutKey = useMemo(() => JSON.stringify(layoutRequest), [layoutRequest]);
+  const latestGraph = useLatest(graph);
 
   // Layout runs off the render path; the previous layout stays on screen until the new one is ready.
   useEffect(() => {
     if (tooMany) return;
     const controller = new AbortController();
+    const request = JSON.parse(layoutKey) as ReturnType<typeof toLayoutRequest>;
     const timer = window.setTimeout(() => {
       performance.mark('topology-layout-start');
       layoutService
-        .layout(toLayoutRequest(graph), controller.signal)
+        .layout(request, controller.signal)
         .then((result) => {
           performance.measure('topology-layout', 'topology-layout-start');
           setLayoutError(null);
-          setLaidOut({ graph, result });
+          setLaidOut({ key: layoutKey, graph: latestGraph.current, result });
         })
         .catch((error: unknown) => {
           if (!controller.signal.aborted) setLayoutError(error instanceof Error ? error.message : String(error));
@@ -132,9 +149,14 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [graph, layoutService, tooMany]);
+  }, [layoutKey, layoutService, tooMany, latestGraph]);
 
-  const shown = tooMany ? null : laidOut;
+  // Current graph on the latest layout when the structure matches; otherwise keep showing the
+  // previous graph+layout until the new layout arrives.
+  const shown = useMemo<LaidOut | null>(() => {
+    if (tooMany || !laidOut) return null;
+    return laidOut.key === layoutKey ? { ...laidOut, graph } : laidOut;
+  }, [tooMany, laidOut, layoutKey, graph]);
   const highlight = useMemo(
     () => (shown ? computeHighlight(index, shown.graph, selection, highlightMode) : null),
     [index, shown, selection, highlightMode],
@@ -207,24 +229,27 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
     [edgeById, select],
   );
 
-  // Fit the whole graph whenever a new layout lands.
+  // Fit the whole graph whenever a new layout lands (not on data-only updates).
+  const shownKey = tooMany ? null : (laidOut?.key ?? null);
   useEffect(() => {
-    if (!shown) return;
+    if (!shownKey) return;
     const frame = requestAnimationFrame(() => {
       void reactFlow.fitView({ padding: 0.12, duration: prefersReducedMotion() ? 0 : 250 });
       performance.mark('topology-rendered');
     });
     return () => cancelAnimationFrame(frame);
-  }, [shown, reactFlow]);
+  }, [shownKey, reactFlow]);
 
   // Bring an externally selected entity (registry, search, inspector) into view if it is off-screen.
+  // Keyed on the selected element and layout, so simulation ticks do not re-run it.
   const width = useStore((s) => s.width);
   const height = useStore((s) => s.height);
+  const [selectedElement] = highlight?.selectedIds ?? [];
+  const layoutResult = shown?.result;
   useEffect(() => {
-    if (!shown || !highlight) return;
-    const [id] = highlight.selectedIds;
-    if (!id) return;
-    const box = shown.result.nodes[id] ?? shown.result.groups[id];
+    if (!layoutResult || !selectedElement) return;
+    const id = selectedElement;
+    const box = layoutResult.nodes[id] ?? layoutResult.groups[id];
     if (!box) return;
     const { x, y, zoom } = reactFlow.getViewport();
     const cx = box.x + box.width / 2;
@@ -234,7 +259,7 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
     if (width > 0 && height > 0 && (sx < 0 || sy < 0 || sx > width || sy > height)) {
       void reactFlow.setCenter(cx, cy, { zoom: Math.max(zoom, 0.8), duration: prefersReducedMotion() ? 0 : 300 });
     }
-  }, [shown, highlight, reactFlow, width, height]);
+  }, [layoutResult, selectedElement, reactFlow, width, height]);
 
   const actions = useMemo<MapActions>(
     () => ({

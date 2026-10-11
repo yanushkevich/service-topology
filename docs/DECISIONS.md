@@ -95,3 +95,19 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 - **Consequences:** grouped mode at full detail fits at a small zoom (wide nested layout); collapsing or neighborhood mode is the intended way to read it. Manual positions in grouped mode do not resize groups (nodes are kept inside their parent).
 - **Verification:** `elkLayoutService.test.ts` (no overlaps, groups contain children, determinism, 250/750 fixture), `topologyGraph.test.ts`, `Topology2D.test.tsx`, `urlState.test.ts`, `useUrlStateSync.test.tsx`, `savedLayout.test.ts`, `schemaSync.test.ts`; docs/BENCHMARKS.md.
 
+## ADR-010 — Simulation, failure propagation, and topology history (2026-10-11, Milestone 3)
+- **Status:** Accepted
+- **Context:** Milestone 3 requires deterministic simulation separate from renderers, explicit propagation rules, a versioned snapshot contract with an "as of"/compare workflow, and no mock data presented as live.
+- **Decision:**
+  - **Engine:** `src/simulation/engine.ts` is pure (no React, timers, or renderer types; enforced by a boundary test). State = immutable baseline + active failures + seeded metric drift + simulated clock (10 s per tick). Every view renders the engine's derived `data`; recovery recomputes from the baseline, so it is exact.
+  - **Runtime:** a Zustand store holds the engine state and run controls; one interval at the app shell (`useSimulationTicker`) steps it. The simulation starts paused, so the app shows recorded mock data until the user acts.
+  - **Propagation** (`src/domain/propagation.ts`): rules are data and are listed in the UI. Containment makes contained entities unavailable. Synchronous calls, data access, and scheduled jobs make callers degraded, transitively. A failed topic/queue/exchange degrades producers and consumers. A failed consumer only backs up its channel (terminal). Producers never affect consumers. Communication rules never escalate past degraded. Only simulated failures propagate; recorded baseline health does not.
+  - **Relationship status:** a connection to a failed or impacted target becomes `degraded`; a connection from an unavailable source becomes `inactive` (no traffic).
+  - **Events:** typed and attributed (rule, root, cause, relationship); generated from a diff of derived states, so every visible change has an event. Latency anomalies come from drift crossing 1.35× and clear below 1.2×. The log is capped at 500 events.
+  - **History:** `TopologySnapshot` v1 (`docs/schemas/topology-snapshot.v1.schema.json`) behind `SnapshotRepository`. Fixtures are derived from the mock (before incident → replica lag → recorded outage). The simulation can be captured as a snapshot. `asOf` (URL `asof`) switches every view to a snapshot index; the simulation keeps running separately and is never modified. Compare uses `diffTopology`.
+  - **Labeling:** no "live" wording anywhere (tested). The header shows "Simulated <clock>", events and telemetry carry Simulated tags, and the history banner names the snapshot source.
+  - **Layout stability:** the 2D map relays out only when the graph structure changes; simulation ticks re-render only changed nodes.
+- **Alternatives:** simulation inside the repository (rejected: mixes I/O with time-based state); storing snapshots of only health (rejected: Revision 2 wants topology + relationships + health + metrics); propagating baseline unhealthy states (rejected: would invent incidents).
+- **Consequences:** history fixtures exist only for the hand-written mock (generated datasets start without history); captured snapshots last for the session (in-memory repository); real retention/event sourcing waits for a backend (PRODUCT_SPEC G.1).
+- **Verification:** `propagation.test.ts`, `snapshot.test.ts`, `engine.test.ts`, `snapshots.test.ts`, `useSimulationTicker.test.tsx`, `EventsPage.test.tsx`, `describeEvent.test.ts`, `simulation/boundaries.test.ts`.
+

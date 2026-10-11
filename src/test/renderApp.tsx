@@ -5,9 +5,13 @@ import { routes } from '../app/routes';
 import { RepositoryProvider } from '../data/TopologyDataProvider';
 import { SavedLayoutRepositoryContext } from '../data/savedLayouts/savedLayoutContext';
 import { createInMemorySavedLayoutRepository, type SavedLayoutRepository } from '../data/savedLayouts/SavedLayoutRepository';
+import { mockSnapshots } from '../data/mock/snapshots';
+import { SnapshotRepositoryContext } from '../data/snapshots/snapshotContext';
+import { createInMemorySnapshotRepository, type SnapshotRepository } from '../data/snapshots/SnapshotRepository';
 import type { TopologyRepository } from '../data/repositories/TopologyRepository';
 import { createMockTopologyRepository } from '../data/repositories/mockTopologyRepository';
 import { EMPTY_FILTERS } from '../domain/registry';
+import { useSimulationStore } from '../state/simulationStore';
 import { useUiStore } from '../state/uiStore';
 
 export function resetUiStore() {
@@ -20,19 +24,24 @@ export function resetUiStore() {
     filters: EMPTY_FILTERS,
     highlightMode: 'direct',
     neighborhood: null,
+    asOf: null,
   });
+  useSimulationStore.setState({ sim: null, running: false, speed: 'normal' });
 }
 
 export function renderApp(
   path: string,
   repository: TopologyRepository = createMockTopologyRepository(),
   savedLayouts: SavedLayoutRepository = createInMemorySavedLayoutRepository(),
+  snapshots: SnapshotRepository = createInMemorySnapshotRepository(mockSnapshots()),
 ) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
   render(
     <RepositoryProvider repository={repository}>
       <SavedLayoutRepositoryContext.Provider value={savedLayouts}>
-        <RouterProvider router={router} />
+        <SnapshotRepositoryContext.Provider value={snapshots}>
+          <RouterProvider router={router} />
+        </SnapshotRepositoryContext.Provider>
       </SavedLayoutRepositoryContext.Provider>
     </RepositoryProvider>,
   );

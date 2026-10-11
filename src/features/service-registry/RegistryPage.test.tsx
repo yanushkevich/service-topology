@@ -81,7 +81,7 @@ describe('service registry', () => {
     const inspector = screen.getByRole('complementary', { name: 'Inspector' });
     expect(within(inspector).getByRole('heading', { name: 'Payment Service' })).toBeInTheDocument();
     expect(within(inspector).getByText('Azure')).toBeInTheDocument();
-    expect(within(inspector).getByText('Simulated')).toBeInTheDocument();
+    expect(within(within(inspector).getByRole('region', { name: 'Telemetry' })).getByText('Simulated')).toBeInTheDocument();
     expect(within(inspector).getByText(/Simulated values, not observed telemetry/)).toBeInTheDocument();
     // Containment path is shown from explicit parent references.
     const path = within(inspector).getByRole('list', { name: 'Containment path' });

@@ -3,7 +3,7 @@
 This package is the product/architecture guide and staged implementation plan for a mock-first Service Topology and Registry Platform. It is documentation, not a completed application or proof that a backend exists.
 
 ## Development setup
-Milestones 1–2 are implemented: application shell, canonical domain model with validation, a mock multi-cloud repository, the service registry, the shared inspector, and the 2D map (React Flow + ELK) with grouped infrastructure mode, shareable URLs, and saved layouts. Built with React 19 + strict TypeScript + Vite, React Router, and Zustand. React Flow and ELK.js are pinned for Milestone 2. All data is mock and all telemetry is simulated. Requires Node.js 22+.
+Milestones 1–2 are implemented: application shell, canonical domain model with validation, a mock multi-cloud repository, the service registry, the shared inspector, the 2D map (React Flow + ELK) with grouped infrastructure mode, shareable URLs, and saved layouts, and a deterministic simulation with explainable failure propagation and snapshot history (Events & Traffic page). Built with React 19 + strict TypeScript + Vite, React Router, and Zustand. React Flow and ELK.js are pinned for Milestone 2. All data is mock and all telemetry is simulated. Requires Node.js 22+.
 
 ```sh
 npm install

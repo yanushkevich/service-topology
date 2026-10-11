@@ -15,6 +15,7 @@ Shareable view state for `/map`, `/registry`, and other sections. Implemented in
 | `kind` | Entity-group filter | comma list of `service,data,messaging,external,other` | none |
 | `hl` | Dependency highlight | `direct`, `upstream`, `downstream` | `direct` |
 | `nh` | Neighborhood | `<entityId>~<depth>`, depth 1–3 | none |
+| `asof` | Browse a snapshot (read-only history); added in Milestone 3, optional | snapshot ID | current state |
 
 Rules:
 - Encoding is canonical (lists sorted, defaults omitted), so equal state gives an identical URL.

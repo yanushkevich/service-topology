@@ -98,7 +98,29 @@ function emphasisOf(id: string, highlight: HighlightState, set: Set<string>): Em
   return highlight.active && set.has(id) ? 'highlighted' : 'none';
 }
 
-/** Keep the previous object when nothing React Flow renders has changed (cheap re-renders). */
+/** Equal by identity, or plain objects/arrays whose members are identical (one level deep). */
+function sameValue(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((x, i) => x === b[i] || sameValue(x, b[i]));
+  if (a && b && typeof a === 'object' && typeof b === 'object' && !Array.isArray(a) && !Array.isArray(b)) {
+    const ka = Object.keys(a);
+    const kb = Object.keys(b);
+    return (
+      ka.length === kb.length &&
+      ka.every((k) => {
+        const x = (a as Record<string, unknown>)[k];
+        const y = (b as Record<string, unknown>)[k];
+        return x === y || (Array.isArray(x) && Array.isArray(y) && x.length === y.length && x.every((v, i) => v === y[i]));
+      })
+    );
+  }
+  return false;
+}
+
+/**
+ * Keep the previous object when nothing React Flow renders has changed, so a rebuilt graph (e.g. a
+ * simulation tick that changed one node's health) only re-renders the elements that differ.
+ */
 export function reuseUnchanged<T extends { id: string; data?: Record<string, unknown> | undefined; selected?: boolean | undefined }>(
   previous: readonly T[],
   next: readonly T[],
@@ -111,7 +133,7 @@ export function reuseUnchanged<T extends { id: string; data?: Record<string, unk
     const a = old.data ?? {};
     const b = item.data ?? {};
     const keys = Object.keys(b);
-    return keys.length === Object.keys(a).length && keys.every((k) => a[k] === b[k]) ? old : item;
+    return keys.length === Object.keys(a).length && keys.every((k) => sameValue(a[k], b[k])) ? old : item;
   });
 }
 

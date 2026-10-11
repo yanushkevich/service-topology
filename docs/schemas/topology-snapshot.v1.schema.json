@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.test/schemas/topology-snapshot.v1.schema.json",
+  "title": "TopologySnapshot v1",
+  "description": "Point-in-time topology. Envelope mirrors src/domain/snapshot.ts; parseSnapshot is the runtime validator and additionally requires `data` to pass validateTopology with no errors. Entity shapes in `data` follow src/domain/types.ts (TopologyData).",
+  "type": "object",
+  "required": ["schemaVersion", "id", "label", "takenAt", "source", "isSimulated", "data"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "label": { "type": "string" },
+    "takenAt": { "type": "string", "format": "date-time", "description": "When the state was true." },
+    "source": {
+      "enum": ["fixture", "simulation", "observed"],
+      "description": "Only `observed` may carry real telemetry; none exists yet."
+    },
+    "isSimulated": {
+      "type": "boolean",
+      "description": "Must be true unless source is `observed`."
+    },
+    "data": {
+      "type": "object",
+      "required": ["environments", "serviceDefinitions", "serviceInstances", "resources", "relationships"],
+      "properties": {
+        "environments": { "type": "array" },
+        "serviceDefinitions": { "type": "array" },
+        "serviceInstances": { "type": "array" },
+        "resources": { "type": "array" },
+        "relationships": { "type": "array" }
+      }
+    }
+  },
+  "allOf": [
+    { "if": { "properties": { "source": { "enum": ["fixture", "simulation"] } } }, "then": { "properties": { "isSimulated": { "const": true } } } }
+  ]
+}

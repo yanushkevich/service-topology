@@ -389,3 +389,20 @@ Decisions: `DECISIONS.md` ADR-009. Measurements: `docs/BENCHMARKS.md`.
 
 Data flow for the map: `TopologyIndex` + shared state → `buildTopologyGraph` → `toLayoutRequest` → `GraphLayoutService` (worker) → `toFlowNodes`/`toFlowEdges` → React Flow. Graph IDs are canonical entity/relationship IDs (group IDs for groups); selection flows back through `refForNode`/`refForEdge` into the shared store. Drag positions and collapsed groups are local to the map, except when saved as a layout.
 
+## Milestone 3 implementation notes (2026-10-11)
+
+Decisions: `DECISIONS.md` ADR-010.
+
+| Concern | Location |
+|---|---|
+| Propagation rules and impact analysis | `src/domain/propagation.ts` |
+| Snapshot contract, validator, diff | `src/domain/snapshot.ts` |
+| Simulation engine (pure) | `src/simulation/engine.ts` |
+| Simulation runtime state and timer | `src/state/simulationStore.ts`, `src/state/useSimulationTicker.ts` |
+| Snapshot repository and fixtures | `src/data/snapshots/`, `src/data/mock/snapshots.ts` |
+| One index for all views (current simulated state or snapshot) | `src/data/TopologyDataProvider.tsx` |
+| Events & Traffic page (controls, log, history, rules) | `src/features/events/` |
+| History banner, header simulation status | `src/layouts/HistoryBanner.tsx`, `src/layouts/Header.tsx` |
+
+Data flow: repository → baseline → `useSimulationStore.initialize` → engine `data` → `TopologyDataProvider` index → registry/map/inspector. With `asOf` set, the provider builds the index from the snapshot instead; the engine is untouched.
+

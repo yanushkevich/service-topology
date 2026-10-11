@@ -1,5 +1,7 @@
 import { useEffect, useId } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
+import { useSimulationStore } from '../state/simulationStore';
+import { formatClock } from '../shared/format';
 import { useTopology } from '../data/topologyContext';
 import { sortEnvironments } from '../domain/topologyIndex';
 import { useUiStore } from '../state/uiStore';
@@ -83,6 +85,7 @@ export function Header() {
       </div>
 
       <div className={styles.headerEnd}>
+        <SimulationChip search={location.search} />
         <button
           type="button"
           className={styles.iconButton}
@@ -97,5 +100,26 @@ export function Header() {
         </button>
       </div>
     </header>
+  );
+}
+
+/** Simulation status. Deliberately never says "live": all data here is mock/simulated. */
+function SimulationChip({ search }: { search: string }) {
+  const sim = useSimulationStore((s) => s.sim);
+  const running = useSimulationStore((s) => s.running);
+  if (!sim) return null;
+  const failures = sim.failures.length;
+  return (
+    <Link
+      to={{ pathname: '/events', search }}
+      className={styles.simChip}
+      title="Simulated clock and status. Open Events & Traffic"
+      aria-label={`Simulation ${running ? 'running' : 'paused'} at ${formatClock(sim.clock)}${failures ? `, ${failures} simulated failures` : ''}`}
+    >
+      <span aria-hidden="true">{running ? '▶' : '❚❚'}</span>
+      <span>Simulated</span>
+      <span className="mono">{formatClock(sim.clock)}</span>
+      {failures > 0 && <span className="mono">· {failures} failing</span>}
+    </Link>
   );
 }

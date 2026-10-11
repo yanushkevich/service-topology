@@ -6,6 +6,7 @@ import { ServiceMapPage } from '../features/service-map/ServiceMapPage';
 import { PlaceholderPage } from '../features/placeholders/PlaceholderPage';
 import { NotFoundPage } from '../features/placeholders/NotFoundPage';
 import { RegistryPage } from '../features/service-registry/RegistryPage';
+import { EventsPage } from '../features/events/EventsPage';
 
 export const routes: RouteObject[] = [
   {
@@ -36,16 +37,7 @@ export const routes: RouteObject[] = [
           />
         ),
       },
-      {
-        path: 'events',
-        element: (
-          <PlaceholderPage
-            title="Events & Traffic"
-            description="Simulated traffic, failure and recovery events, and topology history."
-            milestone="Milestone 3"
-          />
-        ),
-      },
+      { path: 'events', element: <EventsPage /> },
       {
         path: 'infrastructure',
         element: (

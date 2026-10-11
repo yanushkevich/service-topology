@@ -97,7 +97,7 @@ Update only from actual repository state and checks.
 | 7 | Done (2026-10-11) | `feat(m1)`, `feat(phase-06)` | registry + map tests pass | Inspector "Show on map" / "Explore neighborhood"; off-screen selections are brought into view. |
 | 8 | Not started | — | — | |
 | 9 | Not started | — | — | |
-| 10 | Not started | — | — | |
+| 10 | Done (2026-10-11) | `feat(phase-10): …`, `feat(m3): …` | engine/propagation/snapshot/events tests pass | Simulation, propagation, history; infrastructure grouping was delivered in Milestone 2. |
 | 11 | Not started | — | — | |
 
 
@@ -186,7 +186,8 @@ Track both milestones and original phases. A milestone is not complete until its
 |---|---|---|
 | 1 | Implemented, pending review (2026-10-11) | All acceptance criteria checked; see the Milestone 1 closeout below. Data-model decisions resolved 2026-10-11 (ADR-008). |
 | 2 | Implemented (2026-10-11) | See the Milestone 2 closeout below. |
-| 3–5 | Not started | |
+| 3 | Implemented (2026-10-11) | See the Milestone 3 closeout below. |
+| 4–5 | Not started | |
 
 ### Milestone 1 closeout (2026-10-11)
 Evidence: `npm run check` (typecheck, lint, 50 tests, build) passes. Visual check via headless Chrome at 1440×900 (dark/light) and 700×900.
@@ -222,4 +223,20 @@ Evidence: `npm run check` passes (see the closeout commit for counts); `npm run 
 | Accessibility, loading/empty/error states | Partial | Keyboard-focusable nodes/edges with aria-labels, visible focus, status shapes + dash patterns, empty/no-match/too-many/error states tested. No automated axe audit; edge-color contrast not separately measured. |
 
 Known limitations: grouped mode at full detail fits at a small zoom; saved positions do not resize groups; selection/zoom timings need re-measurement on an idle machine; 3D remains a placeholder (Milestone 4).
+
+### Milestone 3 closeout (2026-10-11)
+Evidence: `npm run check` passes (counts in the closeout commit); visual check in headless Chrome (Events page after an injected failure and steps, map with downstream highlight of the failure, registry in history mode with banner).
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Simulation independent of React/React Flow/Three.js | Pass | `src/simulation/boundaries.test.ts` (imports only the domain) |
+| Deterministic results for the same fixture and actions | Pass | `engine.test.ts` (seeded; equal state for equal action sequences; drift and anomaly events reproducible) |
+| Propagation rules explicit, explainable, testable | Pass | `PROPAGATION_RULES` shown in the UI with non-propagation notes; `propagation.test.ts` covers each rule; events and inspector name rule, cause, and root |
+| A simulated event appears consistently in registry, inspector, graph, event list | Pass | `EventsPage.test.tsx` ("reflects one injected failure consistently…") |
+| Snapshots versioned with timestamp; represent topology/relationships/health | Pass | `snapshot.test.ts`, JSON Schema, fixtures validated |
+| "As of" / compare workflow with fixtures | Pass | `EventsPage.test.tsx` (view as of, back/forward, compare, capture, missing snapshot) |
+| Browsing history does not mutate current state | Pass | Same test asserts the simulation state object is unchanged |
+| Simulated data labeled; nothing described as live | Pass | Labeling tests on /events, /map, /registry; Simulated tags on events, telemetry, snapshots |
+
+Known limitations: captured snapshots last for the session only; generated datasets have no history fixtures; propagation is rule-based (no probabilities, retries, or circuit breakers); simulated traffic is metric drift, not request-level traffic.
 
