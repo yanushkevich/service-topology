@@ -1,0 +1,877 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Service Topology API",
+    "version": "1.0.0-draft",
+    "summary": "Illustrative contract for the future backend. No server implements it yet.",
+    "description": "Draft contract (see docs/API_CONTRACT.md). Each operation lists the frontend repository method it backs in `x-repository`. Payload schemas are the published JSON Schemas in docs/schemas; contract tests validate the mock data and the examples here against them. Authentication, tenancy, rate limits and retention are open decisions and intentionally not specified."
+  },
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "servers": [
+    {
+      "url": "https://topology.example.test/api/v1",
+      "description": "Placeholder; no backend exists."
+    }
+  ],
+  "tags": [
+    {
+      "name": "topology"
+    },
+    {
+      "name": "registry"
+    },
+    {
+      "name": "history"
+    },
+    {
+      "name": "layouts"
+    }
+  ],
+  "paths": {
+    "/environments": {
+      "get": {
+        "operationId": "listEnvironments",
+        "tags": [
+          "topology"
+        ],
+        "summary": "Environments, for the environment selector.",
+        "x-repository": "TopologyRepository.getTopology \u2192 environments",
+        "responses": {
+          "200": {
+            "description": "Environments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "../schemas/topology.v1.schema.json#/$defs/EnvironmentRecord"
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "items": [
+                        {
+                          "id": "production",
+                          "name": "Production",
+                          "kind": "production"
+                        },
+                        {
+                          "id": "staging",
+                          "name": "Staging",
+                          "kind": "staging"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/topology": {
+      "get": {
+        "operationId": "getTopology",
+        "tags": [
+          "topology"
+        ],
+        "summary": "Canonical topology, optionally scoped to one environment.",
+        "description": "Without `environmentId`, returns every environment (what the mock repository returns today). Environment-independent resources (e.g. SaaS APIs) are always included. Referential integrity follows validateTopology.",
+        "x-repository": "TopologyRepository.getTopology(signal)",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "TopologyData v1",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/topology.v1.schema.json"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/registry": {
+      "get": {
+        "operationId": "searchRegistry",
+        "tags": [
+          "registry"
+        ],
+        "summary": "Paginated search over instances and communicating resources (registry rows).",
+        "description": "Server-side equivalent of buildRegistryRows + filterRegistryRows + sortRegistryRows. Filters combine with AND across parameters and OR within a list.",
+        "x-repository": "proposed RegistryRepository.search (today computed client-side from getTopology)",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "All whitespace-separated terms must match name, ID, owner, or team (case-insensitive).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "../schemas/topology.v1.schema.json#/$defs/Provider"
+              }
+            }
+          },
+          {
+            "name": "health",
+            "in": "query",
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "../schemas/topology.v1.schema.json#/$defs/HealthStatus"
+              }
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/EntityGroup"
+              }
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "name",
+                "-name",
+                "type",
+                "-type",
+                "provider",
+                "-provider",
+                "owner",
+                "-owner",
+                "health",
+                "-health",
+                "relationships",
+                "-relationships",
+                "updated",
+                "-updated"
+              ],
+              "default": "health"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of registry rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryPage"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "items": [
+                        {
+                          "ref": {
+                            "kind": "service-instance",
+                            "id": "payment-service.production"
+                          },
+                          "name": "Payment Service",
+                          "type": "api",
+                          "group": "service",
+                          "provider": "azure",
+                          "environmentId": "production",
+                          "owner": "Payments",
+                          "team": "Payments",
+                          "health": "healthy",
+                          "outgoingCount": 4,
+                          "incomingCount": 1,
+                          "updatedAt": "2026-10-11T08:00:00Z"
+                        }
+                      ],
+                      "nextCursor": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/entities/{kind}/{id}": {
+      "get": {
+        "operationId": "getEntity",
+        "tags": [
+          "topology"
+        ],
+        "summary": "One canonical entity by kind and ID (deep links, inspector).",
+        "x-repository": "proposed; today resolved from the TopologyIndex",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EntityKind"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/EnvironmentRecord"
+                    },
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/ServiceDefinition"
+                    },
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/ServiceInstance"
+                    },
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/InfrastructureResource"
+                    },
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/CommunicationRelationship"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/topology/snapshots": {
+      "get": {
+        "operationId": "listSnapshots",
+        "tags": [
+          "history"
+        ],
+        "summary": "Snapshot summaries, oldest first.",
+        "x-repository": "SnapshotRepository.list()",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Snapshot summaries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SnapshotSummary"
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "items": [
+                        {
+                          "id": "fixture-0600",
+                          "label": "Before incident",
+                          "takenAt": "2026-10-11T06:00:00Z",
+                          "source": "fixture",
+                          "isSimulated": true
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "post": {
+        "operationId": "captureSnapshot",
+        "tags": [
+          "history"
+        ],
+        "summary": "Store a snapshot (e.g. a capture of the simulation).",
+        "x-repository": "SnapshotRepository.save(snapshot)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../schemas/topology-snapshot.v1.schema.json"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/topology/snapshots/{id}": {
+      "get": {
+        "operationId": "getSnapshot",
+        "tags": [
+          "history"
+        ],
+        "summary": "One snapshot (read-only history).",
+        "x-repository": "SnapshotRepository.get(id)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "TopologySnapshot v1",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/topology-snapshot.v1.schema.json"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/layouts": {
+      "get": {
+        "operationId": "listLayouts",
+        "tags": [
+          "layouts"
+        ],
+        "summary": "Saved layouts, newest first.",
+        "x-repository": "SavedLayoutRepository.list()",
+        "responses": {
+          "200": {
+            "description": "Saved layouts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "../schemas/saved-layout.v1.schema.json"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createLayout",
+        "tags": [
+          "layouts"
+        ],
+        "summary": "Save a layout.",
+        "x-repository": "SavedLayoutRepository.save(layout) (new ID)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../schemas/saved-layout.v1.schema.json"
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "schemaVersion": 1,
+                    "id": "layout-1",
+                    "name": "On-call view",
+                    "createdAt": "2026-10-11T09:00:00.000Z",
+                    "view": {
+                      "environmentId": "production",
+                      "layoutMode": "infrastructure",
+                      "filters": {
+                        "query": "",
+                        "providers": [],
+                        "health": [],
+                        "groups": []
+                      },
+                      "collapsedGroupIds": [
+                        "kafka-events-prod"
+                      ]
+                    },
+                    "positions": {
+                      "order-service.production": {
+                        "x": 10,
+                        "y": 20
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/saved-layout.v1.schema.json"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/layouts/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "put": {
+        "operationId": "replaceLayout",
+        "tags": [
+          "layouts"
+        ],
+        "summary": "Replace a layout.",
+        "x-repository": "SavedLayoutRepository.save(layout) (existing ID)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../schemas/saved-layout.v1.schema.json"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/saved-layout.v1.schema.json"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteLayout",
+        "tags": [
+          "layouts"
+        ],
+        "summary": "Delete a layout.",
+        "x-repository": "SavedLayoutRepository.remove(id)",
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "EntityKind": {
+        "enum": [
+          "environment",
+          "service-definition",
+          "service-instance",
+          "resource",
+          "relationship"
+        ]
+      },
+      "EntityGroup": {
+        "enum": [
+          "service",
+          "data",
+          "messaging",
+          "external",
+          "other"
+        ]
+      },
+      "EntityRef": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "id"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/EntityKind"
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "RegistryRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ref",
+          "name",
+          "type",
+          "group",
+          "provider",
+          "health",
+          "outgoingCount",
+          "incomingCount"
+        ],
+        "properties": {
+          "ref": {
+            "$ref": "#/components/schemas/EntityRef"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "description": "Service category or resource type."
+          },
+          "group": {
+            "$ref": "#/components/schemas/EntityGroup"
+          },
+          "provider": {
+            "$ref": "../schemas/topology.v1.schema.json#/$defs/Provider"
+          },
+          "environmentId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "null for environment-independent entities."
+          },
+          "owner": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "team": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "health": {
+            "$ref": "../schemas/topology.v1.schema.json#/$defs/HealthStatus"
+          },
+          "outgoingCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "incomingCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "updatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "RegistryPage": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegistryRow"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Opaque cursor for the next page; null at the end."
+          }
+        },
+        "description": "A page of registry rows."
+      },
+      "SnapshotSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "label",
+          "takenAt",
+          "source",
+          "isSimulated"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "takenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source": {
+            "enum": [
+              "fixture",
+              "simulation",
+              "observed"
+            ]
+          },
+          "isSimulated": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "description": "RFC 9457 problem details.",
+        "required": [
+          "type",
+          "title",
+          "status"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri-reference"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "description": "Validation issues (e.g. from validateTopology or parseSavedLayout).",
+            "items": {
+              "type": "object",
+              "required": [
+                "code",
+                "message"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "entityId": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "Problem": {
+        "description": "Error (RFC 9457)",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "examples": {
+              "notFound": {
+                "value": {
+                  "type": "https://topology.example.test/problems/not-found",
+                  "title": "Entity not found",
+                  "status": 404,
+                  "detail": "No service-instance with ID \"ghost\"."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

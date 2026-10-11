@@ -1,38 +1,91 @@
-# API Contract Strategy
+# API Contract
 
-**Status:** Contract direction for future backend integration; no backend is implied by this document.
+**Status:** Draft contract for a future backend (Milestone 5). **No backend exists.** The app runs on in-memory mock repositories that already implement the interfaces this contract maps to. The contract is machine-readable and tested; the prose here explains it.
+
+| Artifact | What it is |
+|---|---|
+| `docs/api/openapi.json` | OpenAPI **3.1.0** document (`jsonSchemaDialect` = JSON Schema 2020-12) |
+| `docs/schemas/topology.v1.schema.json` | `TopologyData` v1: environments, definitions, instances, resources, relationships |
+| `docs/schemas/topology-snapshot.v1.schema.json` | `TopologySnapshot` v1 (wraps `TopologyData`) |
+| `docs/schemas/saved-layout.v1.schema.json` | `SavedLayout` v1 |
+| `docs/schemas/topology-url-state.v1.md` | Query-parameter contract for shareable links (not an HTTP API) |
+| `src/contract/contract.test.ts` | Contract tests (see "How the contract is enforced") |
 
 ## Standards
-- OpenAPI 3.1 for HTTP endpoint contracts.
-- JSON Schema for persisted topology snapshots, saved layouts, and other serializable payloads.
-- Version schemas explicitly and document migrations for persisted data.
-- Generate or validate frontend types against the contract where practical.
+- **OpenAPI 3.1** for HTTP endpoints; **JSON Schema 2020-12** for every payload. OpenAPI references the published schemas instead of duplicating them, so each payload has one source of truth.
+- **Errors:** `application/problem+json` per **RFC 9457** (`type`, `title`, `status`, `detail`, `instance`). Validation failures add an `errors` array of `{ code, entityId?, message }`, using the same codes as `validateTopology` and `parseSavedLayout`.
+- **Versioning:** URL major version (`/api/v1`). Payloads that are persisted or shared (snapshots, saved layouts) also carry `schemaVersion`. Additive changes (new optional fields, new enum values announced in advance) stay within v1. Removals or meaning changes need v2 and a migration note in this file.
+- **Pagination:** cursor-based (`cursor`, `limit` ≤ 500, response `nextCursor`, `null` at the end). Cursors are opaque.
+- **Filtering semantics:** AND across parameters, OR within a list parameter (`provider=aws,gcp`). Search terms are whitespace-separated, all must match, case-insensitive, over name, ID, owner, and team. This is identical to the client-side `matchesFilters`.
 
-## Initial resource concepts
-- `ServiceDefinition`
-- `ServiceInstance`
-- `Environment`
-- `InfrastructureResource`
-- `CommunicationRelationship`
-- `TopologySnapshot`
-- `SavedLayout`
+## Identity and semantics
+- **IDs** are stable, opaque strings, unique across all collections of one topology (an instance and a resource never share an ID). Clients never parse IDs. Selection and deep links use `{ kind, id }`.
+- **Environments:** each service instance has exactly one `environmentId`. A resource without one inherits its nearest ancestor's environment; with none it is environment-independent (e.g. SaaS) and appears in every environment.
+- **Containment vs communication:** hierarchy is only `parentResourceId` (no cycles). Communication is only `CommunicationRelationship`. Neither is inferred from names or metadata.
+- **Messaging:** Kafka topics and RabbitMQ queues/exchanges are resources; producer → channel → consumer are explicit relationships. Exchange → queue bindings are relationships with `metadata.bindingKey`.
+- **Integrity beyond JSON Schema:** servers must reject topologies that fail `validateTopology` (missing references, parent cycles, environment conflicts, cross-environment relationships, invalid binding targets), returning 422 with problem details.
+- **Simulated vs observed:** every `metrics` object carries `isSimulated`. Snapshots carry `source` (`fixture` | `simulation` | `observed`) and `isSimulated`, which must be `true` unless the source is `observed`. Clients label simulated data and never describe it as live.
 
-## Proposed endpoint shapes (illustrative, not yet implemented)
-- `GET /api/v1/topology?environmentId=...` — topology entities and relationships for an environment.
-- `GET /api/v1/services?query=...&provider=...&health=...` — paginated service-instance search.
-- `GET /api/v1/services/{id}` — service instance details.
-- `GET /api/v1/relationships/{id}` — communication relationship details.
-- `GET /api/v1/topology/snapshots?from=...&to=...` — snapshot listing.
-- `GET /api/v1/topology/snapshots/{id}` — a specific topology snapshot.
-- `GET /api/v1/layouts` / `POST /api/v1/layouts` / `PUT /api/v1/layouts/{id}` — saved layouts.
+## Endpoints and the frontend interfaces they back
 
-Before implementing an API, decide pagination, filtering semantics, error format, auth, tenant boundaries, and snapshot retention. These endpoint names are starting proposals and must be reviewed before becoming a public contract.
+| Endpoint | Purpose | Frontend interface today |
+|---|---|---|
+| `GET /environments` | Environment selector | `TopologyRepository.getTopology` → `environments` |
+| `GET /topology?environmentId=` | Canonical topology (optionally one environment) | `TopologyRepository.getTopology(signal)` |
+| `GET /registry?environmentId=&q=&provider=&health=&kind=&sort=&cursor=&limit=` | Paginated registry search | Computed client-side (`buildRegistryRows`, `filterRegistryRows`, `sortRegistryRows`); proposed `RegistryRepository.search` |
+| `GET /entities/{kind}/{id}` | One entity (deep links, inspector) | Resolved from `TopologyIndex`; proposed |
+| `GET /topology/snapshots?from=&to=` | History list | `SnapshotRepository.list()` |
+| `GET /topology/snapshots/{id}` | One snapshot ("as of") | `SnapshotRepository.get(id)` |
+| `POST /topology/snapshots` | Store a snapshot (e.g. simulation capture) | `SnapshotRepository.save(snapshot)` |
+| `GET /layouts` / `POST /layouts` | Saved layouts | `SavedLayoutRepository.list()` / `.save()` |
+| `PUT /layouts/{id}` / `DELETE /layouts/{id}` | Replace / delete a layout | `SavedLayoutRepository.save()` / `.remove()` |
 
-## Contract requirements
-- IDs are stable within the contract's documented scope.
-- Every relationship endpoint references valid entities.
-- One service instance belongs to exactly one environment.
-- Infrastructure containment uses explicit parent IDs.
-- Topic/queue resources are first-class entities when represented in topology.
-- Snapshot and saved-layout payloads include schema versions.
-- Simulated telemetry must be distinguishable from observed telemetry.
+Each operation in `openapi.json` names its interface in `x-repository`. An HTTP adapter implements the existing interfaces (`src/data/repositories/TopologyRepository.ts`, `src/data/snapshots/SnapshotRepository.ts`, `src/data/savedLayouts/SavedLayoutRepository.ts`), so UI code does not change.
+
+## Example payloads
+
+Registry page (`GET /registry?environmentId=production&q=payment`):
+```json
+{
+  "items": [
+    {
+      "ref": { "kind": "service-instance", "id": "payment-service.production" },
+      "name": "Payment Service", "type": "api", "group": "service", "provider": "azure",
+      "environmentId": "production", "owner": "Payments", "team": "Payments", "health": "healthy",
+      "outgoingCount": 4, "incomingCount": 1, "updatedAt": "2026-10-11T08:00:00Z"
+    }
+  ],
+  "nextCursor": null
+}
+```
+
+Snapshot summary (`GET /topology/snapshots`):
+```json
+{ "items": [{ "id": "fixture-0600", "label": "Before incident", "takenAt": "2026-10-11T06:00:00Z", "source": "fixture", "isSimulated": true }] }
+```
+
+Error (`GET /entities/service-instance/ghost`):
+```json
+{ "type": "https://topology.example.test/problems/not-found", "title": "Entity not found", "status": 404, "detail": "No service-instance with ID \"ghost\"." }
+```
+
+Full topology, snapshot, and layout examples: `src/data/mock/topology.ts`, `src/data/mock/snapshots.ts`, and the `createLayout` example in `openapi.json`. All are validated by the contract tests.
+
+## How the contract is enforced
+`src/contract/contract.test.ts` (runs with `npm test`):
+- The mock inventory, both generated scale datasets, every snapshot fixture, and a frontend-generated registry page validate against the schemas (ajv, draft 2020-12, formats on).
+- Invalid payloads (unknown enum, unknown field, missing `isSimulated`, fixture claiming to be observed) are rejected.
+- Schema enums equal the TypeScript constants (`PROVIDERS`, `RESOURCE_TYPES`, …), so code and contract cannot drift silently.
+- The OpenAPI document is 3.1, every `$ref` resolves, every operation has an `operationId`, an `x-repository` mapping, and an error response, and every example validates against its schema.
+
+## Open decisions (required before implementation or publication)
+- **Authentication and authorization:** method (OIDC/OAuth2 assumed), scopes for read vs. write (snapshots, layouts).
+- **Tenancy:** tenant boundary (organization, account?) and how IDs are scoped.
+- **Retention and history:** snapshot retention, event sourcing vs. periodic snapshots, `from`/`to` limits.
+- **Saved-layout ownership:** per user or shared, and conflict handling (ETags / `If-Match` on `PUT`).
+- **Rate limits and caching:** `ETag` on `/topology`, incremental sync or change feed for large inventories.
+- **Observed telemetry:** source systems, freshness guarantees, and how `observedAt` and `isSimulated: false` are populated.
+- **Server-side simulation:** whether simulation stays client-side (current) or becomes an API.
+
+## Change process
+Change the schema and `openapi.json` together with the TypeScript types. Run `npm test` (contract tests fail on drift). Record breaking changes as an ADR in `DECISIONS.md` and bump the version as described above.

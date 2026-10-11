@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.test/schemas/topology.v1.schema.json",
+  "title": "TopologyData v1",
+  "description": "Canonical topology payload: environments, logical service definitions, per-environment service instances, infrastructure resources (incl. Kafka topics and RabbitMQ queues/exchanges), and communication relationships. Mirrors src/domain/types.ts; referential integrity (IDs, parents, cycles, environments) is enforced by validateTopology (src/domain/validation.ts), which JSON Schema cannot express. Contract tests keep enums in sync with the code.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["environments", "serviceDefinitions", "serviceInstances", "resources", "relationships"],
+  "properties": {
+    "environments": { "type": "array", "items": { "$ref": "#/$defs/EnvironmentRecord" } },
+    "serviceDefinitions": { "type": "array", "items": { "$ref": "#/$defs/ServiceDefinition" } },
+    "serviceInstances": { "type": "array", "items": { "$ref": "#/$defs/ServiceInstance" } },
+    "resources": { "type": "array", "items": { "$ref": "#/$defs/InfrastructureResource" } },
+    "relationships": { "type": "array", "items": { "$ref": "#/$defs/CommunicationRelationship" } }
+  },
+  "$defs": {
+    "EntityId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable, opaque ID, unique across all collections of one topology."
+    },
+    "Timestamp": { "type": "string", "format": "date-time" },
+    "Provider": { "enum": ["aws", "azure", "gcp", "on-prem", "saas", "internal", "unknown"] },
+    "HealthStatus": { "enum": ["healthy", "degraded", "unavailable", "unknown"] },
+    "EnvironmentKind": { "enum": ["development", "staging", "production", "other"] },
+    "ServiceCategory": { "enum": ["api", "gateway", "application", "worker", "scheduled-job", "other"] },
+    "ResourceType": {
+      "enum": [
+        "account", "subscription", "project", "region", "datacenter", "cluster", "namespace", "workload",
+        "database", "cache", "search-index", "broker", "topic", "queue", "exchange", "external-resource", "other"
+      ]
+    },
+    "Protocol": {
+      "enum": ["http", "https", "graphql", "grpc", "websocket", "kafka", "rabbitmq", "tcp", "tls", "postgresql", "mysql", "mongodb", "redis", "other"]
+    },
+    "CommunicationPattern": { "enum": ["synchronous", "asynchronous", "streaming", "scheduled", "database", "unknown"] },
+    "RelationshipStatus": { "enum": ["active", "degraded", "inactive", "unknown"] },
+    "Metadata": { "type": "object", "description": "Free-form, display-only attributes. Never used for identity or hierarchy." },
+    "Metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["isSimulated"],
+      "properties": {
+        "latencyMs": { "type": "number", "minimum": 0 },
+        "throughputPerSecond": { "type": "number", "minimum": 0 },
+        "errorRatePercent": { "type": "number", "minimum": 0, "maximum": 100 },
+        "isSimulated": {
+          "type": "boolean",
+          "description": "True for generated/mock values. Clients must label simulated telemetry and never present it as observed."
+        },
+        "observedAt": { "$ref": "#/$defs/Timestamp" }
+      }
+    },
+    "EnvironmentRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "kind"],
+      "properties": {
+        "id": { "$ref": "#/$defs/EntityId" },
+        "name": { "type": "string" },
+        "kind": { "$ref": "#/$defs/EnvironmentKind" }
+      }
+    },
+    "ServiceDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "category", "protocols"],
+      "properties": {
+        "id": { "$ref": "#/$defs/EntityId" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "owner": { "type": "string" },
+        "team": { "type": "string" },
+        "category": { "$ref": "#/$defs/ServiceCategory" },
+        "protocols": { "type": "array", "items": { "$ref": "#/$defs/Protocol" } },
+        "metadata": { "$ref": "#/$defs/Metadata" }
+      }
+    },
+    "ServiceInstance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "serviceDefinitionId", "environmentId", "provider", "health", "updatedAt"],
+      "properties": {
+        "id": { "$ref": "#/$defs/EntityId" },
+        "serviceDefinitionId": { "$ref": "#/$defs/EntityId" },
+        "environmentId": { "$ref": "#/$defs/EntityId", "description": "Exactly one environment per instance." },
+        "provider": { "$ref": "#/$defs/Provider" },
+        "health": { "$ref": "#/$defs/HealthStatus" },
+        "version": { "type": "string" },
+        "endpoint": { "type": "string" },
+        "resourceId": { "$ref": "#/$defs/EntityId", "description": "Most specific known host (namespace, cluster, …)." },
+        "metrics": { "$ref": "#/$defs/Metrics" },
+        "updatedAt": { "$ref": "#/$defs/Timestamp" },
+        "metadata": { "$ref": "#/$defs/Metadata" }
+      }
+    },
+    "InfrastructureResource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "type", "provider"],
+      "properties": {
+        "id": { "$ref": "#/$defs/EntityId" },
+        "name": { "type": "string" },
+        "type": { "$ref": "#/$defs/ResourceType" },
+        "provider": { "$ref": "#/$defs/Provider" },
+        "parentResourceId": { "$ref": "#/$defs/EntityId", "description": "Explicit containment; no cycles. Inherited by children for environment." },
+        "environmentId": { "$ref": "#/$defs/EntityId" },
+        "health": { "$ref": "#/$defs/HealthStatus" },
+        "owner": { "type": "string" },
+        "team": { "type": "string" },
+        "metrics": { "$ref": "#/$defs/Metrics" },
+        "updatedAt": { "$ref": "#/$defs/Timestamp" },
+        "metadata": { "$ref": "#/$defs/Metadata" }
+      }
+    },
+    "CommunicationRelationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sourceEntityId", "targetEntityId", "protocol", "pattern", "direction", "status", "updatedAt"],
+      "properties": {
+        "id": { "$ref": "#/$defs/EntityId" },
+        "sourceEntityId": { "$ref": "#/$defs/EntityId" },
+        "targetEntityId": { "$ref": "#/$defs/EntityId" },
+        "protocol": { "$ref": "#/$defs/Protocol" },
+        "pattern": { "$ref": "#/$defs/CommunicationPattern" },
+        "direction": { "enum": ["unidirectional", "bidirectional"] },
+        "status": { "$ref": "#/$defs/RelationshipStatus" },
+        "authenticationType": { "type": "string" },
+        "endpoint": { "type": "string" },
+        "metrics": { "$ref": "#/$defs/Metrics" },
+        "metadata": { "$ref": "#/$defs/Metadata" },
+        "updatedAt": { "$ref": "#/$defs/Timestamp" }
+      }
+    }
+  }
+}
