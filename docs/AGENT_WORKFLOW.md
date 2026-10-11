@@ -54,8 +54,8 @@ Standing instruction: make a git commit after **every completed milestone or pha
 - Do not mix two milestones or phases in one commit. Several small commits inside one unit are fine. The final one completes it.
 
 **Where**
-- If on `main`, first create a branch named `milestone-<n>-<slug>` (e.g. `milestone-2-map-inspector`), or `phase-<nn>-<slug>` for standalone phase work. Keep committing phases of a milestone on its branch.
-- Do not push, open a PR, or merge into `main` unless asked.
+- Commit directly on `main` (product-owner instruction, 2026-10-11). Do not create milestone or phase branches unless asked.
+- Do not push, open a PR, or rewrite `main` history unless asked.
 
 **What to stage**
 - Stage explicit paths that belong to the unit (`git add src/... docs/...`). Never `git add -A` or `git add .` blindly.

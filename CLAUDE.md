@@ -45,7 +45,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 4. Verify with the repository's actual scripts: focused tests first, then relevant typecheck/lint/build and UI checks where available.
 5. Update documentation when behavior, contracts, decisions, or acceptance status changes.
 6. Finish with changed files, exact commands and observed outcomes, unresolved risks, and next prerequisites. Stop at the requested scope.
-7. **Commit after every completed milestone or phase** (standing instruction from the product owner). Commit only once its checks pass and status docs are updated. Use Conventional Commits with the milestone/phase as scope (e.g. `feat(m2): add React Flow topology with ELK layout`). Stage only that unit's files. Full procedure: `docs/AGENT_WORKFLOW.md` §6.
+7. **Commit after every completed milestone or phase** (standing instruction from the product owner). Commit only once its checks pass and status docs are updated. Use Conventional Commits with the milestone/phase as scope (e.g. `feat(m2): add React Flow topology with ELK layout`). Commit directly on `main` (no branches unless asked); do not push unless asked. Stage only that unit's files. Full procedure: `docs/AGENT_WORKFLOW.md` §6.
 
 ## Source-of-truth precedence
 1. Explicit user direction for the current task.
