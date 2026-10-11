@@ -127,3 +127,18 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 - **Consequences:** frame rate needs GPU measurement (BENCHMARKS.md); grouped 2D mode and 3D share data but not positions; deeper descendants than grandchildren are reached by entering further.
 - **Verification:** `scope.test.ts`, `layout3d.test.ts`, `sceneModel.test.ts`, `runtime.test.ts`, `GalaxyScene.test.tsx` (canonical IDs, click/double-click, arrows, particles vs motion policy, containment toggle, disposal, camera fit/dive/restore), `App.test.tsx` (WebGL fallback and return to 2D), `scripts/bench-3d.mjs`.
 
+## ADR-012 — Accessibility hardening, API contract, and positioning (2026-10-11, Milestone 5)
+- **Status:** Accepted
+- **Context:** Milestone 5 requires WCAG 2.2 AA verification, an OpenAPI 3.1 / JSON Schema contract, and positioning without unsupported claims.
+- **Decision:**
+  - **Tokens deviate from the UI mock where it failed AA:** the light theme's status fills (`--color-ok/warn/crit`), edge colors (rendered at 62% opacity), and the dark `--color-text-3` were adjusted. A new `--color-control-border` gives form controls a 3:1 boundary. Pressed toggles get an accent underline (state ≥ 3:1). `src/styles/contrast.test.ts` computes every required pair from `tokens.css`, so regressions fail the build.
+  - **Accessible names contain visible labels** (WCAG 2.5.3): rail links read "Deps (Dependencies)"; the simulation chip's name starts with its visible text.
+  - **2D edges are not tab stops:** connections are reached through the inspector's relationship lists ("Connection details"), which avoids 30+ invisible-focus stops.
+  - **Target size (2.5.8):** in-canvas controls scale with the user's zoom. The full-size Groups panel (grouped mode) and the 3D entity list are the equivalent controls. The browser audit checks target size everywhere except zoomable canvas content.
+  - **Verification layers:** axe-core in jsdom (names, roles, ARIA), a real-browser audit (`npm run audit:a11y`: axe incl. contrast and target size, a Tab pass checking visible focus, reduced motion) in both themes, keyboard-journey tests, and a static guard against React state updates in frame callbacks.
+  - **API contract:** OpenAPI 3.1 (`docs/api/openapi.json`) referencing JSON Schema 2020-12 payload schemas (`docs/schemas`); RFC 9457 errors; cursor pagination; `x-repository` mapping to existing frontend interfaces; contract tests with ajv. Auth, tenancy, retention, and ownership remain open (`API_CONTRACT.md`).
+  - **Positioning:** documented as an unvalidated hypothesis with a workflow comparison by publicly stated focus, explicit gaps, a validation plan, and kill criteria (`POSITIONING.md`).
+- **Alternatives:** keep mock colors and document exceptions (rejected: fails AA for required indicators); make edges focusable with a custom focus style (rejected: tab-order burden); generate types from the schemas (deferred: hand-written types plus enum-equality tests are enough for now).
+- **Consequences:** light theme reads slightly darker than the mock; the design source should be updated to match. Competitor cells marked "?" must be verified before external use.
+- **Verification:** `src/styles/contrast.test.ts`, `src/test/a11y.test.tsx`, `src/test/keyboard.test.tsx`, `src/test/frameLoop.test.ts`, `scripts/audit-a11y.mjs`, `src/contract/contract.test.ts`.
+

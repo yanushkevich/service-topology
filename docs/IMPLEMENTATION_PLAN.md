@@ -87,7 +87,7 @@ Update only from actual repository state and checks.
 
 | Phase | Status | Commit/PR | Checks | Notes |
 |---|---|---|---|---|
-| 0 | Not started | — | — | |
+| 0 | Not done as a separate deliverable | — | — | The product blueprint is covered by PRODUCT_SPEC/ARCHITECTURE/DECISIONS; no separate Phase 0 document was produced. |
 | 1 | Done (2026-10-11) | `feat(m1): …` (see git log) | typecheck, lint, test (7/7), build pass | Shell, tokens, routing, 2D/3D placeholders + Topology/Grouped-infrastructure mode switch, inspector region. Visual check via headless Chrome screenshots (dark/light, 1440 and 700 px). |
 | 2 | Done (2026-10-11) | `feat(m1): …` (see git log) | domain/repository tests pass | Types, validation, index, repository interface + mock (14 definitions, 21 instances, 41 resources, 39 relationships across AWS/Azure/GCP/on-prem/SaaS and 3 environments). |
 | 3 | Done (2026-10-11) | `feat(m1)`, `feat(m2): add versioned URL state…` | store, URL codec/sync tests pass | Selection, filters, environment, view, layout mode, highlight mode, neighborhood, theme; URL sync. Simulation controls belong to Milestone 3. |
@@ -96,9 +96,9 @@ Update only from actual repository state and checks.
 | 6 | Done (2026-10-11) | `feat(phase-06): …` | layout/graph/map tests pass | React Flow + ELK (worker), selection, highlight, neighborhood, grouping/collapse, minimap. |
 | 7 | Done (2026-10-11) | `feat(m1)`, `feat(phase-06)` | registry + map tests pass | Inspector "Show on map" / "Explore neighborhood"; off-screen selections are brought into view. |
 | 8 | Done (2026-10-11) | `feat(phase-08): …`, `feat(m4): …` | galaxy tests pass | Lazy R3F galaxy, scopes, breadcrumbs, fallbacks. |
-| 9 | Partial (2026-10-11) | `feat(m4): …` | motion policy and camera tests pass | GSAP camera transitions, data-bound particles, pause, reduced motion. Broader polish is Milestone 5. |
+| 9 | Done, scoped (2026-10-11) | `feat(m4): …`, `fix(phase-11): …` | motion policy, camera, frame-loop guard, reduced-motion audit pass | GSAP camera transitions, data-bound particles, pause, reduced motion; Milestone 5 verified rather than added motion. |
 | 10 | Done (2026-10-11) | `feat(phase-10): …`, `feat(m3): …` | engine/propagation/snapshot/events tests pass | Simulation, propagation, history; infrastructure grouping was delivered in Milestone 2. |
-| 11 | Not started | — | — | |
+| 11 | Done (2026-10-11) | `fix(phase-11): …`, `docs(m5): …` | check, a11y audits, contract tests pass | Hardening, accessibility, API contract, developer docs. |
 
 
 ---
@@ -188,7 +188,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 2 | Implemented (2026-10-11) | See the Milestone 2 closeout below. |
 | 3 | Implemented (2026-10-11) | See the Milestone 3 closeout below. |
 | 4 | Implemented (2026-10-11) | See the Milestone 4 closeout below. |
-| 5 | Not started | |
+| 5 | Implemented (2026-10-11) | See the Milestone 5 closeout below. |
 
 ### Milestone 1 closeout (2026-10-11)
 Evidence: `npm run check` (typecheck, lint, 50 tests, build) passes. Visual check via headless Chrome at 1440×900 (dark/light) and 700×900.
@@ -260,4 +260,21 @@ Evidence: `npm run check` passes (counts in the closeout commit); headless Chrom
 | Effects not prioritized over readability | Pass | No bloom; glow only on the selection's paths |
 
 Known limitations: frame rate not yet measured on a GPU; dense 250-node overviews need zooming for member labels; 3D selection-response timing not captured by the harness.
+
+### Milestone 5 closeout (2026-10-11)
+Evidence: `npm run check` passes (counts in the closeout commit); `npm run audit:a11y` against the production build: 14/14 page × theme combinations with 0 axe violations (incl. color contrast and target size outside zoomable canvases), visible focus on every Tab stop checked, reduced motion on.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Text contrast ≥ 4.5:1, large ≥ 3:1, non-text indicators ≥ 3:1 | Pass | `contrast.test.ts` (both themes, from tokens), real-browser axe color-contrast |
+| Keyboard access, visible focus, accessible names, reduced motion verified | Pass | `keyboard.test.tsx`, jsdom + browser axe, Tab pass in `audit-a11y.mjs`, reduced-motion check, motion policy tests |
+| Typecheck, lint, tests, build | Pass | `npm run check` |
+| Animation resources cleaned up; no frame-frequency React state | Pass | `GalaxyScene.test.tsx` (disposal), `frameLoop.test.ts` (guard) |
+| Performance measured, limitations documented honestly | Pass | `BENCHMARKS.md` (incl. variance and SwiftShader caveats), `DEVELOPER_GUIDE.md` §7 |
+| `API_CONTRACT.md` defines OpenAPI 3.1 + JSON Schema with examples | Pass | `docs/api/openapi.json`, `docs/schemas/*`, `contract.test.ts` |
+| Differentiation as a hypothesis, no superiority claims | Pass | `POSITIONING.md` (unvalidated; "?" cells to verify; validation plan) |
+| Setup, architecture, testing, scaling, extension docs | Pass | `DEVELOPER_GUIDE.md`, `README.md` |
+| Focused animation and visual polish | Partial | Motion was verified and hardened (reduced motion, pause, cleanup, opacity-transition removal for performance); no new animation was added in this milestone |
+
+Remaining risks: no GPU measurement of 3D; 2D selection timing inconclusive on a loaded machine; positioning unvalidated with users; placeholder pages (Overview, Dependencies, Infrastructure, Settings).
 
