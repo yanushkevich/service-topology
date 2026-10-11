@@ -27,15 +27,13 @@ export interface ValidationIssue {
 }
 
 /**
- * Integrity rules for canonical topology data. Errors break documented invariants (ADR-004, ADR-008);
- * warnings flag combinations that are allowed but probably unintended.
+ * Integrity rules for canonical topology data. Every current rule is an error: it breaks a documented
+ * invariant (ADR-004, ADR-008). `warning` is reserved for future advisory checks.
  */
 export function validateTopology(data: TopologyData): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const error = (code: ValidationCode, entityId: EntityId, message: string) =>
     issues.push({ severity: 'error', code, entityId, message });
-  const warning = (code: ValidationCode, entityId: EntityId, message: string) =>
-    issues.push({ severity: 'warning', code, entityId, message });
 
   // IDs are unique across every collection, so a bare ID resolves to exactly one entity.
   const seen = new Set<EntityId>();
@@ -74,7 +72,7 @@ export function validateTopology(data: TopologyData): ValidationIssue[] {
       } else {
         const hostEnvironment = environmentOf(index, instance.resourceId);
         if (hostEnvironment !== undefined && hostEnvironment !== instance.environmentId) {
-          warning(
+          error(
             'environment-mismatch',
             instance.id,
             `Instance is in "${instance.environmentId}" but runs in a resource assigned to "${hostEnvironment}"`,

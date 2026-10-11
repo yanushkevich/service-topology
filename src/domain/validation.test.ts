@@ -173,9 +173,17 @@ describe('validateTopology', () => {
     expect(codes(data)).toEqual(['error:invalid-binding-target:r-exchange-to-consumer']);
   });
 
-  it('warns when an instance runs in a resource assigned to another environment', () => {
+  it('rejects an instance that runs in a resource assigned to another environment', () => {
     const data = clone();
+    // ns-commerce-prod inherits "production" from its account.
     data.serviceInstances.find((i) => i.id === 'order-service.staging')!.resourceId = 'ns-commerce-prod';
-    expect(codes(data)).toContain('warning:environment-mismatch:order-service.staging');
+    expect(codes(data)).toContain('error:environment-mismatch:order-service.staging');
+  });
+
+  it('accepts an instance hosted in an environment-independent resource', () => {
+    const data = clone();
+    // The nonprod account has no environment of its own.
+    data.serviceInstances.find((i) => i.id === 'order-service.staging')!.resourceId = 'aws-acct-commerce-nonprod';
+    expect(codes(data)).toEqual([]);
   });
 });
