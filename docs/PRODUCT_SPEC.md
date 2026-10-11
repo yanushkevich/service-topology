@@ -268,3 +268,35 @@ Every navigation section is a working page built on the canonical data and share
 ## L. Acceptance additions
 - No placeholder pages remain; each section page has integration tests and an axe audit case, and is in the real-browser audit.
 - The Tailwind theme exposes only token colors; the contrast test continues to gate the build.
+
+# Revision 6 Addendum — Event catalog (2026-10-11)
+
+**Source:** product owner direction after Milestone 6 review: the UI mock (`docs/ui-frontend-mock/Main.dc.html`, "Events" section) shows an event catalog that no document required. Authoritative where it conflicts with earlier text. Delivery: Milestone 7 (`docs/milestones/MILESTONE_07_EVENT_CATALOG.md`). Decision record: ADR-014.
+
+## M. Event catalog
+
+### M.1 Event types (canonical data)
+- An **event type** (e.g. `OrderPlaced`) is a logical, environment-independent contract, like a service definition: ID, name, description, schema version, owner/team, and metadata.
+- It is **carried on a messaging channel**: a Kafka topic, RabbitMQ exchange, or RabbitMQ queue resource. It lists one channel per environment it exists in (at most one per environment).
+- **Producers and consumers** are service definitions. In a given environment they resolve to that environment's service instances. Each resolved producer must have a modeled relationship to the channel, and each resolved consumer must have a modeled relationship from the channel. For an exchange, a consumer may instead read from a queue bound to that exchange. Event types never invent communication: they annotate relationships that already exist.
+- Violations are validation errors (consistent with ADR-008): unknown channel, a channel that is not a topic/queue/exchange, two channels in one environment, an unknown producer/consumer definition, or a resolved producer/consumer without the matching relationship.
+- Event types are optional in the topology contract (additive within v1). Data without them shows an empty catalog.
+
+### M.2 Events page
+- The **Events** navigation section is the event catalog (as in the mock). The simulation/history page formerly called "Events & Traffic" becomes **Simulation** (`/simulation`), unchanged in function.
+- List: event types that exist in the selected environment, searchable by event name or channel name, each with its channel and producer/consumer counts. Count shown with the environment.
+- Detail: name (monospace), description, schema version, owner; producers → event on its channel → consumers, each with health status. Selecting a producer, consumer, or the channel sets the shared selection (inspector). Empty states: no events, no matches, no consumers modeled, producer/consumer definition not deployed in this environment.
+- The selected event is part of the URL (`/events/<eventTypeId>`) so it can be shared.
+- Actions: **Highlight in 2D** and **Show in 3D galaxy** open the map with the event's flow emphasized.
+- Honors history mode (`asOf`): flows and health come from the snapshot being viewed.
+
+### M.3 Event highlight on the map
+- An event highlight emphasizes exactly the event's flow in the selected environment (producer instances, the channel, any bound queue on the path, consumer instances, and the relationships between them) and dims the rest, in 2D and 3D, using the same emphasis treatment as selection.
+- A selection takes precedence; the highlight resumes when the selection is cleared. A visible, keyboard-operable chip names the event and clears the highlight.
+- The highlight is shared, cross-view state, mirrored to the URL (`ev=<eventTypeId>`, additive within URL state v1).
+- The inspector of a topic/queue/exchange lists the event types it carries, each linking to the catalog.
+
+### M.4 Acceptance additions
+- Event types validate against the rules in M.1 with tests per rule; the mock inventory has event types consistent with its relationships and validates with zero issues.
+- The JSON Schema and OpenAPI contract include event types; contract tests pass.
+- The Events and Simulation pages have integration tests and axe cases (jsdom and real browser, both themes).
