@@ -205,3 +205,93 @@ func (s *Store) Subgraph(_ context.Context, startID domain.EntityID, direction s
 	}
 	return sub, nil
 }
+
+// Simulations adapts the store to ports.SimulationRepository.
+func (s *Store) Simulations() ports.SimulationRepository { return &sims{s: s} }
+
+type sims struct {
+	s         *Store
+	runs      []domain.SimulationRun
+	events    map[string][]domain.StoredEvent
+	telemetry map[string][]domain.TelemetryObservation
+}
+
+func (m *sims) Save(_ context.Context, run *domain.SimulationRun, events []domain.StoredEvent, telemetry []domain.TelemetryObservation) error {
+	m.s.mu.Lock()
+	defer m.s.mu.Unlock()
+	if m.s.Err != nil {
+		return m.s.Err
+	}
+	if m.events == nil {
+		m.events, m.telemetry = map[string][]domain.StoredEvent{}, map[string][]domain.TelemetryObservation{}
+	}
+	m.runs = append(m.runs, clone(*run))
+	m.events[run.ID] = clone(events)
+	m.telemetry[run.ID] = clone(telemetry)
+	return nil
+}
+
+func (m *sims) Get(_ context.Context, id string) (*domain.SimulationRun, error) {
+	m.s.mu.Lock()
+	defer m.s.mu.Unlock()
+	for _, r := range m.runs {
+		if r.ID == id {
+			out := clone(r)
+			return &out, nil
+		}
+	}
+	return nil, ports.ErrNotFound
+}
+
+func (m *sims) List(_ context.Context, limit int) ([]domain.SimulationRun, error) {
+	m.s.mu.Lock()
+	defer m.s.mu.Unlock()
+	out := []domain.SimulationRun{}
+	for i := len(m.runs) - 1; i >= 0 && (limit <= 0 || len(out) < limit); i-- {
+		out = append(out, clone(m.runs[i]))
+	}
+	return out, nil
+}
+
+func (m *sims) Events(_ context.Context, sim, entity, typ string) ([]domain.StoredEvent, error) {
+	m.s.mu.Lock()
+	defer m.s.mu.Unlock()
+	out := []domain.StoredEvent{}
+	for _, e := range m.events[sim] {
+		if (entity == "" || e.Event["entityId"] == entity) && (typ == "" || e.Event["type"] == typ) {
+			out = append(out, e)
+		}
+	}
+	return out, nil
+}
+
+func (m *sims) Telemetry(_ context.Context, sim, subject, metric string) ([]domain.TelemetryObservation, error) {
+	m.s.mu.Lock()
+	defer m.s.mu.Unlock()
+	out := []domain.TelemetryObservation{}
+	for _, o := range m.telemetry[sim] {
+		if (subject == "" || o.SubjectID == subject) && (metric == "" || o.MetricName == metric) {
+			out = append(out, o)
+		}
+	}
+	return out, nil
+}
+
+func (m *sims) Prune(_ context.Context, olderThan string, keep int) (int, error) {
+	m.s.mu.Lock()
+	defer m.s.mu.Unlock()
+	var kept []domain.SimulationRun
+	removed := 0
+	for i := len(m.runs) - 1; i >= 0; i-- { // newest first
+		r := m.runs[i]
+		if (keep > 0 && len(kept) >= keep) || (olderThan != "" && domain.Before(r.CreatedAt, olderThan)) {
+			delete(m.events, r.ID)
+			delete(m.telemetry, r.ID)
+			removed++
+			continue
+		}
+		kept = append([]domain.SimulationRun{r}, kept...)
+	}
+	m.runs = kept
+	return removed, nil
+}

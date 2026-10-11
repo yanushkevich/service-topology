@@ -18,6 +18,7 @@ import (
 	"servicetopology/backend/internal/domain"
 	"servicetopology/backend/internal/fixtures"
 	"servicetopology/backend/internal/ports"
+	"servicetopology/backend/internal/simulation"
 )
 
 func apiHandler(t *testing.T) (http.Handler, *memory.Store) {
@@ -31,7 +32,7 @@ func apiHandler(t *testing.T) (http.Handler, *memory.Store) {
 		t.Fatal(err)
 	}
 	store := memory.New(data)
-	svc := &application.Service{TopologyRepo: store, SnapshotRepo: store, LayoutRepo: store.Layouts(), GraphRepo: store}
+	svc := &application.Service{TopologyRepo: store, SnapshotRepo: store, LayoutRepo: store.Layouts(), GraphRepo: store, SimRepo: store.Simulations(), SimulationMaxRuns: 3}
 	return httpapi.NewHandler(httpapi.Deps{Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), API: svc}), store
 }
 
@@ -345,4 +346,116 @@ func TestTraversalEndpoints(t *testing.T) {
 			t.Errorf("%s: got %d, want %d (%s)", path, r.code, code, r.body)
 		}
 	}
+}
+
+func TestSimulationRuns(t *testing.T) {
+	h, store := apiHandler(t)
+	before := mustJSON(store.Data)
+	body := `{"seed":42,"label":"Payments outage drill","captureSnapshot":true,"watch":["payment-service.production","order-service.production"],
+	  "actions":[{"type":"inject","entityId":"payment-service.production","mode":"unavailable","durationTicks":3},{"type":"step","ticks":6},
+	  {"type":"inject","entityId":"topic-orders-events-prod","mode":"unavailable"},{"type":"step","ticks":4},{"type":"recoverAll"}]}`
+	r := call(h, "POST", "/api/v1/simulations", body)
+	var run domain.SimulationRun
+	r.json(t, &run)
+	if r.code != 201 || run.Tick != 10 || !run.IsSimulated || run.Provenance != "simulated" || run.SnapshotID == nil || run.EventCount == 0 {
+		t.Fatalf("run: %d %s", r.code, r.body)
+	}
+	if mustJSON(store.Data) != before {
+		t.Fatal("a simulation run changed the canonical topology")
+	}
+
+	// Stored events equal the engine's event stream for the same seed and actions.
+	var events application.Page[domain.StoredEvent]
+	call(h, "GET", "/api/v1/events?simulationId="+run.ID+"&limit=1000", "").json(t, &events)
+	if len(events.Items) != run.EventCount {
+		t.Fatalf("events: %d, run says %d", len(events.Items), run.EventCount)
+	}
+	for i, e := range events.Items {
+		if e.Provenance != "simulated" || e.Event["isSimulated"] != true || e.Seq != i+1 {
+			t.Fatalf("event %d not labelled simulated or out of sequence: %+v", i, e)
+		}
+	}
+	// Replay the same seed and actions directly in the engine: the stored payloads must be its events.
+	st := simulation.Create(store.Data, 42, "")
+	st, _ = st.Inject("payment-service.production", "unavailable", 3)
+	st = st.Step(6)
+	st, _ = st.Inject("topic-orders-events-prod", "unavailable", 0)
+	st = st.Step(4).RecoverAll()
+	var stored []map[string]any
+	for _, e := range events.Items {
+		stored = append(stored, e.Event)
+	}
+	if len(st.Events) >= simulation.MaxEvents || mustJSON(stored) != mustJSON(canonicalEvents(st.Events)) {
+		t.Fatalf("stored events differ from the engine's (%d stored, %d engine)", len(stored), len(st.Events))
+	}
+
+	var filtered application.Page[domain.StoredEvent]
+	call(h, "GET", "/api/v1/events?simulationId="+run.ID+"&type=failure-injected", "").json(t, &filtered)
+	if len(filtered.Items) != 2 {
+		t.Fatalf("failure-injected events: %d", len(filtered.Items))
+	}
+
+	// One sample per watched entity, metric, and recorded state (initial + per action/tick).
+	var tel application.Page[domain.TelemetryObservation]
+	call(h, "GET", "/api/v1/telemetry?simulationId="+run.ID+"&entityId=payment-service.production&metricName=latencyMs&limit=1000", "").json(t, &tel)
+	if len(tel.Items) != 1+1+6+1+4+1 || !tel.Items[0].IsSimulated || tel.Items[0].Unit != "ms" {
+		t.Fatalf("telemetry: %d samples %+v", len(tel.Items), tel.Items[:1])
+	}
+
+	// The captured snapshot is a "simulation" snapshot and differs from the current topology.
+	var snap domain.Snapshot
+	call(h, "GET", "/api/v1/topology/snapshots/"+*run.SnapshotID, "").json(t, &snap)
+	if snap.Source != "simulation" || !snap.IsSimulated || snap.Label != "Payments outage drill" {
+		t.Fatalf("snapshot %+v", snap.SnapshotSummary)
+	}
+	var diff application.DiffResult
+	call(h, "GET", "/api/v1/topology/snapshots/"+*run.SnapshotID+"/diff?against=current", "").json(t, &diff)
+	if diff.After != "current" {
+		t.Fatalf("diff %+v", diff)
+	}
+
+	for name, bad := range map[string]string{
+		"no actions":     `{"actions":[]}`,
+		"unknown entity": `{"actions":[{"type":"inject","entityId":"ghost","mode":"unavailable"}]}`,
+		"bad mode":       `{"actions":[{"type":"inject","entityId":"payment-service.production","mode":"slow"}]}`,
+		"too many ticks": `{"actions":[{"type":"step","ticks":501}]}`,
+		"too many watch": `{"watch":["a","b","c","d","e","f"],"actions":[{"type":"step","ticks":1}]}`,
+		"unknown type":   `{"actions":[{"type":"explode"}]}`,
+		"unknown field":  `{"actions":[{"type":"step","ticks":1}],"mutateTopology":true}`,
+	} {
+		if r := call(h, "POST", "/api/v1/simulations", bad); r.code != 400 {
+			t.Errorf("%s: got %d %s", name, r.code, r.body)
+		}
+	}
+	for path, code := range map[string]int{
+		"/api/v1/events":                    400,
+		"/api/v1/events?simulationId=ghost": 404,
+		"/api/v1/telemetry?simulationId=" + run.ID + "&metricName=cpu": 400,
+		"/api/v1/simulations/ghost":                                    404,
+		"/api/v1/topology/snapshots/ghost/diff":                        404,
+	} {
+		if r := call(h, "GET", path, ""); r.code != code {
+			t.Errorf("%s: got %d, want %d", path, r.code, code)
+		}
+	}
+
+	// Retention: SimulationMaxRuns is 3, so after 3 more runs the first one is gone.
+	for i := 0; i < 3; i++ {
+		call(h, "POST", "/api/v1/simulations", `{"actions":[{"type":"step","ticks":1}]}`)
+	}
+	if r := call(h, "GET", "/api/v1/simulations/"+run.ID, ""); r.code != 404 {
+		t.Fatalf("retention did not prune the oldest run: %d", r.code)
+	}
+	var list struct{ Items []domain.SimulationRun }
+	call(h, "GET", "/api/v1/simulations", "").json(t, &list)
+	if len(list.Items) != 3 {
+		t.Fatalf("runs kept: %d", len(list.Items))
+	}
+}
+
+func canonicalEvents(events []simulation.Event) []map[string]any {
+	b, _ := json.Marshal(events)
+	var out []map[string]any
+	_ = json.Unmarshal(b, &out)
+	return out
 }

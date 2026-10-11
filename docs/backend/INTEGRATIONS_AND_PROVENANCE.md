@@ -34,5 +34,10 @@ Store `mock`, `simulated`, `observed`, and `imported` provenance values; the API
 - Decide whether simulation is ephemeral per session, persisted globally, or isolated per user/workspace before concurrent multi-user use. Do not implement global shared mutation accidentally.
 
 
+## Implementation (B5)
+- Stored simulation events and telemetry always carry `provenance: simulated` and `isSimulated: true`; the API exposes provenance on every record (`StoredEvent`, `TelemetryObservation`, `SimulationRun`). Tests assert it end to end (memory and ArcadeDB).
+- Imported fixtures are recorded with `sourceType: fixture`; their metrics keep `isSimulated: true`.
+- There is no endpoint that ingests observed telemetry; adding one is a future, ADR-backed change.
+
 ## Persistence provenance
 ArcadeDB stores canonical resource and relationship records. Source identity, observation/ingestion timestamps, sync status and provenance are domain data, not projection metadata. Do not mark inventory as observed merely because it has been persisted.

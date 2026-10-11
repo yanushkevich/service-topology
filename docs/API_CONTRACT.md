@@ -50,6 +50,8 @@
 | `GET /topology/dependencies`, `GET /topology/neighborhood` | Bounded traversal (B4) | `traversal.ts` `dependencyTree` / `neighborhood` (identical results) |
 | `GET /topology/impact`, `GET /propagation-rules` | Read-only failure impact and the rules (B4) | `propagation.ts` |
 | `GET /event-types`, `GET /event-types/{id}` | Event catalog (B4, ADR-014) | `eventFlow.ts` |
+| `POST /simulations`, `GET /simulations[/{id}]`, `GET /events`, `GET /telemetry` | Isolated simulation runs with stored events and watched telemetry (B5, ADR-017) | `simulation/engine.ts` (identical results) |
+| `GET /topology/snapshots/{id}/diff` | Compare a snapshot with another or with the current topology (B5) | `snapshot.ts` `diffTopology` |
 
 Each operation in `openapi.json` names its interface in `x-repository`. An HTTP adapter implements the existing interfaces (`apps/web/src/data/repositories/TopologyRepository.ts`, `apps/web/src/data/snapshots/SnapshotRepository.ts`, `apps/web/src/data/savedLayouts/SavedLayoutRepository.ts`), so UI code does not change.
 
@@ -96,7 +98,8 @@ Full topology, snapshot, and layout examples: `apps/web/src/data/mock/topology.t
 - **Saved-layout ownership:** per user or shared, and conflict handling (ETags / `If-Match` on `PUT`).
 - **Rate limits and caching:** `ETag` on `/topology`, incremental sync or change feed for large inventories.
 - **Observed telemetry:** source systems, freshness guarantees, and how `observedAt` and `isSimulated: false` are populated.
-- **Server-side simulation:** whether simulation stays client-side (current) or becomes an API.
+- ~~**Server-side simulation**~~: decided in ADR-017 (isolated, deterministic, bounded runs; `POST /simulations`).
+- **Snapshot retention:** snapshots are kept until deleted; there is no delete endpoint yet.
 
 ## Change process
 Change the schema and `openapi.json` together with the TypeScript types. Run `npm test` (contract tests fail on drift). Record breaking changes as an ADR in `DECISIONS.md` and bump the version as described above.

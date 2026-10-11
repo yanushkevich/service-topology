@@ -43,6 +43,11 @@ func Run(ctx context.Context, cfg config.Config, logger *slog.Logger, onListen f
 			SnapshotRepo: arcadedb.NewSnapshotRepository(client),
 			LayoutRepo:   arcadedb.NewLayoutRepository(client),
 			GraphRepo:    arcadedb.NewGraphRepository(client),
+			SimRepo:      arcadedb.NewSimulationRepository(client),
+
+			SimulationRetention: cfg.SimulationRetention,
+			SimulationMaxRuns:   cfg.SimulationMaxRuns,
+			Logger:              logger,
 		}
 	}
 	handler := httpapi.NewHandler(httpapi.Deps{

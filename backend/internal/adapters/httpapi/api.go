@@ -213,6 +213,73 @@ func (d Deps) apiRoutes(mux *http.ServeMux) {
 		writeJSON(w, http.StatusOK, flow)
 		return nil
 	})
+	h("POST /api/v1/simulations", func(w http.ResponseWriter, r *http.Request) error {
+		var req domain.SimulationRequest
+		if err := decodeBody(w, r, maxLayoutBody, &req); err != nil {
+			return err
+		}
+		run, err := s.RunSimulation(r.Context(), &req)
+		if err != nil {
+			return err
+		}
+		w.Header().Set("Location", "/api/v1/simulations/"+run.ID)
+		writeJSON(w, http.StatusCreated, run)
+		return nil
+	})
+	h("GET /api/v1/simulations", func(w http.ResponseWriter, r *http.Request) error {
+		limit, err := intParam(r.URL.Query().Get("limit"), "limit")
+		if err != nil {
+			return err
+		}
+		runs, err := s.Simulations(r.Context(), limit)
+		if err != nil {
+			return err
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": runs})
+		return nil
+	})
+	h("GET /api/v1/simulations/{id}", func(w http.ResponseWriter, r *http.Request) error {
+		run, err := s.Simulation(r.Context(), r.PathValue("id"))
+		if err != nil {
+			return err
+		}
+		writeJSON(w, http.StatusOK, run)
+		return nil
+	})
+	h("GET /api/v1/events", func(w http.ResponseWriter, r *http.Request) error {
+		q := r.URL.Query()
+		limit, err := intParam(q.Get("limit"), "limit")
+		if err != nil {
+			return err
+		}
+		page, err := s.Events(r.Context(), q.Get("simulationId"), q.Get("entityId"), q.Get("type"), q.Get("cursor"), limit)
+		if err != nil {
+			return err
+		}
+		writeJSON(w, http.StatusOK, page)
+		return nil
+	})
+	h("GET /api/v1/telemetry", func(w http.ResponseWriter, r *http.Request) error {
+		q := r.URL.Query()
+		limit, err := intParam(q.Get("limit"), "limit")
+		if err != nil {
+			return err
+		}
+		page, err := s.Telemetry(r.Context(), q.Get("simulationId"), q.Get("entityId"), q.Get("metricName"), q.Get("cursor"), limit)
+		if err != nil {
+			return err
+		}
+		writeJSON(w, http.StatusOK, page)
+		return nil
+	})
+	h("GET /api/v1/topology/snapshots/{id}/diff", func(w http.ResponseWriter, r *http.Request) error {
+		res, err := s.DiffSnapshot(r.Context(), r.PathValue("id"), r.URL.Query().Get("against"))
+		if err != nil {
+			return err
+		}
+		writeJSON(w, http.StatusOK, res)
+		return nil
+	})
 	h("DELETE /api/v1/layouts/{id}", func(w http.ResponseWriter, r *http.Request) error {
 		if err := s.DeleteLayout(r.Context(), r.PathValue("id")); err != nil {
 			return err

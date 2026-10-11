@@ -1,0 +1,524 @@
+{
+  "cases": [
+    {
+      "before": "fixture-0600",
+      "after": "fixture-0730",
+      "expected": [
+        {
+          "type": "health-changed",
+          "kind": "resource",
+          "id": "rds-inventory-prod",
+          "from": "healthy",
+          "to": "degraded"
+        },
+        {
+          "type": "health-changed",
+          "kind": "service-instance",
+          "id": "inventory-service.production",
+          "from": "healthy",
+          "to": "degraded"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:inventory-service.production->rds-inventory-prod",
+          "from": "active",
+          "to": "degraded"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:order-service.production->inventory-service.production",
+          "from": "active",
+          "to": "degraded"
+        },
+        {
+          "type": "added",
+          "kind": "relationship",
+          "id": "rel:email-dispatcher.production->ext-email-delivery"
+        },
+        {
+          "type": "added",
+          "kind": "relationship",
+          "id": "rel:queue-notifications-email-prod->email-dispatcher.production"
+        },
+        {
+          "type": "added",
+          "kind": "service-instance",
+          "id": "email-dispatcher.production"
+        }
+      ]
+    },
+    {
+      "before": "fixture-0600",
+      "after": "fixture-0845",
+      "expected": [
+        {
+          "type": "health-changed",
+          "kind": "resource",
+          "id": "queue-notifications-email-prod",
+          "from": "healthy",
+          "to": "degraded"
+        },
+        {
+          "type": "health-changed",
+          "kind": "resource",
+          "id": "rds-inventory-prod",
+          "from": "healthy",
+          "to": "degraded"
+        },
+        {
+          "type": "health-changed",
+          "kind": "service-instance",
+          "id": "fraud-scoring.production",
+          "from": "healthy",
+          "to": "degraded"
+        },
+        {
+          "type": "health-changed",
+          "kind": "service-instance",
+          "id": "inventory-service.production",
+          "from": "healthy",
+          "to": "degraded"
+        },
+        {
+          "type": "health-changed",
+          "kind": "service-instance",
+          "id": "notification-service.production",
+          "from": "healthy",
+          "to": "unavailable"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:inventory-service.production->rds-inventory-prod",
+          "from": "active",
+          "to": "degraded"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:notification-service.production->exchange-notifications-prod",
+          "from": "active",
+          "to": "inactive"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:order-service.production->inventory-service.production",
+          "from": "active",
+          "to": "degraded"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:payment-service.production->fraud-scoring.production",
+          "from": "active",
+          "to": "degraded"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:topic-orders-events-prod->notification-service.production",
+          "from": "active",
+          "to": "degraded"
+        },
+        {
+          "type": "added",
+          "kind": "relationship",
+          "id": "rel:email-dispatcher.production->ext-email-delivery"
+        },
+        {
+          "type": "added",
+          "kind": "relationship",
+          "id": "rel:queue-notifications-email-prod->email-dispatcher.production"
+        },
+        {
+          "type": "added",
+          "kind": "service-instance",
+          "id": "email-dispatcher.production"
+        }
+      ]
+    },
+    {
+      "before": "fixture-0730",
+      "after": "fixture-0600",
+      "expected": [
+        {
+          "type": "health-changed",
+          "kind": "resource",
+          "id": "rds-inventory-prod",
+          "from": "degraded",
+          "to": "healthy"
+        },
+        {
+          "type": "health-changed",
+          "kind": "service-instance",
+          "id": "inventory-service.production",
+          "from": "degraded",
+          "to": "healthy"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:inventory-service.production->rds-inventory-prod",
+          "from": "degraded",
+          "to": "active"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:order-service.production->inventory-service.production",
+          "from": "degraded",
+          "to": "active"
+        },
+        {
+          "type": "removed",
+          "kind": "relationship",
+          "id": "rel:email-dispatcher.production->ext-email-delivery"
+        },
+        {
+          "type": "removed",
+          "kind": "relationship",
+          "id": "rel:queue-notifications-email-prod->email-dispatcher.production"
+        },
+        {
+          "type": "removed",
+          "kind": "service-instance",
+          "id": "email-dispatcher.production"
+        }
+      ]
+    },
+    {
+      "before": "fixture-0730",
+      "after": "fixture-0845",
+      "expected": [
+        {
+          "type": "health-changed",
+          "kind": "resource",
+          "id": "queue-notifications-email-prod",
+          "from": "healthy",
+          "to": "degraded"
+        },
+        {
+          "type": "health-changed",
+          "kind": "service-instance",
+          "id": "fraud-scoring.production",
+          "from": "healthy",
+          "to": "degraded"
+        },
+        {
+          "type": "health-changed",
+          "kind": "service-instance",
+          "id": "notification-service.production",
+          "from": "healthy",
+          "to": "unavailable"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:notification-service.production->exchange-notifications-prod",
+          "from": "active",
+          "to": "inactive"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:payment-service.production->fraud-scoring.production",
+          "from": "active",
+          "to": "degraded"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:topic-orders-events-prod->notification-service.production",
+          "from": "active",
+          "to": "degraded"
+        }
+      ]
+    },
+    {
+      "before": "fixture-0845",
+      "after": "fixture-0600",
+      "expected": [
+        {
+          "type": "health-changed",
+          "kind": "resource",
+          "id": "queue-notifications-email-prod",
+          "from": "degraded",
+          "to": "healthy"
+        },
+        {
+          "type": "health-changed",
+          "kind": "resource",
+          "id": "rds-inventory-prod",
+          "from": "degraded",
+          "to": "healthy"
+        },
+        {
+          "type": "health-changed",
+          "kind": "service-instance",
+          "id": "fraud-scoring.production",
+          "from": "degraded",
+          "to": "healthy"
+        },
+        {
+          "type": "health-changed",
+          "kind": "service-instance",
+          "id": "inventory-service.production",
+          "from": "degraded",
+          "to": "healthy"
+        },
+        {
+          "type": "health-changed",
+          "kind": "service-instance",
+          "id": "notification-service.production",
+          "from": "unavailable",
+          "to": "healthy"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:inventory-service.production->rds-inventory-prod",
+          "from": "degraded",
+          "to": "active"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:notification-service.production->exchange-notifications-prod",
+          "from": "inactive",
+          "to": "active"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:order-service.production->inventory-service.production",
+          "from": "degraded",
+          "to": "active"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:payment-service.production->fraud-scoring.production",
+          "from": "degraded",
+          "to": "active"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:topic-orders-events-prod->notification-service.production",
+          "from": "degraded",
+          "to": "active"
+        },
+        {
+          "type": "removed",
+          "kind": "relationship",
+          "id": "rel:email-dispatcher.production->ext-email-delivery"
+        },
+        {
+          "type": "removed",
+          "kind": "relationship",
+          "id": "rel:queue-notifications-email-prod->email-dispatcher.production"
+        },
+        {
+          "type": "removed",
+          "kind": "service-instance",
+          "id": "email-dispatcher.production"
+        }
+      ]
+    },
+    {
+      "before": "fixture-0845",
+      "after": "fixture-0730",
+      "expected": [
+        {
+          "type": "health-changed",
+          "kind": "resource",
+          "id": "queue-notifications-email-prod",
+          "from": "degraded",
+          "to": "healthy"
+        },
+        {
+          "type": "health-changed",
+          "kind": "service-instance",
+          "id": "fraud-scoring.production",
+          "from": "degraded",
+          "to": "healthy"
+        },
+        {
+          "type": "health-changed",
+          "kind": "service-instance",
+          "id": "notification-service.production",
+          "from": "unavailable",
+          "to": "healthy"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:notification-service.production->exchange-notifications-prod",
+          "from": "inactive",
+          "to": "active"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:payment-service.production->fraud-scoring.production",
+          "from": "degraded",
+          "to": "active"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:topic-orders-events-prod->notification-service.production",
+          "from": "degraded",
+          "to": "active"
+        }
+      ]
+    },
+    {
+      "before": "fixture-0600",
+      "after": "mock",
+      "expected": [
+        {
+          "type": "health-changed",
+          "kind": "resource",
+          "id": "queue-notifications-email-prod",
+          "from": "healthy",
+          "to": "degraded"
+        },
+        {
+          "type": "health-changed",
+          "kind": "resource",
+          "id": "rds-inventory-prod",
+          "from": "healthy",
+          "to": "degraded"
+        },
+        {
+          "type": "health-changed",
+          "kind": "service-instance",
+          "id": "fraud-scoring.production",
+          "from": "healthy",
+          "to": "degraded"
+        },
+        {
+          "type": "health-changed",
+          "kind": "service-instance",
+          "id": "inventory-service.production",
+          "from": "healthy",
+          "to": "degraded"
+        },
+        {
+          "type": "health-changed",
+          "kind": "service-instance",
+          "id": "notification-service.production",
+          "from": "healthy",
+          "to": "unavailable"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:inventory-service.production->rds-inventory-prod",
+          "from": "active",
+          "to": "degraded"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:notification-service.production->exchange-notifications-prod",
+          "from": "active",
+          "to": "inactive"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:order-service.production->inventory-service.production",
+          "from": "active",
+          "to": "degraded"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:payment-service.production->fraud-scoring.production",
+          "from": "active",
+          "to": "degraded"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:topic-orders-events-prod->notification-service.production",
+          "from": "active",
+          "to": "degraded"
+        },
+        {
+          "type": "added",
+          "kind": "relationship",
+          "id": "rel:email-dispatcher.production->ext-email-delivery"
+        },
+        {
+          "type": "added",
+          "kind": "relationship",
+          "id": "rel:queue-notifications-email-prod->email-dispatcher.production"
+        },
+        {
+          "type": "added",
+          "kind": "service-instance",
+          "id": "email-dispatcher.production"
+        }
+      ]
+    },
+    {
+      "before": "fixture-0730",
+      "after": "mock",
+      "expected": [
+        {
+          "type": "health-changed",
+          "kind": "resource",
+          "id": "queue-notifications-email-prod",
+          "from": "healthy",
+          "to": "degraded"
+        },
+        {
+          "type": "health-changed",
+          "kind": "service-instance",
+          "id": "fraud-scoring.production",
+          "from": "healthy",
+          "to": "degraded"
+        },
+        {
+          "type": "health-changed",
+          "kind": "service-instance",
+          "id": "notification-service.production",
+          "from": "healthy",
+          "to": "unavailable"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:notification-service.production->exchange-notifications-prod",
+          "from": "active",
+          "to": "inactive"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:payment-service.production->fraud-scoring.production",
+          "from": "active",
+          "to": "degraded"
+        },
+        {
+          "type": "status-changed",
+          "kind": "relationship",
+          "id": "rel:topic-orders-events-prod->notification-service.production",
+          "from": "active",
+          "to": "degraded"
+        }
+      ]
+    },
+    {
+      "before": "fixture-0845",
+      "after": "mock",
+      "expected": []
+    }
+  ]
+}

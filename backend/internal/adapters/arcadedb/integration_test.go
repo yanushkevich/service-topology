@@ -476,3 +476,67 @@ func TestReadCacheFollowsImportsFromElsewhere(t *testing.T) {
 		t.Fatalf("reader served stale data after an import elsewhere: %q", after.Environments[0].Name)
 	}
 }
+
+func TestSimulationRunsOnTheDatabase(t *testing.T) {
+	c := tempClient(t)
+	ctx := context.Background()
+	if err := arcadedb.EnsureSchema(ctx, c); err != nil {
+		t.Fatal(err)
+	}
+	data, raw := mockTopology(t)
+	topo := arcadedb.NewTopologyRepository(c)
+	if _, err := topo.ReplaceTopology(ctx, data, "fixture"); err != nil {
+		t.Fatal(err)
+	}
+	sims := arcadedb.NewSimulationRepository(c)
+	svc := &application.Service{TopologyRepo: topo, SnapshotRepo: arcadedb.NewSnapshotRepository(c), SimRepo: sims, SimulationMaxRuns: 2}
+	seed := uint32(7)
+	req := &domain.SimulationRequest{Seed: &seed, CaptureSnapshot: true, Watch: []string{"order-service.production"},
+		Actions: []domain.SimulationAction{{Type: "inject", EntityID: "eks-commerce-prod", Mode: "unavailable"}, {Type: "step", Ticks: 120}}}
+	run, err := svc.RunSimulation(ctx, req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := sims.Get(ctx, run.ID)
+	if err != nil || got.EventCount != run.EventCount || got.Provenance != "simulated" {
+		t.Fatalf("stored run: %v %+v", err, got)
+	}
+	events, err := sims.Events(ctx, run.ID, "", "")
+	if err != nil || len(events) != run.EventCount || run.EventCount < 10 {
+		t.Fatalf("events: %v %d (run says %d)", err, len(events), run.EventCount)
+	}
+	for i, e := range events {
+		if e.Seq != i+1 || e.Provenance != "simulated" {
+			t.Fatalf("event %d: %+v", i, e)
+		}
+	}
+	tel, err := sims.Telemetry(ctx, run.ID, "order-service.production", "latencyMs")
+	if err != nil || len(tel) != 1+1+120 {
+		t.Fatalf("telemetry: %v %d", err, len(tel))
+	}
+	if snap, err := arcadedb.NewSnapshotRepository(c).Get(ctx, run.ID); err != nil || snap.Source != "simulation" {
+		t.Fatalf("captured snapshot: %v", err)
+	}
+	// The canonical topology is unchanged.
+	current, err := topo.GetTopology(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sameJSON(t, raw, current)
+
+	// Retention keeps the newest 2 runs and removes their records with them.
+	for i := 0; i < 2; i++ {
+		if _, err := svc.RunSimulation(ctx, &domain.SimulationRequest{Actions: []domain.SimulationAction{{Type: "step", Ticks: 1}}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := sims.Get(ctx, run.ID); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("oldest run not pruned: %v", err)
+	}
+	if left, _ := sims.Events(ctx, run.ID, "", ""); len(left) != 0 {
+		t.Fatalf("%d events of a pruned run remain", len(left))
+	}
+	if n := count(t, c, "TelemetryObservation"); n != 0 {
+		t.Fatalf("%d telemetry rows remain (only the pruned run watched entities)", n)
+	}
+}

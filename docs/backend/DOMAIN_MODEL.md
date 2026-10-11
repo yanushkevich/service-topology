@@ -59,7 +59,7 @@ A logical message contract (e.g. `OrderPlaced`), environment-independent like a 
 - `schemaVersion: 1`, `id`, `name`, `createdAt`, `view { environmentId, layoutMode, filters, collapsedGroupIds }`, `positions { <entityId or group id>: { x, y } }`.
 - Presentation only; never canonical topology. Ownership (per user vs shared) is an open decision (`docs/API_CONTRACT.md`).
 
-### Backend-only records (proposed, Milestone B5)
+### Backend-only records (implemented in B5 as run-scoped records, ADR-017)
 - **TelemetryObservation:** `id`, `subjectId`, `metricName`, value/unit, `provenance`, `sourceId`, `observedAt`, `recordedAt`, optional dimensions. Feeds `metrics` aggregates.
 - **TopologyEvent:** `id`, `eventType`, subject ID, severity, summary, payload, `provenance`, `occurredAt`, `recordedAt`. Simulated failure/recovery events stay simulated end to end. Note: the current simulation runs client-side (ADR-010); whether the server records simulation events is an open decision.
 

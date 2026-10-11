@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"servicetopology/backend/internal/domain"
@@ -38,6 +39,15 @@ type Service struct {
 	SnapshotRepo ports.SnapshotRepository
 	LayoutRepo   ports.SavedLayoutRepository
 	GraphRepo    ports.GraphRepository
+	SimRepo      ports.SimulationRepository
+	// Retention for simulation runs (zero values disable pruning).
+	SimulationRetention time.Duration
+	SimulationMaxRuns   int
+	// Now and NewID are injectable for tests.
+	Now   func() time.Time
+	NewID func() string
+	// Logger receives non-fatal problems such as failed retention pruning.
+	Logger *slog.Logger
 }
 
 func (s *Service) index(ctx context.Context) (*domain.Index, error) {
@@ -97,10 +107,26 @@ type cursor struct {
 }
 
 // fingerprint ties a cursor to the query that produced it.
-func (q RegistryQuery) fingerprint() string {
-	b, _ := json.Marshal([]any{q.EnvironmentID, q.Filters, q.Sort})
+func (q RegistryQuery) fingerprint() string { return fingerprintOf(q.EnvironmentID, q.Filters, q.Sort) }
+
+func fingerprintOf(parts ...any) string {
+	b, _ := json.Marshal(parts)
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:8])
+}
+
+func encodeCursor(offset int, fingerprint string) string {
+	b, _ := json.Marshal(cursor{Offset: offset, Query: fingerprint})
+	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+func decodeCursor(raw, fingerprint string) (int, bool) {
+	b, err := base64.RawURLEncoding.DecodeString(raw)
+	var c cursor
+	if err != nil || json.Unmarshal(b, &c) != nil || c.Offset < 0 || c.Query != fingerprint {
+		return 0, false
+	}
+	return c.Offset, true
 }
 
 // Registry filters, sorts (identically to the client), and pages registry rows. Cursors are
@@ -125,12 +151,11 @@ func (s *Service) Registry(ctx context.Context, q RegistryQuery) (*RegistryPage,
 	}
 	offset := 0
 	if q.Cursor != "" {
-		raw, err := base64.RawURLEncoding.DecodeString(q.Cursor)
-		var c cursor
-		if err != nil || json.Unmarshal(raw, &c) != nil || c.Offset < 0 || c.Query != q.fingerprint() {
+		o, ok := decodeCursor(q.Cursor, q.fingerprint())
+		if !ok {
 			return nil, &ErrInvalid{"cursor", "unknown, malformed, or from a different query"}
 		}
-		offset = c.Offset
+		offset = o
 	}
 	ix, err := s.index(ctx)
 	if err != nil {
@@ -145,8 +170,7 @@ func (s *Service) Registry(ctx context.Context, q RegistryQuery) (*RegistryPage,
 		end := min(offset+q.Limit, len(rows))
 		page.Items = rows[offset:end]
 		if end < len(rows) {
-			b, _ := json.Marshal(cursor{Offset: end, Query: q.fingerprint()})
-			next := base64.RawURLEncoding.EncodeToString(b)
+			next := encodeCursor(end, q.fingerprint())
 			page.NextCursor = &next
 		}
 	}

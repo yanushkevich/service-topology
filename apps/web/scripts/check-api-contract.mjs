@@ -128,6 +128,22 @@ await check('event type, not deployed consumer', 'get', '/event-types/{id}', '/e
 await check('event type, not carried', 'get', '/event-types/{id}', '/event-types/event-payment-captured?environmentId=staging', { status: 404 });
 await check('event types, missing environment', 'get', '/event-types', '/event-types', { status: 400 });
 
+const runReq = openapi.paths['/simulations'].post.requestBody.content['application/json'].examples.default.value;
+const run = await check('run simulation', 'post', '/simulations', '/simulations', { status: 201, body: { ...runReq, captureSnapshot: true, label: `contract-${stamp}` } });
+await check('run simulation, too many ticks', 'post', '/simulations', '/simulations', { status: 400, body: { actions: [{ type: 'step', ticks: 501 }] } });
+await check('run simulation, unknown entity', 'post', '/simulations', '/simulations', { status: 400, body: { actions: [{ type: 'inject', entityId: 'ghost', mode: 'unavailable' }] } });
+await check('list simulations', 'get', '/simulations', '/simulations', { status: 200 });
+if (run) {
+  await check('get simulation', 'get', '/simulations/{id}', `/simulations/${run.id}`, { status: 200 });
+  const ev = await check('simulation events', 'get', '/events', `/events?simulationId=${run.id}&limit=3`, { status: 200 });
+  if (ev?.nextCursor) await check('simulation events, next page', 'get', '/events', `/events?simulationId=${run.id}&limit=3&cursor=${encodeURIComponent(ev.nextCursor)}`, { status: 200 });
+  await check('simulation telemetry', 'get', '/telemetry', `/telemetry?simulationId=${run.id}&metricName=latencyMs`, { status: 200 });
+  await check('snapshot diff vs current', 'get', '/topology/snapshots/{id}/diff', `/topology/snapshots/${run.snapshotId}/diff`, { status: 200 });
+}
+await check('events, missing simulationId', 'get', '/events', '/events', { status: 400 });
+await check('simulation not found', 'get', '/simulations/{id}', '/simulations/ghost', { status: 404 });
+if (first) await check('snapshot diff vs snapshot', 'get', '/topology/snapshots/{id}/diff', `/topology/snapshots/${first}/diff?against=${first}`, { status: 200 });
+
 const layout = openapi.paths['/layouts'].post.requestBody.content['application/json'].examples.default.value;
 const mine = { ...layout, id: `contract-${stamp}` };
 await check('create layout', 'post', '/layouts', '/layouts', { status: 201, body: mine });

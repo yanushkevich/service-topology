@@ -35,6 +35,8 @@ Do not hardcode credentials in Go source. Configuration validation should fail f
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 | `LOG_FORMAT` | `json` | `json` or `text` |
 | `SEED_MODE` | `demo` | `demo` or `none` |
+| `SIMULATION_RETENTION` | `168h` | simulation runs, events, telemetry older than this are pruned after each run (ADR-017) |
+| `SIMULATION_MAX_RUNS` | `200` | keep at most this many runs |
 | `ARCADEDB_BASE_URL` | unset | when unset the API runs without a database and `/readyz` is 503 |
 | `ARCADEDB_DATABASE` | `topology` | |
 | `ARCADEDB_USERNAME` | — | required with `ARCADEDB_BASE_URL` |

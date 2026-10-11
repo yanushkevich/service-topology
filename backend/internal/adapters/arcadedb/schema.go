@@ -13,8 +13,9 @@ import (
 //
 // History: 1 = canonical topology (B2); 2 = Snapshot and SavedLayout documents (B3, additive);
 // 3 = COMMUNICATES endpoint indexes for bounded traversal and the TopologyState revision document
-// used for read caching (B4, additive).
-const SchemaVersion = 3
+// used for read caching (B4, additive); 4 = SimulationRun, SimulationEvent, and
+// TelemetryObservation documents (B5, additive).
+const SchemaVersion = 4
 
 // Vertex types for canonical entities (docs/backend/PERSISTENCE.md). Each has a unique `id`.
 var vertexTypes = []string{"Environment", "ServiceDefinition", "ServiceInstance", "Resource", "EventType"}
@@ -27,7 +28,7 @@ var edgeTypes = []string{"COMMUNICATES", "CONTAINS", "HOSTED_IN", "INSTANCE_OF",
 const schemaInfoType = "SchemaInfo"
 
 // Document types with a unique id (snapshots and layouts store their validated JSON as payload).
-var documentTypes = []string{"Snapshot", "SavedLayout", "TopologyState"}
+var documentTypes = []string{"Snapshot", "SavedLayout", "TopologyState", "SimulationRun"}
 
 // ddl returns the idempotent schema statements. All names are constants from this file, never input.
 func ddl() []string {
@@ -67,6 +68,17 @@ func ddl() []string {
 		"CREATE DOCUMENT TYPE TopologyState IF NOT EXISTS",
 		"CREATE PROPERTY TopologyState.id IF NOT EXISTS STRING (mandatory true, notnull true)",
 		"CREATE INDEX IF NOT EXISTS ON TopologyState (id) UNIQUE",
+		"CREATE DOCUMENT TYPE SimulationRun IF NOT EXISTS",
+		"CREATE PROPERTY SimulationRun.id IF NOT EXISTS STRING (mandatory true, notnull true)",
+		"CREATE PROPERTY SimulationRun.createdAt IF NOT EXISTS STRING",
+		"CREATE INDEX IF NOT EXISTS ON SimulationRun (id) UNIQUE",
+		"CREATE INDEX IF NOT EXISTS ON SimulationRun (createdAt) NOTUNIQUE",
+		"CREATE DOCUMENT TYPE SimulationEvent IF NOT EXISTS",
+		"CREATE PROPERTY SimulationEvent.simulationId IF NOT EXISTS STRING",
+		"CREATE INDEX IF NOT EXISTS ON SimulationEvent (simulationId) NOTUNIQUE",
+		"CREATE DOCUMENT TYPE TelemetryObservation IF NOT EXISTS",
+		"CREATE PROPERTY TelemetryObservation.simulationId IF NOT EXISTS STRING",
+		"CREATE INDEX IF NOT EXISTS ON TelemetryObservation (simulationId) NOTUNIQUE",
 		"CREATE DOCUMENT TYPE SavedLayout IF NOT EXISTS",
 		"CREATE PROPERTY SavedLayout.id IF NOT EXISTS STRING (mandatory true, notnull true)",
 		"CREATE INDEX IF NOT EXISTS ON SavedLayout (id) UNIQUE",

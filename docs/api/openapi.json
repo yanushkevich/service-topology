@@ -997,6 +997,384 @@
           }
         }
       }
+    },
+    "/simulations": {
+      "post": {
+        "operationId": "runSimulation",
+        "x-repository": "proposed; today simulation/engine.ts runs in the browser",
+        "summary": "Run an isolated, bounded simulation (never changes the canonical topology).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationRequest"
+              },
+              "examples": {
+                "default": {
+                  "value": {
+                    "seed": 42,
+                    "watch": [
+                      "payment-service.production"
+                    ],
+                    "actions": [
+                      {
+                        "type": "inject",
+                        "entityId": "payment-service.production",
+                        "mode": "unavailable",
+                        "durationTicks": 3
+                      },
+                      {
+                        "type": "step",
+                        "ticks": 6
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listSimulations",
+        "x-repository": "proposed",
+        "summary": "Stored runs, newest first (subject to retention).",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SimulationRun"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/simulations/{id}": {
+      "get": {
+        "operationId": "getSimulation",
+        "x-repository": "proposed",
+        "summary": "One stored run.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationRun"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/events": {
+      "get": {
+        "operationId": "listEvents",
+        "x-repository": "proposed; today useSimulationStore events",
+        "summary": "Events recorded by a simulation run (provenance \"simulated\").",
+        "parameters": [
+          {
+            "name": "simulationId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/StoredEvent"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/telemetry": {
+      "get": {
+        "operationId": "listTelemetry",
+        "x-repository": "proposed",
+        "summary": "Metric samples recorded by a simulation run for its watched entities.",
+        "parameters": [
+          {
+            "name": "simulationId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "metricName",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "latencyMs",
+                "throughputPerSecond",
+                "errorRatePercent"
+              ]
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TelemetryObservation"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/topology/snapshots/{id}/diff": {
+      "get": {
+        "operationId": "diffSnapshot",
+        "x-repository": "proposed; today snapshot.ts diffTopology",
+        "summary": "Changes from a snapshot to another snapshot or the current topology.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "against",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "current"
+            },
+            "description": "Snapshot ID or \"current\"."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotDiff"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1521,6 +1899,465 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventFlowParticipant"
+            }
+          }
+        }
+      },
+      "SimulationAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "inject",
+              "recover",
+              "recoverAll",
+              "step",
+              "reset"
+            ]
+          },
+          "entityId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mode": {
+            "enum": [
+              "unavailable",
+              "degraded"
+            ]
+          },
+          "durationTicks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "inject: recover automatically after this many ticks (0 = no scheduled recovery)."
+          },
+          "ticks": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "step: ticks to advance (10 simulated seconds each)."
+          }
+        }
+      },
+      "SimulationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "actions"
+        ],
+        "description": "An isolated, deterministic run of the simulation engine on a read-only copy of the canonical topology (ADR-016). Bounds: ≤ 100 actions, ≤ 500 ticks in total, ≤ 5 watched entities.",
+        "properties": {
+          "seed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actions": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/SimulationAction"
+            }
+          },
+          "watch": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Entities whose simulated metrics are recorded as telemetry at every tick."
+          },
+          "captureSnapshot": {
+            "type": "boolean",
+            "description": "Store the final state as a snapshot with source \"simulation\" (ID = run ID)."
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 200
+          }
+        }
+      },
+      "SimulationFailure": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entityId",
+          "mode",
+          "injectedTick"
+        ],
+        "properties": {
+          "entityId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mode": {
+            "enum": [
+              "unavailable",
+              "degraded"
+            ]
+          },
+          "injectedTick": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "recoverAtTick": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "SimulationRun": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "createdAt",
+          "seed",
+          "startAt",
+          "actions",
+          "watch",
+          "tick",
+          "clock",
+          "failures",
+          "impacts",
+          "eventCount",
+          "eventsTruncated",
+          "telemetryCount",
+          "snapshotId",
+          "provenance",
+          "isSimulated"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "label": {
+            "type": "string"
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimulationAction"
+            }
+          },
+          "watch": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "tick": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "clock": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Simulated clock at the end of the run, not wall-clock time."
+          },
+          "failures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimulationFailure"
+            }
+          },
+          "impacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Impact"
+            }
+          },
+          "eventCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "eventsTruncated": {
+            "type": "boolean"
+          },
+          "telemetryCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "snapshotId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provenance": {
+            "const": "simulated"
+          },
+          "isSimulated": {
+            "const": true
+          }
+        }
+      },
+      "SimulationEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "tick",
+          "at",
+          "type",
+          "entityKind",
+          "entityId",
+          "isSimulated"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tick": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "enum": [
+              "failure-injected",
+              "recovered",
+              "health-changed",
+              "status-changed",
+              "latency-anomaly",
+              "latency-normal"
+            ]
+          },
+          "entityKind": {
+            "enum": [
+              "service-instance",
+              "resource",
+              "relationship"
+            ]
+          },
+          "entityId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "cause": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "ruleId",
+              "rootId",
+              "causeId"
+            ],
+            "properties": {
+              "ruleId": {
+                "type": "string"
+              },
+              "rootId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "causeId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "viaRelationshipId": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "note": {
+            "type": "string"
+          },
+          "isSimulated": {
+            "const": true
+          }
+        }
+      },
+      "StoredEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "simulationId",
+          "seq",
+          "provenance",
+          "recordedAt",
+          "event"
+        ],
+        "properties": {
+          "simulationId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "seq": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "provenance": {
+            "enum": [
+              "mock",
+              "simulated",
+              "observed",
+              "imported"
+            ]
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "event": {
+            "$ref": "#/components/schemas/SimulationEvent"
+          }
+        }
+      },
+      "TelemetryObservation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "simulationId",
+          "seq",
+          "subjectId",
+          "metricName",
+          "value",
+          "unit",
+          "observedAt",
+          "recordedAt",
+          "provenance",
+          "isSimulated"
+        ],
+        "properties": {
+          "simulationId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "seq": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "subjectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "metricName": {
+            "enum": [
+              "latencyMs",
+              "throughputPerSecond",
+              "errorRatePercent"
+            ]
+          },
+          "value": {
+            "type": "number"
+          },
+          "unit": {
+            "enum": [
+              "ms",
+              "1/s",
+              "%"
+            ]
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Simulated time of the sample."
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "provenance": {
+            "enum": [
+              "mock",
+              "simulated",
+              "observed",
+              "imported"
+            ]
+          },
+          "isSimulated": {
+            "type": "boolean",
+            "description": "true unless provenance is observed."
+          }
+        }
+      },
+      "SnapshotChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "kind",
+          "id"
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "added",
+              "removed",
+              "health-changed",
+              "status-changed"
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/EntityKind"
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        }
+      },
+      "SnapshotDiff": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "before",
+          "after",
+          "changes"
+        ],
+        "properties": {
+          "before": {
+            "type": "string",
+            "minLength": 1
+          },
+          "after": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Snapshot ID, or \"current\"."
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SnapshotChange"
             }
           }
         }

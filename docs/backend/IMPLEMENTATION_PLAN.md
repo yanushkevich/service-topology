@@ -1,6 +1,6 @@
 # Go Backend Implementation Plan (ArcadeDB)
 
-**Status:** B1–B4 implemented (closeouts below); B5–B6 not started. Execute one milestone at a time; do not automatically start the next. Backend milestones are B1–B6, a separate track from frontend Milestones 1–7. Code lives in `backend/`. Commit each milestone with scope `b1`…`b6`. Track status in the root `docs/IMPLEMENTATION_PLAN.md`.
+**Status:** B1–B5 implemented (closeouts below); B6 not started. Execute one milestone at a time; do not automatically start the next. Backend milestones are B1–B6, a separate track from frontend Milestones 1–7. Code lives in `backend/`. Commit each milestone with scope `b1`…`b6`. Track status in the root `docs/IMPLEMENTATION_PLAN.md`.
 
 ## Milestone B1 — Go service foundation and domain
 Scope: `backend/` Go module (scaffold files moved in from `docs/backend/scaffold/`), configuration validation, HTTP lifecycle, health/readiness skeleton, structured logging, domain types and the full `validateTopology` rule set, repository/query interfaces, shared fixture export (`fixtures/`, from the frontend mock via a script) and the conformance fixture format.
@@ -99,4 +99,18 @@ Evidence: `make check` exit 0; `go test -race -count=1 ./...` passes; `make test
 | No unbounded traversal endpoint | Pass | depth, limit, roots, and visited-entity caps (ADR-DB-003) |
 
 Known limitations: measurements on a shared 2 GB VM, single client, no concurrency test; imports are one statement per record; generated datasets have no event types.
+
+## Milestone B5 closeout (2026-10-11)
+Evidence: `make check` exit 0; `make test-integration` passes; `make contract-check` 58/58 (12 new checks); frontend `npm run check` passes.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Simulated vs observed distinction | Pass | Stored events/telemetry/runs carry `provenance: simulated` and `isSimulated: true`; schema `const`s in `openapi.json`; tests on memory and ArcadeDB; no ingestion path can label data observed |
+| Telemetry/event persistence | Pass | ArcadeDB schema v4: `SimulationRun`, `SimulationEvent`, `TelemetryObservation` (batched `INSERT … CONTENT :docs`, one transaction); `TestSimulationRunsOnTheDatabase` |
+| Snapshot creation/comparison | Pass | Runs can capture `simulation` snapshots; `GET /topology/snapshots/{id}/diff` (port of `diffTopology`, identical on 9 fixture pairs) |
+| Bounded simulation runs | Pass | Go port of `engine.ts`, identical on 3 scripted scenarios (16 recorded states incl. drift RNG, anomalies, scheduled recovery, reset); ≤ 100 actions, ≤ 500 ticks, ≤ 5 watched entities; runs never change the canonical topology (asserted) |
+| Retention documented and applied | Pass | ADR-017; `SIMULATION_RETENTION`/`SIMULATION_MAX_RUNS`; pruning removes events and telemetry with runs (tests) |
+| Oversized payloads rejected or bounded | Pass | 413 body limits, 400 for action/tick/watch bounds, stored events capped at 5,000 per run with `eventsTruncated` |
+
+Notes: exact float parity needed explicit conversions to stop Go fusing `x*y±z` into FMA on arm64, and a `toFixed` port that rounds exact binary ties up. Known limitations: runs are one-shot (no incremental sessions); telemetry exists only for simulation runs; snapshots are not pruned and cannot be deleted yet.
 

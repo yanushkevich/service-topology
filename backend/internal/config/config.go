@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -20,6 +21,10 @@ type Config struct {
 	LogLevel        slog.Level
 	LogFormat       string // "json" or "text"
 	SeedMode        string // "demo" or "none"
+	// Simulation run retention (B5): runs, their events, and telemetry older than this, or beyond
+	// the newest SimulationMaxRuns, are deleted after each new run.
+	SimulationRetention time.Duration
+	SimulationMaxRuns   int
 	// ArcadeDB is nil when ARCADEDB_BASE_URL is unset (B1 runs without a database).
 	ArcadeDB *ArcadeDB
 }
@@ -41,6 +46,8 @@ func (c Config) LogValue() slog.Value {
 		slog.String("shutdownTimeout", c.ShutdownTimeout.String()),
 		slog.String("logLevel", c.LogLevel.String()),
 		slog.String("seedMode", c.SeedMode),
+		slog.String("simulationRetention", c.SimulationRetention.String()),
+		slog.Int("simulationMaxRuns", c.SimulationMaxRuns),
 	}
 	if c.ArcadeDB != nil {
 		attrs = append(attrs, slog.Group("arcadedb",
@@ -83,10 +90,17 @@ func Load(getenv func(string) string) (Config, error) {
 	}
 
 	cfg := Config{
-		HTTPAddr:        get("HTTP_ADDR", ":8080"),
-		ShutdownTimeout: duration("SHUTDOWN_TIMEOUT", "10s"),
-		LogFormat:       oneOf("LOG_FORMAT", "json", "json", "text"),
-		SeedMode:        oneOf("SEED_MODE", "demo", "demo", "none"),
+		HTTPAddr:            get("HTTP_ADDR", ":8080"),
+		ShutdownTimeout:     duration("SHUTDOWN_TIMEOUT", "10s"),
+		LogFormat:           oneOf("LOG_FORMAT", "json", "json", "text"),
+		SeedMode:            oneOf("SEED_MODE", "demo", "demo", "none"),
+		SimulationRetention: duration("SIMULATION_RETENTION", "168h"),
+	}
+	maxRuns := get("SIMULATION_MAX_RUNS", "200")
+	if n, err := strconv.Atoi(maxRuns); err != nil || n < 1 || n > 100000 {
+		errs = append(errs, fmt.Errorf("SIMULATION_MAX_RUNS: %q must be an integer between 1 and 100000", maxRuns))
+	} else {
+		cfg.SimulationMaxRuns = n
 	}
 	if _, port, err := net.SplitHostPort(cfg.HTTPAddr); err != nil || port == "" {
 		errs = append(errs, fmt.Errorf("HTTP_ADDR: %q must be host:port or :port", cfg.HTTPAddr))

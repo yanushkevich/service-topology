@@ -54,7 +54,10 @@ Each operation names its frontend interface in `x-repository`. The frontend swit
 - `GET /events?environmentId=&entityId=&provenance=&from=&to=&limit=&cursor=`
 - No real-time stream semantics; SSE/WebSocket only with a concrete UI requirement and operational design. The UI never says "live".
 
-### Simulation (open decision)
+### Simulation (implemented in B5, ADR-017)
+`POST /simulations` runs an isolated, deterministic, bounded simulation on a read-only copy of the topology; `GET /simulations[/{id}]`, `GET /events?simulationId=`, `GET /telemetry?simulationId=` return the stored run, its events, and watched metric samples (provenance `simulated`), subject to retention. `GET /topology/snapshots/{id}/diff?against=` compares snapshots. The text below records the original open question.
+
+#### Original note
 The simulation engine is pure TypeScript and runs in the browser (ADR-010); captures are stored through `POST /topology/snapshots` with `source: simulation`. Server-side simulation (`POST /simulations`, actions, events) is an open decision in `docs/API_CONTRACT.md`. Decide isolation (per session, per user, global) by ADR before implementing; never mutate shared persisted topology from a simulation.
 
 ### Not added

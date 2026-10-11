@@ -10,6 +10,8 @@ import { analyzeImpact, type FailureMode } from '../domain/propagation';
 import { buildTopologyIndex } from '../domain/topologyIndex';
 import { dependencyTree, HIGHLIGHT_MODES, neighborhood, reachFrom } from '../domain/traversal';
 import { generateTopology, INVENTORY_1000, SCALE_250 } from '../data/mock/generateTopology';
+import { diffTopology } from '../domain/snapshot';
+import { createSimulation, injectFailure, recover, recoverAll, reset, step, type SimulationState } from '../simulation/engine';
 import type { TopologyData } from '../domain/types';
 import { validateTopology, type ValidationIssue } from '../domain/validation';
 
@@ -261,11 +263,68 @@ function traversalCases(): Record<string, unknown> {
         ].map((roots) => ({ roots, expected: analyzeImpact(index, roots) })),
       ],
     },
+    'conformance/history/diffs.json': {
+      cases: (() => {
+        const snaps = mockSnapshots();
+        const pairs: [string, TopologyData, string, TopologyData][] = [];
+        for (const a of snaps) for (const b of snaps) if (a.id !== b.id) pairs.push([a.id, a.data, b.id, b.data]);
+        for (const a of snaps) pairs.push([a.id, a.data, 'mock', mockTopology]);
+        return pairs.map(([aId, a, bId, b]) => ({ before: aId, after: bId, expected: diffTopology(a, b) }));
+      })(),
+    },
+    'conformance/simulation/scenarios.json': { topology, scenarios: simulationScenarios() },
     'conformance/eventflows/flows.json': {
       topology,
       cases: mockTopology.environments.map((e) => ({ environmentId: e.id, expected: eventFlowsIn(index, e.id) })),
     },
   };
+}
+
+type SimAction =
+  | { type: 'inject'; entityId: string; mode: FailureMode; durationTicks?: number }
+  | { type: 'recover'; entityId: string }
+  | { type: 'recoverAll' }
+  | { type: 'step'; ticks: number }
+  | { type: 'reset' };
+
+/** Scripted runs of the deterministic engine; every action's resulting state is recorded. */
+function simulationScenarios() {
+  const scripts: { name: string; seed: number; startAt?: string; actions: SimAction[] }[] = [
+    { name: 'drift-only', seed: 7, actions: [{ type: 'step', ticks: 60 }] },
+    {
+      name: 'failures-and-recovery',
+      seed: 42,
+      actions: [
+        { type: 'inject', entityId: 'payment-service.production', mode: 'unavailable', durationTicks: 3 },
+        { type: 'step', ticks: 5 },
+        { type: 'inject', entityId: 'topic-orders-events-prod', mode: 'unavailable' },
+        { type: 'inject', entityId: 'rds-inventory-prod', mode: 'degraded' },
+        { type: 'step', ticks: 25 },
+        { type: 'recover', entityId: 'topic-orders-events-prod' },
+        { type: 'inject', entityId: 'eks-commerce-prod', mode: 'unavailable', durationTicks: 2 },
+        { type: 'step', ticks: 3 },
+        { type: 'recoverAll' },
+        { type: 'step', ticks: 10 },
+        { type: 'reset' },
+        { type: 'step', ticks: 2 },
+      ],
+    },
+    { name: 'explicit-start', seed: 123456789, startAt: '2026-10-11T12:00:00Z', actions: [{ type: 'inject', entityId: 'notification-service.production', mode: 'degraded' }, { type: 'step', ticks: 120 }] },
+  ];
+  const view = (s: SimulationState) => ({ tick: s.tick, clock: s.clock, rng: s.rng, drift: s.drift, anomalies: s.anomalies, failures: s.failures, impacts: s.impacts, events: s.events, eventSeq: s.eventSeq, data: s.data });
+  return scripts.map((script) => {
+    let state = createSimulation(mockTopology, { seed: script.seed, ...(script.startAt ? { startAt: script.startAt } : {}) });
+    const states = [view(state)];
+    for (const a of script.actions) {
+      if (a.type === 'inject') state = injectFailure(state, a.entityId, a.mode, a.durationTicks !== undefined ? { durationTicks: a.durationTicks } : {});
+      else if (a.type === 'recover') state = recover(state, a.entityId);
+      else if (a.type === 'recoverAll') state = recoverAll(state);
+      else if (a.type === 'step') state = step(state, a.ticks);
+      else state = reset(state);
+      states.push(view(state));
+    }
+    return { ...script, states };
+  });
 }
 
 describe('shared fixtures (fixtures/)', () => {

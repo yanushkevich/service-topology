@@ -81,6 +81,22 @@ type GraphRepository interface {
 	Subgraph(ctx context.Context, startID domain.EntityID, direction string, maxDepth, maxEntities int) (*Subgraph, error)
 }
 
+// SimulationRepository stores simulation runs with their events and telemetry. A run and its
+// records are written together and removed together by retention.
+type SimulationRepository interface {
+	Save(ctx context.Context, run *domain.SimulationRun, events []domain.StoredEvent, telemetry []domain.TelemetryObservation) error
+	Get(ctx context.Context, id string) (*domain.SimulationRun, error)
+	// List returns runs newest first.
+	List(ctx context.Context, limit int) ([]domain.SimulationRun, error)
+	// Events returns a run's events in sequence order, optionally filtered by entity and type.
+	Events(ctx context.Context, simulationID, entityID, eventType string) ([]domain.StoredEvent, error)
+	// Telemetry returns a run's observations in sequence order, optionally filtered.
+	Telemetry(ctx context.Context, simulationID, subjectID, metricName string) ([]domain.TelemetryObservation, error)
+	// Prune deletes runs created before olderThan (RFC 3339) and, beyond keep, the oldest ones,
+	// with their events and telemetry. Returns how many runs were removed.
+	Prune(ctx context.Context, olderThan string, keep int) (int, error)
+}
+
 // ReadinessCheck is one dependency checked by GET /readyz. Messages must not reveal connection
 // details or credentials.
 type ReadinessCheck interface {
