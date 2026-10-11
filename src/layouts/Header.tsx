@@ -68,8 +68,10 @@ export function Header() {
           value={query}
           onChange={(e) => {
             setFilters({ query: e.target.value });
-            // Search results are shown in the registry until the map supports search/focus (Milestone 2).
-            if (location.pathname !== '/registry') navigate('/registry');
+            // The map and registry filter in place; other pages show results in the registry.
+            if (location.pathname !== '/registry' && location.pathname !== '/map') {
+              navigate({ pathname: '/registry', search: location.search });
+            }
           }}
         />
       </div>

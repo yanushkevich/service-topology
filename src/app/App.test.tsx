@@ -31,14 +31,15 @@ describe('application shell', () => {
     expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument();
   });
 
-  it('switches placeholder views and layout modes', async () => {
+  it('switches between the 2D map, its grouped mode, and the 3D placeholder', async () => {
     const user = userEvent.setup();
     renderAt('/map');
     const view = await screen.findByRole('group', { name: 'View' });
-    expect(screen.getByTestId('view-placeholder')).toHaveTextContent('2D Workbench — topology');
+    expect(await screen.findByLabelText(/^Order Service, api/)).toBeInTheDocument();
+    expect(screen.queryByTestId('view-placeholder')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Grouped infrastructure' }));
-    expect(screen.getByTestId('view-placeholder')).toHaveTextContent('grouped infrastructure');
+    expect(await screen.findByRole('button', { name: 'Collapse eks-commerce-prod' })).toBeInTheDocument();
 
     await user.click(within(view).getByRole('button', { name: '3D Galaxy' }));
     expect(within(view).getByRole('button', { name: '3D Galaxy' })).toHaveAttribute('aria-pressed', 'true');

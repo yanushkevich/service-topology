@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import { useTopology } from '../../data/topologyContext';
 import {
   endpointName,
@@ -122,6 +123,7 @@ function InstanceDetails({ index, instance }: { index: TopologyIndex; instance: 
         note={noteOf(instance.metadata)}
       />
       <Body>
+        <MapActions entityId={instance.id} />
         <EnvironmentNotice index={index} entityId={instance.id} />
         {definition?.description && <p className={styles.description}>{definition.description}</p>}
         <Fields>
@@ -194,6 +196,7 @@ function ResourceDetails({ index, resource }: { index: TopologyIndex; resource: 
         note={noteOf(resource.metadata)}
       />
       <Body>
+        {(index.outgoing.has(resource.id) || index.incoming.has(resource.id)) && <MapActions entityId={resource.id} />}
         <EnvironmentNotice index={index} entityId={resource.id} />
         <Fields>
           <Field label="Environment" mono>
@@ -573,6 +576,43 @@ function Metadata({ metadata }: { metadata: Record<string, unknown> | undefined 
         <KeyValue key={key} label={key} value={formatMetadataValue(value)} />
       ))}
     </Section>
+  );
+}
+
+/** Registry-to-map focus and neighborhood exploration for the selected entity. */
+function MapActions({ entityId }: { entityId: EntityId }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const neighborhood = useUiStore((s) => s.neighborhood);
+  const setNeighborhood = useUiStore((s) => s.setNeighborhood);
+  const setActiveView = useUiStore((s) => s.setActiveView);
+  const onMap = location.pathname === '/map';
+  const toMap = () => {
+    setActiveView('2d');
+    if (!onMap) navigate({ pathname: '/map', search: location.search });
+  };
+  const exploring = neighborhood?.centerId === entityId;
+  return (
+    <div className={styles.actions}>
+      {!onMap && (
+        <button type="button" className={styles.primary} onClick={toMap}>
+          <Icon name="focus" />
+          Show on map
+        </button>
+      )}
+      <button
+        type="button"
+        className={exploring ? styles.secondary : onMap ? styles.primary : styles.secondary}
+        aria-pressed={exploring}
+        onClick={() => {
+          setNeighborhood(exploring ? null : { centerId: entityId, depth: neighborhood?.depth ?? 1 });
+          if (!exploring) toMap();
+        }}
+      >
+        <Icon name="map" />
+        {exploring ? 'Show whole map' : 'Explore neighborhood'}
+      </button>
+    </div>
   );
 }
 

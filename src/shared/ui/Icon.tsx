@@ -55,6 +55,15 @@ const PATHS = {
   chevronDown: <path d="M4 6l4 4 4-4" />,
   chevronRight: <path d="M6 4l4 4-4 4" />,
   close: <path d="M4 4l8 8M12 4l-8 8" />,
+  plus: <path d="M8 3.5v9M3.5 8h9" />,
+  minus: <path d="M3.5 8h9" />,
+  fit: <path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" />,
+  focus: (
+    <>
+      <circle cx="8" cy="8" r="2" />
+      <path d="M8 1.5v3M8 11.5v3M1.5 8h3M11.5 8h3" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof PATHS;

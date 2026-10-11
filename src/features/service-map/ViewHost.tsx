@@ -1,47 +1,41 @@
+import { lazy, Suspense } from 'react';
 import { useUiStore } from '../../state/uiStore';
 import styles from './serviceMap.module.css';
 
+// React Flow and the map code load only when the map is shown.
+const Topology2D = lazy(() => import('./views/Topology2D').then((m) => ({ default: m.Topology2D })));
+
 /**
- * Renderer-agnostic host for the active view. Real views (React Flow 2D in Milestone 2,
- * lazy-loaded R3F galaxy in Milestone 4) replace these placeholders behind the same switch.
+ * Renderer-agnostic host for the active view. Topology and grouped infrastructure are two layout
+ * modes of the same 2D graph. The lazy-loaded R3F galaxy replaces the 3D placeholder in Milestone 4.
  */
 export function ViewHost() {
   const activeView = useUiStore((s) => s.activeView);
-  const layoutMode = useUiStore((s) => s.layoutMode);
 
   if (activeView === '3d') {
     return (
-      <ViewPlaceholder
-        title="3D Galaxy"
-        body="Secondary, explorable view of the same canonical topology. Loaded on demand, with a 2D fallback when WebGL is unavailable."
-        milestone="Milestone 4"
-      />
+      <div className={styles.placeholder} data-testid="view-placeholder">
+        <div className={styles.placeholderCard}>
+          <p className={styles.placeholderTag}>Placeholder · Milestone 4</p>
+          <h2 className={styles.placeholderTitle}>3D Galaxy</h2>
+          <p className={styles.placeholderBody}>
+            Secondary, explorable view of the same canonical topology. Loaded on demand, with a 2D fallback when WebGL is
+            unavailable.
+          </p>
+        </div>
+      </div>
     );
   }
 
-  return layoutMode === 'infrastructure' ? (
-    <ViewPlaceholder
-      title="2D Workbench — grouped infrastructure"
-      body="The same topology, grouped by the explicit containment hierarchy (provider → account → region → cluster → namespace)."
-      milestone="Milestone 2"
-    />
-  ) : (
-    <ViewPlaceholder
-      title="2D Workbench — topology"
-      body="Primary operational view: services, topics, and queues as nodes, with communication relationships laid out by ELK."
-      milestone="Milestone 2"
-    />
-  );
-}
-
-function ViewPlaceholder({ title, body, milestone }: { title: string; body: string; milestone: string }) {
   return (
-    <div className={styles.placeholder} data-testid="view-placeholder">
-      <div className={styles.placeholderCard}>
-        <p className={styles.placeholderTag}>Placeholder · {milestone}</p>
-        <h2 className={styles.placeholderTitle}>{title}</h2>
-        <p className={styles.placeholderBody}>{body}</p>
-      </div>
-    </div>
+    <Suspense
+      fallback={
+        <div className={styles.placeholder} role="status">
+          Loading map…
+        </div>
+      }
+    >
+      <Topology2D />
+    </Suspense>
   );
 }

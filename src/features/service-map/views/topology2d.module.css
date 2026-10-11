@@ -1,0 +1,322 @@
+/* Floating controls follow docs/ui-frontend-mock/Main.dc.html (.float, .tb, .seg/.sg, legend). */
+.canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.canvas :global(.react-flow) {
+  background: transparent;
+  --xy-edge-stroke: var(--color-text-3);
+  --xy-minimap-background-color: var(--color-bg-1);
+  --xy-minimap-mask-background-color: color-mix(in srgb, var(--color-bg-0) 60%, transparent);
+  --xy-node-boxshadow-selected: none;
+}
+
+.canvas :global(.react-flow__node:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
+.canvas :global(.react-flow__edge:focus-visible) {
+  outline: none;
+}
+
+.canvas :global(.react-flow__edge:focus-visible path) {
+  stroke-width: 3;
+}
+
+.canvas :global(.react-flow__arrowhead polyline) {
+  stroke: var(--color-text-3);
+  fill: var(--color-text-3);
+}
+
+.float {
+  position: absolute;
+  z-index: 15;
+  background: var(--color-float);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-float);
+}
+
+.scopeBar {
+  left: 12px;
+  top: 12px;
+  max-width: calc(100% - 24px);
+  padding: 6px 8px 6px 12px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--color-text-2);
+}
+
+.filterPanel {
+  left: 12px;
+  top: 56px;
+  right: 12px;
+  max-width: 980px;
+  padding: 4px 8px 4px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  z-index: 20;
+}
+
+.notice {
+  left: 50%;
+  top: 12px;
+  transform: translateX(-50%);
+  padding: 7px 8px 7px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--text-sm);
+  color: var(--color-text-2);
+  border-style: dashed;
+  border-color: var(--color-line-strong);
+  z-index: 16;
+}
+
+.controls {
+  left: 12px;
+  bottom: 12px;
+  max-width: calc(100% - 24px);
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.legend {
+  left: 12px;
+  bottom: 64px;
+  padding: 7px 12px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 11.5px;
+  color: var(--color-text-2);
+  z-index: 14;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.k {
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-text-3);
+  margin: 0 4px;
+}
+
+.iconButton {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: var(--radius-md);
+  display: grid;
+  place-items: center;
+  color: var(--color-text-2);
+}
+
+.iconButton:hover {
+  background: var(--color-bg-3);
+  color: var(--color-text);
+}
+
+.textButton {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-2);
+  font-size: var(--text-sm);
+}
+
+.textButton:hover {
+  background: var(--color-bg-3);
+  color: var(--color-text);
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 5px;
+  background: var(--color-line-strong);
+}
+
+.segmented {
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 9px;
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-line);
+}
+
+.segment {
+  height: 26px;
+  padding: 0 11px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-2);
+  font-size: var(--text-sm);
+}
+
+.segment:hover {
+  color: var(--color-text);
+}
+
+.segment[aria-pressed='true'] {
+  background: var(--color-bg-selected);
+  color: var(--color-text);
+  box-shadow: inset 0 0 0 1px var(--color-line-strong);
+}
+
+.chip {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 13px;
+  border: 1px solid var(--color-line-strong);
+  font-size: var(--text-sm);
+  color: var(--color-text-2);
+  white-space: nowrap;
+}
+
+.chip:hover {
+  color: var(--color-text);
+}
+
+.chipOn,
+.chip[aria-expanded='true'] {
+  color: var(--color-text);
+  border-color: var(--color-indigo);
+  background: color-mix(in srgb, var(--color-indigo) 18%, transparent);
+}
+
+.neighborhood {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 8px;
+  border-left: 1px solid var(--color-line-strong);
+}
+
+.neighborhood b {
+  color: var(--color-text);
+}
+
+.depth {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-line-strong);
+  font-size: var(--text-sm);
+  color: var(--color-text-2);
+}
+
+.depth[aria-pressed='true'] {
+  color: var(--color-text);
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.minimap {
+  right: 12px !important;
+  bottom: 12px !important;
+  margin: 0 !important;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-line);
+  overflow: hidden;
+}
+
+.miniNode {
+  fill: var(--color-indigo);
+}
+
+.miniGroup {
+  fill: color-mix(in srgb, var(--color-indigo) 8%, transparent);
+  stroke: var(--color-line-strong);
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  pointer-events: none;
+  z-index: 18;
+}
+
+.overlayCard {
+  position: relative;
+  max-width: 440px;
+  padding: 22px 26px;
+  text-align: center;
+  pointer-events: auto;
+  color: var(--color-text-2);
+}
+
+.overlayCard p {
+  margin: 0 0 14px;
+}
+
+.overlayTitle {
+  margin: 0 0 6px;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.overlayActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.primary {
+  height: 32px;
+  padding: 0 13px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.secondary {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line-strong);
+  color: var(--color-text);
+}
+
+.secondary:hover {
+  background: var(--color-bg-3);
+}
+
+.centered {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  color: var(--color-text-2);
+  pointer-events: none;
+}
+
+@media (max-width: 760px) {
+  .legend {
+    display: none;
+  }
+}

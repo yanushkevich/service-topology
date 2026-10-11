@@ -289,7 +289,33 @@
   font-size: var(--text-sm);
 }
 
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.primary {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.primary:hover {
+  filter: brightness(1.1);
+}
+
 .secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   height: 28px;
   padding: 0 12px;
   border-radius: var(--radius-md);

@@ -47,6 +47,15 @@
   --color-crit-text: var(--color-crit);
 
   --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.45);
+
+  /* 2D graph (mock .n2 and .k-* connection kinds) */
+  --color-node: #0f1526;
+  --color-node-hover: #151d34;
+  --color-node-selected: #121c33;
+  --edge-http: #a9c8ff;
+  --edge-grpc: #5fe1ff;
+  --edge-data: #b79cff;
+  --edge-event: #8ef0c0;
 }
 
 :root[data-theme='light'] {
@@ -88,6 +97,14 @@
   --color-crit-text: #b83232;
 
   --shadow-float: 0 8px 26px rgba(40, 55, 95, 0.16);
+
+  --color-node: #ffffff;
+  --color-node-hover: #f1f4fa;
+  --color-node-selected: #f1fbff;
+  --edge-http: #3f66c9;
+  --edge-grpc: #0b7fa6;
+  --edge-data: #6d4fd6;
+  --edge-event: #11875f;
 }
 
 :root {

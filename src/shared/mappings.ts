@@ -116,3 +116,25 @@ export const relationshipStatusLabel = (s: string) =>
   RELATIONSHIP_STATUS_LABELS[s as RelationshipStatus] ?? fallback(s);
 export const relationshipStatusHealth = (s: string): HealthStatus =>
   RELATIONSHIP_STATUS_HEALTH[s as RelationshipStatus] ?? 'unknown';
+
+/** Visual edge families from the UI mock legend. Each also has a distinct dash pattern (not color alone). */
+export const EDGE_KINDS = ['http', 'grpc', 'data', 'event', 'other'] as const;
+export type EdgeKind = (typeof EDGE_KINDS)[number];
+
+export const EDGE_KIND_LABELS: Record<EdgeKind, string> = {
+  http: 'HTTP / HTTPS',
+  grpc: 'gRPC',
+  data: 'Data store (SQL, cache)',
+  event: 'Events (publish, consume)',
+  other: 'Other',
+};
+
+export function edgeKind(protocol: string, pattern: string): EdgeKind {
+  if (protocol === 'kafka' || protocol === 'rabbitmq' || pattern === 'asynchronous' || pattern === 'streaming') {
+    return 'event';
+  }
+  if (['postgresql', 'mysql', 'mongodb', 'redis'].includes(protocol) || pattern === 'database') return 'data';
+  if (protocol === 'grpc') return 'grpc';
+  if (['http', 'https', 'graphql', 'websocket'].includes(protocol)) return 'http';
+  return 'other';
+}

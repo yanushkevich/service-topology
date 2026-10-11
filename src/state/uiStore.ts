@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { EMPTY_FILTERS, type EntityFilters } from '../domain/registry';
-import type { EntityRef } from '../domain/types';
+import type { HighlightMode } from '../domain/traversal';
+import type { EntityId, EntityRef } from '../domain/types';
 
 /**
  * Cross-view UI state only (see docs/ARCHITECTURE.md §6): selection by canonical kind + ID,
@@ -25,6 +26,10 @@ interface UiState {
   environmentId: string;
   selection: EntityRef | null;
   filters: EntityFilters;
+  /** How dependencies of the selection are emphasized in graph views. */
+  highlightMode: HighlightMode;
+  /** When set, graph views show only entities within `depth` hops of `centerId`. */
+  neighborhood: Neighborhood | null;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
   setActiveView: (view: ServiceMapView) => void;
@@ -33,7 +38,16 @@ interface UiState {
   select: (ref: EntityRef | null) => void;
   setFilters: (patch: Partial<EntityFilters>) => void;
   resetFilters: () => void;
+  setHighlightMode: (mode: HighlightMode) => void;
+  setNeighborhood: (neighborhood: Neighborhood | null) => void;
 }
+
+export interface Neighborhood {
+  centerId: EntityId;
+  depth: number;
+}
+
+export const NEIGHBORHOOD_DEPTHS = [1, 2, 3] as const;
 
 const THEME_STORAGE_KEY = 'service-topology:theme';
 
@@ -62,6 +76,8 @@ export const useUiStore = create<UiState>()((set, get) => ({
   environmentId: 'production',
   selection: null,
   filters: EMPTY_FILTERS,
+  highlightMode: 'direct',
+  neighborhood: null,
   setTheme: (theme) => {
     persistTheme(theme);
     set({ theme });
@@ -73,6 +89,8 @@ export const useUiStore = create<UiState>()((set, get) => ({
   select: (selection) => set({ selection }),
   setFilters: (patch) => set((state) => ({ filters: { ...state.filters, ...patch } })),
   resetFilters: () => set({ filters: EMPTY_FILTERS }),
+  setHighlightMode: (highlightMode) => set({ highlightMode }),
+  setNeighborhood: (neighborhood) => set({ neighborhood }),
 }));
 
 /** Toggle membership of a value in a filter list. */

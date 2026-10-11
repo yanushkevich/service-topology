@@ -16,6 +16,8 @@ export function resetUiStore() {
     environmentId: 'production',
     selection: null,
     filters: EMPTY_FILTERS,
+    highlightMode: 'direct',
+    neighborhood: null,
   });
 }
 
