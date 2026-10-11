@@ -27,4 +27,4 @@ Set policy for endpoint/resource metadata, event payloads, snapshot retention, u
 
 
 ## Database security
-Bind database ports to localhost in local development. Use separate least-privilege credentials per service in deployed environments, TLS where applicable, secret injection rather than committed credentials, network restrictions, and tested backup/restore. The sample Compose credentials are local-only and must never be reused.
+Bind database ports to localhost in local development (the scaffold Compose file publishes `127.0.0.1:2480` only). Use separate least-privilege credentials per service in deployed environments, TLS where applicable, secret injection rather than committed credentials, network restrictions, and tested backup/restore. The sample Compose credentials are local-only and must never be reused.

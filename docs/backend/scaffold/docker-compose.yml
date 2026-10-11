@@ -1,3 +1,5 @@
+# Local development only. Moves to backend/docker-compose.yml in Milestone B1.
+# Image tag verified on Docker Hub 2026-10-11 (published 2026-10-05); not yet tested with this project.
 services:
   arcadedb:
     image: arcadedata/arcadedb:26.10.1
@@ -6,11 +8,13 @@ services:
     environment:
       ARCADEDB_SETTINGS: "-Darcadedb.server.rootPasswordPath=/run/secrets/arcadedb_root_password"
     ports:
-      - "2480:2480"
+      # Localhost only (SECURITY.md); never publish the database on all interfaces.
+      - "127.0.0.1:2480:2480"
     secrets:
       - arcadedb_root_password
     volumes:
       - arcadedb_data:/home/arcadedb/databases
+    # Assumes curl exists in the image; verify in B2 (or switch to ArcadeDB's readiness endpoint).
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS -u root:$$(cat /run/secrets/arcadedb_root_password) http://localhost:2480/api/v1/server >/dev/null"]
       interval: 10s

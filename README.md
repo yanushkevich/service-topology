@@ -34,6 +34,8 @@ Execute one milestone at a time, in order:
 - `docs/milestones/MILESTONE_06_TAILWIND_SECTIONS.md` (Revision 5)
 - `docs/milestones/MILESTONE_07_EVENT_CATALOG.md` (Revision 6)
 
+Backend (Go + ArcadeDB, specified, not implemented): `docs/backend/README.md`, Milestones B1–B6.
+
 Older phase prompts remain in `docs/phases/` for task-level traceability, but they do not replace the five-milestone delivery gates. Revision 1 files are preserved under `docs/archive/original-v1/` as historical material.
 
 ## Claude Code skills

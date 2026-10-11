@@ -2,14 +2,14 @@
 
 ## ADR-DB-001: ArcadeDB as the single authoritative database
 
-**Status:** Selected for this specification; validate a working prototype, current release compatibility, operational fit, and representative query performance before production commitment.
+**Status:** Selected for this specification and adopted for the monorepo by root ADR-015 (2026-10-11); validate a working prototype, current release compatibility, operational fit, and representative query performance before production commitment.
 
 ### Context
 The product needs a registry for heterogeneous resources and flexible provider-specific metadata, while its distinguishing workflows are graph-shaped: service dependencies, infrastructure containment, upstream/downstream impact, paths, neighborhood exploration, and a 2D topology plus a spatial 3D galaxy. Maintaining separate document and graph databases would introduce synchronization and recovery complexity before the workload has been measured.
 
 ### Decision
 - Use ArcadeDB as the only required database. ArcadeDB supports graph and document models in one engine and transaction.
-- Model resources as vertices and domain connections as directed edges; use ArcadeDB document types for records where a graph connection is not appropriate.
+- Model canonical entities as vertices and canonical relationships as directed edges (`PERSISTENCE.md`: one `COMMUNICATES` edge per relationship, `CONTAINS`/`HOSTED_IN` for containment); use document types for snapshots, layouts, and append-only records.
 - Keep stable application-level IDs (`id`) separate from database-internal record IDs. Never expose internal record IDs as public API identifiers.
 - Store common queryable fields as typed properties. Keep provider-specific metadata in a validated, versioned document/map representation; promote fields used for filtering or traversal into indexed properties or related records. Confirm nested JSON mapping behavior in integration tests.
 - Keep the Go modular monolith responsible for validation, authorization, commands, and persistence interfaces.

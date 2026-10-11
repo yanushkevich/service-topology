@@ -1,65 +1,90 @@
 # Canonical Backend Domain Model
 
-**Status:** Proposed backend representation of the Revision 4 product domain.
+**Status:** Proposed backend representation of the **implemented** canonical domain. The source of truth is `src/domain/types.ts`, `src/domain/validation.ts`, the JSON Schemas in `docs/schemas/`, and decisions ADR-004, ADR-008, and ADR-014 in `docs/DECISIONS.md`. Where this file and those disagree, they win; fix this file.
+
+The backend must accept, store, and return exactly the `TopologyData` v1 payload (`docs/schemas/topology.v1.schema.json`). Backend-only fields (provenance detail, source identity, audit timestamps) are stored alongside it and exposed only through additive, documented extensions.
+
+## Identity
+- IDs are stable, opaque strings, **unique across all collections of one topology** (environments, definitions, instances, resources, relationships, event types), so a bare ID resolves to exactly one entity (ADR-008). Clients never parse IDs.
+- Selection and deep links use `{ kind, id }` with `kind` ∈ `environment`, `service-definition`, `service-instance`, `resource`, `relationship`.
+- Never expose ArcadeDB record IDs (`#12:3`) as identity.
+- Seed/fixture IDs are the frontend mock's IDs (e.g. `order-service.production`, `topic-orders-events-prod`), so fixtures, deep links, and tests are interchangeable.
 
 ## Entities
 
 ### Environment
-- `id`, `name`, `key`, `description`, `created_at`, `updated_at`.
-- Seed keys include `development`, `staging`, `production`; do not assume the set is closed forever.
+- `id`, `name`, `kind` ∈ `development | staging | production | other`.
+- Display order is production → staging → development → other by `kind`, then name (ADR-008), regardless of storage order. The set is open: new environments are data.
 
 ### ServiceDefinition
-A logical service identity independent of any deployment.
-- `id`, `name`, `description`, `category`, `owner`, `team`, `created_at`, `updated_at`.
-- Stable identity across versions/environments; do not duplicate the definition merely because it has multiple deployments.
+A logical capability with no environment.
+- `id`, `name`, `description?`, `owner?`, `team?`, `category` ∈ `api | gateway | application | worker | scheduled-job | other`, `protocols[]`, `metadata?`.
+- Databases, brokers, and topics are resources, not service categories (ADR-008).
 
 ### ServiceInstance
-A deployment/runtime instance of a logical service.
-- `id`, `definition_id`, `environment_id`, `name`, `version`, `provider`, `health`, `endpoint` (optional/sensitive), `external_resource_id`, `region`, `cluster`, `namespace`, `protocols`, `metadata`, `created_at`, `updated_at`.
-- Exactly one environment. A service may have many instances.
+One deployment of a definition in exactly one environment. The instance itself is the workload; replicas are not modeled (ADR-008).
+- `id`, `serviceDefinitionId`, `environmentId` (required, single), `provider`, `health`, `version?`, `endpoint?`, `resourceId?` (the most specific known host: namespace, cluster, …), `metrics?`, `updatedAt`, `metadata?`.
+- Region, cluster, and namespace are **not** string fields: they come from the host resource's containment chain (`resourceId` → `parentResourceId` …). Never infer hierarchy from names or metadata.
+- The host's environment (own or inherited) must equal the instance's environment.
 
 ### InfrastructureResource
-- `id`, `kind`, `name`, `provider`, `environment_id` (nullable only if product rules explicitly allow shared/global scope), `parent_resource_id` (nullable), `external_resource_id`, `region`, `cluster`, `namespace`, `health`, `metadata`, timestamps.
-- `kind` includes cluster, namespace, deployment, container/workload, database, message broker, Kafka topic, RabbitMQ queue/exchange and other resource categories as needed.
-- Parent-child is containment only. Validate no cycles.
+Infrastructure, containment levels, and first-class messaging resources.
+- `id`, `name`, `type`, `provider`, `parentResourceId?`, `environmentId?`, `health?` (absent = not modeled, shown as Unknown), `owner?`, `team?`, `metrics?`, `updatedAt?`, `metadata?`.
+- `type` ∈ `account, subscription, project, region, datacenter, cluster, namespace, workload, database, cache, search-index, broker, topic, queue, exchange, external-resource, other`. Containment-only types (`account, subscription, project, region, datacenter, cluster, namespace`) can never be communication endpoints.
+- Environment is inherited through containment: a resource without `environmentId` takes its nearest ancestor's; with none it is environment-independent (e.g. a SaaS API) and appears in every environment. A resource may restate its inherited environment but not change it.
+- `parentResourceId` is containment only; no cycles.
 
 ### CommunicationRelationship
-- `id`, `source_entity_type`, `source_entity_id`, `target_entity_type`, `target_entity_id`, `protocol`, `pattern`, `direction`, `status`, `authentication_type`, `endpoint`, `topic_or_queue_resource_id` (optional), `metadata`, timestamps.
-- Use explicit endpoint entity types so services, instances, and messaging resources can participate. Validate endpoint references. If polymorphic references weaken referential integrity in the chosen database design, use typed association tables or a single canonical entity table rather than accepting dangling IDs.
+Runtime communication ("what talks to what"). Never containment.
+- `id`, `sourceEntityId`, `targetEntityId`, `protocol`, `pattern`, `direction` (`unidirectional | bidirectional`), `status`, `authenticationType?`, `endpoint?`, `metrics?`, `metadata?`, `updatedAt`.
+- Endpoints are service instances or non-containment resources. Because IDs are globally unique, no separate endpoint-type field is stored; API DTOs may add the resolved `kind`.
+- Messaging is explicit: producer → topic/queue/exchange → consumer are separate relationships. There is no `topicOrQueueResourceId` shortcut field.
+- RabbitMQ bindings (exchange → queue, exchange → exchange) are relationships with `protocol: rabbitmq`, `pattern: asynchronous`, and `metadata.bindingKey` (ADR-008). An exchange may only target a queue or an exchange.
+- Environments are isolated: endpoints that resolve to different environments are an error; only environment-independent entities may be shared.
 
-### TelemetryObservation
-- `id`, `subject_type`, `subject_id`, `metric_name`, numeric value and unit, `provenance` (`simulated`, `observed`, `imported`), `source_id`, `observed_at`, `recorded_at`, optional dimensions.
-- Do not overload a metric with an ambiguous boolean if richer provenance is required. API compatibility can expose `isSimulated` derived from provenance.
+### EventType (ADR-014)
+A logical message contract (e.g. `OrderPlaced`), environment-independent like a definition.
+- `id`, `name`, `description?`, `schemaVersion?`, `owner?`, `team?`, `channelResourceIds[]` (topic/queue/exchange, at most one per environment), `producerServiceIds[]` and `consumerServiceIds[]` (service definitions), `metadata?`.
+- Per environment it resolves to the channel there and to the instances' existing relationships (producer → channel, channel → consumer, or exchange → bound queue → consumer). It never creates communication. A definition with no instance in that environment is "not deployed", not an error.
 
-### TopologyEvent
-- `id`, `event_type`, subject/reference, severity, summary, payload, provenance, `occurred_at`, `recorded_at`.
-- Simulated failure/recovery events remain marked simulated end-to-end.
+### Metrics and provenance
+- API shape (unchanged): `metrics { latencyMs?, throughputPerSecond?, errorRatePercent?, isSimulated, observedAt? }`. `isSimulated` is required.
+- Backend storage keeps a richer `provenance` ∈ `mock | simulated | observed | imported` plus `sourceId`, `observedAt`, `recordedAt`. Mapping to the API: `isSimulated = provenance !== 'observed'`. Imported inventory is not telemetry; persisting data never makes it observed.
 
-### TopologySnapshot
-- `id`, `schema_version`, `environment_id` or explicit scope, `captured_at`, `provenance`, immutable normalized topology payload or normalized snapshot rows.
-- Store schema version and timestamps. Never mutate an existing snapshot in place.
+### TopologySnapshot (`docs/schemas/topology-snapshot.v1.schema.json`)
+- `schemaVersion: 1`, `id`, `label`, `takenAt`, `source` ∈ `fixture | simulation | observed`, `isSimulated` (must be `true` unless `source` is `observed`), `data` (a full `TopologyData` that passes validation).
+- Immutable once stored. Backend adds `recordedAt` and scope metadata internally.
 
-### SavedLayout
-- `id`, `name`, `description`, `scope`, optional environment, schema version, layout payload, owner/user key if authorization is introduced, timestamps.
-- Layout is presentation preference, not canonical domain topology. It may store node positions/group collapse/viewport, but not duplicate authoritative entity details.
+### SavedLayout (`docs/schemas/saved-layout.v1.schema.json`)
+- `schemaVersion: 1`, `id`, `name`, `createdAt`, `view { environmentId, layoutMode, filters, collapsedGroupIds }`, `positions { <entityId or group id>: { x, y } }`.
+- Presentation only; never canonical topology. Ownership (per user vs shared) is an open decision (`docs/API_CONTRACT.md`).
 
-## Relationship types
-Use a controlled vocabulary for protocol, communication pattern, status, provenance, health and resource kind, but support unknown/future values. Initial patterns: synchronous, asynchronous, streaming, scheduled, database, unknown. Health: healthy, degraded, unavailable, unknown. Connection status: active, degraded, inactive, unknown.
+### Backend-only records (proposed, Milestone B5)
+- **TelemetryObservation:** `id`, `subjectId`, `metricName`, value/unit, `provenance`, `sourceId`, `observedAt`, `recordedAt`, optional dimensions. Feeds `metrics` aggregates.
+- **TopologyEvent:** `id`, `eventType`, subject ID, severity, summary, payload, `provenance`, `occurredAt`, `recordedAt`. Simulated failure/recovery events stay simulated end to end. Note: the current simulation runs client-side (ADR-010); whether the server records simulation events is an open decision.
 
 ## Validation rules
-1. All IDs unique within their entity collection and stable across reads.
-2. Foreign keys/references resolve; no dangling relationships.
-3. Instance definition/environment references resolve.
-4. Infrastructure parents resolve and graph is acyclic.
-5. No cross-environment communication unless explicitly represented and allowed by policy; if allowed, both endpoint environments remain visible.
-6. `observed_at` describes source observation time; `recorded_at` describes backend ingestion time.
-7. Simulated observations/events are never relabeled observed.
-8. Snapshot payload schema versions are explicit; document-version upgrades and index setup are tested.
-9. Metadata is bounded in size, JSON-compatible, and not treated as trusted instructions.
+The backend implements **the same rules and codes** as `validateTopology` (`src/domain/validation.ts`) and rejects invalid topologies with `422` problem details listing them (`docs/API_CONTRACT.md`):
 
-## UI mapping compatibility
-The UI needs provider, environment, health, owner/team, version, category, protocols, region/cluster/namespace, relationships, metrics, and event context. API DTOs may use camelCase to fit existing frontend conventions while Go domain fields use idiomatic exported names and JSON tags only at transport boundaries.
+| Code | Rule |
+|---|---|
+| `empty-id`, `duplicate-id` | Non-empty IDs, unique across all collections |
+| `missing-environment` | Instance has exactly one existing environment; resource environment exists |
+| `missing-service-definition`, `missing-resource` | Instance references resolve |
+| `missing-parent`, `parent-cycle` | Parents resolve; containment is acyclic |
+| `missing-relationship-endpoint`, `invalid-relationship-endpoint`, `self-relationship` | Endpoints exist, are instances or non-containment resources, and differ |
+| `environment-mismatch` | Instance environment equals its host's |
+| `environment-conflict` | Resource does not change its inherited environment |
+| `cross-environment-relationship` | No communication across environments |
+| `invalid-binding-target` | Exchange targets only queues/exchanges |
+| `missing-event-channel`, `invalid-event-channel`, `duplicate-event-channel-environment`, `missing-event-service`, `event-flow-missing-relationship` | Event types agree with channels and relationships (ADR-014) |
 
+Rule parity is tested with shared conformance fixtures (valid and one-invalid-per-rule topologies) run against both implementations (`TESTING_AND_PERFORMANCE.md`). Additional backend rules (metadata size limits, string lengths) are additive and must be documented in the contract.
 
-## Persistence mapping note
-These are domain concepts, not a database schema. ArcadeDB persists resources as nodes and domain connections as directed relationships, with stable common fields and versioned extensible metadata. Do not let the database representation define domain invariants. Keep Go domain types and API DTOs independent from ArcadeDB driver records.
+## Controlled vocabularies
+Enums match the schema (`Provider`, `HealthStatus`, `EnvironmentKind`, `ServiceCategory`, `ResourceType`, `Protocol`, `CommunicationPattern`, `RelationshipStatus`). New values follow the contract's change process: announced, added to schema and TypeScript together, contract tests updated. Unknown values from adapters map to `other`/`unknown`, never silently dropped.
+
+## Transport and Go types
+- JSON is camelCase exactly as in the schemas. Go domain structs use idiomatic names with JSON tags only on transport DTOs.
+- Go domain types are independent of HTTP and ArcadeDB packages.
+- Metadata is free-form, display-only, bounded in size, JSON-compatible, never used for identity or hierarchy, and never treated as instructions.

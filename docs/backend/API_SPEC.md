@@ -1,77 +1,73 @@
-# REST API Specification (Proposed)
+# REST API Specification
 
-**Status:** Proposed contract; replaces the earlier illustrative endpoint shapes only after review and implementation. OpenAPI 3.1 is the source of truth.
+**Status:** The HTTP contract is `docs/api/openapi.json` (OpenAPI 3.1, JSON Schema 2020-12), explained in `docs/API_CONTRACT.md` and enforced by `src/contract/contract.test.ts`. This file does not define a second contract. It lists how the Go backend implements that contract and which **proposed additions** may be added to it. An addition is implementable only after it is in `openapi.json` with examples and contract tests.
 
-## General rules
-- Base path `/api/v1`; JSON request/response bodies; UTF-8.
-- UTC RFC 3339 timestamps.
-- Stable opaque string IDs; clients must not infer meaning from ID format.
-- Bounded pagination using `limit` (default 50, max 200) and opaque `cursor` where list consistency requires it. Document sorting and filter semantics per endpoint.
-- Query parameters use camelCase for compatibility with the frontend.
-- Errors use a consistent `application/problem+json`-style object: `type`, `title`, `status`, `code`, `detail`, `requestId`, optional `fieldErrors`. Do not leak SQL, stack traces, credentials, or internal paths.
-- Return `400` for invalid query/body, `401/403` when auth is enabled, `404` for missing resource, `409` for conflict, `413` for excessive payload, `429` for rate limits, `500` generic unexpected error, `503` for unavailable dependency.
-- Use `ETag`/`If-Match` or equivalent optimistic concurrency for mutable saved layouts; decide if registry writes are supported before exposing mutation routes.
+## General rules (from the contract)
+- Base path `/api/v1`. JSON, UTF-8, UTC RFC 3339 timestamps.
+- Stable opaque string IDs; clients never parse them.
+- Pagination: cursor-based (`cursor`, `limit` ≤ 500, response `nextCursor`, `null` at the end). Cursors are opaque.
+- Filtering: AND across parameters, OR within a list parameter (`provider=aws,gcp`). Search parameter is `q`: whitespace-separated terms, all must match, case-insensitive, over name, ID, owner, and team (identical to the client's `matchesFilters`).
+- Errors: `application/problem+json` per RFC 9457 (`type`, `title`, `status`, `detail`, `instance`). Validation failures add `errors: [{ code, entityId?, message }]` using `validateTopology` / `parseSavedLayout` codes. The backend adds the extension member `requestId` (allowed by RFC 9457; add it to the `Problem` schema first). Never leak query text, stack traces, credentials, or internal paths.
+- Status codes: `400` invalid query/body, `401/403` once auth exists, `404` not found, `409` conflict, `412` failed `If-Match`, `413` payload too large, `422` topology/layout fails validation, `429` rate limited, `500` unexpected, `503` database unavailable.
+- Versioning: URL major version; additive changes stay in v1; removals or meaning changes need v2, an ADR, and a migration note in `docs/API_CONTRACT.md`.
 
-## Proposed endpoints
+## Contract v1 endpoints (implement exactly)
 
-### Health and metadata
-- `GET /healthz` — process liveness, no database dependency required.
-- `GET /readyz` — readiness including database connectivity.
-- `GET /api/v1/meta` — API version and supported schema/feature capabilities.
+| Endpoint | Purpose | Frontend interface it backs |
+|---|---|---|
+| `GET /environments` | Environment selector | `TopologyRepository.getTopology` → `environments` |
+| `GET /topology?environmentId=` | Canonical `TopologyData` (optionally one environment), including event types | `TopologyRepository.getTopology` |
+| `GET /registry?environmentId=&q=&provider=&health=&kind=&sort=&cursor=&limit=` | Paginated registry search | client-side today; `RegistryRepository.search` |
+| `GET /entities/{kind}/{id}` | One entity | `TopologyIndex` lookup today |
+| `GET /topology/snapshots?from=&to=` | History list | `SnapshotRepository.list` |
+| `GET /topology/snapshots/{id}` | One snapshot | `SnapshotRepository.get` |
+| `POST /topology/snapshots` | Store a snapshot (e.g. a simulation capture) | `SnapshotRepository.save` |
+| `GET /layouts`, `POST /layouts` | Saved layouts | `SavedLayoutRepository.list` / `.save` |
+| `PUT /layouts/{id}`, `DELETE /layouts/{id}` | Replace / delete (concurrency via `ETag`/`If-Match` is an open decision) | `SavedLayoutRepository.save` / `.remove` |
 
-### Environments
-- `GET /api/v1/environments`
-- `GET /api/v1/environments/{environmentId}`
+Each operation names its frontend interface in `x-repository`. The frontend switches from mock to HTTP by implementing those interfaces (`src/data/selectRepository.ts`); no UI code changes.
 
-### Topology
-- `GET /api/v1/topology?environmentId=...&provider=...&health=...&protocol=...&query=...&limit=...`
-  - Returns normalized `entities`, `relationships`, `containment` or parent references, `scope`, `generatedAt`, and `provenanceSummary`.
-  - `scope` states environment/filter/neighborhood scope and truncation/cursor info. It does not return renderer-specific positions unless a layout endpoint is explicitly requested.
-- `GET /api/v1/topology/neighborhood?entityType=...&entityId=...&direction=upstream|downstream|both&depth=1..5&environmentId=...`
-  - Bounded traversal; stable IDs; explicit truncation indicators.
-- `GET /api/v1/topology/dependencies?entityType=...&entityId=...&direction=...&depth=...`
-  - Optional alias only if a distinct dependency response is required; avoid redundant routes otherwise.
+`GET /topology` returns plain `TopologyData` v1. Response metadata that is not part of `TopologyData` (generation time, provenance summary, truncation) goes in headers or a documented envelope added as v1-compatible change, never by changing the payload shape. Proposed: the full topology is bounded by environment; a response over the configured maximum returns a documented error rather than a silently truncated graph (add the limit and error to the contract).
 
-### Registry
-- `GET /api/v1/services?query=...&environmentId=...&provider=...&health=...&protocol=...&limit=...&cursor=...`
-- `GET /api/v1/services/{serviceInstanceId}`
-- `GET /api/v1/service-definitions/{definitionId}`
-- `GET /api/v1/relationships/{relationshipId}`
-- `GET /api/v1/resources?kind=...&environmentId=...&provider=...&parentResourceId=...&query=...`
-- `GET /api/v1/resources/{resourceId}`
+## Proposed additions (add to `openapi.json` before implementing)
 
-### Events and telemetry
-- `GET /api/v1/events?environmentId=...&entityType=...&entityId=...&provenance=...&from=...&to=...&limit=...&cursor=...`
-- `GET /api/v1/telemetry?entityType=...&entityId=...&metricName=...&provenance=...&from=...&to=...&limit=...`
-- Do not imply real-time stream semantics. Add SSE/WebSocket only if a concrete UI requirement and operational design exist.
+### Operations (outside `/api/v1`)
+- `GET /healthz`: process liveness, no database dependency.
+- `GET /readyz`: ArcadeDB connectivity and schema initialized; no connection details in the body.
+- `GET /api/v1/meta`: API version, schema versions, feature flags (e.g. event types, server simulation).
 
-### Simulation
-- `POST /api/v1/simulations` — start a bounded simulation scenario, if persistent server-side simulation is selected.
-- `POST /api/v1/simulations/{simulationId}/actions` — explicit action such as degrade, fail, recover, or change traffic; all outputs carry `simulated` provenance.
-- `GET /api/v1/simulations/{simulationId}` and `GET /api/v1/simulations/{simulationId}/events`.
-- For a first single-user/local implementation, an in-process deterministic simulation service may be simpler; define whether simulations mutate shared persisted state before coding. Never make that choice silently.
+### Environments and entities
+- `GET /environments/{environmentId}`.
 
-### Snapshots
-- `GET /api/v1/topology/snapshots?environmentId=...&from=...&to=...&limit=...&cursor=...`
-- `GET /api/v1/topology/snapshots/{snapshotId}`
-- `POST /api/v1/topology/snapshots` only if snapshot creation is a user operation; otherwise snapshots can be generated by a scheduled/service policy later.
+### Traversal (bounded; mirrors the client rules in `src/domain/traversal.ts`)
+- `GET /topology/neighborhood?entityId=&depth=1..3&environmentId=`: undirected neighborhood, as the URL `nh` parameter (depth 1–3).
+- `GET /topology/dependencies?entityId=&direction=upstream|downstream&maxDepth=&limit=`: transitive dependencies with hop count, path, and relationship per hop (as `dependencyTree`). `maxDepth` default 10, `limit` default 500; responses state `truncated`.
+- `GET /topology/impact?entityId=&mode=unavailable|degraded`: read-only propagation preview using the rules in `src/domain/propagation.ts` (same rule IDs). Only if server-side analysis is needed; the client computes it today.
 
-### Saved layouts
-- `GET /api/v1/layouts?scope=...&environmentId=...`
-- `POST /api/v1/layouts`
-- `GET /api/v1/layouts/{layoutId}`
-- `PUT /api/v1/layouts/{layoutId}` with schema version and concurrency check.
-- `DELETE /api/v1/layouts/{layoutId}` only when ownership/authorization behavior is specified.
+### Event catalog (ADR-014)
+- `GET /event-types?environmentId=&q=&cursor=&limit=`: event types present in the environment with channel and counts.
+- `GET /event-types/{id}?environmentId=`: resolved flow (channel, producers, consumers with instance IDs, relationship IDs, `viaQueueId`, not-deployed definitions).
+
+### Telemetry and events (Milestone B5)
+- `GET /telemetry?entityId=&metricName=&provenance=&from=&to=&limit=&cursor=`
+- `GET /events?environmentId=&entityId=&provenance=&from=&to=&limit=&cursor=`
+- No real-time stream semantics; SSE/WebSocket only with a concrete UI requirement and operational design. The UI never says "live".
+
+### Simulation (open decision)
+The simulation engine is pure TypeScript and runs in the browser (ADR-010); captures are stored through `POST /topology/snapshots` with `source: simulation`. Server-side simulation (`POST /simulations`, actions, events) is an open decision in `docs/API_CONTRACT.md`. Decide isolation (per session, per user, global) by ADR before implementing; never mutate shared persisted topology from a simulation.
+
+### Not added
+`/services`, `/service-definitions/{id}`, `/relationships/{id}`, `/resources` from the v4 pack duplicate `/registry` and `/entities/{kind}/{id}`. Do not add them unless a concrete client need is shown.
 
 ## DTO expectations
-Topology entity DTOs include canonical `id`, `entityType`, `name`, provider/environment references where applicable, `health`, `updatedAt`, and provenance summary. Relationship DTOs include stable ID, typed source and target references, protocol, pattern, direction, status, optional metrics and topic/queue references. Containment is separately represented by `parentResourceId` or an explicit containment collection.
+- Payloads are the schema types (`docs/schemas/*.json`); do not serialize persistence records.
+- Containment is `parentResourceId` (resources) and `resourceId` (instance host). There is no separate containment collection.
+- Every `metrics` object carries `isSimulated`. Snapshots carry `source` and `isSimulated`.
 
 ## Contract acceptance
-- OpenAPI validates in CI.
-- Examples cover healthy, degraded, unknown, simulated, empty, filtered, paginated, truncated-neighborhood and leaf-resource cases.
-- Contract tests verify status codes, error shape, stable IDs and relationship integrity.
-- Generated frontend types (if used) are reproducible and checked in or generated deterministically in CI.
-
+- `openapi.json` validates (contract tests, `npm test`); the Go server is tested against the same document (`TESTING_AND_PERFORMANCE.md`).
+- Examples cover healthy, degraded, unknown, simulated, empty, filtered, paginated, truncated, and leaf cases.
+- Contract tests verify status codes, problem shape, stable IDs, and relationship integrity.
 
 ## Persistence boundary
-Resource, registry, and multi-hop dependency endpoints read/write/query ArcadeDB through backend interfaces. There is no separate graph projection or projection-freshness field. API DTOs must use stable application IDs and must not expose ArcadeDB internal record IDs.
+All endpoints read/write ArcadeDB through repository interfaces. There is no separate graph projection or projection-freshness field. Never expose ArcadeDB record IDs.

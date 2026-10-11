@@ -16,6 +16,7 @@ Use this file to navigate the project without loading every document into contex
 | Change future backend/API assumptions | `API_CONTRACT.md` | `DECISIONS.md` |
 | Styling (Tailwind) or the section pages | `PRODUCT_SPEC.md` Revision 5 | Milestone 6, ADR-013 |
 | Event catalog, event types, event highlight | `PRODUCT_SPEC.md` Revision 6 | Milestone 7, ADR-014 |
+| Go backend (ArcadeDB), monorepo layout | `backend/README.md` | `backend/IMPLEMENTATION_PLAN.md` (B1–B6), ADR-015 |
 | Set up, test, scale, or extend the app | `DEVELOPER_GUIDE.md` | `ARCHITECTURE.md` milestone notes, `BENCHMARKS.md` |
 | Backend/API work | `API_CONTRACT.md` | `api/openapi.json`, `schemas/` |
 | Positioning or competitor questions | `POSITIONING.md` | `PRODUCT_SPEC.md` §I |

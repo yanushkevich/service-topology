@@ -1,7 +1,7 @@
 # Local Development: ArcadeDB
 
 ## Docker Compose
-The package includes `docker-compose.yml` for local development. Create the local secret file before starting the database; do not commit it. ArcadeDB is Apache-2.0 licensed, not MIT. Pin a tested image version and review support/operations requirements before production.
+The Compose file is kept in `docs/backend/scaffold/` and moves to `backend/docker-compose.yml` in Milestone B1; commands below run from `backend/`. Create the local secret file before starting the database; do not commit it. ArcadeDB is Apache-2.0 licensed, not MIT. Pin a tested image version and review support/operations requirements before production.
 
 ```bash
 mkdir -p secrets
@@ -10,7 +10,7 @@ printf '%s' 'replace-with-a-local-password' > secrets/arcadedb_root_password.txt
 docker compose up -d
 ```
 
-ArcadeDB Studio and HTTP API are available at `http://localhost:2480`. The initial Go adapter should use the HTTP/JSON API and `ARCADEDB_BASE_URL=http://localhost:2480`. The implementation must create or verify the `topology` database at startup using the documented ArcadeDB server API, then initialize schema and indexes idempotently.
+ArcadeDB Studio and HTTP API are available at `http://localhost:2480` (bound to `127.0.0.1` only). The initial Go adapter should use the HTTP/JSON API and `ARCADEDB_BASE_URL=http://localhost:2480`. The implementation must create or verify the `topology` database at startup using the documented ArcadeDB server API, then initialize schema and indexes idempotently.
 
 Example environment variables (adjust to the implementation/config loader):
 ```dotenv
@@ -33,6 +33,9 @@ The implementation should expose Makefile targets or equivalent scripts:
 - `make seed` — deterministic, idempotent mock dataset
 - `make schema-check` — verify required types/indexes/constraints exist
 - `make reset-local` — destructive local-only reset, requiring explicit confirmation
+
+## Running with the frontend
+The frontend (`npm run dev`, port 5173) uses mock repositories until an HTTP repository is selected in `src/data/selectRepository.ts` (Milestone B6). The API listens on `HTTP_ADDR` (default `:8080`); use a Vite dev proxy for `/api` rather than permissive CORS.
 
 ## Startup and readiness
 - Liveness indicates the Go process is running.

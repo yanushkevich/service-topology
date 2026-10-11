@@ -3,16 +3,36 @@
 **Decision status:** Selected for this specification, pending prototype validation. ArcadeDB is the sole authoritative database for registry records and graph traversal; there is no second canonical store or derived graph projection.
 
 ## Data model
+The stored model maps 1:1 to the canonical domain (`DOMAIN_MODEL.md`, `TopologyData` v1). Every record keeps its application `id` as an indexed, unique property; ArcadeDB record IDs never leave the adapter.
 
-### Resources and documents
-Represent resources as ArcadeDB vertices (for graph-connected resources) with a common `Resource` type and kind-specific types/labels where useful, such as `Service`, `Workload`, `Cluster`, `Database`, `Topic`, and `Queue`. Keep a stable application-level `id` property independent of ArcadeDB internal record IDs. Use ArcadeDB document types for records that do not need graph identity, such as some snapshots, saved views, import runs, and configuration records. Choose vertex vs document deliberately and document it.
+### Vertex and document types
 
-Common resource fields include `id`, `kind`, `name`, `environmentId`, `schemaVersion`, `sourceType`, `sourceExternalId`, `createdAt`, and `updatedAt`. Store common queryable fields as explicit typed properties. Keep provider-specific metadata in a validated, versioned JSON/document representation. Promote fields used in frequent filters into indexed properties. Verify how nested maps and JSON payloads are represented by the selected ArcadeDB API/driver; do not assume every query engine exposes them identically. Apply metadata size limits and schema validation.
+| Domain entity | ArcadeDB type | Notes |
+|---|---|---|
+| Environment | vertex `Environment` | `id`, `name`, `kind` |
+| ServiceDefinition | vertex `ServiceDefinition` | typed common fields; `protocols` as a list |
+| ServiceInstance | vertex `ServiceInstance` | `environmentId` stored as a property (indexed) and as an edge |
+| InfrastructureResource | vertex `Resource` | `type` property from the `ResourceType` enum; one vertex type for all resource types, so traversal never depends on dynamic type names |
+| EventType | vertex `EventType` | ADR-014 |
+| TopologySnapshot | document `Snapshot` | immutable; `data` stored as a bounded JSON payload validated before insert |
+| SavedLayout | document `SavedLayout` | presentation only |
+| TelemetryObservation, TopologyEvent (B5) | documents | append-oriented, with retention |
 
-### Edges and relationships
-Represent domain connections as native, directed graph edges with semantic types such as `CALLS`, `DEPENDS_ON`, `RUNS_ON`, `CONTAINS`, `PUBLISHES_TO`, and `CONSUMES_FROM`. Add edge properties such as stable `id`, `environmentId`, `sourceType`, `confidence`, `observedAt`, `createdAt`, and compact metadata as appropriate. The Go domain model uses a normalized `Relationship` DTO independent of ArcadeDB record shapes.
+Common queryable fields are typed properties (`id`, `name`, `type`/`category`, `provider`, `environmentId` where set, `health`, `updatedAt`, `owner`, `team`). `metrics` is a nested map with `isSimulated` required; `metadata` is a bounded, validated map. Backend-only fields (`provenance`, `sourceType`, `sourceExternalId`, `recordedAt`, `schemaVersion`) are properties never returned unless added to the contract. Verify how nested maps are stored and queried by the selected ArcadeDB API before relying on them.
 
-Avoid duplicating an edge as both a native edge and a separate relationship document unless relationships need an independent lifecycle, approvals, or extensive provenance. If an independently addressable relationship record is required, define and test a consistent pattern.
+### Edge types
+One edge type per canonical concept, so every traversal and the propagation rules follow a single edge set (the reasoning of ADR-008 for RabbitMQ bindings):
+
+| Edge | From → To | Source of truth |
+|---|---|---|
+| `COMMUNICATES` | source entity → target entity | one edge per `CommunicationRelationship`, carrying its `id`, `protocol`, `pattern`, `direction`, `status`, `authenticationType`, `endpoint`, `metrics`, `metadata`, `updatedAt` |
+| `CONTAINS` | parent `Resource` → child `Resource` | `parentResourceId` |
+| `HOSTED_IN` | `ServiceInstance` → `Resource` | instance `resourceId` |
+| `INSTANCE_OF` | `ServiceInstance` → `ServiceDefinition` | `serviceDefinitionId` |
+| `IN_ENVIRONMENT` | `ServiceInstance`/`Resource` → `Environment` | explicit `environmentId` only (inherited environments are computed, not stored) |
+| `CARRIED_ON`, `PRODUCED_BY`, `CONSUMED_BY` | `EventType` → channel `Resource` / `ServiceDefinition` | event type fields |
+
+Semantic names such as "publishes", "consumes", "routes to", or "calls" are **derived** from `pattern`, `protocol`, and endpoint types when presenting data; they are not separate stored edge types. A relationship is never stored twice (native edge plus document). The reference properties (`parentResourceId`, `resourceId`, `serviceDefinitionId`, `environmentId`) are also kept on the vertices so the canonical payload can be returned without traversal, and the adapter writes property and edge in one transaction; integration tests assert they agree.
 
 ### Other domain data
 - Environments may be document records or vertices connected to resources; choose one consistent pattern.
@@ -37,26 +57,35 @@ There is no cross-database outbox or graph-projection rebuild process. Provide a
 ## Query routing and API behavior
 All resource registry, detail, topology, relationship, path, impact, snapshot, and saved-view operations use ArcadeDB through repository/query interfaces. Use indexed lookups for registry entry points, then bounded graph traversals for graph operations.
 
-Required query classes include direct upstream/downstream neighbors; bounded dependency neighborhoods; shortest or constrained paths between stable resource IDs; downstream blast radius; and filtered topology subgraphs by environment, resource kind, relationship type, and health/status.
+Required query classes, each matching a client function so results can be compared: direct and transitive upstream/downstream (`reachFrom`, `dependencyTree` in `src/domain/traversal.ts`); undirected neighborhoods with depth 1–3 (`neighborhood`); failure impact per the propagation rules (`analyzeImpact` in `src/domain/propagation.ts`); containment forests with roll-ups (`containmentForest`); event flows (`resolveEventFlow`); and filtered topology subgraphs by environment (including inherited and environment-independent resources), provider, health, and entity group.
 
 Choose one primary query language for the application and standardize it in the adapter. ArcadeDB supports multiple query languages, including SQL and Cypher, but syntax, supported features, parameter binding, and behavior can differ. The initial implementation should use the language demonstrated by the selected client/API, and integration-test each query. Parameterize values; validate dynamic type names against a server-side allowlist. Enforce depth, result-count, timeout, and authorization limits. If ArcadeDB is unavailable, return a clear dependency error rather than a silently incomplete graph. Check response truncation indicators if using the HTTP driver/API.
 
-## Example API resource envelope
+## Example stored resource (adapter view, illustrative)
+The API returns the canonical JSON from `docs/schemas/topology.v1.schema.json`. Internally a `Resource` vertex for the fixture topic looks like:
+
 ```json
 {
-  "id": "service:payments-api",
-  "kind": "service",
-  "name": "Payments API",
-  "environmentId": "env:development",
-  "metadata": { "team": "payments", "language": "go" },
+  "id": "topic-orders-events-prod",
+  "name": "orders.events",
+  "type": "topic",
+  "provider": "gcp",
+  "parentResourceId": "kafka-events-prod",
+  "health": "healthy",
+  "owner": "Commerce",
+  "team": "Orders",
+  "updatedAt": "2026-10-11T08:00:00Z",
+  "metrics": { "latencyMs": 12, "throughputPerSecond": 140, "errorRatePercent": 0, "isSimulated": true, "observedAt": "2026-10-11T08:45:00Z" },
+  "metadata": { "partitions": 6, "retention": "7d" },
+  "provenance": "mock",
+  "sourceType": "fixture",
+  "sourceExternalId": "topic-orders-events-prod",
   "schemaVersion": 1,
-  "source": { "type": "mock", "externalId": "payments-api" },
-  "createdAt": "2026-01-01T00:00:00Z",
-  "updatedAt": "2026-01-01T00:00:00Z"
+  "recordedAt": "2026-10-11T08:00:00Z"
 }
 ```
 
-Keep API DTOs and Go domain structs independent from driver-specific records. Normalize source/provenance and schema-version handling in the application layer. Reject unsupported metadata rather than silently dropping it.
+`provenance`, `sourceType`, `sourceExternalId`, `schemaVersion`, and `recordedAt` are backend-only. Normalize provenance and schema versions in the application layer; reject unsupported metadata instead of silently dropping it.
 
 ## Operations and recovery
 - Back up ArcadeDB using the selected deployment's supported backup procedure and regularly test restore. Persist the database directory in Docker/Kubernetes.

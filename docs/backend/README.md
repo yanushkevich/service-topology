@@ -1,31 +1,66 @@
-# Service Topology & Registry Platform — Go Backend Specification Pack (v4: ArcadeDB)
+# Go Backend Specification (ArcadeDB)
 
-**Status:** Proposed implementation specification; not evidence of an existing backend. **Language:** Go. **Persistence:** ArcadeDB is the only required database and the authoritative store for resources, relationships, environments, graph traversals, snapshots and saved-view data.
+**Status:** Specification only. **No backend code exists yet.** Language: Go. Persistence: ArcadeDB as the only database. Imported from the v4 specification pack on 2026-10-11 and reviewed against the implemented frontend (Milestones 1–7, PRODUCT_SPEC Revisions 5–6). The review changes are listed below. Adopted for the monorepo by root ADR-015.
 
-This package complements UI/product documentation Revision 4. It does not replace it. Preserve canonical domain rules, mock-first delivery, stable IDs, data provenance, scale targets, and the distinction between infrastructure containment and communication dependencies.
+The backend serves the **existing** HTTP contract (`docs/api/openapi.json`, `docs/API_CONTRACT.md`) and the **existing** canonical domain (`src/domain`, `docs/schemas`). It does not define its own contract or domain. Preserve: mock-first delivery, stable IDs, provenance labeling, scale targets, and the distinction between containment and communication.
+
+## Monorepo layout (planned)
+
+```text
+service_topology/
+├── src/, package.json, …        frontend (React + TypeScript), unchanged location for now
+├── backend/                     Go module (created in Milestone B1; does not exist yet)
+│   ├── cmd/api, cmd/seed
+│   ├── internal/…
+│   ├── CLAUDE.md                from scaffold/backend-CLAUDE.md
+│   └── Makefile, docker-compose.yml, .env.example, .gitignore   from scaffold/
+├── docs/
+│   ├── api/openapi.json         the one HTTP contract (frontend and backend)
+│   ├── schemas/                 payload schemas shared by both
+│   └── backend/                 this folder
+└── fixtures/                    planned: shared JSON fixtures exported from the frontend mock (B2)
+```
+
+Moving the frontend into `frontend/` or `apps/web/` is not part of this change; decide it separately if wanted.
 
 ## Start here
-1. `docs/BACKEND_SPEC.md` — scope, architecture, invariants and non-functional requirements.
-2. `docs/DOMAIN_MODEL.md` — canonical backend entities and invariants.
-3. `docs/API_SPEC.md` — proposed REST API.
-4. `docs/PERSISTENCE.md` — ArcadeDB graph model, constraints, query patterns and transaction boundaries.
-5. `docs/DATABASE_DECISIONS.md` — rationale and trade-offs for ArcadeDB-only storage.
-6. `docs/LOCAL_DEVELOPMENT.md` — Docker Compose, local configuration and reset/seed workflow.
-7. `docs/INTEGRATIONS_AND_PROVENANCE.md` — mock source now, provider adapters later.
-8. `docs/SECURITY.md` — security baseline and unresolved deployment decisions.
-9. `docs/TESTING_AND_PERFORMANCE.md` — quality gates and graph query tests.
-10. `docs/IMPLEMENTATION_PLAN.md` — milestone-by-milestone implementation.
-11. `docs/CLAUDE_CODE_PROMPT.md` and root `CLAUDE.md` — agent implementation guidance.
+1. `SOURCE_ALIGNMENT.md`: what the backend must preserve and which decisions are binding.
+2. `BACKEND_SPEC.md`: scope, architecture, invariants, non-functional requirements.
+3. `DOMAIN_MODEL.md`: canonical entities, mapped 1:1 to `TopologyData` v1, and the validation rules to implement.
+4. `API_SPEC.md`: how the backend implements `openapi.json`, and proposed additions.
+5. `OPENAPI_NOTES.md`: contract maintenance rules.
+6. `PERSISTENCE.md`: ArcadeDB graph model, constraints, query patterns, transactions.
+7. `DATABASE_DECISIONS.md`: ADR-DB-001, ArcadeDB as the single database.
+8. `LOCAL_DEVELOPMENT.md`: Docker Compose, configuration, reset/seed.
+9. `INTEGRATIONS_AND_PROVENANCE.md`: mock source now, adapters later.
+10. `SECURITY.md`: security baseline and unresolved deployment decisions.
+11. `TESTING_AND_PERFORMANCE.md`: quality gates, contract and conformance tests.
+12. `IMPLEMENTATION_PLAN.md`: Milestones B1–B6.
+13. `CLAUDE_CODE_PROMPT.md`: agent prompt for implementing a backend milestone.
+14. `scaffold/`: files that move into `backend/` in B1 (see `scaffold/README.md`).
 
-## Proposed baseline stack
+## Baseline stack
 - Go (pin a supported version in `go.mod` and CI).
-- HTTP REST API with OpenAPI 3.1 as the contract.
-- ArcadeDB as the sole authoritative database for graph entities, relationships, flexible resource metadata, snapshots, saved views and simulation records.
-- Docker Compose for local ArcadeDB development.
-- Official ArcadeDB HTTP/JSON API adapter (pin a supported version), structured logging, health/readiness endpoints, metrics, schema constraints/index setup, deterministic seed data, unit/integration tests.
-
-## Source-of-truth relationship
-ArcadeDB is authoritative; there is no second database projection in the initial architecture. Go application services validate commands and execute graph writes/queries through repository interfaces and explicit transaction boundaries. Use stable application IDs stored as node/relationship properties; never expose ArcadeDB internal record IDs as API identity. Because there is no separate graph projection, there is no cross-database projection lag to report. Still report database availability and transaction/query failures accurately.
+- REST over HTTP; OpenAPI 3.1 contract in `docs/api/openapi.json`.
+- ArcadeDB (Apache-2.0) as the sole authoritative database; local image pinned to `arcadedata/arcadedb:26.10.1` (tag verified on Docker Hub 2026-10-11, published 2026-10-05; not yet tested with this project).
+- ArcadeDB HTTP/JSON API behind repository interfaces; structured logging, health/readiness, metrics, idempotent schema setup, deterministic seed, unit and integration tests.
 
 ## Scope guardrails
-Start as a modular monolith. Do not introduce microservices, Kubernetes deployment requirements, Kafka, or cloud-provider integrations in the first implementation milestones. Do not make frontend rendering structures the canonical domain model. Keep 2D/3D UI-specific layout and camera state separate from resource identity and relationships. Review ArcadeDB licensing and support and deployment terms for the intended commercial distribution before production commitment.
+Modular monolith. No microservices, Kubernetes requirements, Kafka, or cloud-provider integrations in the initial milestones. Frontend rendering structures are never the domain model. ArcadeDB is authoritative; there is no second store or projection. Review ArcadeDB licensing (Apache-2.0, not MIT), support, and operations before production.
+
+## Agent rules (from the pack's `CLAUDE.md` and skill)
+- Follow `SOURCE_ALIGNMENT.md`; never silently redefine product behavior or the contract.
+- Domain types are independent of HTTP and ArcadeDB packages; use repository/query interfaces and stable application IDs; never expose ArcadeDB record IDs.
+- Parameterized queries only; allowlists for any dynamic type or edge names.
+- Bound traversal depth, result count, query time, and authorization scope.
+- Implement only the requested backend milestone; add tests; update docs and `openapi.json` with contract changes; never claim a check passed without running it.
+- Commit per milestone with Conventional Commits, scope `b1`…`b6` (`docs/AGENT_WORKFLOW.md` §6), directly on `main`; do not push unless asked.
+
+## Review changes (2026-10-11, against the v4 pack)
+- **One contract:** `API_SPEC.md` and `OPENAPI_NOTES.md` now implement `docs/api/openapi.json` instead of proposing a second API: `/registry` and `/entities/{kind}/{id}` instead of `/services`, `/resources`, `/relationships`; `q` instead of `query`; `limit` ≤ 500; RFC 9457 problems with `errors[]` (plus a proposed `requestId` extension) instead of `code`/`fieldErrors`. Additions (health, meta, traversal, event types, telemetry) are listed as proposals that must enter `openapi.json` first.
+- **Domain aligned with the implementation:** IDs unique across all collections; environment inheritance and isolation; instance host via `resourceId` (removed denormalized region/cluster/namespace strings); explicit messaging relationships (removed `topic_or_queue_resource_id`); RabbitMQ bindings; event types (ADR-014); snapshot and layout fields from the v1 schemas; validation codes identical to `validateTopology`; provenance mapped to the API's `isSimulated`.
+- **Persistence:** one `COMMUNICATES` edge type per canonical relationship instead of `CALLS`/`DEPENDS_ON`/`PUBLISHES_TO`/`CONSUMES_FROM`, so traversal and propagation follow one edge set (ADR-008 reasoning); containment as `CONTAINS`/`HOSTED_IN`; example IDs use the shared fixture IDs.
+- **Seed parity:** the backend seeds from the same mock topology as the frontend, exported to shared JSON fixtures, plus conformance fixtures for validation parity.
+- **Simulation:** recorded as client-side today (ADR-010); server-side simulation stays an open decision.
+- **Local security:** Compose now binds ArcadeDB to `127.0.0.1` (the pack's own `SECURITY.md` required it; the original published it on all interfaces). The healthcheck depends on `curl` being in the image, which is unverified.
+- **Placement:** root-level files moved to `scaffold/`; the skill file gained the frontmatter Claude Code needs, but it is not installed into `.claude/skills/`.
