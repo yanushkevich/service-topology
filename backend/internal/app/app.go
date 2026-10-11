@@ -10,29 +10,36 @@ import (
 	"net/http"
 	"time"
 
+	"servicetopology/backend/internal/adapters/arcadedb"
 	"servicetopology/backend/internal/adapters/httpapi"
 	"servicetopology/backend/internal/config"
 	"servicetopology/backend/internal/ports"
 )
 
-// databaseCheck reports database readiness. Until the ArcadeDB adapter exists (Milestone B2) it is
-// never ready, so /readyz honestly reports 503.
-type databaseCheck struct{ configured bool }
+// notConfigured is the readiness check when no database is configured.
+type notConfigured struct{}
 
-func (databaseCheck) Name() string { return "database" }
-func (c databaseCheck) Check(context.Context) error {
-	if !c.configured {
-		return errors.New("not configured (ARCADEDB_BASE_URL is unset)")
-	}
-	return errors.New("ArcadeDB adapter not implemented yet (Milestone B2)")
+func (notConfigured) Name() string { return "database" }
+func (notConfigured) Check(context.Context) error {
+	return errors.New("not configured (ARCADEDB_BASE_URL is unset)")
 }
 
 // Run serves HTTP until ctx is done. onListen, if set, receives the bound address (tests use
 // HTTP_ADDR=127.0.0.1:0).
 func Run(ctx context.Context, cfg config.Config, logger *slog.Logger, onListen func(addr string)) error {
+	var dbCheck ports.ReadinessCheck = notConfigured{}
+	if cfg.ArcadeDB != nil {
+		client, err := arcadedb.NewClient(cfg.ArcadeDB)
+		if err != nil {
+			return err
+		}
+		init := arcadedb.NewInitializer(client, logger)
+		go init.Run(ctx, 5*time.Second)
+		dbCheck = init
+	}
 	handler := httpapi.NewHandler(httpapi.Deps{
 		Logger: logger,
-		Checks: []ports.ReadinessCheck{databaseCheck{configured: cfg.ArcadeDB != nil}},
+		Checks: []ports.ReadinessCheck{dbCheck},
 	})
 	srv := &http.Server{
 		Handler:           handler,

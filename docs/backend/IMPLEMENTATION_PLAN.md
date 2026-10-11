@@ -1,6 +1,6 @@
 # Go Backend Implementation Plan (ArcadeDB)
 
-**Status:** B1 implemented (closeout below); B2–B6 not started. Execute one milestone at a time; do not automatically start the next. Backend milestones are B1–B6, a separate track from frontend Milestones 1–7. Code lives in `backend/`. Commit each milestone with scope `b1`…`b6`. Track status in the root `docs/IMPLEMENTATION_PLAN.md`.
+**Status:** B1–B2 implemented (closeouts below); B3–B6 not started. Execute one milestone at a time; do not automatically start the next. Backend milestones are B1–B6, a separate track from frontend Milestones 1–7. Code lives in `backend/`. Commit each milestone with scope `b1`…`b6`. Track status in the root `docs/IMPLEMENTATION_PLAN.md`.
 
 ## Milestone B1 — Go service foundation and domain
 Scope: `backend/` Go module (scaffold files moved in from `docs/backend/scaffold/`), configuration validation, HTTP lifecycle, health/readiness skeleton, structured logging, domain types and the full `validateTopology` rule set, repository/query interfaces, shared fixture export (`fixtures/`, from the frontend mock via a script) and the conformance fixture format.
@@ -52,4 +52,21 @@ Toolchain: Go 1.27.2 (`go.mod` `go 1.27.2`), standard library only (no third-par
 | Root `npm run check` still passes | Pass | see evidence |
 
 Known limitations: no database (readiness is always 503); no API routes from `openapi.json` yet (B3); `seed load` and `schema-check` exit with "available in B2"; no third-party linter (staticcheck/golangci-lint) configured; the lifecycle test uses a client without keep-alives because Go's `Shutdown` leaves never-used client connections open for 5 s, longer than the test's 2 s timeout (production default is 10 s).
+
+## Milestone B2 closeout (2026-10-11)
+Environment: Rancher Desktop (2 GB VM, k3s enabled), Docker 29.1.3, `arcadedata/arcadedb:26.10.1`, Go 1.27.2. Evidence: `make check` exit 0; `make test-integration` passes (27 tests incl. 6 against ArcadeDB, 3 consecutive runs, ~2–4 s); `go test -race -count=1 ./...` passes; `make seed` twice → identical counts (Environment 3, ServiceDefinition 14, ServiceInstance 21, Resource 41, EventType 9, COMMUNICATES 39, CONTAINS 34, IN_ENVIRONMENT 31; matching the fixture); `make schema-check` passes; `cmd/api` against the database: `/readyz` 200 `{"database":"ok"}` after background schema initialization.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Fresh local database initializes | Pass | `TestFreshDatabaseInitializesIdempotently` (database not found → created; two `EnsureSchema` runs; `CheckSchema` passes) |
+| Seed from the shared mock reruns safely | Pass | `TestSeedRoundTripsTheFixtureAndRerunsSafely` (two imports, record counts per type equal the fixture), manual `make seed` ×2 |
+| Stored-then-read topology equals the fixture exactly | Pass | same test: JSON deep-equal after each import; result validates |
+| Uniqueness and endpoint invariants enforced | Pass | database unique indexes (`TestUniquenessAndRollbackAreEnforcedByTheDatabase`), validation before write (`TestInvalidTopologyIsRejectedBeforeWriting`), exactly-one-edge check, `TestEdgesMatchReferenceProperties` |
+| Transactions roll back on failure | Pass | duplicate inside a session aborts it; commit fails; nothing persisted |
+| Repository integration tests run against ArcadeDB | Pass | `internal/adapters/arcadedb/integration_test.go` (`-tags=integration`; fails, never skips, without configuration) |
+| Errors classified, no secret leakage | Pass | `client_test.go` (fake server: conflict, auth, missing DB, 5xx, truncation, timeout, unreachable), `readiness_test.go` |
+
+Fixed along the way: scaffold healthcheck used `curl` (absent from the image) → `wget`; ArcadeDB memory defaults caused VM-wide OOM kills → explicit budget (see `LOCAL_DEVELOPMENT.md`); a local password was printed during manual probing and was rotated (container user file reset by recreating the empty volume).
+
+Known limitations: environment filtering of `GET /topology` is defined in B3; imports are whole-topology replacements (ADR-DB-002); snapshots and layouts are not persisted yet (B3/B5); no performance measurement yet (B4).
 

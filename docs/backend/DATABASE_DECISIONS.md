@@ -43,3 +43,21 @@ The product needs a registry for heterogeneous resources and flexible provider-s
 - Use explicit transactions for multi-step graph writes and test rollback behavior.
 - The initial UI targets remain 250 visible nodes, 750 visible edges, and navigation across 1,000 entities. Treat these as benchmark targets, not guarantees.
 - ArcadeDB is Apache-2.0 licensed, not MIT. If MIT is a strict legal requirement, this decision does not satisfy it.
+
+## ADR-DB-002: ArcadeDB adapter conventions (2026-10-11, Milestone B2)
+
+**Status:** Accepted (implemented in `backend/internal/adapters/arcadedb`).
+
+### Decisions
+- **Query language: SQL only.** All statements use ArcadeDB SQL over the HTTP API with named parameters (`:name`). `ARCADEDB_QUERY_LANGUAGE` accepts only `sql`; another language needs an ADR and its own integration tests.
+- **No driver dependency.** A small `net/http` client (`client.go`) covers exactly what is used: `exists`, server `create`/`drop database`, `query`, `command`, and session transactions (`begin` → `arcadedb-session-id` header → `commit`/`rollback`). Verified behaviour against 26.10.1: a failed command inside a session aborts the whole transaction, so a later commit fails and nothing partial is committed.
+- **Statement safety.** Values are always bound parameters. Type and property names come from constants and the domain types' JSON tags, checked against `^[A-Za-z][A-Za-z0-9]*$`; database names are checked before use in server commands (which cannot bind parameters).
+- **Import semantics.** `ReplaceTopology` validates with `domain.Validate`, then in one transaction deletes the canonical vertices (which removes their edges) and recreates them. Rerunning the same input yields the same state (idempotent seed). Snapshots and layouts are separate types and untouched. Each `CREATE EDGE` must create exactly one edge; zero is an error (no silent dangling references).
+- **Storage shape.** Every canonical field is stored as a property (maps and lists as embedded values); backend-only properties `ord` (collection order), `recordedAt`, `sourceType` are stripped on read. Reads decode strictly into the domain types, so an unexpected stored field is an error. A round trip of the shared mock fixture is byte-for-byte equal as JSON (integration test).
+- **Truncation.** Every query sends `limit` 100,000 and fails with `ErrTruncated` when ArcadeDB reports `truncated: true`; partial graphs are never returned as complete.
+- **Schema versioning.** Idempotent DDL plus a `SchemaInfo` document holding `version` (currently 1). The backend refuses a database with a newer version. Readiness requires the schema to be initialized; the API initializes it in the background and retries every 5 s while the database is unavailable.
+- **Errors.** Duplicate keys → `ErrConflict`; 401/403 → `ErrAuth`; missing database → `ErrDatabaseNotFound`; 5xx, timeouts, and connection failures → `ports.ErrUnavailable`. Error strings never contain credentials, statements, or parameter values (unit tests).
+
+### Consequences
+- Imports are whole-topology replacements, which suits mock and fixture data. Incremental, per-source upserts arrive with provider adapters (future milestone) and need their own ADR.
+- Reads of the full topology run inside a session so the collections come from one state.

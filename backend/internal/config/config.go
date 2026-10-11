@@ -30,7 +30,7 @@ type ArcadeDB struct {
 	Database       string
 	Username       string
 	PasswordFile   string
-	QueryLanguage  string // "sql" or "cypher"
+	QueryLanguage  string // "sql" (ADR-DB-002)
 	RequestTimeout time.Duration
 }
 
@@ -97,10 +97,11 @@ func Load(getenv func(string) string) (Config, error) {
 
 	if raw := get("ARCADEDB_BASE_URL", ""); raw != "" {
 		db := &ArcadeDB{
-			Database:       get("ARCADEDB_DATABASE", "topology"),
-			Username:       get("ARCADEDB_USERNAME", ""),
-			PasswordFile:   get("ARCADEDB_PASSWORD_FILE", ""),
-			QueryLanguage:  oneOf("ARCADEDB_QUERY_LANGUAGE", "sql", "sql", "cypher"),
+			Database:     get("ARCADEDB_DATABASE", "topology"),
+			Username:     get("ARCADEDB_USERNAME", ""),
+			PasswordFile: get("ARCADEDB_PASSWORD_FILE", ""),
+			// SQL is the one implemented query language (ADR-DB-002).
+			QueryLanguage:  oneOf("ARCADEDB_QUERY_LANGUAGE", "sql", "sql"),
 			RequestTimeout: duration("ARCADEDB_REQUEST_TIMEOUT", "10s"),
 		}
 		u, err := url.Parse(raw)

@@ -1,6 +1,6 @@
 # Go Backend Specification (ArcadeDB)
 
-**Status:** Milestone B1 (foundation) implemented 2026-10-11 in `backend/`: config, logging, HTTP lifecycle, health/readiness, domain types and validation (parity with the frontend proven by shared fixtures), repository ports. No database adapter or API routes yet (B2, B3). Language: Go. Persistence: ArcadeDB as the only database. Imported from the v4 specification pack on 2026-10-11 and reviewed against the implemented frontend (Milestones 1–7, PRODUCT_SPEC Revisions 5–6). The review changes are listed below. Adopted for the monorepo by root ADR-015.
+**Status (2026-10-11):** B1 (foundation) and B2 (ArcadeDB persistence, schema, idempotent seed, integration tests) are implemented in `backend/`. API routes (B3), traversal (B4), provenance/history (B5), and hardening (B6) are not yet.
 
 The backend serves the **existing** HTTP contract (`docs/api/openapi.json`, `docs/API_CONTRACT.md`) and the **existing** canonical domain (`src/domain`, `docs/schemas`). It does not define its own contract or domain. Preserve: mock-first delivery, stable IDs, provenance labeling, scale targets, and the distinction between containment and communication.
 

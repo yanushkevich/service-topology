@@ -3,7 +3,15 @@
 GO ?= go
 GOFMT ?= $(dir $(shell command -v $(GO)))gofmt
 
-.PHONY: check fmt fmt-check vet test test-integration run seed schema-check dev-up dev-down reset-local
+# Local ArcadeDB defaults for the database targets; override in the environment or a local .env
+# (never committed). The password is read from the file, never passed on the command line.
+-include .env
+export ARCADEDB_BASE_URL ?= http://127.0.0.1:2480
+export ARCADEDB_DATABASE ?= topology
+export ARCADEDB_USERNAME ?= root
+export ARCADEDB_PASSWORD_FILE ?= $(CURDIR)/secrets/arcadedb_root_password.txt
+
+.PHONY: check fmt fmt-check vet test test-integration run seed validate schema-check dev-up dev-down reset-local
 
 ## check: formatting, vet, and unit/conformance tests (the B1 quality gate)
 check: fmt-check vet test
@@ -20,16 +28,21 @@ vet:
 test:
 	$(GO) test ./...
 
-## test-integration: tests against a running ArcadeDB (none until Milestone B2)
+## test-integration: tests against the local ArcadeDB (make dev-up first); each run uses and drops
+## its own temporary database, so local data is untouched
 test-integration:
-	$(GO) test -tags=integration ./...
+	$(GO) test -count=1 -tags=integration ./...
 
-## run: start the API on HTTP_ADDR (default :8080); /readyz is 503 until the database adapter exists (B2)
+## run: start the API on HTTP_ADDR (default :8080) against the local ArcadeDB
 run:
 	$(GO) run ./cmd/api
 
-## seed: validate the shared mock fixture (loading into ArcadeDB arrives in B2)
+## seed: load the shared mock fixture into ArcadeDB (idempotent; replaces the stored topology)
 seed:
+	$(GO) run ./cmd/seed load
+
+## validate: validate the shared mock fixture without a database
+validate:
 	$(GO) run ./cmd/seed validate
 
 schema-check:

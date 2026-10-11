@@ -45,9 +45,9 @@ func TestValidateReportsIssues(t *testing.T) {
 	}
 }
 
-func TestDatabaseCommandsAreNotAvailableYet(t *testing.T) {
+func TestDatabaseCommandsNeedConfiguration(t *testing.T) {
 	var out, errOut bytes.Buffer
-	if code := run([]string{"schema-check"}, &out, &errOut); code != 2 || !strings.Contains(errOut.String(), "B2") {
+	if code := load(nil, func(string) string { return "" }, &out, &errOut); code != 2 || !strings.Contains(errOut.String(), "ARCADEDB_BASE_URL") {
 		t.Fatalf("exit %d: %s", code, errOut.String())
 	}
 }

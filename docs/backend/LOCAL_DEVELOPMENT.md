@@ -46,12 +46,31 @@ Invalid configuration exits with status 2 and lists every problem. Secrets and f
 
 ## Required developer commands
 The implementation should expose Makefile targets or equivalent scripts:
-Run from `backend/` (`GO=/path/to/go` if Go is not on `PATH`). Implemented in B1: `make check` (gofmt, vet, tests), `make run`, `make seed` (validates the shared mock fixture). Database targets work once B2 lands.
+Run from `backend/` (`GO=/path/to/go` if Go is not on `PATH`). Implemented: `make check` (gofmt, vet, unit tests; no Docker), `make test-integration` (needs `make dev-up`), `make run`, `make seed` (load the mock fixture), `make validate` (no database), `make schema-check`.
 - `make dev-up` / `make dev-down`
 - `make test` / `make test-integration`
 - `make seed` — deterministic, idempotent mock dataset
 - `make schema-check` — verify required types/indexes/constraints exist
 - `make reset-local` — destructive local-only reset, requiring explicit confirmation
+
+## Verified local setup (2026-10-11, Rancher Desktop, Docker 29.1.3, ArcadeDB 26.10.1)
+```bash
+cd backend
+mkdir -p secrets && chmod 700 secrets
+LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24 > secrets/arcadedb_root_password.txt
+chmod 600 secrets/arcadedb_root_password.txt
+make dev-up            # ArcadeDB on 127.0.0.1:2480; healthy after ~20 s
+make seed              # load fixtures/topology/mock.v1.json (idempotent)
+make schema-check      # types, unique indexes, schema version
+make test-integration  # each test uses and drops its own temporary database
+make run               # API on :8080; /readyz is 200 once the schema is initialized
+```
+Findings from the first run:
+- **Memory.** The image defaults (generational ZGC, `-XX:MaxRAMPercentage=75`, uncapped page cache) exhausted Rancher Desktop's default 2 GB VM, which also runs k3s: the kernel OOM killer stopped ArcadeDB (Docker's `OOMKilled` stays false for a VM-wide OOM) and requests took seconds. The Compose file therefore sets Serial GC, a 384 MB heap, a 256 MB page cache, and `mem_limit: 768m` (about 150–250 MB in use). If you need more headroom, give the Rancher Desktop VM more memory or disable its Kubernetes.
+- **Healthcheck.** The image has no `curl` or `bash`; the healthcheck uses `wget` against `/api/v1/ready` (no credentials needed).
+- **Password rotation.** ArcadeDB applies `rootPasswordPath` only when it first creates its user file (`/home/arcadedb/config/server-users.jsonl`, inside the container). To rotate: write the new password file, then `docker compose down` and `make dev-up`. If that keeps the old password, remove the volume with `docker compose down -v` (deletes local databases), then re-seed.
+- **Credentials on the command line.** Never pass the password with `curl -u`; use a netrc file in `secrets/` (`curl --netrc-file secrets/netrc …`).
+- Wrong credentials return HTTP 403, an unknown database 404.
 
 ## Running with the frontend
 The frontend (`npm run dev`, port 5173) uses mock repositories until an HTTP repository is selected in `apps/web/src/data/selectRepository.ts` (Milestone B6). The API listens on `HTTP_ADDR` (default `:8080`); use a Vite dev proxy for `/api` rather than permissive CORS.

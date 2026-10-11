@@ -41,6 +41,12 @@ Semantic names such as "publishes", "consumes", "routes to", or "calls" are **de
 - Saved views need stable IDs, owner/workspace scope, filters, and layout/camera state separate from resource identity.
 - Simulation runs and simulated edges/events must be explicitly marked simulated and never presented as observed telemetry.
 
+## Implementation notes (Milestone B2, ADR-DB-002)
+- Implemented: all vertex and edge types above except telemetry/event documents; `Snapshot`/`SavedLayout` documents arrive with their endpoints (B3/B5).
+- Unique `id` indexes on every vertex type, `COMMUNICATES`, and `SchemaInfo`; non-unique indexes on `ServiceInstance.environmentId`, `Resource.type`, `Resource.parentResourceId`.
+- Backend-only properties: `ord`, `recordedAt`, `sourceType`.
+- Imports replace the topology in one transaction; reads preserve collection order via `ord`.
+
 ## Schema, constraints, and indexes
 Create repeatable, versioned schema initialization. At minimum, enforce uniqueness for resource IDs and other independently identified records where supported; add indexes for `environmentId`, `kind`, `name`, `sourceExternalId`, status/health, and timestamps only where query patterns justify them. Validate exact index/constraint syntax and uniqueness behavior for the selected ArcadeDB version in integration tests. Initializers must be idempotent and must not delete user data. Use additive migrations where possible and document breaking changes.
 
