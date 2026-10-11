@@ -98,7 +98,7 @@
   max-width: 340px;
   padding: 0 8px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-line-strong);
+  border: 1px solid var(--color-control-border);
   background: var(--color-bg-2);
   color: var(--color-text);
 }
@@ -161,10 +161,12 @@
   font-size: var(--text-sm);
 }
 
-.segment[aria-pressed='true'] {
+.segment[aria-pressed='true'],
+.segment[aria-checked='true'] {
   background: var(--color-bg-selected);
   color: var(--color-text);
-  box-shadow: inset 0 0 0 1px var(--color-line-strong);
+  /* Pressed state also has an accent underline (≥ 3:1), not just a subtle background change. */
+  box-shadow: inset 0 0 0 1px var(--color-line-strong), inset 0 -2px 0 var(--color-accent);
 }
 
 .checkbox {

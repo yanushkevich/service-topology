@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { Outlet } from 'react-router';
+import { Outlet, useLocation } from 'react-router';
+import { NAV_ITEMS } from '../app/navigation';
 import { TopologyDataProvider } from '../data/TopologyDataProvider';
 import { useUiStore } from '../state/uiStore';
 import { useUrlStateSync } from '../state/useUrlStateSync';
@@ -13,6 +14,7 @@ export function AppShell() {
   const theme = useUiStore((s) => s.theme);
   useUrlStateSync();
   useSimulationTicker();
+  useDocumentTitle();
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -21,7 +23,15 @@ export function AppShell() {
   return (
     <TopologyDataProvider>
     <div className={styles.app}>
-      <a className="skip-link" href="#main-content">
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={(event) => {
+          // Move focus explicitly: not every browser/AT combination focuses an in-page link target.
+          event.preventDefault();
+          document.getElementById('main-content')?.focus();
+        }}
+      >
         Skip to main content
       </a>
       <Header />
@@ -36,3 +46,13 @@ export function AppShell() {
     </TopologyDataProvider>
   );
 }
+
+/** Page title per section (WCAG 2.4.2), e.g. "Service Registry · Orrery". */
+function useDocumentTitle() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    const section = NAV_ITEMS.find((item) => pathname === item.path || pathname.startsWith(`${item.path}/`));
+    document.title = `${section?.label ?? 'Page not found'} · Orrery`;
+  }, [pathname]);
+}
+

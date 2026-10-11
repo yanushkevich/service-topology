@@ -41,6 +41,7 @@ import { GroupNode } from './flow/GroupNode';
 import { MapActionsContext, type MapActions } from './flow/mapActions';
 import { RelationshipEdge } from './flow/RelationshipEdge';
 import { LayoutsMenu } from './LayoutsMenu';
+import { GroupsPanel } from './GroupsPanel';
 import type { SavedLayout } from '../../../data/savedLayouts/savedLayout';
 import styles from './topology2d.module.css';
 
@@ -108,6 +109,7 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
   const [layoutError, setLayoutError] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [layoutsOpen, setLayoutsOpen] = useState(false);
+  const [groupsOpen, setGroupsOpen] = useState(false);
 
   const graph = useMemo(
     () =>
@@ -291,6 +293,9 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
           onPaneClick={() => select(null)}
           defaultEdgeOptions={{ markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14 } }}
           nodesConnectable={false}
+          // Connections stay keyboard-reachable through the inspector ("Connection details"); making
+          // every edge a tab stop added 30+ stops with no useful focus target.
+          edgesFocusable={false}
           elementsSelectable
           multiSelectionKeyCode={null}
           selectionKeyCode={null}
@@ -317,6 +322,9 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
         />
         {filtersOpen && <MapFilters index={index} onClose={() => setFiltersOpen(false)} />}
         <HiddenSelectionNotice index={index} graph={graph} />
+        {groupsOpen && mode === 'infrastructure' && (
+          <GroupsPanel index={index} collapsed={collapsed} onToggle={actions.toggleGroup} onClose={() => setGroupsOpen(false)} />
+        )}
         {layoutsOpen && (
           <LayoutsMenu
             collapsedGroupIds={collapsed}
@@ -340,6 +348,8 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
         <CanvasControls
           layoutsOpen={layoutsOpen}
           onToggleLayouts={() => setLayoutsOpen((open) => !open)}
+          groupsOpen={mode === 'infrastructure' ? groupsOpen : null}
+          onToggleGroups={() => setGroupsOpen((open) => !open)}
           onResetLayout={() => setManual((prev) => ({ ...prev, [mode]: {} }))}
           hasManualPositions={Object.keys(manual[mode]).length > 0}
           collapsedCount={collapsed.size}
@@ -471,6 +481,8 @@ function MapFilters({ index, onClose }: { index: TopologyIndex; onClose: () => v
 function CanvasControls({
   layoutsOpen,
   onToggleLayouts,
+  groupsOpen,
+  onToggleGroups,
   onResetLayout,
   hasManualPositions,
   collapsedCount,
@@ -478,6 +490,9 @@ function CanvasControls({
 }: {
   layoutsOpen: boolean;
   onToggleLayouts: () => void;
+  /** null when not in grouped mode. */
+  groupsOpen: boolean | null;
+  onToggleGroups: () => void;
   onResetLayout: () => void;
   hasManualPositions: boolean;
   collapsedCount: number;
@@ -507,6 +522,11 @@ function CanvasControls({
       <button type="button" className={styles.textButton} aria-expanded={layoutsOpen} onClick={onToggleLayouts}>
         Layouts
       </button>
+      {groupsOpen !== null && (
+        <button type="button" className={styles.textButton} aria-expanded={groupsOpen} onClick={onToggleGroups}>
+          Groups
+        </button>
+      )}
       {hasManualPositions && (
         <button type="button" className={styles.textButton} onClick={onResetLayout}>
           Reset positions

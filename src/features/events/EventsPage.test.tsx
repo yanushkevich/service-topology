@@ -149,7 +149,7 @@ describe('labeling', () => {
   it.each(['/events', '/map', '/registry'])('%s never describes mock data as live telemetry', async (path) => {
     renderApp(path);
     await simReady();
-    await screen.findByRole('link', { name: /Simulation paused at/ });
+    await screen.findByRole('link', { name: /Simulated\s*.*simulation paused/ });
     expect(document.body.textContent).not.toMatch(/\blive\b/i);
   });
 
@@ -157,7 +157,7 @@ describe('labeling', () => {
     const router = renderApp('/map');
     await simReady();
     act(() => useSimulationStore.getState().inject('ext-card-processor', 'unavailable'));
-    const chip = await screen.findByRole('link', { name: /Simulation paused at 08:45:00 UTC, 1 simulated failures/ });
+    const chip = await screen.findByRole('link', { name: /Simulated\s*08:45:00 UTC.*1 failing.*simulation paused/ });
     fireEvent.click(chip);
     expect(router.state.location.pathname).toBe('/events');
   });

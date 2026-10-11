@@ -5,6 +5,9 @@ import { afterEach } from 'vitest';
 // Map tests wait for ELK layout (bundled build in jsdom); 1 s is too tight when test files run in parallel.
 configure({ asyncUtilTimeout: 5000 });
 
+// index.html declares lang="en"; jsdom's blank document does not.
+document.documentElement.lang = 'en';
+
 // jsdom does not implement matchMedia.
 if (!window.matchMedia) {
   window.matchMedia = (query: string) =>

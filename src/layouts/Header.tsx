@@ -114,12 +114,13 @@ function SimulationChip({ search }: { search: string }) {
       to={{ pathname: '/events', search }}
       className={styles.simChip}
       title="Simulated clock and status. Open Events & Traffic"
-      aria-label={`Simulation ${running ? 'running' : 'paused'} at ${formatClock(sim.clock)}${failures ? `, ${failures} simulated failures` : ''}`}
     >
+      {/* Visible text first, so the accessible name contains it (WCAG 2.5.3). */}
       <span aria-hidden="true">{running ? '▶' : '❚❚'}</span>
       <span>Simulated</span>
       <span className="mono">{formatClock(sim.clock)}</span>
       {failures > 0 && <span className="mono">· {failures} failing</span>}
+      <span className="visually-hidden">, simulation {running ? 'running' : 'paused'}. Open Events &amp; Traffic</span>
     </Link>
   );
 }

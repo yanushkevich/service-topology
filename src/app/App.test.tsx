@@ -5,6 +5,9 @@ import { useUiStore } from '../state/uiStore';
 import { renderApp as renderAt, resetUiStore } from '../test/renderApp';
 import { NAV_ITEMS } from './navigation';
 
+/** Nav names contain the full label (e.g. "Deps (Dependencies)"). */
+const navName = (label: string) => new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+
 describe('application shell', () => {
   beforeEach(resetUiStore);
 
@@ -20,8 +23,8 @@ describe('application shell', () => {
     renderAt('/map');
     const nav = await screen.findByRole('navigation', { name: 'Sections' });
     for (const item of NAV_ITEMS) {
-      await user.click(within(nav).getByRole('link', { name: item.label }));
-      expect(within(nav).getByRole('link', { name: item.label })).toHaveAttribute('aria-current', 'page');
+      await user.click(within(nav).getByRole('link', { name: navName(item.label) }));
+      expect(within(nav).getByRole('link', { name: navName(item.label) })).toHaveAttribute('aria-current', 'page');
       expect(screen.getByRole('heading', { level: 1, name: item.label })).toBeInTheDocument();
     }
   });

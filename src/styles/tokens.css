@@ -24,7 +24,10 @@
   /* Text */
   --color-text: #e7ecf8;
   --color-text-2: #a7b1ca;
-  --color-text-3: #7f8cab;
+  --color-text-3: #8592b0; /* mock #7f8cab was 4.497:1 on the selected-row surface */
+
+  /* Form control boundary (WCAG 1.4.11 ≥ 3:1 on every surface; mock --ln2 was ~1.4:1) */
+  --color-control-border: #6b789e;
 
   /* Accents */
   --color-accent: #5fe1ff;
@@ -78,6 +81,8 @@
   --color-text-2: #434e69;
   --color-text-3: #5d6884;
 
+  --color-control-border: #6b7794;
+
   --color-accent: #0b7fa6;
   --color-accent-contrast: #ffffff;
   --color-accent-soft: rgba(11, 127, 166, 0.09);
@@ -86,9 +91,11 @@
   --color-indigo: #4a57d6;
   --color-violet: #6d4fd6;
 
-  --color-ok: #2fc7a2;
-  --color-warn: #f0a93a;
-  --color-crit: #f06a6a;
+  /* Darker than the mock (#2fc7a2/#f0a93a/#f06a6a, 1.7–2.8:1) so status shapes reach 3:1 on light
+     surfaces while their dark glyph keeps ≥ 3:1 on the fill (src/styles/contrast.test.ts). */
+  --color-ok: #178f71;
+  --color-warn: #b8740f;
+  --color-crit: #d9473f;
 
   /* Mock light accent/status fills are below 4.5:1 on light surfaces; use these for text. */
   --color-accent-text: #08698a;
@@ -101,10 +108,11 @@
   --color-node: #ffffff;
   --color-node-hover: #f1f4fa;
   --color-node-selected: #f1fbff;
-  --edge-http: #3f66c9;
-  --edge-grpc: #0b7fa6;
-  --edge-data: #6d4fd6;
-  --edge-event: #11875f;
+  /* Edges render at 62% opacity; these reach ≥ 3:1 on the light stage as rendered. */
+  --edge-http: #2443a0;
+  --edge-grpc: #044f6e;
+  --edge-data: #4a2fb8;
+  --edge-event: #05573a;
 }
 
 :root {

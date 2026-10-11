@@ -170,7 +170,7 @@ function SimulationPanel({ index, readOnly }: { index: TopologyIndex; readOnly: 
         </select>
         <div className={styles.segmented} role="radiogroup" aria-label="Failure mode">
           {(['unavailable', 'degraded'] as const).map((m) => (
-            <button key={m} type="button" role="radio" aria-checked={mode === m} className={styles.segment} aria-pressed={mode === m} onClick={() => setMode(m)}>
+            <button key={m} type="button" role="radio" aria-checked={mode === m} className={styles.segment} onClick={() => setMode(m)}>
               {healthLabel(m)}
             </button>
           ))}

@@ -13,7 +13,8 @@ export function NavRail() {
           key={item.path}
           to={{ pathname: item.path, search }}
           className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
-          aria-label={item.label}
+          // The accessible name contains the visible short label (WCAG 2.5.3 Label in Name).
+          aria-label={item.shortLabel === item.label || item.label.includes(item.shortLabel + ' ') || item.label.endsWith(item.shortLabel) ? item.label : `${item.shortLabel} (${item.label})`}
           title={item.label}
         >
           <Icon name={item.icon} />

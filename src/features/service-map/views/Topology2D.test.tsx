@@ -178,3 +178,32 @@ describe('saved layouts on the map', () => {
     expect(await screen.findByLabelText(/^Azure, 1 entity collapsed/)).toBeInTheDocument();
   });
 });
+
+describe('groups panel (full-size equivalent of in-canvas group headers)', () => {
+  beforeEach(resetUiStore);
+
+  it('collapses, expands, and selects groups at a fixed size, by keyboard or pointer', async () => {
+    const user = userEvent.setup();
+    useUiStore.setState({ layoutMode: 'infrastructure' });
+    renderApp('/map');
+    await findNode('orders.events');
+    await user.click(screen.getByRole('button', { name: 'Groups' }));
+    const panel = screen.getByRole('dialog', { name: 'Infrastructure groups' });
+
+    await user.click(within(panel).getByRole('button', { name: 'Collapse events-kafka' }));
+    expect(await findNode('events-kafka')).toBeInTheDocument();
+    expect(within(panel).getByRole('button', { name: 'Expand events-kafka' })).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(within(panel).getByRole('button', { name: 'Expand events-kafka' }));
+    expect(await findNode('orders.events')).toBeInTheDocument();
+
+    await user.click(within(panel).getByRole('button', { name: /^eks-commerce-prod/ }));
+    expect(useUiStore.getState().selection).toEqual({ kind: 'resource', id: 'eks-commerce-prod' });
+  });
+
+  it('is only offered in grouped infrastructure mode', async () => {
+    renderApp('/map');
+    await findNode('Order Service');
+    expect(screen.queryByRole('button', { name: 'Groups' })).not.toBeInTheDocument();
+  });
+});

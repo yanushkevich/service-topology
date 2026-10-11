@@ -59,7 +59,7 @@ describe('URL state sync', () => {
     const user = userEvent.setup();
     const router = renderApp('/registry?v=1&env=production&sel=service-instance:fraud-scoring.production');
     await screen.findByRole('table');
-    await user.click(screen.getByRole('link', { name: 'Dependencies' }));
+    await user.click(screen.getByRole('link', { name: /Dependencies/ }));
     expect(router.state.location.pathname).toBe('/dependencies');
     expect(params(router).get('sel')).toBe('service-instance:fraud-scoring.production');
     expect(useUiStore.getState().selection?.id).toBe('fraud-scoring.production');
