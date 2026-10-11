@@ -406,3 +406,19 @@ Decisions: `DECISIONS.md` ADR-010.
 
 Data flow: repository → baseline → `useSimulationStore.initialize` → engine `data` → `TopologyDataProvider` index → registry/map/inspector. With `asOf` set, the provider builds the index from the snapshot instead; the engine is untouched.
 
+## Milestone 4 implementation notes (2026-10-11)
+
+Decisions: `DECISIONS.md` ADR-011. Measurements: `docs/BENCHMARKS.md`.
+
+| Concern | Location |
+|---|---|
+| Scope resolution (overview, container, leaf, logical service) | `src/features/service-map/galaxy/scope.ts` |
+| Deterministic 3D layout | `src/features/service-map/galaxy/layout3d.ts` |
+| Scene view models, label LOD, motion policy | `src/features/service-map/galaxy/sceneModel.ts` |
+| Camera math and per-scope camera memory | `src/features/service-map/galaxy/cameraMath.ts` |
+| WebGL detection, context loss | `src/features/service-map/galaxy/webgl.ts` |
+| Three.js scene and camera rig | `src/features/service-map/galaxy/GalaxyScene.tsx` |
+| Lazy boundary, fallbacks, overlay, entity list | `src/features/service-map/galaxy/Network3DView.tsx` |
+
+Pipeline (Revision 4): shared state (environment, filters, neighborhood, `galaxyScope`, selection) → `resolveGalaxyScope` → `layoutGalaxy` → `buildScene` → React Three Fiber. Actions (select, enter, back) go through the shared store; the render loop only moves particles, toggles label visibility, and runs camera tweens.
+

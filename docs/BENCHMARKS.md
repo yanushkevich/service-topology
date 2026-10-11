@@ -50,3 +50,22 @@ Variance note: an isolated steady-state selection test on the same build (12 sel
 - **Layout runtime:** 0.36 s (topology) / 1.37 s (grouped) in Node; ≈ 0.53 s topology in the browser worker, off the main thread.
 
 Optimizations applied during measurement: ELK in a Web Worker; lazy-loaded map chunk; dimming via one container class instead of per-element data; unchanged React Flow node/edge objects reused; opacity transitions removed from nodes/edges (~50 ms per selection).
+
+## 2026-10-11 — Milestone 4 (3D galaxy)
+
+Run: `npm run bench:3d -- --url <preview-url>` (`scripts/bench-3d.mjs`; add `--gpu` on a machine with a GPU).
+
+**Environment:** Apple M2, 8 cores, 8 GB, macOS, Chrome 154 headless, 1440×900, scene DPR capped at 1.75, production build. **WebGL renderer: SwiftShader (CPU software rendering)**, because headless Chrome here has no GPU. The machine was heavily loaded by other apps (load average ≈ 20). These numbers are a pessimistic floor, not representative of a GPU-equipped browser.
+
+| Case | Result |
+|---|---|
+| 250/750 fixture: entities in the overview | 254 (250 entities + 4 constellation anchors) |
+| 250/750: navigation → 3D scene drawn | 1,839 ms (median of 3) |
+| 250/750: frame interval, idle with simulated traffic particles | 133 ms median (~7.5 fps) |
+| 250/750: frame interval while orbiting | 167 ms median (~6 fps) |
+| 250/750: Explore inside → new scope shown (includes the ~0.6 s dive animation) | 1,067 ms |
+| 250/750: select entity → inspector + highlight drawn | not measured (harness step timed out; the step is non-fatal) |
+| 1,000 inventory: navigation → aggregated overview drawn | 1,004 ms; 5 constellation nodes for 319 matching entities |
+
+Assessment: the 250/750 fixture renders completely in 3D and stays interactive, but frame rate on software WebGL is far below 60 fps. **GPU measurement is still needed** before claiming the 3D target. Product owner accepted current performance for now (2026-10-11). Mitigations already in place: on-demand rendering when nothing animates, instanced arrows/particles, one line object per edge kind, label level-of-detail, and aggregation above 250 nodes.
+

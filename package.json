@@ -16,6 +16,7 @@
     "test:watch": "vitest",
     "bench": "VITE_PERF=1 vitest run --silent=false src/features/service-map/layout/layout.perf.test.ts",
     "bench:browser": "node scripts/bench-browser.mjs",
+    "bench:3d": "node scripts/bench-3d.mjs",
     "check": "npm run typecheck && npm run lint && npm run test && npm run build"
   },
   "dependencies": {

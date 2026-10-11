@@ -6,7 +6,7 @@ import type { GalaxyGroup, GalaxyScopeModel } from './scope';
  * testable without WebGL and the renderer stays a thin adapter.
  */
 
-export const LAYOUT3D_VERSION = 1;
+export const LAYOUT3D_VERSION = 2;
 
 export type Vec3 = readonly [number, number, number];
 
@@ -44,7 +44,7 @@ function hash01(text: string): number {
 }
 
 /** Point on a ring of `radius` around `center`, rotated by tilt (x then z), at angle `a`. */
-function ringPoint(center: Vec3, radius: number, tilt: readonly [number, number], a: number): Vec3 {
+export function ringPoint(center: Vec3, radius: number, tilt: readonly [number, number], a: number): Vec3 {
   const x = radius * Math.cos(a);
   const z = radius * Math.sin(a);
   // rotate around X by tilt[0]
@@ -118,9 +118,9 @@ function layoutOverview(model: GalaxyScopeModel): GalaxyLayout {
   let cumulative = 0;
   clusters.forEach((c, i) => {
     cumulative += c.extent;
-    const distance = i === 0 ? 0 : cumulative * 0.9 + 40;
+    const distance = i === 0 ? 0 : cumulative * 1.3 + 120;
     const angle = i * GOLDEN * 2.4;
-    const lift = (hash01(c.group.id) - 0.5) * Math.min(220, c.extent * 1.2);
+    const lift = (hash01(c.group.id) - 0.5) * Math.min(320, c.extent * 1.6);
     centers.push([distance * Math.cos(angle), lift, distance * Math.sin(angle)]);
   });
 
@@ -135,7 +135,7 @@ function layoutOverview(model: GalaxyScopeModel): GalaxyLayout {
         const dy = cb[1] - ca[1];
         const dz = cb[2] - ca[2];
         const distance = Math.hypot(dx, dy, dz) || 1;
-        const needed = (clusters[a]?.extent ?? 0) + (clusters[b]?.extent ?? 0) + 60;
+        const needed = (clusters[a]?.extent ?? 0) + (clusters[b]?.extent ?? 0) + 140;
         if (distance < needed) {
           const push = (needed - distance) / 2;
           const [ux, uy, uz] = distance === 1 && dx === 0 && dz === 0 ? [1, 0, 0] : [dx / distance, dy / distance, dz / distance];
@@ -184,9 +184,13 @@ function layoutEntity(model: GalaxyScopeModel): GalaxyLayout {
 
   const children = model.nodes.filter((n) => n.role === 'child').map((n) => n.id);
   const subGroups = new Map(model.groups.filter((g) => g.kind === 'grandchildren').map((g) => [g.coreId as string, g.memberIds]));
+  // With one or two children there is room to spread their contents; otherwise keep sub-rings compact.
+  const subMinimum = children.length <= 2 ? 120 : 46;
   const subRadius = (childId: string) => {
     const kids = subGroups.get(childId) ?? [];
-    return kids.length === 0 ? NODE_RADIUS.child : ringRadius(Math.min(kids.length, 12), NODE_RADIUS.grandchild, 46) + (Math.ceil(kids.length / 12) - 1) * 30;
+    return kids.length === 0
+      ? NODE_RADIUS.child
+      : ringRadius(Math.min(kids.length, 12), NODE_RADIUS.grandchild, subMinimum) + (Math.ceil(kids.length / 12) - 1) * 30;
   };
   const maxSub = Math.max(NODE_RADIUS.child, ...children.map(subRadius));
   const tilt: readonly [number, number] = [0.42, 0.12];
@@ -199,7 +203,7 @@ function layoutEntity(model: GalaxyScopeModel): GalaxyLayout {
     const kids = subGroups.get(childId) ?? [];
     if (kids.length > 0) {
       const subTilt: readonly [number, number] = [0.92, -0.4 + i * 0.7];
-      const placed = placeOnRings(p, kids, NODE_RADIUS.grandchild, subTilt, i * 0.9, `sub:${childId}`, 'grandchildren', 46);
+      const placed = placeOnRings(p, kids, NODE_RADIUS.grandchild, subTilt, i * 0.9, `sub:${childId}`, 'grandchildren', subMinimum);
       Object.assign(positions, placed.positions);
       for (const id of kids) radii[id] = NODE_RADIUS.grandchild;
       rings.push(...placed.rings);
@@ -216,8 +220,11 @@ function layoutEntity(model: GalaxyScopeModel): GalaxyLayout {
       const inColumn = Math.min(14, ids.length - column * 14);
       const k = i % 14;
       const spread = Math.max(1, inColumn - 1);
-      const y = (k - (inColumn - 1) / 2) * Math.min(56, (2 * side) / spread);
-      const z = (column - (columns - 1) / 2) * 70 + (k % 2 ? 18 : -18);
+      // Spread up and *towards* the default camera (whose view vector is ≈ (−0.39, 0.58, 0.71)): the
+      // column direction (0, 0.75, −0.9) is nearly perpendicular to it, so partners stay apart on screen.
+      const step = (k - (inColumn - 1) / 2) * Math.min(56, (2 * side) / spread);
+      const y = step * 0.75;
+      const z = -step * 0.9 + (column - (columns - 1) / 2) * 70;
       positions[id] = [round(sign * (side + column * 40)), round(y), round(z)];
       radii[id] = NODE_RADIUS.outside;
     });

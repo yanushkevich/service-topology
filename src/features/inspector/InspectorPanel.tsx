@@ -668,8 +668,26 @@ function MapActions({ entityId }: { entityId: EntityId }) {
     if (!onMap) navigate({ pathname: '/map', search: location.search });
   };
   const exploring = neighborhood?.centerId === entityId;
+  const enterScope = useUiStore((s) => s.enterScope);
+  const exitScopeTo = useUiStore((s) => s.exitScopeTo);
+  const activeView = useUiStore((s) => s.activeView);
   return (
     <div className={styles.actions}>
+      {!(onMap && activeView === '3d') && (
+        <button
+          type="button"
+          className={styles.secondary}
+          onClick={() => {
+            exitScopeTo(0);
+            enterScope(entityId);
+            setActiveView('3d');
+            if (!onMap) navigate({ pathname: '/map', search: location.search });
+          }}
+        >
+          <Icon name="view3d" />
+          Explore in 3D
+        </button>
+      )}
       {!onMap && (
         <button type="button" className={styles.primary} onClick={toMap}>
           <Icon name="focus" />

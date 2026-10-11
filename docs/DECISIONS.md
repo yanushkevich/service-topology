@@ -111,3 +111,19 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 - **Consequences:** history fixtures exist only for the hand-written mock (generated datasets start without history); captured snapshots last for the session (in-memory repository); real retention/event sourcing waits for a backend (PRODUCT_SPEC G.1).
 - **Verification:** `propagation.test.ts`, `snapshot.test.ts`, `engine.test.ts`, `snapshots.test.ts`, `useSimulationTicker.test.tsx`, `EventsPage.test.tsx`, `describeEvent.test.ts`, `simulation/boundaries.test.ts`.
 
+## ADR-011 — 3D galaxy implementation (2026-10-11, Milestone 4)
+- **Status:** Accepted
+- **Context:** Milestone 4 / `docs/3D_GALAXY_EXPERIENCE.md`: an explorable, data-backed 3D galaxy that stays secondary to 2D.
+- **Decision:**
+  - **Stack (pinned):** three 0.186.1, @react-three/fiber 9.8.1, @react-three/drei 10.7.9 (OrbitControls, Line, Html labels), gsap 3.15.0 (finite camera transitions). Lazy-loaded chunk (~1.06 MB minified); the main bundle does not include Three.js.
+  - **Layers:** `scope.ts` (what a scope shows) → `layout3d.ts` (deterministic positions) → `sceneModel.ts` (emphasis, labels, curves, arrows, traffic) → `GalaxyScene.tsx` (Three.js). Everything before the scene is pure and tested without WebGL.
+  - **Scopes:** the overview groups the 2D map's visible entities into constellations by outermost container. Above 250 entities, constellations collapse to anchors with member counts. "Explore inside" shows modeled containment children (and one level of grandchildren), a logical service's instances, or, for leaves, the real communication partners with an explicit "no modeled children" note. Outside partners sit on side arcs (inbound left, outbound right).
+  - **Containment vs communication:** containment = tilted rings, scope shells, and undirected dashed spokes; communication = dashed-by-kind curved paths with direction cones (two for bidirectional), glowing tubes only for the selection's paths.
+  - **Shared state:** the explore path is `galaxyScope` (canonical IDs, URL `scope`); selection, filters, environment, highlight mode, and the neighborhood are shared with 2D. Camera poses live in the renderer (`CameraMemory`, per scope path), never in global state.
+  - **Motion:** traffic particles are bound to relationship throughput and labeled simulated; off when paused (global `motionPaused`) or under reduced motion. Camera moves are finite GSAP tweens, killed when the user grabs the controls, and cut instantly under reduced motion. Rendering is on demand when nothing animates.
+  - **Readability:** silhouette per type (sphere, hex prism, cylinder, diamond, capsule, wireframe for external); status = label badge + one/two rings (not color alone); label level-of-detail (anchors, selection, highlight, and problems always; others when the camera is near, toggled imperatively per frame).
+  - **Fallbacks:** WebGL detection, context-loss handling with retry, and an error boundary. All offer the 2D map and registry.
+- **Alternatives:** troika SDF text (rejected: runtime font fetch); per-edge fat lines (rejected: 750 objects); full-screen bloom (rejected by spec; muddies labels).
+- **Consequences:** frame rate needs GPU measurement (BENCHMARKS.md); grouped 2D mode and 3D share data but not positions; deeper descendants than grandchildren are reached by entering further.
+- **Verification:** `scope.test.ts`, `layout3d.test.ts`, `sceneModel.test.ts`, `runtime.test.ts`, `GalaxyScene.test.tsx` (canonical IDs, click/double-click, arrows, particles vs motion policy, containment toggle, disposal, camera fit/dive/restore), `App.test.tsx` (WebGL fallback and return to 2D), `scripts/bench-3d.mjs`.
+

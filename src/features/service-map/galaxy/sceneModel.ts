@@ -23,7 +23,11 @@ export interface SceneNode {
   position: Vec3;
   radius: number;
   emphasis: SceneEmphasis;
-  showLabel: boolean;
+  /**
+   * Label level-of-detail: `always` (anchors, selection, highlight, problems), `near` (only when the
+   * camera is close: keeps dense scopes readable), `hover` (only on hover/focus).
+   */
+  labelLevel: 'always' | 'near' | 'hover';
   memberCount: number;
   hasChildren: boolean;
   outside: boolean;
@@ -70,7 +74,9 @@ export interface SceneOptions {
 }
 
 /** Below this many nodes every label is shown in auto mode. */
-export const AUTO_LABEL_LIMIT = 60;
+export const AUTO_LABEL_LIMIT = 16;
+/** Camera distance (world units) under which `near` labels appear. */
+export const NEAR_LABEL_DISTANCE = 560;
 export const CURVE_SEGMENTS = 16;
 
 const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -161,10 +167,19 @@ export function buildScene(index: TopologyIndex, model: GalaxyScopeModel, layout
   const small = model.nodes.length <= AUTO_LABEL_LIMIT;
   const nodes: SceneNode[] = model.nodes.map((n) => {
     const emphasis = emphasisOf(n.id, n.id === selectedNode?.id, highlightedNodes);
-    const important = n.role === 'center' || n.role === 'core' || emphasis === 'selected' || emphasis === 'highlighted';
-    const showLabel =
-      options.labelMode === 'all' ||
-      (options.labelMode === 'minimal' ? n.role === 'center' || emphasis === 'selected' : important || small || n.health === 'unavailable' || n.health === 'degraded' || n.role === 'child');
+    const important =
+      n.role === 'center' || n.role === 'core' || n.role === 'child' || emphasis === 'selected' || emphasis === 'highlighted';
+    const problem = n.health === 'unavailable' || n.health === 'degraded';
+    const labelLevel: SceneNode['labelLevel'] =
+      options.labelMode === 'all'
+        ? 'always'
+        : options.labelMode === 'minimal'
+          ? n.role === 'center' || emphasis === 'selected'
+            ? 'always'
+            : 'hover'
+          : important || problem || small
+            ? 'always'
+            : 'near';
     const extra = [ROLE_LABEL[n.role], n.memberCount > 1 ? `${n.memberCount} entities` : '', n.hasChildren ? 'has modeled children' : '']
       .filter(Boolean)
       .join(', ');
@@ -178,7 +193,7 @@ export function buildScene(index: TopologyIndex, model: GalaxyScopeModel, layout
       position: layout.positions[n.id] ?? [0, 0, 0],
       radius: layout.radii[n.id] ?? 8,
       emphasis,
-      showLabel,
+      labelLevel,
       memberCount: n.memberCount,
       hasChildren: n.hasChildren,
       outside: n.role === 'inbound' || n.role === 'outbound',

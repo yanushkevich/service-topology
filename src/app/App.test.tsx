@@ -31,20 +31,26 @@ describe('application shell', () => {
     expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument();
   });
 
-  it('switches between the 2D map, its grouped mode, and the 3D placeholder', async () => {
+  it('switches between the 2D map, its grouped mode, and 3D (WebGL fallback in jsdom)', async () => {
     const user = userEvent.setup();
+    useUiStore.setState({ selection: { kind: 'service-instance', id: 'order-service.production' } });
     renderAt('/map');
     const view = await screen.findByRole('group', { name: 'View' });
     expect(await screen.findByLabelText(/^Order Service, api/)).toBeInTheDocument();
-    expect(screen.queryByTestId('view-placeholder')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Grouped infrastructure' }));
     expect(await screen.findByRole('button', { name: 'Collapse eks-commerce-prod' })).toBeInTheDocument();
 
     await user.click(within(view).getByRole('button', { name: '3D Galaxy' }));
     expect(within(view).getByRole('button', { name: '3D Galaxy' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByTestId('view-placeholder')).toHaveTextContent('3D Galaxy');
+    // jsdom has no WebGL: the 3D view must fail gracefully and offer the 2D map and registry.
+    expect(await screen.findByRole('heading', { name: '3D needs WebGL' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open the registry' })).toBeInTheDocument();
     expect(screen.queryByRole('group', { name: 'Layout mode' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Open the 2D map' }));
+    expect(useUiStore.getState()).toMatchObject({ activeView: '2d', selection: { id: 'order-service.production' } });
+    expect(await screen.findByLabelText(/^Order Service, api/)).toBeInTheDocument();
   });
 
   it('preserves the active view across route changes', async () => {

@@ -36,11 +36,15 @@ describe('buildScene', () => {
     expect(node(scene, 'order-service.production').emphasis).toBe('highlighted');
   });
 
-  it('applies label level-of-detail: always label unhealthy, selected, and scope anchors', () => {
+  it('applies label level-of-detail: always label anchors, selection, and problems; others when near', () => {
     const minimal = make(['aws-acct-commerce-prod', 'eks-commerce-prod'], { labelMode: 'minimal' });
-    expect(minimal.nodes.filter((n) => n.showLabel).map((n) => n.id)).toEqual(['eks-commerce-prod']);
-    const all = make([], { labelMode: 'all' });
-    expect(all.nodes.every((n) => n.showLabel)).toBe(true);
+    expect(minimal.nodes.filter((n) => n.labelLevel === 'always').map((n) => n.id)).toEqual(['eks-commerce-prod']);
+    expect(make([], { labelMode: 'all' }).nodes.every((n) => n.labelLevel === 'always')).toBe(true);
+    const auto = make([], { selection: { kind: 'service-instance', id: 'ledger-service.production' } });
+    expect(node(auto, 'az-sub-payments').labelLevel).toBe('always'); // constellation core
+    expect(node(auto, 'notification-service.production').labelLevel).toBe('always'); // unavailable
+    expect(node(auto, 'ledger-service.production').labelLevel).toBe('always'); // selected
+    expect(node(auto, 'cart-service.production').labelLevel).toBe('near');
   });
 
   it('describes outside nodes for assistive technology', () => {

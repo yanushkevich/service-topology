@@ -95,8 +95,8 @@ Update only from actual repository state and checks.
 | 5 | Done (2026-10-11) | `feat(phase-06): …` | — | Central mappings incl. edge kinds (color + dash), status shapes, glyphs, light/dark tokens. Contrast of new edge colors not separately measured. |
 | 6 | Done (2026-10-11) | `feat(phase-06): …` | layout/graph/map tests pass | React Flow + ELK (worker), selection, highlight, neighborhood, grouping/collapse, minimap. |
 | 7 | Done (2026-10-11) | `feat(m1)`, `feat(phase-06)` | registry + map tests pass | Inspector "Show on map" / "Explore neighborhood"; off-screen selections are brought into view. |
-| 8 | Not started | — | — | |
-| 9 | Not started | — | — | |
+| 8 | Done (2026-10-11) | `feat(phase-08): …`, `feat(m4): …` | galaxy tests pass | Lazy R3F galaxy, scopes, breadcrumbs, fallbacks. |
+| 9 | Partial (2026-10-11) | `feat(m4): …` | motion policy and camera tests pass | GSAP camera transitions, data-bound particles, pause, reduced motion. Broader polish is Milestone 5. |
 | 10 | Done (2026-10-11) | `feat(phase-10): …`, `feat(m3): …` | engine/propagation/snapshot/events tests pass | Simulation, propagation, history; infrastructure grouping was delivered in Milestone 2. |
 | 11 | Not started | — | — | |
 
@@ -187,7 +187,8 @@ Track both milestones and original phases. A milestone is not complete until its
 | 1 | Implemented, pending review (2026-10-11) | All acceptance criteria checked; see the Milestone 1 closeout below. Data-model decisions resolved 2026-10-11 (ADR-008). |
 | 2 | Implemented (2026-10-11) | See the Milestone 2 closeout below. |
 | 3 | Implemented (2026-10-11) | See the Milestone 3 closeout below. |
-| 4–5 | Not started | |
+| 4 | Implemented (2026-10-11) | See the Milestone 4 closeout below. |
+| 5 | Not started | |
 
 ### Milestone 1 closeout (2026-10-11)
 Evidence: `npm run check` (typecheck, lint, 50 tests, build) passes. Visual check via headless Chrome at 1440×900 (dark/light) and 700×900.
@@ -239,4 +240,24 @@ Evidence: `npm run check` passes (counts in the closeout commit); visual check i
 | Simulated data labeled; nothing described as live | Pass | Labeling tests on /events, /map, /registry; Simulated tags on events, telemetry, snapshots |
 
 Known limitations: captured snapshots last for the session only; generated datasets have no history fixtures; propagation is rule-based (no probabilities, retries, or circuit breakers); simulated traffic is metric drift, not request-level traffic.
+
+### Milestone 4 closeout (2026-10-11)
+Evidence: `npm run check` passes (counts in the closeout commit); headless Chrome with SwiftShader WebGL screenshots (overview, container scope, leaf scope in light theme, back navigation); `npm run bench:3d` recorded in `docs/BENCHMARKS.md`.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| 2D primary and fully usable without WebGL | Pass | `App.test.tsx` (jsdom has no WebGL: fallback, return to 2D with selection kept); 3D is a lazy chunk |
+| Reads as an explorable software galaxy | Pass (visual) | Constellations with orbit rings, silhouettes, glowing paths; screenshots |
+| Rotate, zoom, pan, select, focus, discoverable "Explore inside" | Pass | OrbitControls + zoom/fit buttons; Focus and Explore inside in the selection bar and entity list; `GalaxyScene.test.tsx` |
+| Dive-in shows actual children or relationships; containment ≠ communication; no fabricated interiors | Pass | `scope.test.ts` (container, broker, logical service, leaf note), spokes/rings vs paths |
+| Breadcrumb/back/overview restore scope and camera | Pass | `GalaxyScene.test.tsx` (camera restored), `CameraMemory` tests, browser check of Back |
+| Switching views preserves environment, filters, selection, scope | Pass | Shared store + URL `scope`; `urlState.test.ts`, `App.test.tsx` |
+| Paths show endpoints/direction; animation bound to data and not the only signal | Pass | Arrows (two for bidirectional), status markers, throughput-bound particles labeled simulated; `sceneModel.test.ts` |
+| Labels readable at tested zoom; keyboard/registry alternatives | Pass (default fit, mock data) | Label LOD, entity list, inspector; dense 250-node scopes rely on zooming in |
+| 3D benchmark at the visible-graph target, hardware documented | Partial | Recorded on SwiftShader only; GPU numbers still needed |
+| No Three.js objects in domain or global state; canonical IDs | Pass | Store holds IDs only; meshes carry canonical IDs (`userData.entityId`) |
+| Reduced motion, pause, WebGL fallback/context loss, disposal tested | Pass | `sceneModel.test.ts` (policy), `GalaxyScene.test.tsx` (particles, disposal), `runtime.test.ts` (context loss), fallback test |
+| Effects not prioritized over readability | Pass | No bloom; glow only on the selection's paths |
+
+Known limitations: frame rate not yet measured on a GPU; dense 250-node overviews need zooming for member labels; 3D selection-response timing not captured by the harness.
 
