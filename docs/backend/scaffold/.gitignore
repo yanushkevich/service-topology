@@ -1,0 +1,4 @@
+
+# Local database credentials
+secrets/
+.env
