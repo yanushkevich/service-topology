@@ -11,7 +11,9 @@
   border: 1px solid var(--color-line-strong);
   background: var(--color-node);
   color: var(--color-text);
-  transition: opacity var(--duration-base), background var(--duration-fast);
+  /* No opacity transition: animating dimming across ~1,000 elements cost ~50 ms per selection
+     (docs/BENCHMARKS.md). Background hover stays animated. */
+  transition: background var(--duration-fast);
 }
 
 .node:hover {
@@ -39,7 +41,7 @@
   border-color: var(--color-indigo);
 }
 
-.dimmed {
+:global(.topology-dim-others) .node:not(.selected):not(.highlighted) {
   opacity: 0.26;
 }
 
@@ -163,7 +165,6 @@
   stroke-width: 1.2;
   stroke-dasharray: var(--kd, none);
   opacity: 0.62;
-  transition: opacity var(--duration-base);
 }
 
 .kind-http { --kc: var(--edge-http); --kd: none; }
@@ -182,7 +183,7 @@
   stroke-width: 2.4;
 }
 
-.edge-dimmed {
+:global(.topology-dim-others) .edge:not(.edge-selected):not(.edge-highlighted) {
   opacity: 0.12;
 }
 
@@ -200,6 +201,6 @@
   pointer-events: none;
 }
 
-.edgeLabelDim {
+:global(.topology-dim-others) .edgeLabelDim {
   opacity: 0.3;
 }

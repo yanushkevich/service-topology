@@ -90,11 +90,11 @@ Update only from actual repository state and checks.
 | 0 | Not started | — | — | |
 | 1 | Done (2026-10-11) | `feat(m1): …` (see git log) | typecheck, lint, test (7/7), build pass | Shell, tokens, routing, 2D/3D placeholders + Topology/Grouped-infrastructure mode switch, inspector region. Visual check via headless Chrome screenshots (dark/light, 1440 and 700 px). |
 | 2 | Done (2026-10-11) | `feat(m1): …` (see git log) | domain/repository tests pass | Types, validation, index, repository interface + mock (14 definitions, 21 instances, 41 resources, 39 relationships across AWS/Azure/GCP/on-prem/SaaS and 3 environments). |
-| 3 | Partial (2026-10-11) | `feat(m1): …` (see git log) | store covered by integration tests | Selection (kind + ID), filters, environment, view, theme. Visible layers and simulation controls not yet needed. |
-| 4 | Not started | — | — | |
-| 5 | Not started | — | — | |
-| 6 | Not started | — | — | |
-| 7 | Partial (2026-10-11) | `feat(m1): …` (see git log) | registry integration tests pass | Registry search/filter/sort/selection and inspector done. Registry-to-map focus waits for the 2D map (Milestone 2). |
+| 3 | Done (2026-10-11) | `feat(m1)`, `feat(m2): add versioned URL state…` | store, URL codec/sync tests pass | Selection, filters, environment, view, layout mode, highlight mode, neighborhood, theme; URL sync. Simulation controls belong to Milestone 3. |
+| 4 | Done (2026-10-11) | `feat(phase-06): …` | map integration tests pass | Toolbar, view/mode switch, map filters, legend, controls, empty/no-match/too-many/hidden-selection/loading/error states. |
+| 5 | Done (2026-10-11) | `feat(phase-06): …` | — | Central mappings incl. edge kinds (color + dash), status shapes, glyphs, light/dark tokens. Contrast of new edge colors not separately measured. |
+| 6 | Done (2026-10-11) | `feat(phase-06): …` | layout/graph/map tests pass | React Flow + ELK (worker), selection, highlight, neighborhood, grouping/collapse, minimap. |
+| 7 | Done (2026-10-11) | `feat(m1)`, `feat(phase-06)` | registry + map tests pass | Inspector "Show on map" / "Explore neighborhood"; off-screen selections are brought into view. |
 | 8 | Not started | — | — | |
 | 9 | Not started | — | — | |
 | 10 | Not started | — | — | |
@@ -185,7 +185,8 @@ Track both milestones and original phases. A milestone is not complete until its
 | Milestone | Status | Notes |
 |---|---|---|
 | 1 | Implemented, pending review (2026-10-11) | All acceptance criteria checked; see the Milestone 1 closeout below. Data-model decisions resolved 2026-10-11 (ADR-008). |
-| 2–5 | Not started | |
+| 2 | Implemented (2026-10-11) | See the Milestone 2 closeout below. |
+| 3–5 | Not started | |
 
 ### Milestone 1 closeout (2026-10-11)
 Evidence: `npm run check` (typecheck, lint, 50 tests, build) passes. Visual check via headless Chrome at 1440×900 (dark/light) and 700×900.
@@ -203,4 +204,22 @@ Evidence: `npm run check` (typecheck, lint, 50 tests, build) passes. Visual chec
 | WCAG contrast and keyboard/focus foundations | Partial | Token contrast ratios computed (text ≥ 4.5:1 both themes after adding `--color-*-text`); native buttons/inputs, visible focus, skip link, `aria-sort`/`aria-pressed`. No automated axe audit or screen-reader pass yet. |
 | Mock telemetry labeled simulated | Pass | Registry "Mock inventory · simulated telemetry" tag; inspector "Simulated" tag + caption; repository test asserts `isSimulated` on all fixture metrics |
 | Unresolved data-model questions documented | Pass | `DECISIONS.md` ADR-008; all resolved by the product owner on 2026-10-11 |
+
+### Milestone 2 closeout (2026-10-11)
+Evidence: `npm run check` passes (see the closeout commit for counts); `npm run bench` and `npm run bench:browser` recorded in `docs/BENCHMARKS.md`; visual check in headless Chrome (topology dark/light, selection + upstream highlight, grouped mode, 1,000-entity guard and provider collapse, filter panel, layouts menu, deep link).
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| No overlapping node boxes in initial-layout fixtures | Pass | `elkLayoutService.test.ts`: 6 mock fixtures (topology/grouped/collapsed, 3 environments) + 250/750 fixture in both modes; groups contain children, sibling groups do not overlap |
+| Deterministic layout for identical input | Pass | Same result across repeated runs and shuffled input order |
+| Selection/filters/environment synchronize between registry, graph, inspector | Pass | `Topology2D.test.tsx`, `RegistryPage.test.tsx` (shared store; FilterBar used by both) |
+| URL state: view, environment, selection, filters; back/forward | Pass | `urlState.test.ts`, `useUrlStateSync.test.tsx` |
+| Saved layouts contain serializable IDs/positions/options only | Pass | `savedLayout.test.ts` (rejects extra keys/non-numbers), JSON Schema + `schemaSync.test.ts` |
+| Benchmark 250 nodes / 750 edges, environment documented | Pass (recorded) | `docs/BENCHMARKS.md`; the < 100 ms selection goal is inconclusive under machine load (73–83 ms isolated, 190–210 ms full script) |
+| 1,000-entity inventory navigable | Pass | Guard + provider grouping + search/neighborhood: `topologyGraph.test.ts`, `Topology2D.test.tsx`, browser benchmark |
+| Tests for layout fixtures, filters, selection, URL codec | Pass | Files above |
+| Infrastructure mode reuses the same graph model and renderer | Pass | `topologyGraph.test.ts` ("same nodes and edges as topology mode") |
+| Accessibility, loading/empty/error states | Partial | Keyboard-focusable nodes/edges with aria-labels, visible focus, status shapes + dash patterns, empty/no-match/too-many/error states tested. No automated axe audit; edge-color contrast not separately measured. |
+
+Known limitations: grouped mode at full detail fits at a small zoom; saved positions do not resize groups; selection/zoom timings need re-measurement on an idle machine; 3D remains a placeholder (Milestone 4).
 

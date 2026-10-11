@@ -27,7 +27,7 @@ export const RelationshipEdge = memo(function RelationshipEdge(props: EdgeProps<
       {showLabel && (
         <EdgeLabelRenderer>
           <div
-            className={`${styles.edgeLabel} ${emphasis === 'dimmed' ? styles.edgeLabelDim : ''}`}
+            className={`${styles.edgeLabel} ${emphasis === 'none' ? styles.edgeLabelDim : ''}`}
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
           >
             {problem && <StatusShape health={relationshipStatusHealth(edge.status)} />}

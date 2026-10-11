@@ -80,3 +80,18 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 - **Alternatives:** Per-collection ID scopes (rejected: ambiguous lookups); a separate `MessagingResource` entity (rejected: Revision 2 §3 says topics/queues are `InfrastructureResource`s).
 - **Verification:** `src/domain/validation.test.ts`, `src/domain/registry.test.ts`, `src/domain/boundaries.test.ts`.
 
+## ADR-009 — Milestone 2 map implementation choices (2026-10-11)
+- **Status:** Accepted
+- **Context:** Milestone 2 delivers the React Flow + ELK map, infrastructure grouping, URL state, and saved layouts (ADR-002, ADR-005, ARCHITECTURE Revision 2 §1–5).
+- **Decision:**
+  - **Layout:** `GraphLayoutService` with an ELK `layered` implementation (nested groups via `INCLUDE_CHILDREN`, fixed seed, inputs sorted by ID, `thoroughness: 3`, no `considerModelOrder`). In the browser ELK runs in a Web Worker; a code-split bundled build is the fallback without Worker support.
+  - **Graph model:** a renderer-agnostic `TopologyGraph` sits between canonical data and React Flow. Map nodes are the environment's service instances plus communicating resources with at least one relationship. Environment-independent resources (SaaS) appear only when connected to the environment. Brokers without relationships appear only as groups.
+  - **Infrastructure mode:** same nodes and edges as topology mode, grouped by a synthetic provider level, then explicit `parentResourceId` containment. Collapsing a group replaces its members with one node: worst health, member count, and merged edges (internal edges dropped).
+  - **Highlighting:** Direct (1 hop, both directions), Upstream (transitive outgoing), Downstream (transitive incoming). Others are dimmed through one canvas class, not per-element data.
+  - **Scale guard:** above 300 visible nodes the map asks the user to narrow the view (search, filters, neighborhood, or "group by provider (collapsed)"), with "render all anyway". 300 leaves headroom over the 250-node target.
+  - **URL state:** `TopologyUrlState` v1 (docs/schemas/topology-url-state.v1.md). Discrete changes push history; search typing replaces it. Unknown IDs are shown as not found; an unknown environment falls back to the first one.
+  - **Saved layouts:** `SavedLayout` v1 (docs/schemas/saved-layout.v1.schema.json) through `SavedLayoutRepository` (localStorage, in-memory fallback). Saved positions override automatic layout and are relative to the containing group in infrastructure mode. Viewport is not saved; applying a layout fits to view.
+- **Alternatives:** dagre (rejected: ADR-002 picks ELK, and only one engine should ship); main-thread ELK (rejected: blocks interaction and adds 1.5 MB to the main bundle); per-node dim state (rejected: re-rendered every element on each selection).
+- **Consequences:** grouped mode at full detail fits at a small zoom (wide nested layout); collapsing or neighborhood mode is the intended way to read it. Manual positions in grouped mode do not resize groups (nodes are kept inside their parent).
+- **Verification:** `elkLayoutService.test.ts` (no overlaps, groups contain children, determinism, 250/750 fixture), `topologyGraph.test.ts`, `Topology2D.test.tsx`, `urlState.test.ts`, `useUrlStateSync.test.tsx`, `savedLayout.test.ts`, `schemaSync.test.ts`; docs/BENCHMARKS.md.
+

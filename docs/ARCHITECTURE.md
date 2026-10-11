@@ -369,5 +369,23 @@ What exists in code, so readers do not have to infer it. Contract extensions and
 - Topology data is held in React context (loaded once per repository), not in Zustand. Zustand holds only the canonical selection and filters.
 - `src/domain` imports only its own modules; `boundaries.test.ts` enforces this.
 - If a filter or the environment hides the selected entity, the registry shows a notice with a "Show it" action and the inspector offers to switch environment. Selection is never cleared silently.
-- Not yet implemented: URL state, snapshots, saved layouts, simulation, and the 2D/3D renderers.
+- Not yet implemented (as of Milestone 1): URL state, snapshots, saved layouts, simulation, and the 2D/3D renderers.
+
+## Milestone 2 implementation notes (2026-10-11)
+
+Decisions: `DECISIONS.md` ADR-009. Measurements: `docs/BENCHMARKS.md`.
+
+| Concern | Location |
+|---|---|
+| Dependency traversal (direct/upstream/downstream, neighborhood) | `src/domain/traversal.ts` |
+| Renderer-agnostic graph model (scoping, filters, grouping, collapse) | `src/features/service-map/graph/topologyGraph.ts` |
+| Layout boundary, ELK implementation, worker loading | `src/features/service-map/layout/` |
+| React Flow adapter (view models, highlight, object reuse) | `src/features/service-map/adapters/reactFlowAdapter.ts` |
+| Map view, custom nodes/edges, layouts menu | `src/features/service-map/views/` |
+| Shared filter UI (registry + map) | `src/features/filters/FilterBar.tsx` |
+| URL state codec and history sync | `src/state/urlState.ts`, `src/state/useUrlStateSync.ts` |
+| Saved layout schema and repositories | `src/data/savedLayouts/` |
+| Scale fixtures and runtime dataset switch (`?dataset=`) | `src/data/mock/generateTopology.ts`, `src/data/selectRepository.ts` |
+
+Data flow for the map: `TopologyIndex` + shared state → `buildTopologyGraph` → `toLayoutRequest` → `GraphLayoutService` (worker) → `toFlowNodes`/`toFlowEdges` → React Flow. Graph IDs are canonical entity/relationship IDs (group IDs for groups); selection flows back through `refForNode`/`refForEdge` into the shared store. Drag positions and collapsed groups are local to the map, except when saved as a layout.
 

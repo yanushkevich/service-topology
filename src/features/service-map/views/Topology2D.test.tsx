@@ -16,7 +16,13 @@ const canvasClick = (element: HTMLElement) => fireEvent.click(element);
 /** React Flow node wrapper for an entity (aria-label starts with its display name). */
 const findNode = (name: string) => screen.findByLabelText(new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}, `));
 const nodeBox = (wrapper: HTMLElement) => wrapper.firstElementChild as HTMLElement;
-const emphasis = (wrapper: HTMLElement) => nodeBox(wrapper).className;
+/** 'selected' | 'highlighted' | 'dimmed' (dimmed = neither, while the canvas dims others) | 'none'. */
+const emphasis = (wrapper: HTMLElement) => {
+  const cls = nodeBox(wrapper).className;
+  if (/selected/.test(cls)) return 'selected';
+  if (/highlighted/.test(cls)) return 'highlighted';
+  return wrapper.closest('.topology-dim-others') ? 'dimmed' : 'none';
+};
 
 describe('2D topology map', () => {
   beforeEach(resetUiStore);
@@ -40,9 +46,9 @@ describe('2D topology map', () => {
   it('reflects a registry selection on the map and highlights direct dependencies', async () => {
     useUiStore.setState({ selection: { kind: 'service-instance', id: 'order-service.production' } });
     renderApp('/map');
-    await waitFor(async () => expect(emphasis(await findNode('Order Service'))).toMatch(/selected/));
-    expect(emphasis(await findNode('Payment Service'))).toMatch(/highlighted/);
-    expect(emphasis(await findNode('Ledger Service'))).toMatch(/dimmed/);
+    await waitFor(async () => expect(emphasis(await findNode('Order Service'))).toBe('selected'));
+    expect(emphasis(await findNode('Payment Service'))).toBe('highlighted');
+    expect(emphasis(await findNode('Ledger Service'))).toBe('dimmed');
   });
 
   it('switches highlight to upstream (transitive dependencies)', async () => {
@@ -53,8 +59,8 @@ describe('2D topology map', () => {
     await user.click(screen.getByRole('button', { name: 'Upstream' }));
     expect(useUiStore.getState().highlightMode).toBe('upstream');
     // order → payment → payments.events → ledger
-    await waitFor(async () => expect(emphasis(await findNode('Ledger Service'))).toMatch(/highlighted/));
-    expect(emphasis(await findNode('API Gateway'))).toMatch(/dimmed/);
+    await waitFor(async () => expect(emphasis(await findNode('Ledger Service'))).toBe('highlighted'));
+    expect(emphasis(await findNode('API Gateway'))).toBe('dimmed');
   });
 
   it('applies shared filters from the map filter panel', async () => {

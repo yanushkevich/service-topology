@@ -24,6 +24,7 @@ import { FilterBar } from '../../filters/FilterBar';
 import {
   computeHighlight,
   refForEdge,
+  reuseUnchanged,
   refForNode,
   toFlowEdges,
   toFlowNodes,
@@ -151,12 +152,23 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
   if (nodesSource !== derivedNodes) {
     const measured = new Map(nodes.map((n) => [n.id, n.measured]));
     setNodesSource(derivedNodes);
+    const withMeasured = derivedNodes.map((n) => {
+      const m = measured.get(n.id);
+      return m ? { ...n, measured: m } : n;
+    });
     setNodes(
-      derivedNodes.map((n) => {
-        const m = measured.get(n.id);
-        return m ? { ...n, measured: m } : n;
-      }),
+      reuseUnchanged(
+        nodes,
+        withMeasured,
+        (a, b) => a.position.x === b.position.x && a.position.y === b.position.y && a.parentId === b.parentId,
+      ),
     );
+  }
+  const [edges, setEdges] = useState<RelationshipFlowEdge[]>(derivedEdges);
+  const [edgesSource, setEdgesSource] = useState(derivedEdges);
+  if (edgesSource !== derivedEdges) {
+    setEdgesSource(derivedEdges);
+    setEdges(reuseUnchanged(edges, derivedEdges, (a, b) => a.zIndex === b.zIndex));
   }
 
   const graphById = useMemo(() => new Map(shown?.graph.nodes.map((n) => [n.id, n]) ?? []), [shown]);
@@ -242,10 +254,11 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
 
   return (
     <MapActionsContext.Provider value={actions}>
-      <div className={styles.canvas}>
+      {/* `topology-dim-others` dims every element that is neither selected nor highlighted (flow.module.css). */}
+      <div className={`${styles.canvas} ${highlight?.active ? 'topology-dim-others' : ''}`}>
         <ReactFlow<TopologyFlowNode, RelationshipFlowEdge>
           nodes={nodes}
-          edges={derivedEdges}
+          edges={edges}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           onNodesChange={onNodesChange}

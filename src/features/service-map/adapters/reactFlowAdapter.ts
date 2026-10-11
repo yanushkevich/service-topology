@@ -11,7 +11,12 @@ import type { GraphEdge, GraphGroup, GraphNode, TopologyGraph } from '../graph/t
  * domain data or global state.
  */
 
-export type Emphasis = 'none' | 'selected' | 'highlighted' | 'dimmed';
+/**
+ * Per-element emphasis. "Dimmed" is not per element: while a highlight is active the canvas gets
+ * one container class that dims everything not selected/highlighted, so a selection change only
+ * touches the elements whose emphasis actually changes.
+ */
+export type Emphasis = 'none' | 'selected' | 'highlighted';
 
 export interface EntityNodeData extends Record<string, unknown> {
   node: GraphNode;
@@ -90,8 +95,24 @@ export function computeHighlight(
 
 function emphasisOf(id: string, highlight: HighlightState, set: Set<string>): Emphasis {
   if (highlight.selectedIds.has(id)) return 'selected';
-  if (!highlight.active) return 'none';
-  return set.has(id) ? 'highlighted' : 'dimmed';
+  return highlight.active && set.has(id) ? 'highlighted' : 'none';
+}
+
+/** Keep the previous object when nothing React Flow renders has changed (cheap re-renders). */
+export function reuseUnchanged<T extends { id: string; data?: Record<string, unknown> | undefined; selected?: boolean | undefined }>(
+  previous: readonly T[],
+  next: readonly T[],
+  extraEqual: (a: T, b: T) => boolean = () => true,
+): T[] {
+  const byId = new Map(previous.map((item) => [item.id, item]));
+  return next.map((item) => {
+    const old = byId.get(item.id);
+    if (!old || old.selected !== item.selected || !extraEqual(old, item)) return item;
+    const a = old.data ?? {};
+    const b = item.data ?? {};
+    const keys = Object.keys(b);
+    return keys.length === Object.keys(a).length && keys.every((k) => a[k] === b[k]) ? old : item;
+  });
 }
 
 export function toFlowNodes(

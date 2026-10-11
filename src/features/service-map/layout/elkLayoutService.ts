@@ -65,8 +65,11 @@ export function createElkLayoutService(elkOrLoader: ElkApi | (() => Promise<ElkA
           'elk.spacing.nodeNode': String(options.nodeSpacing),
           'elk.layered.spacing.nodeNodeBetweenLayers': String(options.layerSpacing),
           'elk.spacing.componentComponent': String(options.layerSpacing),
-          'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
           'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+          // Measured on the 250/750 fixture (docs/BENCHMARKS.md): thoroughness 3 is ~1.5× faster than
+          // the default 7 with the same output size on the mock. considerModelOrder was dropped: it
+          // made layout ~10× slower, and input is already sorted by ID for determinism.
+          'elk.layered.thoroughness': '3',
         },
         children: childrenOf.get(undefined) ?? [],
         edges,
