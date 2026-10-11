@@ -29,7 +29,10 @@ const PAGES = [
   { name: 'Registry (selection)', path: '/registry?v=1&env=production&sel=service-instance:order-service.production', ready: 'tbody tr' },
   { name: 'Events & Traffic', path: '/events?v=1&env=production', ready: '[aria-label="Snapshots"]' },
   { name: 'History banner', path: '/registry?v=1&env=production&asof=fixture-0600', ready: 'tbody tr' },
-  { name: 'Placeholder (Overview)', path: '/overview?v=1&env=production', ready: 'h1' },
+  { name: 'Overview', path: '/overview?v=1&env=production', ready: 'section h2' },
+  { name: 'Dependencies (selection)', path: '/dependencies?v=1&env=production&sel=service-instance:order-service.production', ready: 'section h2' },
+  { name: 'Infrastructure', path: '/infrastructure?v=1&env=production', ready: '[role="treeitem"]' },
+  { name: 'Settings', path: '/settings?v=1&env=production', ready: 'section h2' },
 ];
 
 async function main() {

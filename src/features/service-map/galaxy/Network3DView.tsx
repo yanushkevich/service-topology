@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber';
-import { Component, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useTopology } from '../../../data/topologyContext';
 import type { TopologyIndex } from '../../../domain/topologyIndex';
@@ -10,6 +10,8 @@ import { Icon } from '../../../shared/ui/Icon';
 import { LoadState } from '../../../shared/ui/LoadState';
 import { StatusShape } from '../../../shared/ui/StatusShape';
 import { useUiStore } from '../../../state/uiStore';
+import { useMotionReduced } from '../../../state/motion';
+import { usePreferencesStore } from '../../../state/preferencesStore';
 import { CameraMemory, fitPose } from './cameraMath';
 import { GalaxyScene, type GalaxyColors, type GalaxyHandle } from './GalaxyScene';
 import { layoutGalaxy } from './layout3d';
@@ -79,18 +81,6 @@ class GalaxyErrorBoundary extends Component<{ children: ReactNode }, { error: st
   }
 }
 
-const reducedMotionQuery = '(prefers-reduced-motion: reduce)';
-function useReducedMotion(): boolean {
-  return useSyncExternalStore(
-    (notify) => {
-      const query = window.matchMedia?.(reducedMotionQuery);
-      query?.addEventListener?.('change', notify);
-      return () => query?.removeEventListener?.('change', notify);
-    },
-    () => Boolean(window.matchMedia?.(reducedMotionQuery).matches),
-  );
-}
-
 /** Theme colors from CSS tokens so the scene follows light/dark like the rest of the UI. */
 function useGalaxyColors(theme: string): GalaxyColors {
   return useMemo(() => {
@@ -132,13 +122,13 @@ function GalaxyExperience({ index }: { index: TopologyIndex }) {
   const theme = useUiStore((s) => s.theme);
   const { select, enterScope, exitScopeTo, setMotionPaused, setHighlightMode } = useUiStore.getState();
 
-  const [labelMode, setLabelMode] = useState<LabelMode>('auto');
-  const [particlesOn, setParticlesOn] = useState(true);
+  const [labelMode, setLabelMode] = useState<LabelMode>(() => usePreferencesStore.getState().preferences.galaxyLabels);
+  const [particlesOn, setParticlesOn] = useState(() => usePreferencesStore.getState().preferences.galaxyTraffic);
   const [showContainment, setShowContainment] = useState(true);
   const [contextLost, setContextLost] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
   const [listOpen, setListOpen] = useState(false);
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useMotionReduced();
   const colors = useGalaxyColors(theme);
   const handle = useRef<GalaxyHandle>(null);
   const [memory] = useState(() => new CameraMemory());

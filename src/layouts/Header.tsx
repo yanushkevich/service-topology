@@ -5,11 +5,12 @@ import { formatClock } from '../shared/format';
 import { useTopology } from '../data/topologyContext';
 import { sortEnvironments } from '../domain/topologyIndex';
 import { useUiStore } from '../state/uiStore';
+import { usePreferencesStore } from '../state/preferencesStore';
 import { Icon } from '../shared/ui/Icon';
 
 export function Header() {
   const theme = useUiStore((s) => s.theme);
-  const toggleTheme = useUiStore((s) => s.toggleTheme);
+  const setThemePreference = (next: 'dark' | 'light') => usePreferencesStore.getState().update({ theme: next });
   const environmentId = useUiStore((s) => s.environmentId);
   const setEnvironmentId = useUiStore((s) => s.setEnvironmentId);
   const query = useUiStore((s) => s.filters.query);
@@ -88,7 +89,7 @@ export function Header() {
         <button
           type="button"
           className="grid size-8.5 place-items-center rounded-md text-fg-2 transition-colors hover:bg-surface-3 hover:text-fg"
-          onClick={toggleTheme}
+          onClick={() => setThemePreference(nextTheme)}
           aria-label={`Switch to ${nextTheme} theme`}
           title={`Switch to ${nextTheme} theme`}
         >

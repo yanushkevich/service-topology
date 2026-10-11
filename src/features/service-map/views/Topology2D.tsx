@@ -20,6 +20,7 @@ import { EDGE_KINDS, EDGE_KIND_LABELS } from '../../../shared/mappings';
 import { Icon } from '../../../shared/ui/Icon';
 import { LoadState } from '../../../shared/ui/LoadState';
 import { NEIGHBORHOOD_DEPTHS, useUiStore, type LayoutMode } from '../../../state/uiStore';
+import { isMotionReduced } from '../../../state/motion';
 import { FilterBar } from '../../filters/FilterBar';
 import {
   computeHighlight,
@@ -64,8 +65,7 @@ function useLatest<T>(value: T) {
   return ref;
 }
 
-const prefersReducedMotion = () =>
-  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
 
 export function Topology2D() {
   const topology = useTopology();
@@ -235,7 +235,7 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
   useEffect(() => {
     if (!shownKey) return;
     const frame = requestAnimationFrame(() => {
-      void reactFlow.fitView({ padding: 0.12, duration: prefersReducedMotion() ? 0 : 250 });
+      void reactFlow.fitView({ padding: 0.12, duration: isMotionReduced() ? 0 : 250 });
       performance.mark('topology-rendered');
     });
     return () => cancelAnimationFrame(frame);
@@ -258,7 +258,7 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
     const sx = cx * zoom + x;
     const sy = cy * zoom + y;
     if (width > 0 && height > 0 && (sx < 0 || sy < 0 || sx > width || sy > height)) {
-      void reactFlow.setCenter(cx, cy, { zoom: Math.max(zoom, 0.8), duration: prefersReducedMotion() ? 0 : 300 });
+      void reactFlow.setCenter(cx, cy, { zoom: Math.max(zoom, 0.8), duration: isMotionReduced() ? 0 : 300 });
     }
   }, [layoutResult, selectedElement, reactFlow, width, height]);
 
@@ -500,7 +500,7 @@ function CanvasControls({
   const reactFlow = useReactFlow();
   const highlightMode = useUiStore((s) => s.highlightMode);
   const setHighlightMode = useUiStore((s) => s.setHighlightMode);
-  const duration = prefersReducedMotion() ? 0 : 200;
+  const duration = isMotionReduced() ? 0 : 200;
   return (
     <div className={`absolute z-15 rounded-xl border border-line bg-float shadow-float backdrop-blur-[10px] bottom-3 left-3 flex max-w-[calc(100%-24px)] flex-wrap items-center gap-0.5 p-[5px]`} role="toolbar" aria-label="Canvas controls">
       <button type="button" className="grid size-8.5 flex-none place-items-center rounded-md text-fg-2 hover:bg-surface-3 hover:text-fg" onClick={() => void reactFlow.zoomOut({ duration })} aria-label="Zoom out" title="Zoom out">

@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router';
 import { NAV_ITEMS } from '../app/navigation';
 import { TopologyDataProvider } from '../data/TopologyDataProvider';
 import { useUiStore } from '../state/uiStore';
+import { effectiveTheme, usePreferencesStore } from '../state/preferencesStore';
 import { useUrlStateSync } from '../state/useUrlStateSync';
 import { useSimulationTicker } from '../state/useSimulationTicker';
 import { HistoryBanner } from './HistoryBanner';
@@ -14,6 +15,7 @@ export function AppShell() {
   useUrlStateSync();
   useSimulationTicker();
   useDocumentTitle();
+  useAppliedPreferences();
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -53,5 +55,23 @@ function useDocumentTitle() {
     const section = NAV_ITEMS.find((item) => pathname === item.path || pathname.startsWith(`${item.path}/`));
     document.title = `${section?.label ?? 'Page not found'} · Orrery`;
   }, [pathname]);
+}
+
+/** Apply local preferences: theme (following the OS live for "system") and the motion override. */
+function useAppliedPreferences() {
+  const themePreference = usePreferencesStore((s) => s.preferences.theme);
+  const motion = usePreferencesStore((s) => s.preferences.motion);
+  useEffect(() => {
+    const apply = () => useUiStore.getState().setTheme(effectiveTheme(themePreference));
+    apply();
+    if (themePreference !== 'system') return;
+    const query = window.matchMedia?.('(prefers-color-scheme: light)');
+    query?.addEventListener?.('change', apply);
+    return () => query?.removeEventListener?.('change', apply);
+  }, [themePreference]);
+  useEffect(() => {
+    if (motion === 'reduce') document.documentElement.dataset.motion = 'reduce';
+    else delete document.documentElement.dataset.motion;
+  }, [motion]);
 }
 

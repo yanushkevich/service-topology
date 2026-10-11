@@ -2,6 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useUiStore } from '../state/uiStore';
+import { usePreferencesStore } from '../state/preferencesStore';
 import { renderApp as renderAt, resetUiStore } from '../test/renderApp';
 import { NAV_ITEMS } from './navigation';
 
@@ -65,12 +66,12 @@ describe('application shell', () => {
     expect(screen.getByRole('button', { name: '3D Galaxy' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('toggles the theme on the document and persists it', async () => {
+  it('toggles the theme on the document and saves it as an explicit preference', async () => {
     const user = userEvent.setup();
     renderAt('/map');
     await user.click(await screen.findByRole('button', { name: 'Switch to light theme' }));
     expect(document.documentElement.dataset.theme).toBe('light');
-    expect(window.localStorage.getItem('service-topology:theme')).toBe('light');
+    expect(usePreferencesStore.getState().preferences.theme).toBe('light');
     await user.click(screen.getByRole('button', { name: 'Switch to dark theme' }));
     expect(document.documentElement.dataset.theme).toBe('dark');
   });

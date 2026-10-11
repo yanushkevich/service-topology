@@ -69,3 +69,44 @@ export function neighborhood(index: TopologyIndex, centerId: EntityId, depth: nu
   }
   return seen;
 }
+
+export interface DependencyEntry {
+  entityId: EntityId;
+  /** Hops from the start (1 = direct). */
+  depth: number;
+  /** Relationship used on the last hop of the shortest path. */
+  viaRelationshipId: EntityId;
+  /** Previous entity on the shortest path. */
+  parentId: EntityId;
+  /** Start → … → entity. */
+  path: EntityId[];
+}
+
+/**
+ * Upstream (what `startId` depends on, following outgoing relationships) or downstream (what
+ * depends on it, following incoming ones), breadth-first: each entity once, at its shortest
+ * distance, ordered by depth then ID. Deterministic and cycle-safe.
+ */
+export function dependencyTree(index: TopologyIndex, startId: EntityId, direction: 'upstream' | 'downstream'): DependencyEntry[] {
+  const edges = direction === 'upstream' ? index.outgoing : index.incoming;
+  const seen = new Set<EntityId>([startId]);
+  const out: DependencyEntry[] = [];
+  let frontier: { id: EntityId; path: EntityId[] }[] = [{ id: startId, path: [startId] }];
+  let depth = 0;
+  while (frontier.length > 0) {
+    depth++;
+    const next: { id: EntityId; path: EntityId[] }[] = [];
+    for (const { id, path } of frontier) {
+      for (const r of [...(edges.get(id) ?? [])].sort((a, b) => a.id.localeCompare(b.id))) {
+        const peer = direction === 'upstream' ? r.targetEntityId : r.sourceEntityId;
+        if (seen.has(peer)) continue;
+        seen.add(peer);
+        const entry = { entityId: peer, depth, viaRelationshipId: r.id, parentId: id, path: [...path, peer] };
+        out.push(entry);
+        next.push({ id: peer, path: entry.path });
+      }
+    }
+    frontier = next;
+  }
+  return out.sort((a, b) => a.depth - b.depth || a.entityId.localeCompare(b.entityId));
+}

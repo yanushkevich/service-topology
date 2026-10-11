@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { EMPTY_FILTERS, type EntityFilters } from '../domain/registry';
+import { effectiveTheme, usePreferencesStore } from './preferencesStore';
 import type { HighlightMode } from '../domain/traversal';
 import type { EntityId, EntityRef } from '../domain/types';
 
@@ -40,7 +41,6 @@ interface UiState {
   /** Global pause for decorative/traffic animation (camera controls stay usable). */
   motionPaused: boolean;
   setTheme: (theme: Theme) => void;
-  toggleTheme: () => void;
   setActiveView: (view: ServiceMapView) => void;
   setLayoutMode: (mode: LayoutMode) => void;
   setEnvironmentId: (environmentId: string) => void;
@@ -63,29 +63,11 @@ export interface Neighborhood {
 
 export const NEIGHBORHOOD_DEPTHS = [1, 2, 3] as const;
 
-const THEME_STORAGE_KEY = 'service-topology:theme';
+const initialPreferences = usePreferencesStore.getState().preferences;
 
-function readInitialTheme(): Theme {
-  try {
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-    if (stored === 'dark' || stored === 'light') return stored;
-  } catch {
-    // Storage can be unavailable (private mode, blocked site data); fall through.
-  }
-  return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-}
-
-function persistTheme(theme: Theme) {
-  try {
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-  } catch {
-    // Theme persistence is a convenience only.
-  }
-}
-
-export const useUiStore = create<UiState>()((set, get) => ({
-  theme: readInitialTheme(),
-  activeView: '2d',
+export const useUiStore = create<UiState>()((set) => ({
+  theme: effectiveTheme(initialPreferences.theme),
+  activeView: initialPreferences.defaultView,
   layoutMode: 'topology',
   environmentId: 'production',
   selection: null,
@@ -95,11 +77,8 @@ export const useUiStore = create<UiState>()((set, get) => ({
   asOf: null,
   galaxyScope: [],
   motionPaused: false,
-  setTheme: (theme) => {
-    persistTheme(theme);
-    set({ theme });
-  },
-  toggleTheme: () => get().setTheme(get().theme === 'dark' ? 'light' : 'dark'),
+  // Effective theme only; the user's choice (incl. "system") lives in preferences.
+  setTheme: (theme) => set({ theme }),
   setActiveView: (activeView) => set({ activeView }),
   setLayoutMode: (layoutMode) => set({ layoutMode }),
   setEnvironmentId: (environmentId) => set({ environmentId }),

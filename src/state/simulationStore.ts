@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { FailureMode } from '../domain/propagation';
 import type { EntityId, TopologyData } from '../domain/types';
+import { usePreferencesStore } from './preferencesStore';
 import {
   createSimulation,
   injectFailure,
@@ -47,7 +48,7 @@ export const useSimulationStore = create<SimulationStore>()((set, get) => {
   return {
     sim: null,
     running: false,
-    speed: 'normal',
+    speed: usePreferencesStore.getState().preferences.simulationSpeed,
     initialize: (baseline) => {
       if (get().sim?.baseline === baseline) return;
       set({ sim: createSimulation(baseline), running: false });

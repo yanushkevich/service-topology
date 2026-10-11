@@ -81,8 +81,19 @@ describe('accessibility audit (axe-core)', () => {
     expect(await audit()).toEqual([]);
   });
 
-  it.each(['/overview', '/dependencies', '/infrastructure', '/settings', '/nope'])('placeholder page %s', async (path) => {
+  it.each([
+    ['/overview', 'Needs attention'],
+    ['/dependencies?v=1&env=production&sel=service-instance:order-service.production', /^Upstream/],
+    ['/infrastructure', 'Containment'],
+    ['/settings', 'Appearance'],
+  ])('section page %s', async (path, section) => {
     renderApp(path);
+    await screen.findByRole('heading', { level: 2, name: section });
+    expect(await audit()).toEqual([]);
+  });
+
+  it('not found page', async () => {
+    renderApp('/nope');
     await screen.findByRole('heading', { level: 1 });
     expect(await audit()).toEqual([]);
   });

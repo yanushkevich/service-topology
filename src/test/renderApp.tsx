@@ -13,8 +13,10 @@ import { createMockTopologyRepository } from '../data/repositories/mockTopologyR
 import { EMPTY_FILTERS } from '../domain/registry';
 import { useSimulationStore } from '../state/simulationStore';
 import { useUiStore } from '../state/uiStore';
+import { createMemoryPreferencesRepository, setPreferencesRepository } from '../state/preferencesStore';
 
 export function resetUiStore() {
+  setPreferencesRepository(createMemoryPreferencesRepository());
   useUiStore.setState({
     theme: 'dark',
     activeView: '2d',
