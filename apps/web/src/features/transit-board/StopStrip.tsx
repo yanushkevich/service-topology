@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { formatCount, isUnobserved, type BoardIndex } from '../../transit/board';
+import { formatCount, formatMs, formatRate, isUnobserved, stepTint, windowLabel, type BoardIndex } from '../../transit/board';
 import type { Line, PolicyStop, Station } from '../../transit/types';
 import { cx, kickerClass } from '../../shared/ui/classes';
 import { lineColor, POLICY_STATE_LABEL } from './colors';
@@ -30,7 +30,7 @@ export function StopStrip({ index, line, focusStations }: { index: BoardIndex; l
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className={cx(kickerClass, 'm-0 font-mono font-normal')}>
-          Line {line.code} · {dashed ? 'declared route (no traces in this window)' : `typical route, ${index.board.window}`}
+          Line {line.code} · {dashed ? 'declared route (no traces in this window)' : `typical route, ${windowLabel(index.board.window)}`}
         </h2>
         <span className={cx(kickerClass, 'font-mono')}>stat under each stop</span>
       </div>
@@ -48,7 +48,7 @@ export function StopStrip({ index, line, focusStations }: { index: BoardIndex; l
               )}
               <ol aria-label={`${label}${branch.kind === 'alternative' ? ', taken only on some requests' : ''}`} className="m-0 flex min-w-max list-none p-0">
                 {stripItems(index, line, b).map((item, i, all) => (
-                  <StripStop key={'station' in item ? item.station.id : item.stop.id} index={index} item={item} first={i === 0} last={i === all.length - 1} color={color} dashed={dashed || branch.kind === 'alternative'} focused={'station' in item && focusStations.has(item.station.id)} />
+                  <StripStop key={'station' in item ? item.station.id : item.stop.id} index={index} line={line} item={item} first={i === 0} last={i === all.length - 1} color={color} dashed={dashed || branch.kind === 'alternative'} focused={'station' in item && focusStations.has(item.station.id)} />
                 ))}
               </ol>
             </div>
@@ -59,7 +59,7 @@ export function StopStrip({ index, line, focusStations }: { index: BoardIndex; l
   );
 }
 
-function StripStop({ index, item, first, last, color, dashed, focused }: { index: BoardIndex; item: StripItem; first: boolean; last: boolean; color: string; dashed: boolean; focused: boolean }) {
+function StripStop({ index, line, item, first, last, color, dashed, focused }: { index: BoardIndex; line: Line; item: StripItem; first: boolean; last: boolean; color: string; dashed: boolean; focused: boolean }) {
   const track = (
     <span
       aria-hidden="true"
@@ -86,9 +86,24 @@ function StripStop({ index, item, first, last, color, dashed, focused }: { index
       </svg>
     );
     const degraded = station.status === 'degraded' || station.status === 'down';
-    const text = station.stats ? `p95 ${station.stats.p95Ms} ms${degraded ? ` · ${station.status}` : ''}` : (station.sub ?? '');
-    stat = <span className={degraded ? 'text-warn-fg' : 'text-fg-3'}>{text}</span>;
-    hidden = ` (${station.kind}, ${station.provenance.kind}${inferred ? ' from a code scan' : ''})`;
+    const stats = isUnobserved(line) ? undefined : line.stepStats?.[station.id];
+    if (stats) {
+      // Per-step stats (spec "Typical route mode"): tinted by the configured thresholds, always with a word.
+      const tint = stepTint(index, line, station.id, stats);
+      const extra = [stats.share < 1 ? `on ${formatRate(stats.share)}` : '', stats.errorRate > 0 ? `err ${formatRate(stats.errorRate)}` : '', stats.retryRate > 0 ? `retry ${formatRate(stats.retryRate)}` : ''].filter(Boolean);
+      stat = (
+        <span className={tint === 'errors' ? 'text-crit-fg' : tint === 'slow' || degraded ? 'text-warn-fg' : 'text-fg-3'} data-tint={tint ?? undefined}>
+          p99 {formatMs(stats.p99Ms)}
+          {tint && ` · ${tint === 'errors' ? 'errors' : 'slow'}`}
+          {extra.length > 0 && <span className="block">{extra.join(' · ')}</span>}
+        </span>
+      );
+      hidden = ` (${station.kind}, ${station.provenance.kind}${inferred ? ' from a code scan' : ''}; visited by ${formatRate(stats.share)} of requests, p50 ${formatMs(stats.p50Ms)}, p99 ${formatMs(stats.p99Ms)}, errors ${formatRate(stats.errorRate)}, retries ${formatRate(stats.retryRate)})`;
+    } else {
+      const text = station.stats ? `p95 ${station.stats.p95Ms} ms${degraded ? ` · ${station.status}` : ''}` : (station.sub ?? '');
+      stat = <span className={degraded ? 'text-warn-fg' : 'text-fg-3'}>{text}</span>;
+      hidden = ` (${station.kind}, ${station.provenance.kind}${inferred ? ' from a code scan' : ''})`;
+    }
   } else {
     const { stop } = item;
     const absent = stop.state === 'missing' || stop.state === 'unknown';
@@ -102,7 +117,7 @@ function StripStop({ index, item, first, last, color, dashed, focused }: { index
     hidden = ` (${stop.type} policy, ${POLICY_STATE_LABEL[stop.state]})`;
   }
   return (
-    <li data-focused={focused || undefined} className={cx('relative flex w-[104px] flex-none flex-col items-center gap-0.5 px-1 text-center', focused && 'rounded-lg shadow-[inset_0_0_0_2px_var(--color-warn)]')}>
+    <li data-focused={focused || undefined} className={cx('relative flex w-[118px] flex-none flex-col items-center gap-0.5 px-1 text-center', focused && 'rounded-lg shadow-[inset_0_0_0_2px_var(--color-warn)]')}>
       {track}
       <span className="flex h-[22px] items-end text-xs leading-tight">
         <span className="line-clamp-2">
@@ -155,7 +170,7 @@ function NetworkSummary({ index }: { index: BoardIndex }) {
         <dl className="m-0 mt-1.5">
           {kv('observed in traces', `${observed} of ${lines.length}`)}
           {kv('inferred stations', inferred)}
-          {kv(`traces, ${board.window}`, formatCount(traces))}
+          {kv(`traces, ${windowLabel(board.window)}`, formatCount(traces))}
         </dl>
       </div>
       <div>

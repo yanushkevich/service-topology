@@ -150,7 +150,8 @@ The Events page and inspector explain the new rule automatically.
 ## 7b. Transit board (ADR-021)
 - **Read model:** `apps/web/src/transit/` holds a per-service read model, separate from `src/domain`. `computeMapGeometry` is pure and runs once per data load. Selection, search, and finding focus only change attributes in `TransitMap`; `TransitBoardPage.test.tsx` checks that the `<path>` nodes are not rebuilt.
 - **Adding a board:** implement `TransitRepository.getBoard` (`src/transit/repository.ts`). Phase 1 serves only Payment Service example data. Tests inject a repository through `renderApp`'s fifth argument.
-- **URL state:** page-local parameters (`line`, `mode`, `trace`, `t`) are kept by `useUrlStateSync` only on `/services/…` routes (`PAGE_PARAMS`).
+- **Replay clock:** `features/transit-board/playback.ts` is a store local to the board, read with `usePlayback(selector)`. Each frame updates only its subscribers (train, progress, active step), never the map; it is not Zustand.
+- **URL state:** page-local parameters (`line`, `mode`, `trace`, `t`, `window`) are kept by `useUrlStateSync` only on `/services/…` routes (`PAGE_PARAMS`).
 - **Colours:** `--transit-*` tokens, tested in `contrast.test.ts`.
 - **Tests:** query board panels within their landmark (`[aria-label="Lines"]` and so on). Role queries over the whole page walk every SVG element of the map and are slow in jsdom.
 

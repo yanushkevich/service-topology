@@ -1,4 +1,4 @@
-import type { Line, PolicyStop, Station, TransitBoard } from '../types';
+import type { Line, PolicyStop, Station, TransitBoard, TransitWindow } from '../types';
 
 /**
  * Example data from the Payment Service Transit Board prototype
@@ -6,7 +6,7 @@ import type { Line, PolicyStop, Station, TransitBoard } from '../types';
  * Invented data: every board built from it has `isExample: true` and is labelled so in the UI.
  */
 
-const obs = (detail = 'traces, last 7 days') => ({ kind: 'observed', detail }) as const;
+const obs = (detail = 'traces') => ({ kind: 'observed', detail }) as const;
 const decl = (detail: string) => ({ kind: 'declared', detail }) as const;
 const inf = (detail = 'code scan') => ({ kind: 'inferred', detail }) as const;
 
@@ -195,12 +195,54 @@ const lines: Line[] = [
   },
 ];
 
-/** The example board for `serviceDefinitionId` in `environmentId` (only Payment Service has one). */
-export function paymentServiceBoard(environmentId: string): TransitBoard {
+/** Example p99 per dependency (the prototype gives p50/p95); Fraud Scoring is degraded. */
+const DEP_P99: Record<string, number> = { 'dep:fraud': 1650, 'dep:card': 680, 'dep:ledger': 110, 'dep:pg': 16, 'dep:redis': 4, 'dep:replica': 30, 'dep:kafka': 45 };
+/** Example share of calls retried per client (from the retry policies' fire rates). */
+const RETRY_RATE: Record<string, number> = { 'cli:fraud': 0.29, 'cli:card': 0.031, 'cli:ledger': 0.012, 'cli:producer': 0.0002 };
+
+function stepStats(line: Line): NonNullable<Line['stepStats']> {
+  const byId = new Map(stations.map((s) => [s.id, s]));
+  const out: NonNullable<Line['stepStats']> = {};
+  line.route.forEach((branch, b) => {
+    const share = branch.kind === 'alternative' ? (branch.share ?? 0) : 1;
+    branch.stations.forEach((id, i) => {
+      if (b > 0 && i === 0) return; // the fork module belongs to the main branch
+      const station = byId.get(id);
+      if (!station) return;
+      const lane = branch.stations.find((s) => s.startsWith('dep:')) ?? '';
+      const dep = byId.get(station.kind === 'client' ? lane : id)?.stats;
+      const depP99 = DEP_P99[station.kind === 'client' ? lane : id] ?? 0;
+      switch (station.kind) {
+        case 'caller':
+          out[id] = { share, p50Ms: line.stats.p50Ms, p99Ms: Math.round(line.stats.p95Ms * 1.4), errorRate: line.stats.errorRate, retryRate: 0 };
+          break;
+        case 'gate':
+          out[id] = { share, p50Ms: 1, p99Ms: 3, errorRate: 0, retryRate: 0 };
+          break;
+        case 'module':
+          out[id] = { share, p50Ms: 3, p99Ms: 9, errorRate: 0, retryRate: 0 };
+          break;
+        case 'client':
+          out[id] = { share, p50Ms: (dep?.p50Ms ?? 0) + 1, p99Ms: depP99 + 2, errorRate: dep?.errorRate ?? 0, retryRate: RETRY_RATE[id] ?? 0 };
+          break;
+        case 'dependency':
+          out[id] = { share, p50Ms: dep?.p50Ms ?? 0, p99Ms: depP99, errorRate: dep?.errorRate ?? 0, retryRate: 0 };
+          break;
+      }
+    });
+  });
+  return out;
+}
+
+/** Trace counts in the example are for 7 days; shorter windows see proportionally fewer. */
+const WINDOW_FRACTION: Record<TransitWindow, number> = { '7d': 1, '24h': 1 / 7, '1h': 1 / 168 };
+
+/** The example board for Payment Service in `environmentId` over `window` (only Payment Service has one). */
+export function paymentServiceBoard(environmentId: string, window: TransitWindow = '24h'): TransitBoard {
   return {
     serviceDefinitionId: 'payment-service',
     environmentId,
-    window: 'last 7 days',
+    window,
     isExample: true,
     sources: [
       { id: 'specs', label: 'API specs', status: 'ok' },
@@ -211,6 +253,10 @@ export function paymentServiceBoard(environmentId: string): TransitBoard {
     ],
     stations: structuredClone(stations),
     policies: structuredClone(policies),
-    lines: structuredClone(lines),
+    lines: lines.map((line) => ({
+      ...structuredClone(line),
+      stats: { ...line.stats, traces: Math.round(line.stats.traces * WINDOW_FRACTION[window]) },
+      stepStats: stepStats(line),
+    })),
   };
 }

@@ -2,7 +2,7 @@
 
 **Source:** product owner, 2026-10-12. Imported from the Claude Docs spec "Transit Board — implementation spec" (https://claude.ai/code/artifact/6a1110e4-eb2e-4059-b970-612976ffe1d1, revision 11). The working prototype is in `docs/design-references/payment-transit-board/` (pulled from https://claude.ai/artifact/BrmV6rhi3wrKXJ4CT5th5N); where the spec and the prototype differ, the spec wins.
 
-**Status:** Phase 1 implemented on example data (Milestone 9, 2026-10-12); phases 2–5 are not started. Product requirements: `PRODUCT_SPEC.md` Revision 8 §O. Decision: ADR-021 (proposed). Delivery: Milestone 9 (`milestones/MILESTONE_09_TRANSIT_BOARD.md`). The final section, "Reconciliation with this repository", records where this spec meets existing decisions. It takes precedence over the imported text below until the product owner decides the open points.
+**Status:** Phase 1 and the Phase 4 replay UI are implemented on example data (Milestone 9 and its follow-up, 2026-10-12). Phases 2, 3, and 5 (real sources and endpoints, findings rules, scale) are not started. Product requirements: `PRODUCT_SPEC.md` Revision 8 §O. Decision: ADR-021 (proposed). Delivery: Milestone 9 (`milestones/MILESTONE_09_TRANSIT_BOARD.md`). The final section, "Reconciliation with this repository", records where this spec meets existing decisions. It takes precedence over the imported text below until the product owner decides the open points.
 
 ## Overview
 

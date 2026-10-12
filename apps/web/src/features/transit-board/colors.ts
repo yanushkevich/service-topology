@@ -15,3 +15,14 @@ export const POLICY_STATE_LABEL: Record<PolicyStop['state'], string> = {
   missing: 'missing',
   unknown: 'unknown: config not loaded',
 };
+
+/** One-line policy summary for tooltips, e.g. 'retry ×3 · 4 attempts · 200 ms backoff'. */
+export function policySummary(stop: PolicyStop): string {
+  const config = stop.config ?? {};
+  const parts = [stop.label];
+  if (config.maxAttempts) parts.push(`${config.maxAttempts} attempts`);
+  if (config.backoffMs) parts.push(`${config.backoffMs} ms backoff`);
+  if (config.timeoutMs && stop.type !== 'timeout') parts.push(`${config.timeoutMs} ms timeout`);
+  if (config.limit && !stop.label.includes(config.limit)) parts.push(`limit ${config.limit}`);
+  return parts.join(' · ');
+}

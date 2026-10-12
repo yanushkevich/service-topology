@@ -8,7 +8,7 @@ import { mockSnapshots } from '../../data/mock/snapshots';
 import { useUiStore } from '../../state/uiStore';
 import { renderApp, resetUiStore } from '../../test/renderApp';
 import { paymentServiceBoard } from '../../transit/mock/paymentServiceBoard';
-import type { TransitRepository } from '../../transit/repository';
+import { createExampleTransitRepository, type TransitRepository } from '../../transit/repository';
 import type { TransitBoard } from '../../transit/types';
 
 const BOARD = '/services/payment-service/transit';
@@ -17,7 +17,8 @@ function renderBoard(path = BOARD, transit?: TransitRepository) {
   return renderApp(path, createMockTopologyRepository(), createInMemorySavedLayoutRepository(), createInMemorySnapshotRepository(mockSnapshots()), transit);
 }
 
-const repositoryOf = (board: () => Promise<TransitBoard | null>): TransitRepository => ({ sourceLabel: 'Example data', getBoard: board });
+const example = createExampleTransitRepository();
+const repositoryOf = (board: () => Promise<TransitBoard | null>): TransitRepository => ({ ...example, getBoard: board });
 
 /**
  * Panels are found by their landmark label and queried within: role queries over the whole page
@@ -46,7 +47,7 @@ describe('transit board (ADR-021, spec Phase 1)', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Transit board' })).toBeInTheDocument();
     await ready();
     expect(panel('Breadcrumb')).toHaveTextContent('Production / Payment Service /');
-    expect(screen.getByText(/^Example data · last 7 days$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Example data · last 24 hours$/)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/\blive\b/i);
     // No selection: a network summary and the data-source legend.
     expect(within(strip()).getByText('11 lines through this service')).toBeInTheDocument();
@@ -170,7 +171,7 @@ describe('transit board (ADR-021, spec Phase 1)', () => {
   it('shows a line without traces as declared only', async () => {
     renderBoard(`${BOARD}?v=1&env=production&line=O1`);
     await ready();
-    expect(within(card()).getByText(/No traces in the last 7 days: this card lists declared steps only/)).toBeInTheDocument();
+    expect(within(card()).getByText(/No traces in the last 24 hours: this card lists declared steps only/)).toBeInTheDocument();
     expect(lineRow('O1')).toHaveTextContent('no traffic');
     expect(mapOf().querySelector('[data-selected-line="O1"]')).toHaveAttribute('stroke-dasharray', '10 7');
     expect(within(strip()).getByRole('heading', { name: /declared route \(no traces in this window\)/ })).toBeInTheDocument();

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { indexBoard } from './board';
 import { paymentServiceBoard } from './mock/paymentServiceBoard';
-import { BUS_U, bundledPolyline, bundleOffset, buildTrackGraph, computeMapGeometry, COLUMN_U, DISTANCE, edgeKey, fitProjection, GAP, placeStations, TILT, TRUNK_U } from './layout';
+import { BUS_U, bundledPolyline, overlaps, bundleOffset, buildTrackGraph, computeMapGeometry, COLUMN_U, DISTANCE, edgeKey, fitProjection, GAP, placeStations, TILT, TRUNK_U } from './layout';
 import type { TransitBoard } from './types';
 
 const index = indexBoard(paymentServiceBoard('production'));
@@ -163,3 +163,15 @@ describe('transit layout at the spec scale target', () => {
     expect(geometry.lines.every((l) => l.branches.every((b) => !b.top.includes('NaN')))).toBe(true);
   });
 });
+
+describe('transit layout: labels', () => {
+  it.each([false, true])('places labels without overlaps (flat: %s), hiding only what fits nowhere', (flat) => {
+    const geometry = computeMapGeometry(index, { flat });
+    const visible = geometry.stations.filter((s) => !s.label.hidden);
+    for (const a of visible) for (const b of visible) if (a !== b) expect(overlaps(a.label.box, b.label.box), `${a.id} / ${b.id}`).toBe(false);
+    // Most stations keep a label; every dependency does.
+    expect(visible.length).toBeGreaterThanOrEqual(geometry.stations.length * 0.75);
+    expect(geometry.stations.filter((s) => s.id.startsWith('dep:')).every((s) => !s.label.hidden)).toBe(true);
+  });
+});
+

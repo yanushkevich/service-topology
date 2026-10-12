@@ -468,13 +468,16 @@ Status: Phase 1 implemented (ADR-021). Specification: `docs/TRANSIT_BOARD.md`.
   - `types.ts`: the read model;
   - `board.ts`: index, search, budget, formatting;
   - `layout.ts`: rows, track graph, bundling, projection, `computeMapGeometry`;
-  - `repository.ts`: `TransitRepository`, the example implementation, and the context;
-  - `mock/`: the Payment Service example and a scale generator.
+  - `trace.ts`: replay helpers (current step, steps in flight, divergence, samples, speed);
+  - `repository.ts`: `TransitRepository` (`getBoard`, `getTraces`, `getTrace`), the example implementation, and the context;
+  - `mock/`: the Payment Service example board and traces, and a scale generator.
 - `apps/web/src/features/transit-board/`:
   - `TransitBoardPage.tsx`: the route, states, responsive grid, and URL state;
   - `LineIndex.tsx`, `TransitMap.tsx`, `StopStrip.tsx`, `LineCard.tsx`: the four panels;
   - `visuals.tsx` and `colors.ts`: badges, diamonds, tags, and token colours;
-  - `useTransitBoard.ts`: loading, keeping the last good board on error.
+  - `TraceReplay.tsx`: the train, the timeline strip, and the replay card;
+  - `playback.ts`: the board-local playback clock store;
+  - `useTransitBoard.ts`: loading the board (keeping the last good board on error), trace lists, and traces.
 - **Route:** `/services/:serviceId/transit`, linked from the inspector ("Open transit board").
 - **Tokens:** `--transit-*` in `tokens.css`.
 - **Separate read model.**

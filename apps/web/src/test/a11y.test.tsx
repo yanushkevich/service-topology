@@ -93,6 +93,15 @@ describe('accessibility audit (axe-core)', () => {
     expect(await audit()).toEqual([]);
   });
 
+  it('transit board trace replay with a fan-out, and a tooltip open', async () => {
+    renderApp('/services/payment-service/transit?v=1&env=production&line=J2&mode=trace');
+    await screen.findByRole('list', { name: /^Steps of trace / });
+    const station = document.querySelector('[data-station="dep:card"]');
+    if (station) fireEvent.pointerEnter(station);
+    await screen.findByRole('tooltip');
+    expect(await audit()).toEqual([]);
+  });
+
   it('history mode banner', async () => {
     renderApp('/registry?v=1&env=production&asof=fixture-0600');
     await screen.findByText(/Viewing history:/);

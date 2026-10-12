@@ -1,7 +1,7 @@
 import { useId, type ReactNode } from 'react';
-import { budgetFor, formatCount, formatMs, formatRate, GROUP_LABELS, isUnobserved, type BoardIndex } from '../../transit/board';
+import { budgetFor, formatCount, formatMs, formatRate, GROUP_LABELS, isUnobserved, windowLabel, type BoardIndex } from '../../transit/board';
 import type { Finding, Line, SourceStatus } from '../../transit/types';
-import { cx, kickerClass } from '../../shared/ui/classes';
+import { buttonClass, cx, kickerClass } from '../../shared/ui/classes';
 import { LineBadge, ProvenanceTag, SeverityMark } from './visuals';
 
 /**
@@ -13,11 +13,14 @@ export function LineCard({
   line,
   focusedFinding,
   onFocusFinding,
+  onReplay,
 }: {
   index: BoardIndex;
   line: Line | null;
   focusedFinding: number | null;
   onFocusFinding: (finding: number | null) => void;
+  /** Switches to trace replay; absent when the line has no traces in the window. */
+  onReplay?: (() => void) | undefined;
 }) {
   const failed = index.board.sources.filter((s) => s.status === 'failed');
   if (!line) {
@@ -27,7 +30,7 @@ export function LineCard({
         <Block title="Where the map comes from">
           <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-2.5 gap-y-2 text-sm">
             <Source tag="declared" title="Lines" text="Entry points from API specs (proto, OpenAPI, AsyncAPI) and the scheduler config" />
-            <Source tag="observed" title="Routes and timings" text={`Built from traces, ${index.board.window}`} />
+            <Source tag="observed" title="Routes and timings" text={`Built from traces, ${windowLabel(index.board.window)}`} />
             <Source tag="declared" title="Policy stops" text="Resilience config and mesh rules; fire rates from spans" />
             <Source tag="inferred" title="Dashed stations and routes" text="From a code scan, because they emit no spans" />
           </dl>
@@ -59,7 +62,7 @@ export function LineCard({
       {failed.length > 0 && <DataGaps failed={failed} />}
       {unobserved && (
         <p className="m-0 rounded-lg border border-dashed border-line-strong px-3 py-2 text-sm text-fg-2">
-          No traces in the {index.board.window}: this card lists declared steps only, and trace replay is not possible for this line.
+          No traces in the {windowLabel(index.board.window)}: this card lists declared steps only, and trace replay is not possible for this line in this window.
         </p>
       )}
       <BudgetBar index={index} line={line} />
@@ -69,12 +72,12 @@ export function LineCard({
         <Kv k="p50 / p95" v={`${formatMs(line.stats.p50Ms)} / ${formatMs(line.stats.p95Ms)}`} />
         <Kv k="Errors" v={formatRate(line.stats.errorRate)} />
         <Kv k="Calls per day" v={line.stats.callsPerDay ? formatCount(line.stats.callsPerDay) : '—'} />
-        <Kv k={`Traces, ${index.board.window}`} v={formatCount(line.stats.traces)} />
+        <Kv k={`Traces, ${windowLabel(index.board.window)}`} v={formatCount(line.stats.traces)} />
       </dl>
       <Block title="Where this line comes from">
         <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-2.5 gap-y-2 text-sm">
           <Source tag={line.provenance.entry.kind} text={`Entry point in ${line.provenance.entry.detail}`} />
-          <Source tag={line.provenance.route.kind} text={line.provenance.route.kind === 'inferred' ? `Route from a ${line.provenance.route.detail}; no traces carry this work` : `Route in ${formatCount(line.stats.traces)} traces, ${index.board.window}`} />
+          <Source tag={line.provenance.route.kind} text={line.provenance.route.kind === 'inferred' ? `Route from a ${line.provenance.route.detail}; no traces carry this work` : `Route in ${formatCount(line.stats.traces)} traces, ${windowLabel(index.board.window)}`} />
           <Source tag="declared" text="Policies from resilience config" />
         </dl>
       </Block>
@@ -110,7 +113,11 @@ export function LineCard({
           </ul>
         )}
       </Block>
-      <p className="m-0 text-xs text-fg-3">Trace replay is not available yet (planned for a later phase).</p>
+      {onReplay && (
+        <button type="button" className={buttonClass('primary', 'self-start')} onClick={onReplay}>
+          Replay a real request
+        </button>
+      )}
     </div>
   );
 }

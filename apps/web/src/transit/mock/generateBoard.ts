@@ -44,5 +44,5 @@ export function generateBoard({ lines: lineCount = 60, stations: stationCount = 
       provenance: { entry: { kind: 'declared', detail: 'generated' }, route: { kind: 'observed', detail: 'generated' } },
     };
   });
-  return { serviceDefinitionId: 'generated', environmentId: 'production', window: 'last 7 days', isExample: true, sources: [], stations, policies, lines };
+  return { serviceDefinitionId: 'generated', environmentId: 'production', window: '24h', isExample: true, sources: [], stations, policies, lines };
 }

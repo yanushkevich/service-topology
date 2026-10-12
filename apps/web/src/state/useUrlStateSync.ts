@@ -46,9 +46,9 @@ const STARTUP_PARAMS = ['source', 'dataset'] as const;
 
 /**
  * Page-local view state that only one route understands (ADR-021: the transit board's `line`,
- * `mode`, `trace`, `t`). Kept while the path stays on that route, dropped when leaving it.
+ * `mode`, `trace`, `t`, `window`). Kept while the path stays on that route, dropped when leaving it.
  */
-const PAGE_PARAMS: readonly { prefix: string; names: readonly string[] }[] = [{ prefix: '/services/', names: ['line', 'mode', 'trace', 't'] }];
+const PAGE_PARAMS: readonly { prefix: string; names: readonly string[] }[] = [{ prefix: '/services/', names: ['line', 'mode', 'trace', 't', 'window'] }];
 
 export function withStartupParams(canonical: string, currentSearch: string, pathname = ''): string {
   const current = new URLSearchParams(currentSearch);

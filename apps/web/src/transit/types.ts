@@ -79,6 +79,16 @@ export interface Finding {
   fix?: string;
 }
 
+/** Typical-mode stats of one step (station) on a line (spec "Per-step stats"). */
+export interface StepStats {
+  /** Share of the line's traces that visit the step, 0..1. */
+  share: number;
+  p50Ms: number;
+  p99Ms: number;
+  errorRate: number;
+  retryRate: number;
+}
+
 export interface Line {
   id: string;
   /** 'A2' */
@@ -95,6 +105,8 @@ export interface Line {
   patterns: string[];
   findings: Finding[];
   provenance: { entry: Provenance; route: Provenance };
+  /** Per-step stats keyed by station id (typical mode). */
+  stepStats?: Record<string, StepStats>;
 }
 
 export interface SourceStatus {
@@ -103,11 +115,13 @@ export interface SourceStatus {
   status: 'ok' | 'failed';
 }
 
+/** Aggregation window of typical mode (spec: default 24h, selectable 1h, 24h, 7d). */
+export type TransitWindow = '1h' | '24h' | '7d';
+
 export interface TransitBoard {
   serviceDefinitionId: string;
   environmentId: string;
-  /** e.g. 'last 7 days' */
-  window: string;
+  window: TransitWindow;
   /** True for example data: never presented as observed. */
   isExample: boolean;
   sources: SourceStatus[];
@@ -122,14 +136,34 @@ export interface TraceSummary {
   startedAt: string;
   durationMs: number;
   status: 'ok' | 'slow' | 'failed';
+  /** The line (root operation) the trace belongs to. */
+  lineId: string;
+  /** Number of retried calls in the trace (for "one with retries"). */
+  retries: number;
 }
 
 export interface TraceStep {
-  /** Station id or policy stop id. */
+  /** Station id or policy stop id; an off-map step names the span instead. */
   at: string;
   label: string;
   startMs: number;
   durationMs: number;
   status: 'ok' | 'warn' | 'fail';
   spanId: string;
+  /** Retry attempt number on the same station. */
+  attempt?: number;
+  /** A span that maps to no known station (spec "From spans to steps"). */
+  offMap?: boolean;
+  /** Trace context was lost here (spec "Limits shown honestly"): drawn as a gap. */
+  contextLost?: boolean;
+  /** Steps with the same value ran in parallel (fan-out). */
+  parallel?: string;
+  /** Key span attributes shown for the active step. */
+  attributes?: Record<string, string>;
+}
+
+/** A trace already mapped to station ids (spec `GET /traces/{traceId}/steps`). */
+export interface TraceDetail {
+  summary: TraceSummary;
+  steps: TraceStep[];
 }

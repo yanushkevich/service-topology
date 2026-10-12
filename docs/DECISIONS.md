@@ -219,7 +219,7 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - **Milestone 9 scope.**
     - Milestone 9 delivers only spec Phase 1: the board in the real frontend stack, on the prototype's example data behind a `TransitRepository` interface, clearly labelled as example data.
     - The backend endpoints (`GET /services/{id}/transit`, `GET /traces/{traceId}/steps`) are added to the contract when phases 2–4 start.
-    - (Open: trace replay is spec Phase 4. The prototype already replays example traces client-side, so it could move into Milestone 9 on example data if the product owner wants it.)
+    - Trace replay was added on example traces (product owner, 2026-10-12: "implement everything whats outstanding"), behind the same repository (`getTraces`, `getTrace`). The real `/steps` endpoint still waits for spec Phase 4's backend work.
   - **Theming (decided by the product owner, 2026-10-12: "not only dark only, that switch remains the same for all functionality").** The board follows the app's light/dark switch and tokens (ADR-013), like every other page, instead of the spec's dark-only raw palette. Its control-room look is the dark theme's rendering, with an equivalent light rendering.
   - **Entry point.** `/services/:serviceId/transit` in the selected environment, linked from the inspector of a service instance. (Open: also from the 3D galaxy "enter node", spec open question 5.)
 - **Alternatives:**

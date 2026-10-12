@@ -1,4 +1,4 @@
-import type { Line, LineGroup, PolicyStop, Station, TransitBoard } from './types';
+import type { Line, LineGroup, PolicyStop, Station, StepStats, TransitBoard, TransitWindow } from './types';
 
 /** Lookups derived once per board load. */
 export interface BoardIndex {
@@ -153,3 +153,30 @@ export function formatRate(rate: number): string {
   const pct = rate * 100;
   return `${pct === 0 ? 0 : pct < 0.1 ? pct.toFixed(2) : Number(pct.toFixed(1))}%`;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Windows and per-step thresholds (spec "Typical route mode")
+// ---------------------------------------------------------------------------------------------
+
+export const WINDOWS: readonly TransitWindow[] = ['1h', '24h', '7d'];
+export const DEFAULT_WINDOW: TransitWindow = '24h';
+const WINDOW_LABELS: Record<TransitWindow, string> = { '1h': 'last hour', '24h': 'last 24 hours', '7d': 'last 7 days' };
+export const windowLabel = (window: TransitWindow) => WINDOW_LABELS[window];
+export const isWindow = (value: string | null): value is TransitWindow => value !== null && (WINDOWS as readonly string[]).includes(value);
+
+/**
+ * Tint thresholds for per-step stats. Config, not hard-coded rules: a step is "slow" when its p99
+ * exceeds its share of the deadline (the deadline split evenly over the dependencies on the
+ * typical route), and "failing" when its error rate is above `errorRate`.
+ */
+export const STEP_THRESHOLDS = { errorRate: 0.01 } as const;
+
+export type StepTint = 'errors' | 'slow' | null;
+
+export function stepTint(index: BoardIndex, line: Line, stationId: string, stats: StepStats, thresholds = STEP_THRESHOLDS): StepTint {
+  if (stats.errorRate > thresholds.errorRate) return 'errors';
+  if (!line.deadlineMs) return null;
+  const deps = dependenciesOf(index, line).length || 1;
+  return index.stations.get(stationId)?.kind === 'dependency' && stats.p99Ms > line.deadlineMs / deps ? 'slow' : null;
+}
+

@@ -1,18 +1,20 @@
-import { useEffect, useId, useRef, useState } from 'react';
-import type { BoardIndex } from '../../transit/board';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { formatMs, formatRate, isUnobserved, lineStations, type BoardIndex } from '../../transit/board';
 import type { MapGeometry } from '../../transit/layout';
+import type { PolicyStop, Station } from '../../transit/types';
 import { cx, floatClass } from '../../shared/ui/classes';
-import { lineColor, POLICY_STATE_LABEL } from './colors';
-import { LineBadge, PolicyDiamond } from './visuals';
-import { isUnobserved, lineStations } from '../../transit/board';
+import { lineColor, policySummary, POLICY_STATE_LABEL } from './colors';
+import { LineBadge, PolicyDiamond, ProvenanceTag } from './visuals';
 
 type LineState = 'normal' | 'dim' | 'hidden';
+type Hover = { kind: 'station' | 'stop'; id: string; x: number; y: number };
 
 /**
  * Perspective transit map (spec "Map rendering"). Geometry is computed once per data load by the
- * caller; selection, search, and finding focus only change attributes here, and the selected line
- * is redrawn on top in a separate overlay layer. The map is `role="img"`: the index and the strip
- * carry the same information for keyboard and screen-reader users.
+ * caller; selection, search, finding focus, and hover only change attributes here. The selected
+ * line is redrawn on top in an overlay layer, and `overlay` (the replay's train) is drawn last.
+ * The map is `role="img"`: the index and the strip carry the same information for keyboard and
+ * screen-reader users, so the hover tooltips are a convenience, not the only way to a value.
  */
 export function TransitMap({
   index,
@@ -21,7 +23,9 @@ export function TransitMap({
   selectedId,
   matches,
   focusStations,
+  showStepStats,
   onSelect,
+  overlay,
 }: {
   index: BoardIndex;
   geometry: MapGeometry;
@@ -31,10 +35,14 @@ export function TransitMap({
   matches: Set<string> | null;
   /** Stations named by the focused finding. */
   focusStations: ReadonlySet<string>;
+  /** Typical mode: station tooltips show the selected line's p50 and p99. */
+  showStepStats: boolean;
   onSelect: (lineId: string | null) => void;
+  overlay?: ReactNode;
 }) {
   const blurId = useId().replace(/:/g, '');
   const [chooser, setChooser] = useState<{ stationId: string; x: number; y: number } | null>(null);
+  const [hover, setHover] = useState<Hover | null>(null);
   const selected = selectedId ? index.lineById.get(selectedId) : undefined;
   const onSelected = new Set(selected ? lineStations(selected) : []);
   const stateOf = (lineId: string): LineState => {
@@ -53,6 +61,7 @@ export function TransitMap({
 
   const lineCount = index.lines.length;
   const label = `Transit map of ${serviceName}: ${lineCount} line${lineCount === 1 ? '' : 's'} through ${index.board.stations.length} stations.${selected ? ` Line ${selected.code}, ${selected.name}, is highlighted.` : ''} Use the line list and the stop strip for details.`;
+  const at = (x: number, y: number) => ({ left: `${(x / geometry.width) * 100}%`, top: `${(y / geometry.height) * 100}%` });
 
   return (
     <div className="relative">
@@ -140,15 +149,21 @@ export function TransitMap({
             const stop = index.board.policies.find((p) => p.id === g.id);
             if (!stop) return null;
             return (
-              <g key={g.id} opacity={stationLit(stop.clientId) ? 1 : 0.25}>
-                <title>{`${stop.label} (${stop.type}) · ${POLICY_STATE_LABEL[stop.state]}${stop.config ? ` · ${Object.entries(stop.config).map(([k, v]) => `${k} ${v}`).join(', ')}` : ''}${stop.source ? ` · ${stop.source}` : ''}`}</title>
+              <g
+                key={g.id}
+                data-stop={g.id}
+                opacity={stationLit(stop.clientId) ? 1 : 0.25}
+                onPointerEnter={() => setHover({ kind: 'stop', id: g.id, x: g.x, y: g.y })}
+                onPointerLeave={() => setHover(null)}
+              >
+                <rect x={g.x - 9} y={g.y - 9} width={18} height={18} fill="transparent" />
                 <PolicyDiamond stop={stop} x={g.x} y={g.y} />
               </g>
             );
           })}
         </g>
 
-        {/* Overlay: the selected line on top, wider, with a soft glow; then finding focus rings. */}
+        {/* Overlay: the selected line on top, wider, with a soft glow. */}
         <g data-layer="overlay" pointerEvents="none">
           {selected &&
             geometry.lines
@@ -177,7 +192,8 @@ export function TransitMap({
             if (!station) return null;
             const lit = stationLit(g.id);
             const inferred = station.provenance.kind === 'inferred';
-            const showLabel = !selected || lit;
+            // Labels that fit nowhere show when their line is selected; tooltips always name them.
+            const showLabel = selected ? lit : !g.label.hidden;
             return (
               <g
                 key={g.id}
@@ -188,8 +204,9 @@ export function TransitMap({
                   e.stopPropagation();
                   clickStation(g.id, g.x, g.y);
                 }}
+                onPointerEnter={() => setHover({ kind: 'station', id: g.id, x: g.x, y: g.y })}
+                onPointerLeave={() => setHover(null)}
               >
-                <title>{`${station.name} · ${station.kind} · ${station.provenance.kind} (${station.provenance.detail})${station.stats ? ` · p50 ${station.stats.p50Ms} ms, p95 ${station.stats.p95Ms} ms` : ''}`}</title>
                 <ellipse cx={g.x} cy={g.y + 4} rx={14} ry={5} fill="var(--transit-shadow)" />
                 {g.capsule ? (
                   <rect x={g.x - 9} y={g.y - g.capsule / 2} width={18} height={g.capsule} rx={9} fill="var(--transit-station)" stroke="var(--transit-station-ring)" strokeWidth={3} />
@@ -207,6 +224,7 @@ export function TransitMap({
                 {focusStations.has(g.id) && <circle cx={g.x} cy={g.y} r={(g.capsule ?? 2 * g.radius) / 2 + 9} fill="none" stroke="var(--color-warn)" strokeWidth={2} />}
                 {showLabel && (
                   <text
+                    data-label
                     x={g.label.x}
                     y={g.label.y}
                     textAnchor={g.label.anchor}
@@ -237,24 +255,79 @@ export function TransitMap({
             );
           })}
         </g>
+
+        {overlay && (
+          <g data-layer="train" pointerEvents="none">
+            {overlay}
+          </g>
+        )}
       </svg>
 
-      {chooser && <StationChooser index={index} geometry={geometry} chooser={chooser} onPick={(id) => (setChooser(null), onSelect(id))} onClose={() => setChooser(null)} />}
+      {hover && !chooser && (
+        <div role="tooltip" className={cx(floatClass, 'pointer-events-none z-20 w-max max-w-[260px] -translate-x-1/2 -translate-y-[calc(100%+14px)] px-3 py-2 text-xs')} style={at(hover.x, hover.y)}>
+          {hover.kind === 'station' ? (
+            <StationTip index={index} station={index.stations.get(hover.id)} lineId={showStepStats ? (selected?.id ?? null) : null} />
+          ) : (
+            <StopTip stop={index.board.policies.find((p) => p.id === hover.id)} />
+          )}
+        </div>
+      )}
+
+      {chooser && <StationChooser index={index} chooser={chooser} style={at(chooser.x, chooser.y)} onPick={(id) => (setChooser(null), onSelect(id))} onClose={() => setChooser(null)} />}
     </div>
+  );
+}
+
+/** Station tooltip (spec "Hover"): name, kind, provenance, and in typical mode p50 / p99 for the selected line. */
+function StationTip({ index, station, lineId }: { index: BoardIndex; station: Station | undefined; lineId: string | null }) {
+  if (!station) return null;
+  const stats = lineId ? index.lineById.get(lineId)?.stepStats?.[station.id] : undefined;
+  return (
+    <>
+      <div className="flex items-center gap-2">
+        <b className="font-semibold text-fg">{station.name}</b>
+        <ProvenanceTag kind={station.provenance.kind} />
+      </div>
+      <div className="text-fg-3">
+        {station.kind}
+        {station.sub ? ` · ${station.sub}` : ''} · {station.provenance.detail}
+      </div>
+      {stats && (
+        <div className="mt-1 font-mono text-fg-2">
+          p50 {formatMs(stats.p50Ms)} · p99 {formatMs(stats.p99Ms)}
+          {stats.errorRate > 0 ? ` · errors ${formatRate(stats.errorRate)}` : ''}
+        </div>
+      )}
+    </>
+  );
+}
+
+/** Policy tooltip (spec "Hover"): the policy summary and the config it was read from. */
+function StopTip({ stop }: { stop: PolicyStop | undefined }) {
+  if (!stop) return null;
+  return (
+    <>
+      <div className="font-mono font-medium text-fg">{policySummary(stop)}</div>
+      <div className="text-fg-3">
+        {stop.type} · {POLICY_STATE_LABEL[stop.state]}
+        {stop.stat ? ` · ${stop.stat}` : ''}
+      </div>
+      {stop.source && <div className="mt-1 font-mono text-fg-2">{stop.source}</div>}
+    </>
   );
 }
 
 /** A shared station is served by several lines: ask instead of guessing (spec "Selection"). */
 function StationChooser({
   index,
-  geometry,
   chooser,
+  style,
   onPick,
   onClose,
 }: {
   index: BoardIndex;
-  geometry: MapGeometry;
-  chooser: { stationId: string; x: number; y: number };
+  chooser: { stationId: string };
+  style: { left: string; top: string };
   onPick: (lineId: string) => void;
   onClose: () => void;
 }) {
@@ -271,7 +344,7 @@ function StationChooser({
       role="group"
       aria-label={`Lines through ${station.name}`}
       className={cx(floatClass, 'z-20 w-[220px] p-1.5')}
-      style={{ left: `min(calc(${(chooser.x / geometry.width) * 100}% + 12px), calc(100% - 228px))`, top: `${(chooser.y / geometry.height) * 100}%` }}
+      style={{ left: `min(calc(${style.left} + 12px), calc(100% - 228px))`, top: style.top }}
       onKeyDown={(e) => {
         if (e.key === 'Escape') {
           e.stopPropagation();

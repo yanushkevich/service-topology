@@ -41,7 +41,7 @@
   - real findings rules;
   - grouped trunks;
   - code scan.
-- Trace replay, unless the product owner adds it (ADR-021 open point).
+- Trace replay: added afterwards on example traces (follow-up in `docs/IMPLEMENTATION_PLAN.md`).
 
 ## Acceptance criteria
 - The layout functions are pure and deterministic, with tests for:

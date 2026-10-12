@@ -37,6 +37,7 @@ const PAGES = [
   { name: 'Settings', path: '/settings?v=1&env=production', ready: 'section h2' },
   { name: 'Transit board', path: '/services/payment-service/transit?v=1&env=production', ready: '[aria-label="Line card"]' },
   { name: 'Transit board (line selected)', path: '/services/payment-service/transit?v=1&env=production&line=A1', ready: '[aria-label="Line card"] h2' },
+  { name: 'Transit board (trace replay)', path: '/services/payment-service/transit?v=1&env=production&line=A5&mode=trace', ready: '[aria-label^="Steps of trace"]' },
 ];
 
 async function main() {

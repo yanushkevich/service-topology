@@ -204,7 +204,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 6 | Implemented (2026-10-11) | See the Milestone 6 closeout below. |
 | 7 | Implemented (2026-10-11) | See the Milestone 7 closeout below. |
 | 8 | Implemented (2026-10-12) | Editing UI (ADR-020); see the Milestone 8 closeout below. |
-| 9 | Implemented (2026-10-12) | Transit board, spec Phase 1 on example data (ADR-021); see the Milestone 9 closeout below. Trace replay and real data sources are later phases. |
+| 9 | Implemented (2026-10-12) | Transit board on example data (ADR-021): spec Phase 1 plus the Phase 4 replay UI, hover tooltips, windows, and per-step stats; see the Milestone 9 closeout and follow-up below. Real data sources (phases 2, 3, and 5) are not started. |
 | B1 (backend) | Implemented (2026-10-11) | Go foundation in `backend/`; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B2 (backend) | Implemented (2026-10-11) | ArcadeDB adapter, schema, idempotent seed, integration tests; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. The database was replaced by MongoDB afterwards (ADR-019). |
 | B3 (backend) | Implemented (2026-10-11) | REST API for contract v1, registry parity, contract check; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
@@ -387,4 +387,36 @@ Known limitations:
 - The station rows of the map are placed automatically, without label collision avoidance; a few labels in the dense far rows can touch.
 - Per-step p99, call share, and retry rates are not in the example data, so the strip shows the prototype's stats.
 - Only Payment Service has a board; every other service shows "No endpoints yet".
+
+### Milestone 9 follow-up (2026-10-12): everything outstanding on example data
+Product owner direction: "implement everything whats outstanding". Delivered:
+- **Trace replay (the spec's Phase 4 UI) on example traces.** `src/transit/mock/paymentServiceTraces.ts` ports the prototype's trace generator, plus an off-map span (W1), lost context (E1), and a fan-out (J2).
+  - Sample requests: slowest, most recent error, one with retries, and typical. A pasted trace ID opens that trace, switching to its line.
+  - Playback: a train on the map; about 6 s per trace at 1×, with 0.25×, 1×, and 4×.
+  - Retries bounce between the dependency and the retry diamond. A fallback or a cache miss takes the branch. An error turns the train red.
+  - The strip is a timeline: a slider to scrub and one button per step. It flags off-map spans, shows lost context as a dashed gap, and stacks parallel steps.
+  - Divergence from the typical route is shown in the strip and the card, and the card lists the active step's attributes.
+  - Keys: T, Space, Left, Right, `[`, `]`. Reduced motion steps instead of gliding. URL: `mode`, `trace`, and `t` (written only while paused).
+- **Hover tooltips** for stations (name, kind, provenance, the selected line's p50 and p99) and for policy stops (summary and config source).
+- **Window selector** (1h, 24h, 7d; default 24h, as in the spec), with the URL parameter `window`. The example scales its 7-day trace counts by the window; J2 has no traces in the last hour.
+- **Per-step stats** in typical mode: p99, share, error rate, and retry rate. They are tinted by `STEP_THRESHOLDS` (errors > 1%; a dependency is slow when its p99 is above its share of the deadline) and always named in words.
+- **Label collision avoidance:** each label takes its hinted side, then the other side, then the right. A label that fits nowhere is hidden until its line is selected.
+
+Evidence:
+- `npm run check` passes: typecheck, lint, 459 tests in 47 files (458 passed, 1 skipped), and the build.
+- New tests:
+  - `src/transit/trace.test.ts`: the generator, helpers, divergence, samples, and the windowed repository;
+  - `TraceReplay.test.tsx`: 15 integration tests covering replay, keys, scrubbing, URL time, divergence, off-map, gap, fan-out, paste, the disabled state, windows, step stats, tooltips, and hidden labels;
+  - label-overlap tests in both projections;
+  - a jsdom axe case for trace replay.
+- `npm run audit:a11y`: all 31 runs pass, including trace replay in both themes. The audit first found contrast failures on future steps and status words, and Back/Next labels that did not match their visible text; all are fixed.
+- Screenshots reviewed: A5 replay at the divergence step (dark), J2 at the fork with two trains (light), the policy tooltip (dark), the overview, and A1 replay at 390px (light). No page scrolls horizontally.
+
+Decisions:
+- Playback keeps a step cursor beside the clock time, because several steps can start at the same moment. Each step stays on screen for at least 380 ms ÷ speed.
+- The playback clock is a store local to the board (`playback.ts`), so only the marker, the progress, and the active step re-render each frame; the map does not.
+- Divergence reports the first departure from the route, then a failure, then the first retry or fallback.
+- `TraceStep` gains `attempt`, `offMap`, `contextLost`, `parallel`, and `attributes`; `TraceSummary` gains `lineId` and `retries`.
+
+Still not started: spec phases 2, 3, and 5 (ingesting specs, scheduler and resilience config, and OpenTelemetry traces; the `/transit` and `/steps` endpoints; the alias table; real findings rules; grouped trunks; code scan). They depend on the open questions in `docs/TRANSIT_BOARD.md` (tracing backend, internal spans, alias ownership, sampling).
 
