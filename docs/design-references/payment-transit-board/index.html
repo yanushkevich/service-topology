@@ -1,0 +1,370 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Payment Service Transit Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: line index | perspective transit map over a stop-by-stop strip | line card. Dark-only by choice: a control-room board. */
+:root{
+  color-scheme:dark;
+  --ground:#05060b; --panel:#0a0d17; --raise:#121729; --line:#1b2238; --line2:#2a3352;
+  --ink:#eaeef8; --ink2:#a9b2c9; --ink3:#78839f;
+  --cy:#5fe1ff; --ok:#3dd6b0; --warn:#f5b454; --fail:#ff7b7b;
+  --sans:'Geist',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'Geist Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+html,body{height:100%}
+body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.45}
+*{box-sizing:border-box}
+button,input{font:inherit;color:inherit}
+button{background:none;border:0;padding:0;cursor:pointer;text-align:left}
+:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.mono{font-family:var(--mono)}
+.k{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+.app{min-height:100%;display:grid;grid-template-rows:auto 1fr;padding-inline:16px;padding-block:0 16px;gap:14px;background:radial-gradient(ellipse 60% 50% at 55% 40%,rgba(40,60,120,.16),transparent 70%),var(--ground)}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-block:14px;border-bottom:1px solid var(--line)}
+header .crumb{color:var(--ink3);font-size:12.5px}
+header h1{font-size:15px;font-weight:600;margin:0;letter-spacing:-.005em}
+header .sp{flex:1}
+.seg{display:inline-flex;gap:2px;padding:3px;border-radius:9px;border:1px solid var(--line)}
+.seg button{height:26px;padding:0 12px;border-radius:6px;font-size:12px;color:var(--ink3)}
+.seg button[aria-pressed="true"]{background:var(--raise);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line2)}
+.seg button:disabled{opacity:.4;cursor:default}
+.main{display:grid;grid-template-columns:260px minmax(0,1fr) 330px;grid-template-areas:'idx map card' 'idx strip strip';gap:14px;min-height:0}
+.index{grid-area:idx}.mapwrap{grid-area:map}.strip{grid-area:strip}.card{grid-area:card}
+.panel{background:rgba(10,13,23,.88);border:1px solid var(--line);border-radius:14px;min-width:0}
+/* index */
+.index{padding:14px;display:flex;flex-direction:column;gap:12px;align-self:start}
+.search{display:flex;align-items:center;gap:8px;height:36px;border-radius:9px;border:1px solid var(--line2);padding:0 10px;background:var(--ground)}
+.search input{flex:1;min-width:0;background:none;border:0;outline:none;font-size:12.5px}
+.search input::placeholder{color:var(--ink3)}
+.grp{display:flex;flex-direction:column;gap:2px}
+.grp .k{padding:6px 8px 4px}
+.row{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:8px;width:100%;font-size:12.5px;color:var(--ink2)}
+.row:hover{background:var(--raise);color:var(--ink)}
+.row[aria-current="true"]{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);color:var(--ink)}
+.bdg{width:28px;height:20px;border-radius:5px;display:grid;place-items:center;font-family:var(--mono);font-size:10.5px;font-weight:500;color:#05060b;flex:none}
+.row .n{flex:1;min-width:0;font-family:var(--mono);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .m{font-size:10.5px;color:var(--ink3);white-space:nowrap;font-variant-numeric:tabular-nums}
+.warnm{color:var(--warn)}
+.empty{font-size:12px;color:var(--ink3);padding:8px}
+/* center */
+.center{display:flex;flex-direction:column;gap:14px;min-width:0}
+.mapwrap{position:relative;padding:6px 6px 34px;overflow:hidden;display:flex;align-items:center}
+.mapwrap svg{display:block;width:100%;height:auto}
+.legend{position:absolute;left:18px;bottom:14px;display:flex;gap:18px;flex-wrap:wrap;font-size:11px;color:var(--ink3);pointer-events:none;white-space:nowrap}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.strip{padding:12px 16px 10px}
+.strip .sx{overflow-x:auto}
+.strip svg{display:block}
+.striphead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+/* card */
+.card{padding:16px;display:flex;flex-direction:column;gap:14px;align-self:stretch;max-height:600px;overflow:auto}
+.kv{display:flex;justify-content:space-between;gap:12px;font-size:12px;padding:5px 0;border-top:1px solid var(--line)}
+.kv span:first-child{color:var(--ink3)}
+.kv span:last-child{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.pc{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:11px;border:1px solid var(--line2);font-size:11px;color:var(--ink2);margin:0 4px 6px 0}
+.fd{display:flex;gap:9px;font-size:12px;line-height:1.45}
+.tri{width:12px;height:12px;flex:none;margin-top:2px;clip-path:polygon(50% 0,100% 100%,0 100%);background:var(--warn)}
+.dot{width:10px;height:10px;flex:none;margin-top:3px;border-radius:50%}
+.src{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:12px}
+.src b{font-weight:500;color:var(--ink)}
+.src .t{color:var(--ink3);font-size:11.5px}
+.tag{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:4px;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.tag.decl{background:rgba(143,155,255,.16);color:#b8c0ff}.tag.obs{background:rgba(61,214,176,.14);color:#7fe6c9}.tag.inf{background:rgba(245,180,84,.14);color:#f7c987}
+.trl{display:flex;flex-direction:column;gap:2px}
+.tr{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:7px 8px;border-radius:8px;width:100%;font-size:12px}
+.tr:hover{background:var(--raise)}
+.tr[aria-current="true"]{background:rgba(95,225,255,.08);box-shadow:inset 0 0 0 1px rgba(95,225,255,.35)}
+.tr .d{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--ink2)}
+.pill{height:18px;padding:0 7px;border-radius:9px;font-family:var(--mono);font-size:10px;display:inline-flex;align-items:center}
+.pill.ok{background:rgba(61,214,176,.15);color:#7fe6c9}.pill.warn{background:rgba(245,180,84,.16);color:#f7c987}.pill.fail{background:rgba(255,123,123,.16);color:#ffa3a3}
+.steps{display:flex;flex-direction:column;max-height:300px;overflow:auto;border-top:1px solid var(--line)}
+.st{display:grid;grid-template-columns:58px 10px 1fr;gap:8px;padding:5px 0;font-size:12px;color:var(--ink3)}
+.st.done{color:var(--ink2)}.st.now{color:var(--ink)}
+.st .tm{font-family:var(--mono);font-size:10.5px;text-align:right;font-variant-numeric:tabular-nums;padding-top:1px}
+.st .mk{width:8px;height:8px;border-radius:50%;margin-top:5px;background:var(--line2)}
+.st.done .mk{background:var(--ink3)}.st.now .mk{background:var(--cy);box-shadow:0 0 8px var(--cy)}
+.st .mk.warn{background:var(--warn)}.st .mk.fail{background:var(--fail)}
+.ctl{display:flex;align-items:center;gap:8px}
+.btn{height:30px;padding:0 12px;border-radius:8px;border:1px solid var(--line2);font-size:12px;color:var(--ink);display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--raise)}
+.btn.pri{background:var(--cy);border-color:var(--cy);color:#04121a;font-weight:600}
+.bar{flex:1;height:4px;border-radius:2px;background:var(--line2);position:relative;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--cy)}
+.big{font-size:16px;font-weight:600;letter-spacing:-.005em}
+@media (max-width:1180px){.main{grid-template-columns:240px minmax(0,1fr);grid-template-areas:'idx map' 'idx strip' 'card card'}.card{max-height:none}}
+@media (max-width:760px){.main{grid-template-columns:minmax(0,1fr);grid-template-areas:'idx' 'map' 'strip' 'card'}.legend{display:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="app">
+  <header>
+    <span class="crumb">payments-prod / Payment Service /</span>
+    <h1>Transit board</h1>
+    <span class="sp"></span>
+    <div class="seg" role="group" aria-label="View">
+      <button id="mTyp" aria-pressed="true">Typical route</button>
+      <button id="mTr" aria-pressed="false">Trace replay</button>
+    </div>
+    <span class="k">example data</span>
+  </header>
+  <div class="main">
+    <nav class="panel index" aria-label="Lines">
+      <label class="search" for="q"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg><input id="q" type="search" placeholder="Find an endpoint or job" autocomplete="off"></label>
+      <div id="list"></div>
+    </nav>
+      <div class="panel mapwrap"><div class="legend"><span><svg width="12" height="12"><rect x="2" y="2" width="8" height="8" transform="rotate(45 6 6)" fill="#a9c8ff"/></svg>policy</span><span><svg width="12" height="12"><rect x="2" y="2" width="8" height="8" transform="rotate(45 6 6)" fill="none" stroke="#f5b454" stroke-dasharray="2 2"/></svg>missing policy</span><span><svg width="14" height="12"><circle cx="7" cy="6" r="4.5" fill="none" stroke="#f5b454" stroke-dasharray="2 2"/></svg>inferred station</span><span><svg width="22" height="12"><path d="M1 6h20" stroke="#8a9bff" stroke-width="3" stroke-dasharray="4 3"/></svg>route not observed</span></div><svg id="map" viewBox="0 0 1100 660" role="img" aria-label="Transit map of Payment Service"></svg></div>
+      <div class="panel strip" id="strip"></div>
+    <aside class="panel card" id="card"></aside>
+  </div>
+</div>
+
+<script>
+(function(){
+const NS='http://www.w3.org/2000/svg';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* ---------------- network ---------------- */
+// [u, v, name, sub, labelDir, kind, source]
+const N={
+ OS:[-660,-220,'Order Service','caller','u','caller','obs'],ADM:[-660,-60,'Admin Console','caller','u','caller','obs'],OEV:[-660,60,'orders.events','topic','u','caller','decl'],CPH:[-660,170,'Card Processor','webhooks','d','caller','obs'],
+ ING:[-480,-160,'gRPC ingress','mTLS · rate · idem','u','gate','decl'],CON:[-480,60,'Consumer','orders-cg','d','gate','decl'],WG:[-480,170,'Webhook gate','HMAC','d','gate','decl'],SCH:[-480,330,'Scheduler','in-process','d','gate','decl'],
+ mAuth:[-280,-340,'Authorize','','u','mod','obs'],mCap:[-280,-260,'Capture','tx','u','mod','obs'],mRef:[-280,-180,'Refund','','u','mod','obs'],mQry:[-280,-100,'Query','read model','u','mod','inf'],mVoid:[-280,0,'Void','','u','mod','obs'],mSaga:[-280,170,'PaymentSaga','','u','mod','inf'],mExp:[-280,290,'Expire auths','*/15','u','mod','obs'],mRec:[-280,370,'Reconcile','02:15','d','mod','obs'],mOut:[-280,460,'OutboxRelay','worker','d','mod','obs'],
+ fraudC:[0,-380,'fraud client','gRPC','u','cli','obs'],cardC:[0,-240,'card client','HTTPS','u','cli','obs'],ledgerC:[0,-90,'ledger client','gRPC','u','cli','obs'],pgC:[0,40,'pg pool','SQL','u','cli','obs'],redisC:[0,160,'cache client','RESP','u','cli','obs'],repC:[0,270,'replica pool','SQL','u','cli','obs'],prodC:[0,420,'producer','Kafka','u','cli','obs'],
+ dFraud:[540,-380,'Fraud Scoring','degraded','r','dep','obs'],dCard:[540,-240,'Card Processor','external','r','dep','obs'],dLedger:[540,-90,'Ledger','service','r','dep','obs'],dPg:[540,40,'payments-pg','primary','r','dep','obs'],dRedis:[540,160,'Redis','cache','r','dep','obs'],dRep:[540,270,'payments-pg','replica','r','dep','obs'],dKafka:[540,420,'payments.events','topic','r','dep','obs']
+};
+const CLI=['fraudC','cardC','ledgerC','pgC','redisC','repC','prodC'];
+const MOD=Object.keys(N).filter(k=>N[k][5]==='mod');
+const DEP={fraudC:'dFraud',cardC:'dCard',ledgerC:'dLedger',pgC:'dPg',redisC:'dRedis',repC:'dRep',prodC:'dKafka'};
+const J={JIN:[-530,-160],T160:[-400,-160],T180:[-400,-180],T260:[-400,-260],T340:[-400,-340],T100:[-400,-100],T0:[-400,0],VJ:[-340,60],SJ:[-420,330],SJ1:[-380,290],SJ2:[-380,370]};
+MOD.forEach(m=>{J['X_'+m]=[-215,N[m][1]];});
+CLI.forEach(c=>{J['A_'+c]=[-90,N[c][1]];});
+const BY=[...new Set(MOD.map(m=>N[m][1]).concat(CLI.map(c=>N[c][1])))].sort((a,b)=>a-b);
+BY.forEach(y=>{J['B'+y]=[-160,y];});
+const POS=id=>N[id]?[N[id][0],N[id][1]]:J[id];
+const geo=(a,b)=>{const A=POS(a),B=POS(b);
+  if(a==='OS'&&b==='JIN')return[A,[-590,-220],B]; if(a==='ADM'&&b==='JIN')return[A,[-630,-60],B];
+  return[A,B];};
+// policy stops on each client lane: [u, type, label, typical stat, fill]
+const LANE={
+ fraudC:[[150,'timeout','300 ms','hit by 31%','#a9c8ff'],[250,'retry','retry ×1','fires on 29%','#5fe1ff'],[370,'miss','no breaker','expected here','']],
+ cardC:[[110,'bulk','bulkhead 20','peak 14 / 20','#8f9bff'],[200,'timeout','2 s','hit by 0.8%','#a9c8ff'],[290,'retry','retry ×3','fires on 3.1%','#5fe1ff'],[390,'breaker','breaker','0 trips · 24 h','#c3a6ff']],
+ ledgerC:[[150,'timeout','800 ms','hit by 1.4%','#a9c8ff'],[250,'retry','retry ×2','fires on 1.2%','#5fe1ff'],[370,'miss','no idem key','expected here','']],
+ pgC:[[150,'bulk','pool 40','peak 31 / 40','#8f9bff'],[280,'timeout','5 s','hit by 0.01%','#a9c8ff']],
+ redisC:[[150,'timeout','50 ms','hit by 0.2%','#a9c8ff'],[290,'fb','miss → replica','6% of reads','#8ef0c0']],
+ repC:[[160,'bulk','pool 20','peak 9 / 20','#8f9bff'],[290,'timeout','2 s','hit by 0%','#a9c8ff']],
+ prodC:[[160,'retry','retry ∞','fires on 0.02%','#5fe1ff'],[300,'timeout','120 s','never hit','#a9c8ff']]
+};
+const DEPLAT={dFraud:[41,310],dCard:[180,420],dLedger:[28,60],dPg:[4,9],dRedis:[1,2],dRep:[7,18],dKafka:[9,25]};
+/* ---------------- lines ---------------- */
+const L=[
+ {id:'A1',g:'gRPC',name:'Authorize',c:'#5fe1ff',sig:'rpc Authorize(AuthorizeRequest) returns (Authorization)',file:'payments.proto',from:'Order Service',dl:3000,p50:'120 ms',p95:'310 ms',err:'0.4%',calls:'182k',traces:'38,410',paths:[['OS','JIN','ING','T160','T180','T260','T340','mAuth','X_mAuth','A_fraudC','fraudC','dFraud'],['X_mAuth','A_cardC','cardC','dCard']],pats:['mTLS','Rate limit','Idempotent receiver','Timeout','Retry','Fallback','Bulkhead','Circuit breaker'],find:[['w','Fraud Scoring is degraded and the fraud client has no breaker'],['w','Card retries can run past the 3 s deadline']],kinds:['fallback','fallback','ok','slow','fallback','fail']},
+ {id:'A2',g:'gRPC',name:'Capture',c:'#b48cff',sig:'rpc Capture(CaptureRequest) returns (Payment)',file:'payments.proto',from:'Order Service',dl:3000,p50:'190 ms',p95:'240 ms',err:'0.3%',calls:'176k',traces:'41,208',paths:[['OS','JIN','ING','T160','T180','T260','mCap','X_mCap','A_cardC','cardC','dCard'],['X_mCap','A_pgC','pgC','dPg']],pats:['mTLS','Idempotent receiver','Transaction','Transactional outbox','Bulkhead','Timeout','Retry','Circuit breaker'],find:[['w','Card retries can run past the 3 s deadline'],['w','Order Service also retries Capture: up to 12 processor calls per checkout'],['o','PaymentCaptured is written through the outbox']],kinds:['ok','ok','slow','ok','fail','ok']},
+ {id:'A3',g:'gRPC',name:'Refund',c:'#7ff0c0',sig:'rpc Refund(RefundRequest) returns (Refund)',file:'payments.proto',from:'Order Service',dl:5000,p50:'260 ms',p95:'420 ms',err:'0.6%',calls:'9.4k',traces:'2,190',paths:[['OS','JIN','ING','T160','T180','mRef','X_mRef','A_cardC','cardC','dCard'],['X_mRef','A_ledgerC','ledgerC','dLedger']],pats:['Idempotent receiver','Timeout','Retry'],find:[['w','Ledger calls are retried without an idempotency key']],kinds:['ok','slow','ok','fail','ok','ok']},
+ {id:'A4',g:'gRPC',name:'Void',c:'#ff9ecf',sig:'rpc Void(VoidRequest) returns (Payment)',file:'payments.proto',from:'Order Service',dl:3000,p50:'150 ms',p95:'190 ms',err:'0.2%',calls:'21k',traces:'4,870',paths:[['OS','JIN','ING','T160','T100','T0','mVoid','X_mVoid','A_cardC','cardC','dCard']],pats:['Idempotent receiver','Retry','Circuit breaker'],find:[],kinds:['ok','ok','ok','slow','ok','fail']},
+ {id:'A5',g:'gRPC',name:'GetPayment',c:'#8fb4ff',sig:'rpc GetPayment(GetPaymentRequest) returns (Payment)',file:'payments.proto',from:'Order Service',dl:500,p50:'2 ms',p95:'9 ms',err:'0.01%',calls:'2.3M',traces:'503,100',paths:[['OS','JIN','ING','T160','T100','mQry','X_mQry','A_redisC','redisC','dRedis'],['X_mQry','A_repC','repC','dRep']],alt:true,pats:['Cache-aside','Read replica','Timeout'],find:[['o','94% of reads come from the cache; misses go to the replica'],['i','Query module is inferred from a code scan, not from spans']],kinds:['ok','ok','miss','ok','ok','miss']},
+ {id:'A6',g:'gRPC',name:'ListPayments',c:'#c9b6ff',sig:'rpc ListPayments(ListRequest) returns (PaymentPage)',file:'payments.proto',from:'Admin Console',dl:2000,p50:'35 ms',p95:'80 ms',err:'0%',calls:'4.1k',traces:'960',paths:[['ADM','JIN','ING','T160','T100','mQry','X_mQry','A_repC','repC','dRep']],pats:['Read replica','Pagination'],find:[],kinds:['ok','ok','ok','ok','slow','ok']},
+ {id:'W1',g:'Webhooks',name:'POST /webhooks/processor',c:'#ffab70',sig:'POST /webhooks/processor',file:'openapi.yaml',from:'Card Processor',dl:10000,p50:'38 ms',p95:'60 ms',err:'0.1%',calls:'190k',traces:'44,020',paths:[['CPH','WG','mSaga','X_mSaga','A_ledgerC','ledgerC','dLedger'],['X_mSaga','A_pgC','pgC','dPg']],pats:['HMAC signature','Saga','Retry'],find:[['w','Ledger calls are retried without an idempotency key'],['i','PaymentSaga is inferred from a code scan, not from spans']],kinds:['ok','ok','slow','ok','ok','ok']},
+ {id:'E1',g:'Events consumed',name:'OrderCancelled',c:'#ff8f9c',sig:'consume orders.events · OrderCancelled',file:'asyncapi.yaml',from:'orders.events',dl:0,p50:'170 ms',p95:'210 ms',err:'0.2%',calls:'18k',traces:'4,110',paths:[['OEV','CON','VJ','mVoid','X_mVoid','A_cardC','cardC','dCard']],pats:['Idempotent consumer','Retry','Dead-letter queue'],find:[],kinds:['ok','ok','ok','slow','ok','ok']},
+ {id:'J1',g:'Scheduled',name:'ExpireAuthorizations',c:'#e8c66a',sig:'cron */15 * * * *',file:'scheduler.go',from:'Scheduler',dl:0,p50:'1.9 s',p95:'2.1 s',err:'0%',calls:'384',traces:'384',paths:[['SCH','SJ','SJ1','mExp','X_mExp','A_pgC','pgC','dPg'],['X_mExp','A_cardC','cardC','dCard']],pats:['Scheduled job'],find:[['w','Runs on all 4 replicas at once: there is no lock']],kinds:['ok','ok','ok','ok','ok','ok']},
+ {id:'J2',g:'Scheduled',name:'ReconcileSettlements',c:'#6fd6c6',sig:'cron 15 2 * * *',file:'scheduler.go',from:'Scheduler',dl:0,p50:'6 min',p95:'6 min',err:'0%',calls:'1',traces:'7',paths:[['SCH','SJ','SJ2','mRec','X_mRec','A_cardC','cardC','dCard'],['X_mRec','A_ledgerC','ledgerC','dLedger']],pats:['Scheduled job','Leader lock'],find:[],kinds:['ok','ok','ok','ok','ok','ok']},
+ {id:'O1',g:'Background',name:'OutboxRelay',c:'#8a9bff',sig:'poll payment_outbox every 200 ms',file:'relay.go',from:'itself',dl:0,p50:'11 ms',p95:'15 ms',err:'0%',calls:'—',traces:'0',unobserved:true,paths:[['mOut','X_mOut','A_pgC','pgC','dPg'],['X_mOut','A_prodC','prodC','dKafka']],pats:['Transactional outbox','Idempotent producer'],find:[['i','Not observed in traces: the relay does not carry trace context, so this route comes from a code scan']],kinds:[]}
+];
+const busPath=(m,c)=>{const y0=N[m][1],y1=N[c][1];const i0=BY.indexOf(y0),i1=BY.indexOf(y1);const out=['X_'+m];const st=i1>=i0?1:-1;for(let i=i0;;i+=st){out.push('B'+BY[i]);if(i===i1)break;}out.push('A_'+c);return out;};
+L.forEach(l=>{l.paths=l.paths.map(p=>{const out=[];for(let i=0;i<p.length;i++){const a=p[i],b=p[i+1];if(a.startsWith('X_')&&b&&b.startsWith('A_')){busPath(a.slice(2),b.slice(2)).slice(0,-1).forEach(x=>out.push(x));}else out.push(a);}return out;});});
+const LM={};L.forEach(l=>LM[l.id]=l);
+const EK=(a,b)=>a<b?a+'|'+b:b+'|'+a;const EU={};
+L.forEach(l=>l.paths.forEach(p=>{for(let i=0;i<p.length-1;i++){const k=EK(p[i],p[i+1]);(EU[k]=EU[k]||[]);if(!EU[k].includes(l.id))EU[k].push(l.id);}}));
+const thru={};Object.keys(EU).forEach(k=>k.split('|').forEach(n=>{thru[n]=Math.max(thru[n]||0,EU[k].length);}));
+/* ---------------- projection ---------------- */
+const T=1.02,D=2000,F=1440,CX=560,CY=320;
+const P=(u,v,h=0)=>{const y1=h*Math.cos(T)-v*Math.sin(T),z1=h*Math.sin(T)+v*Math.cos(T);const k=F/(D-z1);return[CX+u*k,CY-y1*k,k];};
+const pl=(pts,h)=>pts.map((p,i)=>(i?'L':'M')+P(p[0],p[1],h).slice(0,2).map(v=>v.toFixed(1)).join(' ')).join('');
+const offPts=(pts,o)=>{if(!o)return pts;return pts.map((p,i)=>{const a=pts[Math.max(0,i-1)],b=pts[Math.min(pts.length-1,i+1)];let nx,ny;if(i>0&&i<pts.length-1){const d1=[p[0]-a[0],p[1]-a[1]],d2=[b[0]-p[0],b[1]-p[1]];const l1=Math.hypot(...d1)||1,l2=Math.hypot(...d2)||1;const n1=[-d1[1]/l1,d1[0]/l1],n2=[-d2[1]/l2,d2[0]/l2];let mx=n1[0]+n2[0],my=n1[1]+n2[1];const ml=Math.hypot(mx,my)||1;mx/=ml;my/=ml;const cs=mx*n1[0]+my*n1[1]||1;nx=mx/cs;ny=my/cs;}else{const dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1;nx=-dy/l;ny=dx/l;}return[p[0]+nx*o,p[1]+ny*o];});};
+const GAP=7;
+const linePts=(l,p)=>{let pts=[];for(let i=0;i<p.length-1;i++){const us=EU[EK(p[i],p[i+1])];const o=(us.indexOf(l.id)-(us.length-1)/2)*GAP;const s=offPts(geo(p[i],p[i+1]),o);pts=pts.concat(i?s.slice(1):s);}return pts;};
+const el=(t,a,parent)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);parent.appendChild(e);return e;};
+/* ---------------- traces ---------------- */
+let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+const hex=n=>{let s='';for(let i=0;i<n;i++)s+='0123456789abcdef'[Math.floor(rnd()*16)];return s;};
+const items=(l,pi)=>{const out=[];l.paths[pi].forEach(id=>{if(!N[id])return;if(pi>0&&MOD.includes(id))return;out.push({id});if(LANE[id])LANE[id].forEach((s,j)=>out.push({stop:id,j,s}));});return out;};
+function genTrace(l,kind,ix){
+  const steps=[];let t=0,failed=false,gave=false;
+  const add=(at,label,dur,st,stop)=>{steps.push({at,stop,label,start:t,dur,st:st||'ok'});t+=dur;if(l.dl&&!gave&&t>l.dl&&!failed){gave=true;steps.push({at:l.paths[0][0],label:N[l.paths[0][0]][2]+' stops waiting at '+(l.dl/1000)+' s deadline',start:t,dur:0,st:'fail'});}};
+  const jit=(a,b)=>Math.round(a+rnd()*(b-a));
+  const runBranch=(pi)=>{
+    for(const it of items(l,pi)){ if(failed)return;
+      if(it.id){const k=N[it.id][5];
+        if(k==='caller')add(it.id,N[it.id][2]+(l.g==='Scheduled'?' fires ':' calls ')+l.name,0);
+        else if(k==='gate')add(it.id,it.id==='ING'?'mTLS ok · rate ok · new idempotency key':it.id==='WG'?'HMAC signature ok':it.id==='CON'?'Consumer picks up the event':'Job starts',jit(1,3));
+        else if(k==='mod')add(it.id,N[it.id][2]+' module runs',jit(2,5));
+        else if(k==='cli')add(it.id,N[it.id][2]+' takes the call',1);
+        else { const lat=DEPLAT[it.id]; if(it.id==='dRep'&&l.alt&&kind!=='miss'&&l.id==='A5')continue; add(it.id,N[it.id][2]+' answers',jit(lat[0],lat[1]),'ok'); }
+      } else { const s=it.s, type=s[1], c=it.stop;
+        if(c==='cardC'&&type==='retry'&&(kind==='slow'||kind==='fail')){
+          const am=kind==='slow'?2000:40;
+          const n=kind==='slow'?2:4;
+          for(let a=1;a<=n;a++){add(c,'Attempt '+a+': '+(kind==='slow'?'no reply, timed out after 2 s':'connection refused'),am,'warn',s);if(a<n||kind==='slow')add(c,'Backoff '+[200,400,800][a-1]+' ms',[200,400,800][a-1],'warn',s);}
+          if(kind==='fail'){add(c,'Gave up after 4 attempts · breaker counts a failure','0'*1,'fail',s);failed=true;return;}
+          add(c,'Attempt 3 succeeds',jit(170,220),'ok',s);
+        } else if(c==='fraudC'&&type==='retry'&&kind==='fallback'){
+          add(c,'Attempt 1: timed out after 300 ms',300,'warn',s);add(c,'Backoff 50 ms',50,'warn',s);add(c,'Attempt 2: timed out after 300 ms',300,'warn',s);
+        } else if(c==='fraudC'&&type==='miss'&&kind==='fallback'){ add(c,'No breaker, so both timeouts were paid in full',0,'warn',s); add('dFraud','Fallback: approve and flag for review',1,'warn'); return; }
+        else if(c==='ledgerC'&&type==='retry'&&kind==='slow'){ add(c,'Attempt 1: no reply within 800 ms',800,'warn',s);add(c,'Backoff 100 ms',100,'warn',s);add(c,'Attempt 2 sent without an idempotency key',1,'warn',s); }
+        else if(c==='redisC'&&type==='fb'){ if(kind==='miss')add(c,'Cache miss: read the replica',0,'warn',s); else { add(c,'Cache hit',0,'ok',s); } }
+        else if(type==='miss'){}
+        else add(c,s[2],0,'ok',s);
+      }
+    }
+  };
+  runBranch(0);
+  for(let pi=1;pi<l.paths.length;pi++){ if(failed)break; if(l.alt&&kind!=='miss')break; runBranch(pi); }
+  const st=failed?'fail':(kind==='ok'||(kind==='miss'))?'ok':'warn';
+  add(l.paths[0][0],failed?'Error returned to the caller':'Response returned to the caller',0,failed?'fail':gave?'fail':'ok');
+  return {id:hex(4)+'…'+hex(4),key:l.g==='Scheduled'?'run '+(14-ix)+':'+(ix%2?'30':'45'):'order '+(4400+Math.floor(rnd()*99)),ago:(2+ix*7)+' min ago',total:t,st:gave?'fail':st,kind,steps};
+}
+L.forEach(l=>{l.tr=l.kinds.map((k,i)=>genTrace(l,k,i));});
+/* ---------------- state ---------------- */
+const S={sel:'A2',mode:'typical',q:'',ti:2,t:0,playing:false};
+/* ---------------- map ---------------- */
+const MAP=$('map');
+function drawMap(){
+  MAP.innerHTML='';
+  const defs=el('defs',{},MAP);defs.innerHTML='<filter id="soft"><feGaussianBlur stdDeviation="7"/></filter>';
+  for(let u=-720;u<=640;u+=60)el('path',{d:pl([[u,-440],[u,520]],0),stroke:'rgba(120,150,230,.05)',fill:'none'},MAP);
+  for(let v=-440;v<=520;v+=60)el('path',{d:pl([[-720,v],[640,v]],0),stroke:'rgba(120,150,230,.05)',fill:'none'},MAP);
+  [[-720,-560,'CALLERS'],[-560,-340,'ENTRY'],[-340,-130,'DOMAIN'],[-130,450,'CLIENTS · POLICIES'],[450,640,'DEPENDENCIES']].forEach(d=>{el('path',{d:pl([[d[0],-430],[d[1],-430],[d[1],510],[d[0],510],[d[0],-430]],0)+'Z',fill:'rgba(140,160,240,.018)',stroke:'rgba(150,170,240,.08)'},MAP);const q=P(d[0]+12,500,0);const t=el('text',{x:q[0],y:q[1]-6,'font-family':'Geist Mono, monospace','font-size':10,'letter-spacing':4,fill:'rgba(160,180,230,.35)'},MAP);t.textContent=d[2];});
+  const sel=S.sel?LM[S.sel]:null;const used={};if(sel)sel.paths.forEach(p=>p.forEach(n=>used[n]=1));
+  const draw=(l,mode)=>l.paths.forEach(p=>{const pts=linePts(l,p);const dash=l.unobserved?'10 7':'none';
+    const g=el('g',{class:'ln','data-id':l.id,style:'cursor:pointer'},MAP);
+    el('path',{d:pl(pts,9),fill:'none',stroke:'transparent','stroke-width':16},g);
+    if(mode==='dim'){el('path',{d:pl(pts,6),fill:'none',stroke:'#4a5577',opacity:.22,'stroke-width':3,'stroke-linejoin':'round','stroke-dasharray':dash},g);return;}
+    const w=mode==='hi'?7:5;
+    el('path',{d:pl(pts,0),fill:'none',stroke:'#000',opacity:.55,'stroke-width':w+5,filter:'url(#soft)'},g);
+    for(let h=0;h<=8;h+=2)el('path',{d:pl(pts,h),fill:'none',stroke:l.c,opacity:.2,'stroke-width':w,'stroke-linejoin':'round','stroke-dasharray':dash},g);
+    if(mode==='hi')el('path',{d:pl(pts,9),fill:'none',stroke:l.c,opacity:.35,'stroke-width':w+10,filter:'url(#soft)'},g);
+    el('path',{d:pl(pts,9),fill:'none',stroke:l.c,'stroke-width':w,'stroke-linejoin':'round','stroke-linecap':'round','stroke-dasharray':dash},g);
+  });
+  L.forEach(l=>{if(!sel)draw(l,'all');else if(l.id!==sel.id)draw(l,'dim');});
+  if(sel)draw(sel,'hi');
+  Object.keys(LANE).forEach(c=>{const y=N[c][1];const on=!sel||used[c];LANE[c].forEach(s=>{const q=P(s[0],y,10);const miss=s[1]==='miss';const g=el('g',{opacity:on?1:.25},MAP);el('rect',{x:q[0]-6,y:q[1]-6,width:12,height:12,transform:`rotate(45 ${q[0]} ${q[1]})`,fill:miss?'#0a0d18':s[4],stroke:miss?'#f5b454':'#0a0d18','stroke-width':miss?1.6:2,'stroke-dasharray':miss?'3 2':'none'},g);});});
+  Object.keys(N).forEach(id=>{const n=N[id];const q=P(n[0],n[1],9);const on=!sel||used[id];const g=el('g',{opacity:on?1:.3},MAP);const b=thru[id]||1;const inter=n[5]==='gate'||b>2;const inf=n[6]==='inf';
+    el('ellipse',{cx:q[0],cy:q[1]+4,rx:14,ry:5,fill:'#000',opacity:.45},g);
+    if(inter){const h=Math.max(16,Math.min(52,b*GAP*q[2]+10));el('rect',{x:q[0]-9,y:q[1]-h/2,width:18,height:h,rx:9,fill:'#f4f7ff',stroke:'#0a0d18','stroke-width':3},g);}
+    else el('circle',{cx:q[0],cy:q[1],r:n[5]==='dep'||n[5]==='caller'?8.5:6.5,fill:inf?'#0a0d18':'#f4f7ff',stroke:inf?'#f5b454':'#0a0d18','stroke-width':inf?2:3,'stroke-dasharray':inf?'3 2':'none'},g);
+    if(sel&&!on)return;
+    const dir=n[4];const off=inter?Math.max(16,Math.min(52,b*GAP*q[2]+10))/2+6:14;const dx=dir==='r'?18:0,dy=dir==='u'?-off-5:dir==='d'?off+16:5;const anc=dir==='r'?'start':'middle';
+    const t1=el('text',{x:q[0]+dx,y:q[1]+dy,'text-anchor':anc,'font-family':'Geist, system-ui, sans-serif','font-weight':600,'font-size':16,fill:'#eef2fb',stroke:'#05060b','stroke-width':4,'paint-order':'stroke'},g);t1.textContent=n[2];
+    if(n[3]&&(dir==='r'||dir==='d')){const t2=el('text',{x:q[0]+dx,y:q[1]+dy+14,'text-anchor':anc,'font-family':'Geist Mono, monospace','font-size':12,fill:n[3]==='degraded'?'#f5b454':'#7f8cab',stroke:'#05060b','stroke-width':4,'paint-order':'stroke'},g);t2.textContent=n[3];}});
+  el('g',{id:'ov'},MAP);
+  MAP.querySelectorAll('.ln').forEach(g=>g.addEventListener('click',()=>select(g.getAttribute('data-id'))));
+}
+function drawOverlay(){
+  const ov=MAP.querySelector('#ov');if(!ov)return;ov.innerHTML='';
+  if(S.mode!=='trace'||!S.sel)return;const l=LM[S.sel];const tr=l.tr[S.ti];if(!tr)return;
+  const cur=curStep(tr);if(!cur)return;
+
+  const at=cur.stopObj?P(cur.stopObj[0],N[cur.at][1],12):P(N[cur.at][0],N[cur.at][1],12);
+  const col=cur.st==='fail'?'#ff7b7b':cur.st==='warn'?'#f5b454':'#ffffff';
+  el('circle',{cx:at[0],cy:at[1],r:22,fill:'none',stroke:col,'stroke-width':1.5,opacity:.7},ov);
+  el('circle',{cx:at[0],cy:at[1],r:7,fill:col,filter:'url(#soft)'},ov);
+  el('circle',{cx:at[0],cy:at[1],r:5,fill:col},ov);
+}
+/* ---------------- list ---------------- */
+const GROUPS=['gRPC','Webhooks','Events consumed','Scheduled','Background'];
+function drawList(){
+  const q=S.q.trim().toLowerCase();let h=`<button class="row" data-id="" aria-current="${!S.sel}"><span class="bdg" style="background:linear-gradient(90deg,#5fe1ff,#b48cff,#7ff0c0,#ffab70)"></span><span class="n" style="font-family:var(--sans)">All lines</span><span class="m">network</span></button>`;
+  let any=0;
+  GROUPS.forEach(g=>{const ls=L.filter(l=>l.g===g&&(!q||(l.id+' '+l.name+' '+l.sig+' '+l.from).toLowerCase().includes(q)));if(!ls.length)return;any+=ls.length;
+    h+=`<div class="grp"><div class="k">${g} · ${ls.length}</div>`+ls.map(l=>{const deps=new Set();l.paths.forEach(p=>p.forEach(n=>{if(N[n]&&N[n][5]==='dep')deps.add(n);}));const w=l.find.some(f=>f[0]==='w');return `<button class="row" data-id="${l.id}" aria-current="${S.sel===l.id}"><span class="bdg" style="background:${l.c}">${l.id}</span><span class="n">${esc(l.name)}</span><span class="m">${deps.size} dep${deps.size>1?'s':''}${w?' <span class="warnm">!</span>':''}</span></button>`;}).join('')+'</div>';});
+  if(!any)h+=`<div class="empty">No line matches “${esc(S.q)}”. Try an endpoint name, a caller such as “Admin”, or a topic.</div>`;
+  $('list').innerHTML=h;
+  $('list').querySelectorAll('.row').forEach(b=>b.addEventListener('click',()=>select(b.getAttribute('data-id')||null)));
+}
+/* ---------------- strip ---------------- */
+function curStep(tr){let c=null;for(const s of tr.steps){if(s.start<=S.t)c=s;else break;}return c||tr.steps[0];}
+function drawStrip(){
+  const box=$('strip');const l=S.sel?LM[S.sel]:null;
+  if(!l){box.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:20px"><div style="min-width:0"><div class="k">Network</div><div class="big" style="margin-top:6px">11 lines through Payment Service</div><div style="color:var(--ink2);font-size:12.5px;margin-top:4px">Bundles are code paths shared by several endpoints. Pick a line to follow it stop by stop.</div></div><div><div class="k">Busiest stations</div><div class="kv"><span>card client</span><span>6 lines</span></div><div class="kv"><span>gRPC ingress</span><span>6 lines</span></div><div class="kv"><span>pg pool</span><span>4 lines</span></div></div><div><div class="k">Route coverage</div><div class="kv"><span>observed in traces</span><span>10 of 11</span></div><div class="kv"><span>inferred stations</span><span>2</span></div><div class="kv"><span>traces, last 7 days</span><span>639k</span></div></div><div><div class="k">Needs review</div><div class="fd" style="margin-top:6px"><span class="tri"></span>5 findings on A1, A2, A3, W1, J1</div><div class="fd" style="margin-top:6px"><span class="tri"></span>2 missing policies</div></div></div>`;return;}
+  const tr=S.mode==='trace'?l.tr[S.ti]:null;
+  const main=items(l,0);const split=main.findIndex(x=>x.id&&MOD.includes(x.id));const head=main.slice(0,split+1),t1=main.slice(split+1);const t2=l.paths.length>1?items(l,1):null;
+  const nTot=head.length+Math.max(t1.length,t2?t2.length:0);const avail=Math.max(560,(box.clientWidth||900)-34);const step=Math.max(96,(avail-130)/(nTot-1));const W=Math.max(avail,50+step*(nTot-1)+70);
+  const Y1=50,Y2=t2?124:0,H=t2?168:96;
+  const reached=new Set(),hit={};
+  if(tr){tr.steps.forEach(s=>{if(s.start<=S.t){reached.add(s.at+(s.stop!==undefined&&s.stopS?'':''));if(s.stop)hit[s.stop+'#'+s.stopIdx]=s;}});}
+  // map steps to strip items for trace mode
+  const stepFor=(it)=>{if(!tr)return null;if(it.id){return tr.steps.filter(s=>s.at===it.id&&!s.stop);}return tr.steps.filter(s=>s.stop===it.stop&&s.stopIdx===it.j);};
+  let s=`<div class="striphead"><span class="k">Line ${l.id} · ${tr?'trace '+esc(tr.id)+' · '+esc(tr.key):'typical route, last 7 days'}</span><span class="k">${tr?'timings from this request':'stat under each stop'}</span></div><div class="sx"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Stops on line ${l.id}">`;
+  const X0=50;const xf=X0+(head.length-1)*step;
+  const lineStroke=(x1,y,x2)=>`<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${l.c}" stroke-width="6" stroke-linecap="round" ${l.unobserved?'stroke-dasharray="10 7"':''}/>`;
+  s+=lineStroke(X0,Y1,xf+t1.length*step);
+  if(t2)s+=`<path d="M${xf} ${Y1}C${xf+step*.5} ${Y1} ${xf+step*.3} ${Y2} ${xf+step} ${Y2}L${xf+t2.length*step} ${Y2}" stroke="${l.c}" stroke-width="6" fill="none" stroke-linecap="round" ${l.alt?'stroke-dasharray="2 8"':''}/>`;
+  if(t2&&l.alt)s+=`<text x="${xf+step*.55}" y="${(Y1+Y2)/2+4}" font-family="Geist Mono, monospace" font-size="10.5" fill="#a9b2c9">on miss · 6%</text>`;
+  const draw=(arr,y,xs)=>arr.forEach((it,i)=>{const x=xs+i*step;let dim=false,stat='',col='#a9b2c9';
+    const ss=stepFor(it);
+    if(tr){ if(!ss.length){dim=true;stat='not taken';} else { const done=ss.some(z=>z.start<=S.t); dim=!done; const tot=ss.reduce((a,z)=>a+(+z.dur||0),0); const bad=ss.find(z=>z.st!=='ok'); stat=done?(tot>=1?fmt(tot):(it.id?'0 ms':'passed')):''; if(bad&&done){col=bad.st==='fail'?'#ff7b7b':'#f5b454';stat=(ss.filter(z=>/Attempt/.test(z.label)).length?ss.filter(z=>/Attempt/.test(z.label)).length+' attempts · ':'')+fmt(tot);} } }
+    else { if(it.id){const n=N[it.id];stat=n[5]==='dep'?'p95 '+DEPLAT[it.id][1]+' ms':n[3]||'';if(n[3]==='degraded')col='#f5b454';} else stat=it.s[3]; }
+    const op=dim?.35:1;
+    if(it.id){const n=N[it.id];const shared=(thru[it.id]||1)>2;const inf=n[6]==='inf';
+      s+=`<g opacity="${op}">`+(shared?`<rect x="${x-8}" y="${y-11}" width="16" height="22" rx="8" fill="#f4f7ff" stroke="#0a0d18" stroke-width="3"/>`:`<circle cx="${x}" cy="${y}" r="7" fill="${inf?'#0a0d18':'#f4f7ff'}" stroke="${inf?'#f5b454':'#0a0d18'}" stroke-width="${inf?2:3}" ${inf?'stroke-dasharray="3 2"':''}/>`)+`<text x="${x}" y="${y-17}" text-anchor="middle" font-family="Geist, sans-serif" font-weight="600" font-size="12" fill="#eef2fb">${esc(n[2])}</text><text x="${x}" y="${y+25}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="10" fill="${col}">${esc(stat)}</text></g>`;}
+    else {const S2=it.s,miss=S2[1]==='miss';s+=`<g opacity="${op}"><rect x="${x-5}" y="${y-5}" width="10" height="10" transform="rotate(45 ${x} ${y})" fill="${miss?'#0a0d18':S2[4]}" stroke="${miss?'#f5b454':'#0a0d18'}" stroke-width="${miss?1.5:2}" ${miss?'stroke-dasharray="3 2"':''}/><text x="${x}" y="${y-14}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="10.5" fill="${miss?'#f5b454':'#cfd8f0'}">${esc(S2[2])}</text><text x="${x}" y="${y+22}" text-anchor="middle" font-family="Geist Mono, monospace" font-size="10" fill="${miss?'#f5b454':col}">${esc(miss&&!tr?'missing':stat)}</text></g>`;}
+  });
+  draw(head,Y1,X0);draw(t1,Y1,xf+step);if(t2)draw(t2,Y2,xf+step);
+  if(tr){const cur=curStep(tr);let px=null,py=Y1;const find=(arr,y,xs)=>arr.forEach((it,i)=>{if((it.id&&cur.at===it.id&&!cur.stop)||(!it.id&&cur.stop===it.stop&&cur.stopIdx===it.j)){px=xs+i*step;py=y;}});find(head,Y1,X0);find(t1,Y1,xf+step);if(t2)find(t2,Y2,xf+step);
+    if(px!==null){const c=cur.st==='fail'?'#ff7b7b':cur.st==='warn'?'#f5b454':'#ffffff';s+=`<circle cx="${px}" cy="${py}" r="15" fill="none" stroke="${c}" stroke-width="1.5" opacity=".8"/><circle cx="${px}" cy="${py}" r="4" fill="${c}"/>`;}}
+  s+='</svg></div>';box.innerHTML=s;
+}
+const fmt=ms=>ms>=1000?(ms/1000).toFixed(2)+' s':Math.round(ms)+' ms';
+/* ---------------- card ---------------- */
+function drawCard(){
+  const box=$('card');const l=S.sel?LM[S.sel]:null;
+  if(!l){box.innerHTML=`<div><div class="k">Where the map comes from</div><div class="src" style="margin-top:10px"><span class="tag decl">declared</span><span><b>Lines</b><br><span class="t">Entry points from payments.proto, openapi.yaml, asyncapi.yaml and the scheduler config</span></span><span class="tag obs">observed</span><span><b>Routes and timings</b><br><span class="t">Built from 639k traces over the last 7 days</span></span><span class="tag decl">declared</span><span><b>Policy stops</b><br><span class="t">Resilience config and mesh rules; fire rates from spans</span></span><span class="tag inf">inferred</span><span><b>Query, PaymentSaga, OutboxRelay route</b><br><span class="t">From a code scan, because they emit no spans</span></span></div></div><div><div class="k">How to read it</div><div style="color:var(--ink2);font-size:12.5px;margin-top:6px">Each endpoint, consumed event or job is one line. Lines that run side by side share code. Diamonds are the policies a call passes before it reaches a dependency.</div></div>`;return;}
+  const head=`<div style="display:flex;align-items:center;gap:10px"><span class="bdg" style="background:${l.c};width:34px;height:26px;font-size:12px">${l.id}</span><div style="min-width:0"><div class="big">${esc(l.name)}</div><div class="k" style="margin-top:2px">${l.g}</div></div></div><div class="mono" style="font-size:11.5px;color:var(--ink2);overflow-wrap:anywhere">${esc(l.sig)}</div>`;
+  if(S.mode==='typical'){
+    box.innerHTML=head+`<div><div class="kv"><span>Caller</span><span>${esc(l.from)}</span></div><div class="kv"><span>Deadline</span><span>${l.dl?fmt(l.dl):'—'}</span></div><div class="kv"><span>p50 / p95</span><span>${l.p50} / ${l.p95}</span></div><div class="kv"><span>Errors</span><span>${l.err}</span></div><div class="kv"><span>Calls per day</span><span>${l.calls}</span></div></div>
+    <div><div class="k" style="margin-bottom:8px">Where this line comes from</div><div class="src"><span class="tag decl">declared</span><span class="t">Entry point in ${esc(l.file)}</span>${l.unobserved?'<span class="tag inf">inferred</span><span class="t">Route from a code scan; no traces carry this work</span>':`<span class="tag obs">observed</span><span class="t">Route in ${l.traces} traces, last 7 days</span>`}<span class="tag decl">declared</span><span class="t">Policies from resilience config</span></div></div>
+    <div><div class="k" style="margin-bottom:8px">Patterns on this line</div><div>${l.pats.map(p=>`<span class="pc">${esc(p)}</span>`).join('')}</div></div>
+    <div><div class="k" style="margin-bottom:8px">Findings</div><div style="display:flex;flex-direction:column;gap:8px">${l.find.length?l.find.map(f=>`<div class="fd"><span class="${f[0]==='w'?'tri':'dot'}" style="${f[0]==='o'?'background:var(--ok)':f[0]==='i'?'background:var(--warn);opacity:.6':''}"></span>${esc(f[1])}</div>`).join(''):'<div class="fd" style="color:var(--ink3)">Nothing to review on this line.</div>'}</div></div>
+    ${l.tr.length?`<button class="btn pri" id="toTrace">Replay a real request</button>`:''}`;
+    const b=$('toTrace');if(b)b.addEventListener('click',()=>setMode('trace'));
+  } else {
+    if(!l.tr.length){box.innerHTML=head+`<div class="fd"><span class="tri"></span>No traces exist for this line. The relay does not carry trace context, so its runs cannot be replayed. Propagating context from the outbox row would make it traceable.</div>`;return;}
+    const tr=l.tr[S.ti];const cur=curStep(tr);const pct=Math.min(100,S.t/tr.total*100);
+    box.innerHTML=head+`<div><div class="k" style="margin-bottom:6px">Recent requests</div><div class="trl">${l.tr.map((x,i)=>`<button class="tr" data-i="${i}" aria-current="${i===S.ti}"><span class="pill ${x.st}">${x.st==='ok'?'ok':x.st==='warn'?'slow':'failed'}</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span class="mono">${esc(x.key)}</span> <span style="color:var(--ink3)">· ${x.ago}</span></span><span class="d">${fmt(x.total)}</span></button>`).join('')}</div></div>
+    <div><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="mono" style="font-size:12px">${esc(tr.id)}</span><span class="mono" style="font-size:12px;color:${tr.st==='ok'?'var(--ok)':tr.st==='warn'?'var(--warn)':'var(--fail)'}">${fmt(tr.total)}${l.dl?' / '+fmt(l.dl)+' deadline':''}</span></div>
+    <div class="ctl" style="margin-top:10px"><button class="btn pri" id="play" aria-label="${S.playing?'Pause':'Play'}">${S.playing?'Pause':S.t>=tr.total?'Replay':'Play'}</button><button class="btn" id="back" aria-label="Previous step">Back</button><button class="btn" id="fwd" aria-label="Next step">Next</button><div class="bar"><i style="width:${pct}%"></i></div></div></div>
+    <div class="steps" id="steps">${tr.steps.map(st=>{const cls=st===cur?'now':st.start<=S.t?'done':'';return `<div class="st ${cls}"><span class="tm">${fmt(st.start)}</span><span class="mk ${st.st!=='ok'?st.st:''}"></span><span>${esc(st.label)}</span></div>`;}).join('')}</div>`;
+    box.querySelectorAll('.tr').forEach(b=>b.addEventListener('click',()=>{S.ti=+b.getAttribute('data-i');S.t=0;S.playing=true;render();loop();}));
+    $('play').addEventListener('click',()=>{if(S.t>=tr.total)S.t=0;S.playing=!S.playing;render();loop();});
+    $('back').addEventListener('click',()=>{S.playing=false;const prev=[...tr.steps].reverse().find(x=>x.start<S.t-1);S.t=prev?prev.start:0;render();});
+    $('fwd').addEventListener('click',()=>{S.playing=false;const nx=tr.steps.find(x=>x.start>S.t);S.t=nx?nx.start:tr.total;render();});
+    const nowEl=box.querySelector('.st.now');if(nowEl){const sc=$('steps');sc.scrollTop=Math.max(0,nowEl.offsetTop-sc.offsetTop-90);}
+  }
+}
+/* ---------------- tie stops to steps ---------------- */
+// fix: genTrace stored stop object; resolve index & location
+L.forEach(l=>l.tr.forEach(tr=>tr.steps.forEach(st=>{if(st.stop&&typeof st.stop==='object'){const sObj=st.stop;st.stopObj=sObj;}})));
+L.forEach(l=>l.tr.forEach(tr=>tr.steps.forEach(st=>{if(st.stopObj){const c=Object.keys(LANE).find(k=>LANE[k].includes(st.stopObj));st.stopIdx=LANE[c].indexOf(st.stopObj);st.at=c;st.stop=c;}else{delete st.stop;}})));
+/* ---------------- control ---------------- */
+function render(){drawList();drawMap();drawOverlay();drawStrip();drawCard();
+  $('mTyp').setAttribute('aria-pressed',S.mode==='typical');$('mTr').setAttribute('aria-pressed',S.mode==='trace');$('mTr').disabled=!S.sel;}
+function renderLive(){drawOverlay();drawStrip();drawCard();}
+function select(id){S.sel=id;S.t=0;S.playing=S.mode==='trace';if(id&&!LM[id].tr.length)S.playing=false;S.ti=id&&LM[id].tr.length?Math.min(S.ti,LM[id].tr.length-1):0;render();loop();}
+function setMode(m){if(m==='trace'&&!S.sel)return;S.mode=m;S.t=0;S.playing=m==='trace';render();loop();}
+let raf=0,last=0;
+function loop(){if(raf)return;last=0;raf=requestAnimationFrame(tick);}
+function tick(now){raf=0;if(!S.playing||S.mode!=='trace'||!S.sel)return;const l=LM[S.sel];const tr=l.tr[S.ti];if(!tr){S.playing=false;return;}
+  const dt=last?now-last:16;last=now;const speed=Math.max(1,tr.total/7000);
+  const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const cur=curStep(tr);const nx=tr.steps.find(x=>x.start>S.t);
+  if(reduce){S.t=nx?nx.start:tr.total;} else { const minDwell=650; const target=nx?nx.start:tr.total; const gap=target-S.t; S.t+= Math.max(dt*speed, gap>0?gap*dt/minDwell:0); if(nx&&S.t>nx.start&&nx.start-cur.start<1)S.t=nx.start; }
+  if(S.t>=tr.total){S.t=tr.total;S.playing=false;}
+  renderLive(); if(S.playing){ if(reduce){setTimeout(()=>{raf=requestAnimationFrame(tick);},700);} else raf=requestAnimationFrame(tick);} }
+$('q').addEventListener('input',e=>{S.q=e.target.value;drawList();});
+$('mTyp').addEventListener('click',()=>setMode('typical'));
+$('mTr').addEventListener('click',()=>setMode('trace'));
+render();
+})();
+</script>
+
+</body></html>
