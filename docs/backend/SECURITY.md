@@ -14,7 +14,7 @@
 | Response headers | `nosniff`, CSP `default-src 'none'; frame-ancestors 'none'`, `no-referrer`, `no-store` | `security_test.go` |
 | Error hygiene | RFC 9457 problems; no SQL, stack traces, credentials, or internal addresses; `requestId` for correlation | `api_test.go`, `client_test.go` |
 | Secrets | database password only via file; `MONGODB_PASSWORD` and credentials in the URI rejected; never logged | `config_test.go` |
-| Database exposure | MongoDB bound to `127.0.0.1:27017` with access control on (root user from a Docker secret); backups owner-only | Compose file, RUNBOOK |
+| Database exposure | MongoDB bound to `127.0.0.1:27017` with access control on (root user from a Docker secret); backups owner-only; the optional mongo-express UI only on `127.0.0.1:8081`, behind basic auth, credentials from the secret file | Compose file, RUNBOOK |
 | Dependency scanning | `make vulncheck` (govulncheck v1.8.0): no vulnerabilities; `npm audit`: 0 (2026-10-11) | closeout |
 
 ## Non-negotiable safeguards

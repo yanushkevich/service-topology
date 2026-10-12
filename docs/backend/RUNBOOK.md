@@ -10,6 +10,7 @@ Procedures verified on 2026-10-11 against MongoDB 8.0.30 (single-node replica se
 | Verify schema | `make schema-check` | `schema version 1 with all collections, validators, and indexes` |
 | Run the API | `make run` | listens on `127.0.0.1:8080`; `curl -s localhost:8080/readyz` → 200 once the schema is initialized |
 | Database shell | `make db-shell` | `mongosh` in the container; prompts for the password in `secrets/mongodb_root_password.txt` |
+| Database web UI | `make db-ui` | mongo-express at `http://127.0.0.1:8081` (user `root`, same password) |
 | Stop | Ctrl-C (API), `make dev-down` (database; data volume kept) | |
 
 `/healthz` (process up) and `/readyz` (primary reachable and schema current) never need a token. Metrics: set `METRICS_ADDR=127.0.0.1:9090` and scrape `/metrics` (loopback only); MongoDB commands appear as `mongodb_commands_total{command,status}` and `mongodb_command_duration_seconds{command}`.

@@ -5,6 +5,7 @@ The root `CLAUDE.md` still applies; specs are in `docs/backend/`.
 ## Commands (run in `backend/`)
 - `make check` — gofmt check, `go vet ./...`, `go test ./...` (unit, conformance, lifecycle). The Makefile uses `go` from PATH, else `/usr/local/go/bin/go`; override with `GO=...`.
 - `make dev-up` — local MongoDB 8.0 as a single-node replica set (needs `secrets/mongodb_root_password.txt`; see `docs/backend/LOCAL_DEVELOPMENT.md`). Memory is capped for a 2 GB Rancher Desktop VM.
+- `make db-ui` — optional mongo-express web UI on `http://127.0.0.1:8081` (user `root`, password from `secrets/`).
 - `make test-integration` — tests against MongoDB; each uses and drops a temporary database.
 - `make run` — API on `HTTP_ADDR` (default `:8080`) against the local database.
 - `make seed` — load the mock fixture (idempotent replace); `make validate` — validate it without a database; `make schema-check`.

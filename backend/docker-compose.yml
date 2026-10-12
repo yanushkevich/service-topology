@@ -28,6 +28,8 @@ services:
     ports:
       # Localhost only (SECURITY.md); never publish the database on all interfaces.
       - "127.0.0.1:27017:27017"
+      # mongo-express (below) shares this container's network, so its port is published here.
+      - "127.0.0.1:8081:8081"
     secrets:
       - mongodb_root_password
     volumes:
@@ -45,10 +47,46 @@ services:
           db.getSiblingDB('admin').auth('root', require('fs').readFileSync('/run/secrets/mongodb_root_password', 'utf8').trim());
           try { rs.status() } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: '127.0.0.1:27017' }] }) }
           if (!db.hello().isWritablePrimary) quit(1)
-      interval: 5s
-      timeout: 10s
-      retries: 30
-      start_period: 20s
+      # mongosh is a Node.js process (~100 MB): check often only while starting, then every 30 s, so
+      # the check itself does not add memory pressure on a small VM.
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 120s
+      start_interval: 5s
+
+  # Web UI for browsing the local database: http://127.0.0.1:8081 (make db-ui). Opt-in profile so it
+  # costs no VM memory unless started. It shares the database container's network namespace: the
+  # replica set advertises its member as 127.0.0.1:27017, which only resolves to the database from
+  # there. Login (HTTP basic auth) and the database connection both use root and the password file.
+  # mongo-express 1.0.2 is the latest release (2024) and sees little maintenance: local use only.
+  mongo-express:
+    image: mongo-express:1.0.2-20-alpine3.19
+    container_name: topology-mongo-express
+    profiles: ["ui"]
+    restart: unless-stopped
+    network_mode: "service:mongodb"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      VCAP_APP_HOST: 0.0.0.0
+      # The image defaults this to mongodb://mongo:27017, and its entrypoint waits for that host before
+      # starting; point it at the shared namespace. The connection itself is built from the
+      # SERVER/PORT/ADMIN* settings below (no credentials here).
+      ME_CONFIG_MONGODB_URL: mongodb://127.0.0.1:27017
+      ME_CONFIG_MONGODB_SERVER: 127.0.0.1
+      ME_CONFIG_MONGODB_PORT: "27017"
+      ME_CONFIG_MONGODB_AUTH_DATABASE: admin
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD_FILE: /run/secrets/mongodb_root_password
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+      ME_CONFIG_BASICAUTH: "true"
+      ME_CONFIG_BASICAUTH_USERNAME: root
+      ME_CONFIG_BASICAUTH_PASSWORD_FILE: /run/secrets/mongodb_root_password
+    mem_limit: 160m
+    secrets:
+      - mongodb_root_password
 
 secrets:
   mongodb_root_password:

@@ -15,7 +15,8 @@ How the container works:
 - With access control on, a replica set needs a key file for internal authentication. A single node never uses it, so the entrypoint generates a fresh one at every start (`/tmp/mongo-keyfile`).
 - The health check initiates the replica set on first start (idempotent) and reports healthy once the node is the writable primary. It reads the password inside `mongosh`, never from a command line.
 - The member host is `127.0.0.1:27017`, which is also how the host reaches the published port, so `replicaSet=rs0` in the URI works from the host.
-- Memory: `--wiredTigerCacheSizeGB 0.25` (MongoDB 8's minimum) and `mem_limit: 640m`; about 150–310 MB resident.
+- Memory: `--wiredTigerCacheSizeGB 0.25` (MongoDB 8's minimum) and `mem_limit: 640m`; about 150–310 MB resident. The health check runs `mongosh` (a Node.js process of about 100 MB), so it runs every 5 s only while starting and every 30 s afterwards.
+- Web UI (not yet verified end to end: the VM ran out of memory before it could connect; `docker compose config` validates): `mongo-express:1.0.2-20-alpine3.19` (latest release, 2024; little maintenance, local use only) in the opt-in `ui` profile, behind HTTP basic auth. It shares the database container's network namespace because the replica set advertises its member as `127.0.0.1:27017`, which only reaches the database from there; its port 8081 is therefore published on the `mongodb` service (`127.0.0.1` only). Alternative without VM memory: MongoDB Compass with `mongodb://root@127.0.0.1:27017/?authSource=admin&directConnection=true`.
 
 ## Configuration (`backend/internal/config`)
 
@@ -61,6 +62,7 @@ The Makefile uses `go` from `PATH`, else `/usr/local/go/bin/go`; override with `
 | `make bench` | API latency on 1,000 entities (`BENCHFLAGS="-c 8"`, `-traversal database`) |
 | `make backup` / `make restore` | see `RUNBOOK.md` |
 | `make db-shell` | interactive `mongosh` in the container (prompts for the password) |
+| `make db-ui` | web UI (mongo-express) at `http://127.0.0.1:8081`; log in as `root` with the password in `secrets/mongodb_root_password.txt`. Opt-in (Compose profile `ui`); `make dev-down` stops it too |
 | `make reset-local` | prints the destructive reset steps; deletes nothing itself |
 
 ## Verified local setup (2026-10-11, Rancher Desktop, Docker 29.1.3, MongoDB 8.0.30)

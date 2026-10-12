@@ -12,7 +12,7 @@ export MONGODB_DATABASE ?= topology
 export MONGODB_USERNAME ?= root
 export MONGODB_PASSWORD_FILE ?= $(CURDIR)/secrets/mongodb_root_password.txt
 
-.PHONY: check fmt fmt-check vet test test-integration contract-check bench backup restore vulncheck token run seed validate schema-check db-shell dev-up dev-down reset-local
+.PHONY: check fmt fmt-check vet test test-integration contract-check bench backup restore vulncheck token run seed validate schema-check db-shell db-ui dev-up dev-down reset-local
 
 ## check: formatting, vet, and unit/conformance tests (the B1 quality gate)
 check: fmt-check vet test
@@ -74,6 +74,11 @@ validate:
 schema-check:
 	$(GO) run ./cmd/seed schema-check
 
+## db-ui: web UI (mongo-express) on http://127.0.0.1:8081; log in as root with the password in secrets/
+db-ui:
+	docker compose --profile ui up -d mongo-express
+	@echo 'mongo-express: http://127.0.0.1:8081 (user root, password in secrets/mongodb_root_password.txt)'
+
 ## db-shell: interactive mongosh in the local container (prompts for the password in secrets/)
 db-shell:
 	docker exec -it topology-mongodb mongosh --username root --authenticationDatabase admin "$(MONGODB_DATABASE)"
@@ -83,7 +88,7 @@ dev-up:
 	docker compose up -d
 
 dev-down:
-	docker compose down
+	docker compose --profile ui down
 
 reset-local:
 	@echo 'Destructive local reset: this removes local MongoDB data.'
