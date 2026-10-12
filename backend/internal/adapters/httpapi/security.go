@@ -71,10 +71,10 @@ func (s Security) cors(w http.ResponseWriter, r *http.Request) bool {
 	h := w.Header()
 	h.Set("Access-Control-Allow-Origin", origin)
 	h.Add("Vary", "Origin")
-	h.Set("Access-Control-Expose-Headers", "X-Request-ID, Location, Retry-After")
+	h.Set("Access-Control-Expose-Headers", "X-Request-ID, Location, Retry-After, ETag")
 	if preflight {
 		h.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
-		h.Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-ID")
+		h.Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-ID, If-Match")
 		h.Set("Access-Control-Max-Age", "600")
 		w.WriteHeader(http.StatusNoContent)
 		return true

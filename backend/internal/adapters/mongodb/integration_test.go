@@ -576,3 +576,69 @@ func TestInjectionShapedInputOnTheDatabase(t *testing.T) {
 		t.Fatalf("resources changed: %d", n)
 	}
 }
+
+// Entity writes (ADR-020) through the application service on MongoDB: each write is one
+// transaction guarded by the topology revision, and readers (also cached ones) see it.
+func TestEntityWritesOnTheDatabase(t *testing.T) {
+	s, ctx := ready(t)
+	data, _ := mockTopology(t)
+	topo := mongodb.NewTopologyRepository(s)
+	if _, err := topo.ReplaceTopology(ctx, data, "fixture"); err != nil {
+		t.Fatal(err)
+	}
+	svc := &application.Service{TopologyRepo: topo}
+	reader := mongodb.NewTopologyRepository(s)
+	before, rev0, err := reader.CurrentTopology(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	env := &domain.Environment{ID: "qa", Name: "QA", Kind: "other"}
+	res, err := svc.CreateEntity(ctx, domain.KindEnvironment, env, rev0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	after, rev1, err := reader.CurrentTopology(ctx)
+	if err != nil || rev1 != res.Revision || rev1 == rev0 {
+		t.Fatalf("revision: %v %s %s", err, rev1, res.Revision)
+	}
+	if last := after.Environments[len(after.Environments)-1]; last.ID != "qa" || len(after.Environments) != len(before.Environments)+1 {
+		t.Fatalf("new entity must be stored last: %+v", after.Environments)
+	}
+
+	// A write against the old revision fails and changes nothing.
+	if _, err := svc.ReplaceEntity(ctx, domain.KindEnvironment, "qa", &domain.Environment{ID: "qa", Name: "Stale", Kind: "other"}, rev0); !errors.Is(err, ports.ErrPreconditionFailed) {
+		t.Fatalf("stale write: %v", err)
+	}
+	// The adapter also refuses a stale revision by itself (a write that raced the read).
+	if _, err := topo.ApplyChange(ctx, ports.EntityChange{Op: ports.OpDelete, Kind: domain.KindEnvironment, ID: "qa"}, rev0, "manual"); !errors.Is(err, ports.ErrPreconditionFailed) {
+		t.Fatalf("adapter stale write: %v", err)
+	}
+
+	// Replace keeps position and stored telemetry.
+	inst := data.ServiceInstances[0]
+	inst.Health = "unavailable"
+	inst.Metrics = nil
+	if _, err := svc.ReplaceEntity(ctx, domain.KindServiceInstance, inst.ID, &inst, ""); err != nil {
+		t.Fatal(err)
+	}
+	got, _, _ := reader.CurrentTopology(ctx)
+	if got.ServiceInstances[0].ID != inst.ID || got.ServiceInstances[0].Health != "unavailable" || got.ServiceInstances[0].Metrics == nil {
+		t.Fatalf("replace: %+v", got.ServiceInstances[0])
+	}
+
+	// Deleting a referenced resource is refused; an unreferenced one is removed.
+	if _, err := svc.DeleteEntity(ctx, domain.KindResource, "kafka-events-prod", ""); !errors.As(err, new(*application.ErrValidation)) {
+		t.Fatalf("delete referenced: %v", err)
+	}
+	if _, err := svc.DeleteEntity(ctx, domain.KindEnvironment, "qa", ""); err != nil {
+		t.Fatal(err)
+	}
+	final, _, _ := reader.CurrentTopology(ctx)
+	if len(final.Environments) != len(before.Environments) || domain.Validate(final) != nil {
+		t.Fatalf("final topology: %d environments, issues %v", len(final.Environments), domain.Validate(final))
+	}
+	if err := mongodb.CheckSchema(ctx, s); err != nil {
+		t.Fatal(err)
+	}
+}

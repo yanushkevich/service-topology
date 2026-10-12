@@ -60,6 +60,9 @@ Each operation names its frontend interface in `x-repository`. The frontend swit
 #### Original note
 The simulation engine is pure TypeScript and runs in the browser (ADR-010); captures are stored through `POST /topology/snapshots` with `source: simulation`. Server-side simulation (`POST /simulations`, actions, events) is an open decision in `docs/API_CONTRACT.md`. Decide isolation (per session, per user, global) by ADR before implementing; never mutate shared persisted topology from a simulation.
 
+### Entity writes (implemented in B7, ADR-020)
+- `POST /entities/{kind}`, `PUT /entities/{kind}/{id}`, `DELETE /entities/{kind}/{id}` (kinds: the selection kinds plus `event-type`). The application builds the resulting topology, runs `domain.ValidateEntityFields` (schema enums, required fields, ID shape; code `invalid-field`) and `domain.Validate`, then calls `ports.TopologyWriter.ApplyChange`, which re-checks the revision in the MongoDB transaction. Errors: 400 (kind, malformed body), 404, 409, 412 (stale `If-Match`), 413 (body over 1 MB), 415, 422. `GET /topology` sets `ETag`.
+
 ### Not added
 `/services`, `/service-definitions/{id}`, `/relationships/{id}`, `/resources` from the v4 pack duplicate `/registry` and `/entities/{kind}/{id}`. Do not add them unless a concrete client need is shown.
 

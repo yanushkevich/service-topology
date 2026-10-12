@@ -110,6 +110,11 @@
                   "$ref": "../schemas/topology.v1.schema.json"
                 }
               }
+            },
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
             }
           },
           "404": {
@@ -275,6 +280,125 @@
         }
       }
     },
+    "/entities/{kind}": {
+      "post": {
+        "operationId": "createEntity",
+        "tags": [
+          "topology"
+        ],
+        "summary": "Create one canonical entity (ADR-020).",
+        "description": "Writes validate the whole resulting topology with the client's rules (validateTopology) plus the schema's enums and required fields (code `invalid-field`); failures are 422 with `errors[]`. Server-set fields: `updatedAt` is the write time; telemetry (`metrics`) cannot be written (new entities have none, replacements keep the stored values). Requires the editor role when AUTH_MODE=token. The ID must be new across all collections (409 otherwise).",
+        "x-repository": "TopologyWriter.create(kind, entity)",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WritableEntityKind"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "../schemas/topology.v1.schema.json#/$defs/EnvironmentRecord"
+                  },
+                  {
+                    "$ref": "../schemas/topology.v1.schema.json#/$defs/ServiceDefinition"
+                  },
+                  {
+                    "$ref": "../schemas/topology.v1.schema.json#/$defs/ServiceInstance"
+                  },
+                  {
+                    "$ref": "../schemas/topology.v1.schema.json#/$defs/InfrastructureResource"
+                  },
+                  {
+                    "$ref": "../schemas/topology.v1.schema.json#/$defs/CommunicationRelationship"
+                  },
+                  {
+                    "$ref": "../schemas/topology.v1.schema.json#/$defs/EventType"
+                  }
+                ]
+              },
+              "examples": {
+                "environment": {
+                  "value": {
+                    "id": "qa",
+                    "name": "QA",
+                    "kind": "other"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created; Location names the entity",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/EnvironmentRecord"
+                    },
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/ServiceDefinition"
+                    },
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/ServiceInstance"
+                    },
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/InfrastructureResource"
+                    },
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/CommunicationRelationship"
+                    },
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/EventType"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "412": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
     "/entities/{kind}/{id}": {
       "get": {
         "operationId": "getEntity",
@@ -332,6 +456,179 @@
             "$ref": "#/components/responses/Problem"
           },
           "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "put": {
+        "operationId": "replaceEntity",
+        "tags": [
+          "topology"
+        ],
+        "summary": "Replace one canonical entity (ADR-020).",
+        "description": "Writes validate the whole resulting topology with the client's rules (validateTopology) plus the schema's enums and required fields (code `invalid-field`); failures are 422 with `errors[]`. Server-set fields: `updatedAt` is the write time; telemetry (`metrics`) cannot be written (new entities have none, replacements keep the stored values). Requires the editor role when AUTH_MODE=token. The body's `id` must equal the path ID (IDs cannot change).",
+        "x-repository": "TopologyWriter.update(kind, entity)",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WritableEntityKind"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "../schemas/topology.v1.schema.json#/$defs/EnvironmentRecord"
+                  },
+                  {
+                    "$ref": "../schemas/topology.v1.schema.json#/$defs/ServiceDefinition"
+                  },
+                  {
+                    "$ref": "../schemas/topology.v1.schema.json#/$defs/ServiceInstance"
+                  },
+                  {
+                    "$ref": "../schemas/topology.v1.schema.json#/$defs/InfrastructureResource"
+                  },
+                  {
+                    "$ref": "../schemas/topology.v1.schema.json#/$defs/CommunicationRelationship"
+                  },
+                  {
+                    "$ref": "../schemas/topology.v1.schema.json#/$defs/EventType"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stored",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/EnvironmentRecord"
+                    },
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/ServiceDefinition"
+                    },
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/ServiceInstance"
+                    },
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/InfrastructureResource"
+                    },
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/CommunicationRelationship"
+                    },
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/EventType"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "412": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteEntity",
+        "tags": [
+          "topology"
+        ],
+        "summary": "Delete one canonical entity (ADR-020).",
+        "description": "Refused with 422 while other entities still reference it: `errors[]` lists each blocking reference (validateTopology codes such as `missing-environment`). Requires the editor role when AUTH_MODE=token.",
+        "x-repository": "TopologyWriter.remove(kind, id)",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WritableEntityKind"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "412": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
             "$ref": "#/components/responses/Problem"
           },
           "default": {
@@ -2452,6 +2749,17 @@
             }
           }
         }
+      },
+      "WritableEntityKind": {
+        "description": "Entity kinds accepted by the write operations (ADR-020): the selection kinds plus event-type.",
+        "enum": [
+          "environment",
+          "service-definition",
+          "service-instance",
+          "resource",
+          "relationship",
+          "event-type"
+        ]
       }
     },
     "responses": {
@@ -2481,6 +2789,26 @@
         "type": "http",
         "scheme": "bearer",
         "description": "Required on /api/v1 when the server runs with AUTH_MODE=token (ADR-018): reader tokens may call GET operations, editor tokens all operations. Missing/invalid token: 401; read-only token on a write: 403. With AUTH_MODE=none the API must only listen on loopback or behind an authenticating proxy."
+      }
+    },
+    "headers": {
+      "ETag": {
+        "description": "Topology revision as a strong entity tag. Send it back in If-Match on writes.",
+        "schema": {
+          "type": "string"
+        },
+        "example": "\"3f9a1c0e8b7d4a6f9e2c1b0a5d4c3b2a\""
+      }
+    },
+    "parameters": {
+      "IfMatch": {
+        "name": "If-Match",
+        "in": "header",
+        "required": false,
+        "description": "Topology revision (ETag of GET /topology or of the previous write). When present and no longer current, the write is refused with 412 so concurrent edits are not lost. Omit to write unconditionally.",
+        "schema": {
+          "type": "string"
+        }
       }
     }
   },

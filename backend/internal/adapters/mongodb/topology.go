@@ -62,6 +62,7 @@ type TopologyRepository struct {
 var (
 	_ ports.TopologyRepository     = (*TopologyRepository)(nil)
 	_ ports.TopologyMetaRepository = (*TopologyRepository)(nil)
+	_ ports.TopologyWriter         = (*TopologyRepository)(nil)
 )
 
 // NewTopologyRepository returns a repository using s.
@@ -189,16 +190,22 @@ func (r *TopologyRepository) GetTopology(ctx context.Context, environmentID doma
 	if environmentID != "" {
 		return nil, fmt.Errorf("mongodb: environment projection happens in the application layer; call GetTopology with an empty environment")
 	}
+	data, _, err := r.CurrentTopology(ctx)
+	return data, err
+}
+
+// CurrentTopology returns the topology with the revision it belongs to (ports.TopologyWriter).
+func (r *TopologyRepository) CurrentTopology(ctx context.Context) (*domain.TopologyData, string, error) {
 	st, err := readState(ctx, r.s)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	r.mu.Lock()
 	if st.Revision != "" && st.Revision == r.revision && r.cached != nil {
 		cached := r.cached
 		r.mu.Unlock()
 		r.hits.Add(1)
-		return cached, nil
+		return cached, st.Revision, nil
 	}
 	r.mu.Unlock()
 	r.misses.Add(1)
@@ -232,7 +239,7 @@ func (r *TopologyRepository) GetTopology(ctx context.Context, environmentID doma
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	// Collections are arrays in the contract; an absent event type list stays absent.
 	if len(data.EventTypes) == 0 {
@@ -243,7 +250,112 @@ func (r *TopologyRepository) GetTopology(ctx context.Context, environmentID doma
 		r.revision, r.cached = revision, data
 		r.mu.Unlock()
 	}
-	return data, nil
+	return data, revision, nil
+}
+
+// collectionOf maps a writable kind to its canonical collection.
+var collectionOf = map[string]string{
+	domain.KindEnvironment: collEnvironments, domain.KindServiceDefinition: collServiceDefinitions,
+	domain.KindServiceInstance: collServiceInstances, domain.KindResource: collResources,
+	domain.KindRelationship: collRelationships, domain.KindEventType: collEventTypes,
+}
+
+// ApplyChange applies one validated change in a transaction (ports.TopologyWriter): it checks that
+// the stored revision is still expectedRevision, writes the entity (a new one goes last in canonical
+// order; a replaced one keeps its position), and stores a new revision.
+func (r *TopologyRepository) ApplyChange(ctx context.Context, change ports.EntityChange, expectedRevision, sourceType string) (string, error) {
+	collName, ok := collectionOf[change.Kind]
+	if !ok {
+		return "", fmt.Errorf("mongodb: kind %q is not writable", change.Kind)
+	}
+	recordedAt := r.now().UTC().Format(time.RFC3339)
+	var b [16]byte
+	_, _ = rand.Read(b[:])
+	revision := hex.EncodeToString(b[:])
+	coll := r.s.coll(collName)
+	meta := func(ord int64) bson.D {
+		m := bson.D{{Key: "ord", Value: ord}, {Key: "recordedAt", Value: recordedAt}, {Key: "sourceType", Value: sourceType}}
+		if rel, ok := change.Entity.(*domain.CommunicationRelationship); ok {
+			m = append(m, bson.E{Key: "endpoints", Value: bson.A{rel.SourceEntityID, rel.TargetEntityID}})
+		}
+		return m
+	}
+	err := r.s.inTx(ctx, func(ctx context.Context) error {
+		st, err := readState(ctx, r.s)
+		if err != nil {
+			return err
+		}
+		if st.Revision != expectedRevision {
+			return ports.ErrPreconditionFailed
+		}
+		switch change.Op {
+		case ports.OpCreate:
+			var last struct {
+				Meta struct {
+					Ord int64 `bson:"ord"`
+				} `bson:"_meta"`
+			}
+			ord := int64(0)
+			err := coll.FindOne(ctx, bson.D{}, options.FindOne().SetSort(bson.D{{Key: "_meta.ord", Value: -1}}).SetProjection(bson.D{{Key: "_meta.ord", Value: 1}})).Decode(&last)
+			switch {
+			case err == nil:
+				ord = last.Meta.Ord + 1
+			case !errors.Is(err, mongo.ErrNoDocuments):
+				return err
+			}
+			doc, err := canonicalDoc(change.ID, change.Entity, meta(ord))
+			if err != nil {
+				return err
+			}
+			if _, err := coll.InsertOne(ctx, doc); err != nil {
+				return err
+			}
+		case ports.OpReplace:
+			var old struct {
+				Meta struct {
+					Ord int64 `bson:"ord"`
+				} `bson:"_meta"`
+			}
+			err := coll.FindOne(ctx, byID(change.ID), options.FindOne().SetProjection(bson.D{{Key: "_meta.ord", Value: 1}})).Decode(&old)
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				return ports.ErrNotFound
+			}
+			if err != nil {
+				return err
+			}
+			doc, err := canonicalDoc(change.ID, change.Entity, meta(old.Meta.Ord))
+			if err != nil {
+				return err
+			}
+			if _, err := coll.ReplaceOne(ctx, byID(change.ID), doc); err != nil {
+				return err
+			}
+		case ports.OpDelete:
+			res, err := coll.DeleteOne(ctx, byID(change.ID))
+			if err != nil {
+				return err
+			}
+			if res.DeletedCount == 0 {
+				return ports.ErrNotFound
+			}
+		default:
+			return fmt.Errorf("mongodb: unknown operation %q", change.Op)
+		}
+		// The source of the topology as a whole (e.g. "fixture") is kept; a first write into an empty
+		// database records its own.
+		_, err = r.s.coll(collTopologyState).UpdateOne(ctx, byID("topology"),
+			bson.D{{Key: "$set", Value: bson.D{{Key: "revision", Value: revision}, {Key: "recordedAt", Value: recordedAt}}},
+				{Key: "$setOnInsert", Value: bson.D{{Key: "sourceType", Value: sourceType}}}},
+			options.UpdateOne().SetUpsert(true))
+		return err
+	})
+	if err != nil {
+		if errors.Is(err, ports.ErrPreconditionFailed) {
+			return "", ports.ErrPreconditionFailed
+		}
+		return "", err
+	}
+	return revision, nil
 }
 
 var byOrd = options.Find().SetSort(bson.D{{Key: "_meta.ord", Value: 1}})

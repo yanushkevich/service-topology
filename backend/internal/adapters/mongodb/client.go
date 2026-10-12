@@ -48,7 +48,7 @@ func mapErr(err error) error {
 	switch {
 	case err == nil:
 		return nil
-	case errors.As(err, &classified), errors.Is(err, ports.ErrNotFound), errors.Is(err, ports.ErrTooLarge):
+	case errors.As(err, &classified), errors.Is(err, ports.ErrNotFound), errors.Is(err, ports.ErrTooLarge), errors.Is(err, ports.ErrPreconditionFailed):
 		return err
 	case mongo.IsDuplicateKeyError(err):
 		return &Error{kind: ErrConflict, msg: "duplicate key"}

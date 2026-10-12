@@ -44,13 +44,15 @@ function responseSpec(path, method, status) {
 
 let failures = 0;
 let checks = 0;
-async function check(name, method, path, url, { status, body } = {}) {
+let lastHeaders = new Headers();
+async function check(name, method, path, url, { status, body, headers = {} } = {}) {
   checks++;
   const res = await fetch(BASE + url, {
     method: method.toUpperCase(),
-    headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
+    headers: { ...(body === undefined ? {} : { 'Content-Type': 'application/json' }), ...headers },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+  lastHeaders = res.headers;
   const problems = [];
   if (status !== undefined && res.status !== status) problems.push(`status ${res.status}, want ${status}`);
   const spec = responseSpec(path, method, res.status);
@@ -144,6 +146,28 @@ if (run) {
 await check('events, missing simulationId', 'get', '/events', '/events', { status: 400 });
 await check('simulation not found', 'get', '/simulations/{id}', '/simulations/ghost', { status: 404 });
 if (first) await check('snapshot diff vs snapshot', 'get', '/topology/snapshots/{id}/diff', `/topology/snapshots/${first}/diff?against=${first}`, { status: 200 });
+
+// Entity writes (ADR-020), guarded by the topology revision (ETag / If-Match).
+await check('topology with ETag', 'get', '/topology', '/topology', { status: 200 });
+let etag = lastHeaders.get('etag');
+checks++;
+if (!etag) {
+  failures++;
+  console.log('FAIL  topology ETag: GET /topology has no ETag header');
+} else console.log(`PASS  topology ETag: ${etag}`);
+const envId = `contract-env-${stamp}`;
+const env = { id: envId, name: 'Contract environment', kind: 'other' };
+await check('create entity', 'post', '/entities/{kind}', '/entities/environment', { status: 201, body: env, headers: { 'If-Match': etag } });
+const afterCreate = lastHeaders.get('etag');
+await check('create entity, duplicate ID', 'post', '/entities/{kind}', '/entities/environment', { status: 409, body: env });
+await check('create entity, invalid field', 'post', '/entities/{kind}', '/entities/environment', { status: 422, body: { ...env, id: `${envId}-x`, kind: 'test' } });
+await check('create entity, unknown kind', 'post', '/entities/{kind}', '/entities/widget', { status: 400, body: env });
+await check('replace entity, stale If-Match', 'put', '/entities/{kind}/{id}', `/entities/environment/${envId}`, { status: 412, body: { ...env, name: 'Stale' }, headers: { 'If-Match': etag } });
+await check('replace entity', 'put', '/entities/{kind}/{id}', `/entities/environment/${envId}`, { status: 200, body: { ...env, name: 'Renamed' }, headers: { 'If-Match': afterCreate } });
+await check('replace entity, missing', 'put', '/entities/{kind}/{id}', '/entities/environment/contract-ghost', { status: 404, body: { ...env, id: 'contract-ghost' } });
+await check('delete entity, still referenced', 'delete', '/entities/{kind}/{id}', '/entities/environment/production', { status: 422 });
+await check('delete entity', 'delete', '/entities/{kind}/{id}', `/entities/environment/${envId}`, { status: 204 });
+await check('delete entity, missing', 'delete', '/entities/{kind}/{id}', `/entities/environment/${envId}`, { status: 404 });
 
 const layout = openapi.paths['/layouts'].post.requestBody.content['application/json'].examples.default.value;
 const mine = { ...layout, id: `contract-${stamp}` };

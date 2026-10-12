@@ -5,6 +5,7 @@ package memory
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"sync"
 
@@ -20,6 +21,8 @@ type Store struct {
 	layouts   map[string]domain.SavedLayout
 	// Err, if set, is returned by every call (simulates an unavailable database).
 	Err error
+	// writes counts applied changes; the revision is derived from it.
+	writes int
 }
 
 // New returns a store holding data.
@@ -298,5 +301,77 @@ func (m *sims) Prune(_ context.Context, olderThan string, keep int) (int, error)
 
 // TopologyMeta implements ports.TopologyMetaRepository (in-memory data is fixture data).
 func (s *Store) TopologyMeta(context.Context) (*ports.TopologyMeta, error) {
-	return &ports.TopologyMeta{Revision: "memory", SourceType: "fixture", IsMock: true}, nil
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return &ports.TopologyMeta{Revision: s.revisionLocked(), SourceType: "fixture", IsMock: true}, nil
+}
+
+func (s *Store) revisionLocked() string { return fmt.Sprintf("memory-%d", s.writes) }
+
+// CurrentTopology implements ports.TopologyWriter.
+func (s *Store) CurrentTopology(context.Context) (*domain.TopologyData, string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.Err != nil {
+		return nil, "", s.Err
+	}
+	return clone(s.Data), s.revisionLocked(), nil
+}
+
+func applyTo[T any](items []T, change ports.EntityChange, idOf func(*T) string) ([]T, error) {
+	at := -1
+	for i := range items {
+		if idOf(&items[i]) == change.ID {
+			at = i
+		}
+	}
+	switch {
+	case change.Op == ports.OpCreate && at >= 0:
+		return nil, ports.ErrConflict
+	case change.Op != ports.OpCreate && at < 0:
+		return nil, ports.ErrNotFound
+	case change.Op == ports.OpCreate:
+		return append(items, clone(*change.Entity.(*T))), nil
+	case change.Op == ports.OpReplace:
+		items[at] = clone(*change.Entity.(*T))
+		return items, nil
+	default:
+		return append(items[:at:at], items[at+1:]...), nil
+	}
+}
+
+// ApplyChange implements ports.TopologyWriter (no validation here: the application validates).
+func (s *Store) ApplyChange(_ context.Context, change ports.EntityChange, expectedRevision, _ string) (string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.Err != nil {
+		return "", s.Err
+	}
+	if expectedRevision != s.revisionLocked() {
+		return "", ports.ErrPreconditionFailed
+	}
+	d := clone(s.Data)
+	var err error
+	switch change.Kind {
+	case domain.KindEnvironment:
+		d.Environments, err = applyTo(d.Environments, change, func(e *domain.Environment) string { return e.ID })
+	case domain.KindServiceDefinition:
+		d.ServiceDefinitions, err = applyTo(d.ServiceDefinitions, change, func(e *domain.ServiceDefinition) string { return e.ID })
+	case domain.KindServiceInstance:
+		d.ServiceInstances, err = applyTo(d.ServiceInstances, change, func(e *domain.ServiceInstance) string { return e.ID })
+	case domain.KindResource:
+		d.Resources, err = applyTo(d.Resources, change, func(e *domain.InfrastructureResource) string { return e.ID })
+	case domain.KindRelationship:
+		d.Relationships, err = applyTo(d.Relationships, change, func(e *domain.CommunicationRelationship) string { return e.ID })
+	case domain.KindEventType:
+		d.EventTypes, err = applyTo(d.EventTypes, change, func(e *domain.EventType) string { return e.ID })
+	default:
+		err = fmt.Errorf("memory: kind %q is not writable", change.Kind)
+	}
+	if err != nil {
+		return "", err
+	}
+	s.Data = d
+	s.writes++
+	return s.revisionLocked(), nil
 }

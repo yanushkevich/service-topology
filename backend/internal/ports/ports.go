@@ -27,6 +27,38 @@ type TopologyRepository interface {
 	GetTopology(ctx context.Context, environmentID domain.EntityID) (*domain.TopologyData, error)
 }
 
+// ErrPreconditionFailed reports a write whose expected topology revision is no longer current
+// (another write happened since it was read). HTTP maps it to 412.
+var ErrPreconditionFailed = errors.New("topology revision changed")
+
+// Write operations on one canonical entity (ADR-020).
+const (
+	OpCreate  = "create"
+	OpReplace = "replace"
+	OpDelete  = "delete"
+)
+
+// EntityChange is one validated change to the canonical topology. Entity is the domain value
+// (*domain.Environment, …, *domain.EventType); nil for deletes.
+type EntityChange struct {
+	Op     string
+	Kind   string // a domain.WritableKinds value
+	ID     domain.EntityID
+	Entity any
+}
+
+// TopologyWriter changes the canonical topology one entity at a time (ADR-020). The application
+// validates the whole resulting topology first; the adapter applies the change atomically, only if
+// the stored revision still equals expectedRevision, and stores a new revision with it.
+type TopologyWriter interface {
+	// CurrentTopology returns the whole topology with the revision it belongs to. The data is shared
+	// and read-only.
+	CurrentTopology(ctx context.Context) (*domain.TopologyData, string, error)
+	// ApplyChange applies change and returns the new revision. ErrPreconditionFailed if the revision
+	// moved; ErrConflict if a created ID exists; ErrNotFound if a replaced or deleted ID does not.
+	ApplyChange(ctx context.Context, change EntityChange, expectedRevision, sourceType string) (string, error)
+}
+
 // TopologyMeta describes the stored topology (GET /meta). SourceType says where it came from
 // ("fixture" for seeded mock data); only observed sources are not mock.
 type TopologyMeta struct {

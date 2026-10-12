@@ -6,6 +6,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -19,7 +20,44 @@ import (
 const (
 	maxSnapshotBody = 16 << 20
 	maxLayoutBody   = 1 << 20
+	maxEntityBody   = 1 << 20
 )
+
+// setETag sets the topology revision as a strong entity tag (RFC 9110).
+func setETag(w http.ResponseWriter, revision string) {
+	if revision != "" {
+		w.Header().Set("ETag", `"`+revision+`"`)
+	}
+}
+
+// ifMatch returns the revision in an If-Match header ("" when absent or "*"). Weak tags compare by
+// their opaque value; lists are not supported (one topology revision at a time).
+func ifMatch(r *http.Request) string {
+	v := strings.TrimSpace(r.Header.Get("If-Match"))
+	if v == "" || v == "*" {
+		return ""
+	}
+	v = strings.TrimPrefix(v, "W/")
+	return strings.Trim(v, `"`)
+}
+
+func entityIDOf(entity any) string {
+	switch e := entity.(type) {
+	case *domain.Environment:
+		return e.ID
+	case *domain.ServiceDefinition:
+		return e.ID
+	case *domain.ServiceInstance:
+		return e.ID
+	case *domain.InfrastructureResource:
+		return e.ID
+	case *domain.CommunicationRelationship:
+		return e.ID
+	case *domain.EventType:
+		return e.ID
+	}
+	return ""
+}
 
 // apiRoutes registers the contract v1 operations from docs/api/openapi.json under /api/v1.
 func (d Deps) apiRoutes(mux *http.ServeMux) {
@@ -56,11 +94,59 @@ func (d Deps) apiRoutes(mux *http.ServeMux) {
 		return nil
 	})
 	h("GET /api/v1/topology", func(w http.ResponseWriter, r *http.Request) error {
-		data, err := s.Topology(r.Context(), r.URL.Query().Get("environmentId"))
+		data, rev, err := s.TopologyRevision(r.Context(), r.URL.Query().Get("environmentId"))
 		if err != nil {
 			return err
 		}
+		setETag(w, rev)
 		writeJSON(w, http.StatusOK, data)
+		return nil
+	})
+	// Writes (ADR-020): one canonical entity at a time, validated against the whole topology.
+	h("POST /api/v1/entities/{kind}", func(w http.ResponseWriter, r *http.Request) error {
+		kind := r.PathValue("kind")
+		raw, err := readBody(w, r, maxEntityBody)
+		if err != nil {
+			return err
+		}
+		entity, err := application.DecodeEntity(kind, raw)
+		if err != nil {
+			return err
+		}
+		res, err := s.CreateEntity(r.Context(), kind, entity, ifMatch(r))
+		if err != nil {
+			return err
+		}
+		w.Header().Set("Location", "/api/v1/entities/"+kind+"/"+url.PathEscape(entityIDOf(res.Entity)))
+		setETag(w, res.Revision)
+		writeJSON(w, http.StatusCreated, res.Entity)
+		return nil
+	})
+	h("PUT /api/v1/entities/{kind}/{id}", func(w http.ResponseWriter, r *http.Request) error {
+		kind := r.PathValue("kind")
+		raw, err := readBody(w, r, maxEntityBody)
+		if err != nil {
+			return err
+		}
+		entity, err := application.DecodeEntity(kind, raw)
+		if err != nil {
+			return err
+		}
+		res, err := s.ReplaceEntity(r.Context(), kind, r.PathValue("id"), entity, ifMatch(r))
+		if err != nil {
+			return err
+		}
+		setETag(w, res.Revision)
+		writeJSON(w, http.StatusOK, res.Entity)
+		return nil
+	})
+	h("DELETE /api/v1/entities/{kind}/{id}", func(w http.ResponseWriter, r *http.Request) error {
+		res, err := s.DeleteEntity(r.Context(), r.PathValue("kind"), r.PathValue("id"), ifMatch(r))
+		if err != nil {
+			return err
+		}
+		setETag(w, res.Revision)
+		w.WriteHeader(http.StatusNoContent)
 		return nil
 	})
 	h("GET /api/v1/registry", func(w http.ResponseWriter, r *http.Request) error {
@@ -351,19 +437,28 @@ type errTooLarge struct{ limit int64 }
 
 func (e errTooLarge) Error() string { return fmt.Sprintf("Request body exceeds %d bytes.", e.limit) }
 
-// decodeBody reads a JSON body strictly (unknown fields are rejected, as in the schemas).
-func decodeBody(w http.ResponseWriter, r *http.Request, limit int64, into any) error {
+// readBody reads a JSON request body up to limit bytes.
+func readBody(w http.ResponseWriter, r *http.Request, limit int64) ([]byte, error) {
 	if mt, _, err := mime.ParseMediaType(r.Header.Get("Content-Type")); err != nil || mt != "application/json" {
-		return errUnsupportedMedia{}
+		return nil, errUnsupportedMedia{}
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, limit)
 	raw, err := io.ReadAll(r.Body)
 	if err != nil {
 		var mbe *http.MaxBytesError
 		if errors.As(err, &mbe) {
-			return errTooLarge{limit}
+			return nil, errTooLarge{limit}
 		}
-		return &application.ErrInvalid{Param: "body", Reason: "could not be read"}
+		return nil, &application.ErrInvalid{Param: "body", Reason: "could not be read"}
+	}
+	return raw, nil
+}
+
+// decodeBody reads a JSON body strictly (unknown fields are rejected, as in the schemas).
+func decodeBody(w http.ResponseWriter, r *http.Request, limit int64, into any) error {
+	raw, err := readBody(w, r, limit)
+	if err != nil {
+		return err
 	}
 	if err := fixtures.DecodeStrict(raw, into); err != nil {
 		return &application.ErrInvalid{Param: "body", Reason: "not valid JSON for this operation: " + err.Error()}
@@ -392,6 +487,11 @@ func (d Deps) writeError(w http.ResponseWriter, r *http.Request, err error) {
 		WriteProblem(w, r, Problem{Type: problemBase + "not-found", Title: "Not found", Status: http.StatusNotFound, Detail: notFound.Detail})
 	case errors.Is(err, ports.ErrNotFound):
 		WriteProblem(w, r, Problem{Type: problemBase + "not-found", Title: "Not found", Status: http.StatusNotFound})
+	case errors.Is(err, ports.ErrPreconditionFailed):
+		WriteProblem(w, r, Problem{Type: problemBase + "precondition-failed", Title: "Precondition failed", Status: http.StatusPreconditionFailed,
+			Detail: "The topology changed since it was read. Reload it and try again."})
+	case errors.Is(err, application.ErrReadOnly):
+		WriteProblem(w, r, Problem{Type: problemBase + "read-only", Title: "Method not allowed", Status: http.StatusMethodNotAllowed, Detail: err.Error()})
 	case errors.Is(err, ports.ErrConflict):
 		WriteProblem(w, r, Problem{Type: problemBase + "conflict", Title: "Conflict", Status: http.StatusConflict, Detail: "An item with this ID already exists."})
 	case errors.As(err, &tooLarge):

@@ -24,6 +24,7 @@
 - **Errors:** 400 `invalid-parameter` (bad parameter or malformed body), 404, 405 (with `Allow`), 409 (duplicate snapshot or layout ID), 413 (body over 16 MB for snapshots, 1 MB for layouts), 415 (non-JSON body), 422 (validation: topology codes, `invalid-snapshot`, `invalid-layout`), 503 (database unavailable). Every error is `application/problem+json` with the `requestId` extension.
 - **Snapshots** are immutable: `POST` with an existing ID is 409, never an overwrite. Lists are ordered by `takenAt` instant.
 - **Layouts:** `POST` creates (409 if the ID exists); `PUT` replaces an existing layout (404 if missing; the body ID must equal the path ID, else 422). Concurrency control (`ETag`/`If-Match`) remains an open decision.
+- **Entity writes (B7, ADR-020):** `POST /entities/{kind}`, `PUT /entities/{kind}/{id}`, `DELETE /entities/{kind}/{id}` for every entity kind including `event-type`. Each write validates the whole resulting topology (`validateTopology` plus schema enums/required fields, code `invalid-field`) and answers 422 with the issues; a delete is refused while anything references the entity. 409 for an ID that exists in any collection; 404 for a missing entity. `GET /topology` returns the revision as `ETag`; writes accept `If-Match` and answer 412 when the topology changed in between. `updatedAt` is set by the server and telemetry cannot be written.
 
 ## Identity and semantics
 - **IDs** are stable, opaque strings, unique across all collections of one topology (an instance and a resource never share an ID). Clients never parse IDs. Selection and deep links use `{ kind, id }`.
@@ -42,6 +43,7 @@
 | `GET /topology?environmentId=` | Canonical topology (optionally one environment), including event types | `TopologyRepository.getTopology(signal)` |
 | `GET /registry?environmentId=&q=&provider=&health=&kind=&sort=&cursor=&limit=` | Paginated registry search | Computed client-side (`buildRegistryRows`, `filterRegistryRows`, `sortRegistryRows`); proposed `RegistryRepository.search` |
 | `GET /entities/{kind}/{id}` | One entity (deep links, inspector) | Resolved from `TopologyIndex`; proposed |
+| `POST /entities/{kind}`, `PUT` / `DELETE /entities/{kind}/{id}` | Create, replace, delete one entity (B7, ADR-020) | `TopologyWriter` (`apps/web/src/data/repositories/TopologyRepository.ts`; HTTP only) |
 | `GET /topology/snapshots?from=&to=` | History list | `SnapshotRepository.list()` |
 | `GET /topology/snapshots/{id}` | One snapshot ("as of") | `SnapshotRepository.get(id)` |
 | `POST /topology/snapshots` | Store a snapshot (e.g. simulation capture) | `SnapshotRepository.save(snapshot)` |
@@ -96,7 +98,7 @@ Full topology, snapshot, and layout examples: `apps/web/src/data/mock/topology.t
 - **Tenancy:** tenant boundary (organization, account?) and how IDs are scoped.
 - **Retention and history:** snapshot retention, event sourcing vs. periodic snapshots, `from`/`to` limits.
 - **Saved-layout ownership:** per user or shared, and conflict handling (ETags / `If-Match` on `PUT`).
-- **Rate limits and caching:** `ETag` on `/topology`, incremental sync or change feed for large inventories.
+- **Rate limits and caching:** incremental sync or change feed for large inventories (`/topology` has a revision `ETag` since ADR-020; conditional `GET` with `If-None-Match` is not implemented).
 - **Observed telemetry:** source systems, freshness guarantees, and how `observedAt` and `isSimulated: false` are populated.
 - ~~**Server-side simulation**~~: decided in ADR-017 (isolated, deterministic, bounded runs; `POST /simulations`).
 - **Snapshot retention:** snapshots are kept until deleted; there is no delete endpoint yet.

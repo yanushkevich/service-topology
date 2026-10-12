@@ -155,3 +155,16 @@ Evidence: `make check` exit 0; `make test-integration` passes (17 tests in the M
 
 Not migrated: existing ArcadeDB data (re-seed instead). The `backend_arcadedb_data` volume and `secrets/arcadedb_root_password.txt` were left in place for the owner to delete.
 
+## Milestone B7 closeout — entity writes (2026-10-12, ADR-020)
+Product owner direction: create, update, and delete every entity kind from the UI, against the backend. Committed as `feat(b7)`.
+
+Evidence: `make check` exit 0 (new unit tests: field rules equal the schema enums, write round trip and error mapping over HTTP); `make test-integration` passes (new: writes on MongoDB with revision guard in the adapter, ordering, kept telemetry, blocked delete, schema still valid); `make contract-check` 71/71 (12 new write checks, including ETag, 409, 412, 422 blocked delete, 204).
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Create/replace/delete for all six kinds | Pass | `internal/application/entities.go`; HTTP tests; contract check |
+| Topology always valid after a write | Pass | whole-topology `domain.Validate` before `ApplyChange`; invalid writes 422 with codes |
+| Referenced entities cannot be deleted | Pass | 422 lists the blockers (HTTP and MongoDB tests, contract check on `production`) |
+| No lost updates | Pass | `ETag` / `If-Match` → 412; adapter re-checks the revision inside the transaction (integration test) |
+| Telemetry and timestamps not client-writable | Pass | `updatedAt` server-set; metrics dropped on create, kept on replace (tests) |
+| Authorization | Pass | non-GET requires the editor role in token mode (existing middleware, ADR-018) |
