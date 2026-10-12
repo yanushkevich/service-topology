@@ -14,6 +14,7 @@ import { EMPTY_FILTERS } from '../domain/registry';
 import { useSimulationStore } from '../state/simulationStore';
 import { useUiStore } from '../state/uiStore';
 import { createMemoryPreferencesRepository, setPreferencesRepository } from '../state/preferencesStore';
+import { createExampleTransitRepository, TransitRepositoryContext, type TransitRepository } from '../transit/repository';
 
 export function resetUiStore() {
   setPreferencesRepository(createMemoryPreferencesRepository());
@@ -39,13 +40,16 @@ export function renderApp(
   repository: TopologyRepository = createMockTopologyRepository(),
   savedLayouts: SavedLayoutRepository = createInMemorySavedLayoutRepository(),
   snapshots: SnapshotRepository = createInMemorySnapshotRepository(mockSnapshots()),
+  transit: TransitRepository = createExampleTransitRepository(),
 ) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
   render(
     <RepositoryProvider repository={repository}>
       <SavedLayoutRepositoryContext.Provider value={savedLayouts}>
         <SnapshotRepositoryContext.Provider value={snapshots}>
-          <RouterProvider router={router} />
+          <TransitRepositoryContext.Provider value={transit}>
+            <RouterProvider router={router} />
+          </TransitRepositoryContext.Provider>
         </SnapshotRepositoryContext.Provider>
       </SavedLayoutRepositoryContext.Provider>
     </RepositoryProvider>,

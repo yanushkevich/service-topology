@@ -44,10 +44,17 @@ const bare = (search: string) => (search.startsWith('?') ? search.slice(1) : sea
  */
 const STARTUP_PARAMS = ['source', 'dataset'] as const;
 
-export function withStartupParams(canonical: string, currentSearch: string): string {
+/**
+ * Page-local view state that only one route understands (ADR-021: the transit board's `line`,
+ * `mode`, `trace`, `t`). Kept while the path stays on that route, dropped when leaving it.
+ */
+const PAGE_PARAMS: readonly { prefix: string; names: readonly string[] }[] = [{ prefix: '/services/', names: ['line', 'mode', 'trace', 't'] }];
+
+export function withStartupParams(canonical: string, currentSearch: string, pathname = ''): string {
   const current = new URLSearchParams(currentSearch);
   const out = new URLSearchParams(canonical);
-  for (const name of STARTUP_PARAMS) {
+  const pageParams = PAGE_PARAMS.filter((p) => pathname.startsWith(p.prefix)).flatMap((p) => p.names);
+  for (const name of [...STARTUP_PARAMS, ...pageParams]) {
     const value = current.get(name);
     if (value) out.set(name, value);
   }
@@ -86,7 +93,7 @@ export function useUrlStateSync() {
       applyToStore(decoded.state);
       applying.current = false;
     }
-    const canonical = withStartupParams(encodeUrlState(fromStore(useUiStore.getState())), location.search);
+    const canonical = withStartupParams(encodeUrlState(fromStore(useUiStore.getState())), location.search, location.pathname);
     if (canonical !== bare(location.search)) {
       navigate({ pathname: location.pathname, search: canonical }, { replace: true });
     }
@@ -100,7 +107,7 @@ export function useUrlStateSync() {
       useUiStore.subscribe((state, previous) => {
         if (applying.current) return;
         const current = locationRef.current;
-        const next = withStartupParams(encodeUrlState(fromStore(state)), current.search);
+        const next = withStartupParams(encodeUrlState(fromStore(state)), current.search, current.pathname);
         if (next === bare(current.search)) return;
         const onlyQueryChanged =
           encodeUrlState(fromStore({ ...state, filters: { ...state.filters, query: previous.filters.query } })) ===

@@ -327,9 +327,9 @@ Every navigation section is a working page built on the canonical data and share
 - Create, edit, and delete work for every kind against the backend; invalid changes never reach storage; referenced entities cannot be deleted; stale edits are refused.
 - Forms, menus, and dialogs are keyboard-operable, label every field, announce errors, keep focus inside dialogs, and return it afterwards; axe audits pass.
 
-# Revision 8 Addendum — Transit board (2026-10-12, planned)
+# Revision 8 Addendum — Transit board (2026-10-12; Phase 1 implemented)
 
-**Source:** product owner direction: add the "Payment Service Transit Board" screen to the design. The prototype is in `docs/design-references/payment-transit-board/`, and the implementation spec in `docs/TRANSIT_BOARD.md` (the spec wins over the prototype). Authoritative where it conflicts with earlier text. Status: planned, not implemented. Delivery: Milestone 9 (`docs/milestones/MILESTONE_09_TRANSIT_BOARD.md`). Decision record: ADR-021 (proposed).
+**Source:** product owner direction: add the "Payment Service Transit Board" screen to the design. The prototype is in `docs/design-references/payment-transit-board/`, and the implementation spec in `docs/TRANSIT_BOARD.md` (the spec wins over the prototype). Authoritative where it conflicts with earlier text. Status: Phase 1 implemented on example data (Milestone 9, 2026-10-12). Delivery: Milestone 9 (`docs/milestones/MILESTONE_09_TRANSIT_BOARD.md`). Decision record: ADR-021 (proposed).
 
 ## O. Transit board
 

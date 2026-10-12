@@ -1,4 +1,4 @@
-import { act, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -73,6 +73,23 @@ describe('accessibility audit (axe-core)', () => {
     act(() => useSimulationStore.getState().inject('payment-service.production', 'unavailable'));
     await user.click(screen.getByRole('button', { name: 'Compare' }));
     await screen.findByRole('list', { name: 'Differences' });
+    expect(await audit()).toEqual([]);
+  });
+
+  it('transit board, no line selected', async () => {
+    renderApp('/services/payment-service/transit');
+    await screen.findByLabelText('Line card');
+    expect(await audit()).toEqual([]);
+  });
+
+  it('transit board with a line selected, a finding focused, and the station chooser open', async () => {
+    const user = userEvent.setup();
+    renderApp('/services/payment-service/transit?v=1&env=production&line=A1');
+    const card = await screen.findByLabelText('Line card');
+    await user.click(within(card).getByRole('button', { name: /fraud client has no breaker/ }));
+    const station = document.querySelector('[data-station="cli:card"]');
+    if (station) fireEvent.click(station);
+    await screen.findByRole('group', { name: 'Lines through card client' });
     expect(await audit()).toEqual([]);
   });
 

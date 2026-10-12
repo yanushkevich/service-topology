@@ -1,6 +1,6 @@
 # Milestone 9 — Transit board (spec Phase 1)
 
-**Status:** planned, not started.
+**Status:** implemented 2026-10-12 (closeout in `docs/IMPLEMENTATION_PLAN.md`).
 
 **Read first:**
 - `docs/TRANSIT_BOARD.md`, especially its final section, "Reconciliation with this repository";

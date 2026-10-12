@@ -460,8 +460,23 @@ Decisions: `DECISIONS.md` ADR-014. Requirements: `PRODUCT_SPEC.md` Revision 6 (�
 Pipeline: `uiStore.eventHighlight` (URL `ev`) → `useEventHighlight(index)` → `resolveEventFlow` → `eventFlowReach` (a `Reach`, the same shape as selection reach) → 2D `computeHighlight` / 3D `buildScene`, used only when nothing is selected. Event types never add graph nodes or edges and do not change propagation; they select existing relationships. The catalog reads the same `TopologyIndex` as every view, so history mode works unchanged.
 
 
-## Revision 8 — Transit board architecture (planned, 2026-10-12)
-Status: planned (Milestone 9; ADR-021 proposed). Specification: `docs/TRANSIT_BOARD.md`. Nothing below exists yet.
+## Revision 8 — Transit board architecture (2026-10-12, Milestone 9)
+Status: Phase 1 implemented (ADR-021). Specification: `docs/TRANSIT_BOARD.md`.
+
+**Code map:**
+- `apps/web/src/transit/`:
+  - `types.ts`: the read model;
+  - `board.ts`: index, search, budget, formatting;
+  - `layout.ts`: rows, track graph, bundling, projection, `computeMapGeometry`;
+  - `repository.ts`: `TransitRepository`, the example implementation, and the context;
+  - `mock/`: the Payment Service example and a scale generator.
+- `apps/web/src/features/transit-board/`:
+  - `TransitBoardPage.tsx`: the route, states, responsive grid, and URL state;
+  - `LineIndex.tsx`, `TransitMap.tsx`, `StopStrip.tsx`, `LineCard.tsx`: the four panels;
+  - `visuals.tsx` and `colors.ts`: badges, diamonds, tags, and token colours;
+  - `useTransitBoard.ts`: loading, keeping the last good board on error.
+- **Route:** `/services/:serviceId/transit`, linked from the inspector ("Open transit board").
+- **Tokens:** `--transit-*` in `tokens.css`.
 - **Separate read model.**
   - Stations, lines, branches, policy stops, findings, and trace steps describe the internals of one service. They are not canonical topology entities, so they get their own types and module (proposed: `apps/web/src/transit/`), not additions to `apps/web/src/domain`.
   - The only link to the canonical model is the service: a service definition, resolved to the service instance in the selected environment.

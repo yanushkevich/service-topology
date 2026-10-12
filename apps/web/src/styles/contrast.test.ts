@@ -77,6 +77,31 @@ describe.each(['dark', 'light'] as const)('%s theme contrast (WCAG 2.2 AA)', (th
   });
 });
 
+const TRANSIT_LINES = Array.from({ length: 12 }, (_, i) => `--transit-line-${i + 1}`);
+const TRANSIT_POLICIES = ['timeout', 'retry', 'bulkhead', 'breaker', 'fallback', 'cache', 'idempotency'].map((p) => `--transit-policy-${p}`);
+
+describe.each(['dark', 'light'] as const)('%s theme transit board contrast (ADR-021)', (theme) => {
+  it('line colours are at least 3:1 on the map', () => {
+    expect(failures(theme, TRANSIT_LINES, ['--color-stage'], 3)).toEqual([]);
+  });
+
+  it('badge text is at least 4.5:1 on every line colour', () => {
+    const text = solid(theme, '--transit-on-line');
+    const low = TRANSIT_LINES.filter((line) => contrast(text, solid(theme, line)) < 4.5);
+    expect(low).toEqual([]);
+  });
+
+  it('policy stop fills are at least 3:1 on the map', () => {
+    expect(failures(theme, TRANSIT_POLICIES, ['--color-stage'], 3)).toEqual([]);
+  });
+
+  it('stations are distinguishable from the map by their fill or their ring (3:1)', () => {
+    const stage = solid(theme, '--color-stage');
+    const best = Math.max(contrast(solid(theme, '--transit-station'), stage), contrast(solid(theme, '--transit-station-ring'), stage));
+    expect(best).toBeGreaterThanOrEqual(3);
+  });
+});
+
 describe('contrast helpers', () => {
   it('match the WCAG reference values', () => {
     expect(contrast([0, 0, 0], [255, 255, 255])).toBeCloseTo(21);

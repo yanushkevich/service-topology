@@ -135,6 +135,7 @@ function InstanceDetails({ index, instance }: { index: TopologyIndex; instance: 
       />
       <Body>
         <MapActions entityId={instance.id} />
+        <TransitBoardLink serviceDefinitionId={instance.serviceDefinitionId} environmentId={instance.environmentId} />
         <SimulationSection index={index} entityId={instance.id} />
         <EnvironmentNotice index={index} entityId={instance.id} />
         {definition?.description && <p className="m-0 mb-3 text-fg-2">{definition.description}</p>}
@@ -308,6 +309,7 @@ function DefinitionDetails({ index, definition }: { index: TopologyIndex; defini
       />
       <Body>
         {definition.description && <p className="m-0 mb-3 text-fg-2">{definition.description}</p>}
+        <TransitBoardLink serviceDefinitionId={definition.id} />
         <Fields>
           <Field label="Category">{typeLabel(definition.category)}</Field>
           <Field label="Owner">{definition.owner ?? 'Unassigned'}</Field>
@@ -689,6 +691,27 @@ function SimulationSection({ index, entityId }: { index: TopologyIndex; entityId
 }
 
 /** Registry-to-map focus and neighborhood exploration for the selected entity. */
+/**
+ * Opens the per-service transit board (ADR-021) for the selected service, in the instance's
+ * environment when there is one.
+ */
+function TransitBoardLink({ serviceDefinitionId, environmentId }: { serviceDefinitionId: EntityId; environmentId?: EntityId }) {
+  const location = useLocation();
+  const setEnvironmentId = useUiStore((s) => s.setEnvironmentId);
+  const pathname = `/services/${encodeURIComponent(serviceDefinitionId)}/transit`;
+  if (location.pathname === pathname) return null;
+  return (
+    <Link
+      to={{ pathname, search: location.search }}
+      onClick={() => environmentId && setEnvironmentId(environmentId)}
+      className="mb-3 inline-flex h-7 items-center gap-[7px] rounded-md border border-line-strong px-3 whitespace-nowrap text-fg hover:bg-surface-3"
+    >
+      <Icon name="dependencies" />
+      Open transit board
+    </Link>
+  );
+}
+
 function MapActions({ entityId }: { entityId: EntityId }) {
   const navigate = useNavigate();
   const location = useLocation();

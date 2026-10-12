@@ -11,6 +11,7 @@ import { OverviewPage } from '../features/overview/OverviewPage';
 import { DependenciesPage } from '../features/dependencies/DependenciesPage';
 import { InfrastructurePage } from '../features/infrastructure/InfrastructurePage';
 import { SettingsPage } from '../features/settings/SettingsPage';
+import { TransitBoardPage } from '../features/transit-board/TransitBoardPage';
 
 export const routes: RouteObject[] = [
   {
@@ -28,6 +29,7 @@ export const routes: RouteObject[] = [
       { path: 'simulation', element: <SimulationPage /> },
       { path: 'infrastructure', element: <InfrastructurePage /> },
       { path: 'settings', element: <SettingsPage /> },
+      { path: 'services/:serviceId/transit', element: <TransitBoardPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

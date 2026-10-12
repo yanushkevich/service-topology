@@ -61,6 +61,33 @@
   --edge-grpc: #5fe1ff;
   --edge-data: #b79cff;
   --edge-event: #8ef0c0;
+
+  /* Transit board (docs/TRANSIT_BOARD.md, ADR-021): categorical line colours, badge text on them,
+     stations, policy stops, and the grey of dimmed lines. Values from the prototype. */
+  --transit-line-1: #5fe1ff;
+  --transit-line-2: #b48cff;
+  --transit-line-3: #7ff0c0;
+  --transit-line-4: #ff9ecf;
+  --transit-line-5: #8fb4ff;
+  --transit-line-6: #c9b6ff;
+  --transit-line-7: #ffab70;
+  --transit-line-8: #ff8f9c;
+  --transit-line-9: #e8c66a;
+  --transit-line-10: #6fd6c6;
+  --transit-line-11: #8a9bff;
+  --transit-line-12: #f0a6ff;
+  --transit-on-line: #05060b;
+  --transit-station: #f4f7ff;
+  --transit-station-ring: #0a0d18;
+  --transit-policy-timeout: #a9c8ff;
+  --transit-policy-retry: #5fe1ff;
+  --transit-policy-bulkhead: #8f9bff;
+  --transit-policy-breaker: #c3a6ff;
+  --transit-policy-fallback: #8ef0c0;
+  --transit-policy-cache: #8ef0c0;
+  --transit-policy-idempotency: #e8c66a;
+  --transit-dim: #4a5577;
+  --transit-shadow: rgba(0, 0, 0, 0.55);
 }
 
 :root[data-theme='light'] {
@@ -116,6 +143,33 @@
   --edge-grpc: #044f6e;
   --edge-data: #4a2fb8;
   --edge-event: #05573a;
+
+  /* Transit board: darker line and policy colours so lines reach 3:1 on the light stage and white
+     badge text reaches 4.5:1 on every line colour (src/styles/contrast.test.ts). */
+  --transit-line-1: #0a6e8a;
+  --transit-line-2: #6a3fc4;
+  --transit-line-3: #0b7a55;
+  --transit-line-4: #b0306f;
+  --transit-line-5: #2f55b8;
+  --transit-line-6: #5b4aa8;
+  --transit-line-7: #a24f12;
+  --transit-line-8: #b3243a;
+  --transit-line-9: #765e00;
+  --transit-line-10: #0f6f66;
+  --transit-line-11: #4a57d6;
+  --transit-line-12: #7a3a9a;
+  --transit-on-line: #ffffff;
+  --transit-station: #ffffff;
+  --transit-station-ring: #121a2c;
+  --transit-policy-timeout: #2550c0;
+  --transit-policy-retry: #0a6e8a;
+  --transit-policy-bulkhead: #4a57d6;
+  --transit-policy-breaker: #6d4fd6;
+  --transit-policy-fallback: #0b7a55;
+  --transit-policy-cache: #0b7a55;
+  --transit-policy-idempotency: #765e00;
+  --transit-dim: #9aa5bf;
+  --transit-shadow: rgba(40, 55, 95, 0.25);
 }
 
 :root {

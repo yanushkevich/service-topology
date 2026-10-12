@@ -147,6 +147,13 @@ The Events page and inspector explain the new rule automatically.
 - Tests use `src/test/writableRepository.ts`, an in-memory writer that validates like the server. To check against the real backend: `npm run check:live -- --url <preview-url> [--write]` (`--write` changes data; use a disposable database).
 - Adding a field to an entity: update `fieldsFor` and the schema/types together; the form round-trip test in `entityForms.test.ts` catches fields that do not survive values ↔ entity.
 
+## 7b. Transit board (ADR-021)
+- **Read model:** `apps/web/src/transit/` holds a per-service read model, separate from `src/domain`. `computeMapGeometry` is pure and runs once per data load. Selection, search, and finding focus only change attributes in `TransitMap`; `TransitBoardPage.test.tsx` checks that the `<path>` nodes are not rebuilt.
+- **Adding a board:** implement `TransitRepository.getBoard` (`src/transit/repository.ts`). Phase 1 serves only Payment Service example data. Tests inject a repository through `renderApp`'s fifth argument.
+- **URL state:** page-local parameters (`line`, `mode`, `trace`, `t`) are kept by `useUrlStateSync` only on `/services/…` routes (`PAGE_PARAMS`).
+- **Colours:** `--transit-*` tokens, tested in `contrast.test.ts`.
+- **Tests:** query board panels within their landmark (`[aria-label="Lines"]` and so on). Role queries over the whole page walk every SVG element of the map and are slow in jsdom.
+
 ## 8. Known limitations (current)
 - No real integrations, authentication, or tenancy. All data is mock; all telemetry is simulated.
 - Performance: 2D selection response and 3D frame rate need re-measurement on an idle machine or with a GPU (`docs/BENCHMARKS.md`).

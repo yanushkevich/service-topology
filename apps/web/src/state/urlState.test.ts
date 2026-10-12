@@ -80,5 +80,8 @@ describe('startup parameters', () => {
     expect(withStartupParams('v=1&env=production', '?source=api&q=x')).toBe('v=1&env=production&source=api');
     expect(withStartupParams('v=1', '?dataset=scale-250')).toBe('v=1&dataset=scale-250');
     expect(withStartupParams('v=1', '?other=1')).toBe('v=1');
+    // Page-local transit board state survives only on its route.
+    expect(withStartupParams('v=1', '?line=A2&mode=typical&q=x', '/services/payment-service/transit')).toBe('v=1&line=A2&mode=typical');
+    expect(withStartupParams('v=1', '?line=A2', '/map')).toBe('v=1');
   });
 });

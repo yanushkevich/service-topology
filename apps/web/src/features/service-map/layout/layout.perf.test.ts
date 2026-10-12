@@ -6,6 +6,9 @@ import { buildTopologyIndex } from '../../../domain/topologyIndex';
 import { toLayoutRequest } from '../graph/layoutRequest';
 import { buildTopologyGraph } from '../graph/topologyGraph';
 import { createElkLayoutService } from './elkLayoutService';
+import { indexBoard } from '../../../transit/board';
+import { computeMapGeometry } from '../../../transit/layout';
+import { generateBoard } from '../../../transit/mock/generateBoard';
 
 /**
  * Timing benchmark (ADR-005). Skipped in normal runs; `npm run bench` enables it and prints
@@ -37,6 +40,9 @@ describe.runIf(enabled)('performance benchmarks', () => {
     const grouped = toLayoutRequest(buildTopologyGraph(scale, { ...prod, mode: 'infrastructure' }));
     expect(topology.nodes).toHaveLength(250);
     expect(topology.edges).toHaveLength(750);
+    const transitTarget = generateBoard({ lines: 60, stations: 80 });
+    const transitIndex = indexBoard(transitTarget);
+    expect(transitTarget.stations).toHaveLength(80);
     const providers = new Set(['provider:aws', 'provider:azure', 'provider:gcp', 'provider:on-prem', 'provider:saas']);
 
     const results = {
@@ -47,6 +53,8 @@ describe.runIf(enabled)('performance benchmarks', () => {
         () => buildTopologyGraph(inventory, { ...prod, mode: 'topology', filters: { ...EMPTY_FILTERS, query: 'payments' } }),
         50,
       ),
+      'Transit board 60 lines / 80 stations: index + map geometry (perspective)': await time(() => computeMapGeometry(indexBoard(transitTarget), { flat: false }), 50),
+      'Transit board 60 lines / 80 stations: map geometry (flat)': await time(() => computeMapGeometry(transitIndex, { flat: true }), 50),
       '1,000 inventory grouped + collapsed to providers': await time(
         () => buildTopologyGraph(inventory, { ...prod, mode: 'infrastructure', collapsedGroupIds: providers }),
         50,

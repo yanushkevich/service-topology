@@ -210,7 +210,7 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 - **Consequences:** contract v1 gains three operations, an `ETag` header, and an `If-Match` parameter (additive). Writes are serialized by the revision: concurrent editors get 412 and reload. Every write re-reads the full topology for the next request (revision cache miss, about 80–100 ms at 1,000 entities). Audit trail and per-user ownership remain open (ADR-018).
 
 ## ADR-021 — Transit board: a per-service read model beside the canonical topology (2026-10-12, Milestone 9)
-- **Status:** Proposed (product owner direction: add the Payment Service Transit Board screen to the design; spec `docs/TRANSIT_BOARD.md`). Points marked "open" need the product owner's decision before or during Milestone 9.
+- **Status:** Accepted for Phase 1 (product owner direction: add the Payment Service Transit Board screen to the design, then "lets start implementing"; spec `docs/TRANSIT_BOARD.md`). Implemented in Milestone 9 (2026-10-12) with the proposals below as defaults. Implementation details are in the Milestone 9 closeout. Points still marked "open" are the product owner's to change.
 - **Context:** The canonical model describes services and the topology between them. The transit board describes what happens inside one service: entry points, internal modules, clients, policies, and traces. Its data sources (API specs, OpenTelemetry, resilience config, code scan) are not integrated, and the backend has no trace store.
 - **Decision (proposed):**
   - **Read model.**

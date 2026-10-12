@@ -188,7 +188,7 @@ Update only from actual repository state and checks.
 ## Milestone 8 — Editing the topology (Revision 7)
 **Deliver:** create, edit, and delete every entity kind from the UI against the backend (backend part: Milestone B7). Acceptance criteria: `docs/milestones/MILESTONE_08_ENTITY_EDITING.md`. Decision: ADR-020.
 
-## Milestone 9 — Transit board (Revision 8, planned)
+## Milestone 9 — Transit board (Revision 8)
 **Deliver:** the per-service transit board (spec Phase 1): line index, perspective SVG transit map, stop strip, and line card, with selection, search, typical-route mode, every panel state, and the responsive breakpoints, on example data behind a `TransitRepository`. Trace replay is spec Phase 4 and out of scope unless the product owner adds it (open in ADR-021); real data sources and backend endpoints are later phases. Spec: `docs/TRANSIT_BOARD.md`. Acceptance criteria: `docs/milestones/MILESTONE_09_TRANSIT_BOARD.md`. Decision: ADR-021 (proposed).
 
 ## Status tracking
@@ -204,7 +204,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 6 | Implemented (2026-10-11) | See the Milestone 6 closeout below. |
 | 7 | Implemented (2026-10-11) | See the Milestone 7 closeout below. |
 | 8 | Implemented (2026-10-12) | Editing UI (ADR-020); see the Milestone 8 closeout below. |
-| 9 | Planned (not started) | Transit board, spec Phase 1 (ADR-021 proposed; open points listed there and in `docs/TRANSIT_BOARD.md`). |
+| 9 | Implemented (2026-10-12) | Transit board, spec Phase 1 on example data (ADR-021); see the Milestone 9 closeout below. Trace replay and real data sources are later phases. |
 | B1 (backend) | Implemented (2026-10-11) | Go foundation in `backend/`; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B2 (backend) | Implemented (2026-10-11) | ArcadeDB adapter, schema, idempotent seed, integration tests; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. The database was replaced by MongoDB afterwards (ADR-019). |
 | B3 (backend) | Implemented (2026-10-11) | REST API for contract v1, registry parity, contract check; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
@@ -346,3 +346,45 @@ Evidence: frontend typecheck, lint, and build pass; `npx vitest run` 41 files / 
 | Accessibility | Pass | axe (jsdom) for menu, form with errors, delete dialog; keyboard test includes the New button; focus trap and return in `Modal` |
 
 Known limitations: the real-browser axe audit (`npm run audit:a11y`) runs on mock data, where editing is read-only, so the dialogs are audited in jsdom only (no color-contrast rule there; the new text uses existing contrast-tested tokens). Metadata is edited as JSON. Multi-selects are checkbox lists (fine at the mock's size; long at 1,000 entities). There is no undo; snapshots keep earlier states.
+
+### Milestone 9 closeout (2026-10-12)
+Evidence:
+- `npm run check` passes: typecheck, lint, 432 tests in 45 files (431 passed, 1 skipped), and the build. New tests:
+  - 15 layout and 6 model tests (`src/transit/*.test.ts`), plus a scale test;
+  - 14 board integration tests (`TransitBoardPage.test.tsx`);
+  - 2 jsdom axe cases;
+  - 8 contrast cases for the new tokens;
+  - a URL-state case.
+- The real-browser audit (`npm run audit:a11y`) passes all 29 runs, including the two board pages in both themes: 0 axe violations and visible focus throughout. It first found the search box without a focus ring and an "observed" tag at 4.44:1 in the light theme; both are fixed.
+- Screenshots were reviewed in headless Chrome:
+  - 1440×1000: dark (no selection, A2) and light (A1);
+  - 1000×1300: dark (A5, with the index drawer and the alternative branch);
+  - 390×1800: light (W1, flat map, index select).
+
+  No size scrolls the page horizontally.
+- Timings: `npm run bench`, recorded in `docs/BENCHMARKS.md`.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Layout functions pure and deterministic, tested (junctions, bundling order and offsets, projection, capsules) | Pass | `src/transit/layout.test.ts` |
+| Selection and search change only styles; no path is rebuilt | Pass | `TransitBoardPage.test.tsx` checks that the same `<path>` nodes keep the same `d` across selection and search |
+| Every state in the spec's states table renders; unknown is never shown as missing | Pass | Integration tests: loading, empty, no selection, no traces, partial data, error with retry, unknown service |
+| Index and strip carry the information; map is `role="img"`; colour never alone; keyboard; reduced motion | Pass | Index list with Up/Down, Enter, and Esc; strip as ordered lists with text for every stop; words for provenance, severity, and policy state. There is no animation in Phase 1, so reduced motion has nothing to stop; the audit's reduced-motion check passes. |
+| Both themes; new colours are contrast-tested tokens | Pass | `--transit-*` tokens; `contrast.test.ts` (lines and policies ≥ 3:1 on the map, badge text ≥ 4.5:1, stations ≥ 3:1) |
+| Axe cases (jsdom and real browser, both themes) | Pass | `a11y.test.tsx`; `npm run audit:a11y` |
+| Example data labelled, never live | Pass | Header tag "Example data · last 7 days"; tested |
+| Layout timings at 60 lines / 80 stations recorded | Pass | About 5 ms median (perspective); in-browser frame times at that size were not measured, because only the 11-line example board can be opened in the app |
+
+Decisions made during implementation (ADR-021):
+- Policy rendering uses a separate `state` field (`exercised`, `idle`, `missing`, `unknown`) in place of the spec's `type: 'missing'`, so an absent policy keeps its type. An `idempotency` type was added.
+- The budget bar counts each client's timeout × the retry policy's `maxAttempts`, on sequential branches only. Clients whose config is unknown are counted and named, never treated as zero.
+- The resolutions proposed in `TRANSIT_BOARD.md` were applied: unselected lines dim to 22%; at 761–1179px the index is a collapsible drawer and the card goes full width below; the card shows p50/p95.
+- The board's `line`, `mode`, `trace`, and `t` URL parameters are kept by the URL-state sync only on `/services/…` routes.
+
+Known limitations:
+- Trace replay (spec Phase 4) is shown as disabled.
+- There are no hover tooltips beyond the native SVG titles, and no window selector (1h, 24h, 7d).
+- The station rows of the map are placed automatically, without label collision avoidance; a few labels in the dense far rows can touch.
+- Per-step p99, call share, and retry rates are not in the example data, so the strip shows the prototype's stats.
+- Only Payment Service has a board; every other service shows "No endpoints yet".
+

@@ -35,6 +35,8 @@ const PAGES = [
   { name: 'Dependencies (selection)', path: '/dependencies?v=1&env=production&sel=service-instance:order-service.production', ready: 'section h2' },
   { name: 'Infrastructure', path: '/infrastructure?v=1&env=production', ready: '[role="treeitem"]' },
   { name: 'Settings', path: '/settings?v=1&env=production', ready: 'section h2' },
+  { name: 'Transit board', path: '/services/payment-service/transit?v=1&env=production', ready: '[aria-label="Line card"]' },
+  { name: 'Transit board (line selected)', path: '/services/payment-service/transit?v=1&env=production&line=A1', ready: '[aria-label="Line card"] h2' },
 ];
 
 async function main() {
