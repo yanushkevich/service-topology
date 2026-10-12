@@ -5,6 +5,8 @@ This package is the product/architecture guide and staged implementation plan fo
 ## Development setup
 All seven milestones are implemented: application shell, canonical domain model with validation, a mock multi-cloud repository, the service registry, the shared inspector, the 2D map (React Flow + ELK) with grouped infrastructure mode, shareable URLs, and saved layouts, a deterministic simulation with explainable failure propagation and snapshot history (Simulation page), and a secondary 3D galaxy view (React Three Fiber) with "Explore inside" navigation, plus Overview, Dependencies, Infrastructure, and Settings pages (Milestone 6), and an Events catalog of event types with producer/consumer flows highlighted on the map (Milestone 7). Built with React 19 + strict TypeScript + Vite, Tailwind CSS v4, React Router, Zustand, React Flow + ELK.js (2D), and Three.js + React Three Fiber (3D). All data is mock and all telemetry is simulated. Requires Node.js 22+.
 
+**Run all services (database, API, frontend, database UI): `docs/GETTING_STARTED.md`.**
+
 Monorepo layout: the frontend is in `apps/web/`, the Go backend in `backend/`, shared contract and docs in `docs/`, shared fixtures in `fixtures/`.
 
 ```sh
