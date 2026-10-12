@@ -52,7 +52,7 @@ Breakpoints:
 - **< 760px:** a single column in the order index, map, strip, card. The strip scrolls horizontally inside its panel, and the legend is hidden.
 
 Visual system:
-- a dark-only control-room look;
+- a dark-only control-room look (superseded: the board follows the app's light/dark switch; see "Reconciliation" item 1);
 - Geist for the UI, Geist Mono for codes, timings, and signatures;
 - semantic colours: ok `#3dd6b0`, warning `#f5b454`, failure `#ff7b7b`;
 - one accent, `#5fe1ff`, for focus and playback.
@@ -379,14 +379,11 @@ This section takes precedence over the imported text above until the product own
 - **URL state.** Mirroring to the URL fits URL state v1 (additive parameters, like `ev` in Revision 6).
 - **Labelling.** The prototype already labels its data "example data". The rule that simulated or mock data is never called live applies here too.
 
-**Conflicts and how they are proposed to be resolved (ADR-021, proposed):**
+**Conflicts and their resolution (ADR-021; item 1 decided, the rest proposed):**
 
-1. **Dark-only vs. the app's dark/light themes (ADR-013).**
-   - The spec's look is dark-only, with raw hex colours. The app styles everything through tokens, in both themes, and the contrast test gates new colours.
-   - Proposal:
-     - map the board's palette onto tokens, adding new ones (line colours, policy fills) to `tokens.css` with light-theme values that pass `contrast.test.ts`;
-     - keep the control-room look as the dark theme's rendering;
-     - do not force dark mode on one page.
+1. **Theme: decided (product owner, 2026-10-12): not dark-only.** The board follows the same light/dark switch as all other functionality (ADR-013).
+   - The spec's dark-only raw hex palette is replaced by tokens. New ones (line colours, policy fills, map ground) go in `tokens.css` with values for both themes that pass `contrast.test.ts`.
+   - The control-room look is the dark theme's rendering. The light theme gets an equivalent light rendering; no page forces a theme.
 2. **Not the canonical domain.**
    - Stations, lines, policy stops, and traces are a per-service read model (the internals of one service). They are not canonical topology entities (`CLAUDE.md` constraints: follow the canonical domain model, and do not invent integrations).
    - Proposal:

@@ -18,6 +18,6 @@ It is a design reference, not production code. The implementation spec is `docs/
 
 **Data:** all of it is invented example data, labelled "example data" in the header. It must never be presented as observed or live.
 
-**Look:** dark-only, using its own palette (`--ground #05060b`, `--cy #5fe1ff`, `--ok`, `--warn`, `--fail`) and Geist / Geist Mono from Google Fonts. These are not the app's tokens. If any of it is built for real, map it onto `apps/web/src/styles/tokens.css` and pass the contrast test. Do not copy the markup or the inline runtime.
+**Look:** dark-only, using its own palette (`--ground #05060b`, `--cy #5fe1ff`, `--ok`, `--warn`, `--fail`) and Geist / Geist Mono from Google Fonts. These are not the app's tokens. The real board follows the app's light/dark switch (ADR-021), so map the palette onto `apps/web/src/styles/tokens.css` for both themes and pass the contrast test. Do not copy the markup or the inline runtime.
 
 **View:** `python3 -m http.server -d docs/design-references/payment-transit-board`, then open http://localhost:8000. It needs network access for the fonts.

@@ -220,7 +220,7 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
     - Milestone 9 delivers only spec Phase 1: the board in the real frontend stack, on the prototype's example data behind a `TransitRepository` interface, clearly labelled as example data.
     - The backend endpoints (`GET /services/{id}/transit`, `GET /traces/{traceId}/steps`) are added to the contract when phases 2–4 start.
     - (Open: trace replay is spec Phase 4. The prototype already replays example traces client-side, so it could move into Milestone 9 on example data if the product owner wants it.)
-  - **Theming.** The board follows the app's themes and tokens (ADR-013) instead of the spec's dark-only raw palette. Its control-room look is the dark theme's rendering. (Open: the product owner may prefer a dark-only board.)
+  - **Theming (decided by the product owner, 2026-10-12: "not only dark only, that switch remains the same for all functionality").** The board follows the app's light/dark switch and tokens (ADR-013), like every other page, instead of the spec's dark-only raw palette. Its control-room look is the dark theme's rendering, with an equivalent light rendering.
   - **Entry point.** `/services/:serviceId/transit` in the selected environment, linked from the inspector of a service instance. (Open: also from the 3D galaxy "enter node", spec open question 5.)
 - **Alternatives:**
   - Model stations and policies as canonical resources and relationships. Rejected: it mixes observed per-request internals into the inventory, and it inflates the 1,000-entity scale target.

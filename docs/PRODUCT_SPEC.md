@@ -374,4 +374,4 @@ Every navigation section is a working page built on the canonical data and share
 ### O.4 Acceptance additions (Milestone 9 scope: spec Phase 1, mock data)
 - Selection, search, typical mode, all panel states, and the responsive breakpoints work on the prototype's data converted to the spec's types.
 - The map is never the only way to reach information: the index and the strip are accessible lists. Colour is never the only signal. The keyboard shortcuts work. Reduced motion steps instead of animating.
-- New colours are tokens that pass the contrast test in both themes. The page has axe cases.
+- The board follows the app's light/dark switch like every other page (not dark-only). New colours are tokens that pass the contrast test in both themes. The page has axe cases.

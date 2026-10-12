@@ -56,7 +56,7 @@
   - colour is never the only signal;
   - every keyboard shortcut works;
   - reduced motion is respected.
-- New colours are tokens that pass `contrast.test.ts` in both themes (or a dark-only decision is recorded in ADR-021).
+- The board follows the app's light/dark switch (not dark-only; decided 2026-10-12, ADR-021). New colours are tokens that pass `contrast.test.ts` in both themes, and both themes are reviewed in screenshots.
 - The page has axe cases (jsdom; real browser in both themes).
 - Example data is labelled as such, never as live.
 - `npm run check` passes. Layout timings at the spec's target (60 lines, 80 stations) are measured and recorded in `docs/BENCHMARKS.md`.
