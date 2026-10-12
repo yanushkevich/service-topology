@@ -1,3 +1,4 @@
+import { reachableFrom, stepById, transitionBacking } from './businessFlow';
 import { resolveEventFlow, type EventFlowParticipant } from './eventFlow';
 import { buildTopologyIndex, environmentOf } from './topologyIndex';
 import { CONTAINMENT_ONLY_RESOURCE_TYPES, EVENT_CHANNEL_TYPES, type EntityId, type TopologyData } from './types';
@@ -23,7 +24,13 @@ export type ValidationCode =
   | 'invalid-event-channel'
   | 'duplicate-event-channel-environment'
   | 'missing-event-service'
-  | 'event-flow-missing-relationship';
+  | 'event-flow-missing-relationship'
+  | 'missing-flow-service'
+  | 'invalid-flow-step'
+  | 'invalid-flow-trigger'
+  | 'invalid-flow-transition'
+  | 'flow-no-success-path'
+  | 'flow-transition-unbacked';
 
 export interface ValidationIssue {
   severity: ValidationSeverity;
@@ -50,6 +57,7 @@ export function validateTopology(data: TopologyData): ValidationIssue[] {
     ...data.resources,
     ...data.relationships,
     ...(data.eventTypes ?? []),
+    ...(data.businessFlows ?? []),
   ];
   for (const { id } of all) {
     if (id.trim() === '') error('empty-id', id, 'Entity has an empty ID');
@@ -207,6 +215,84 @@ export function validateTopology(data: TopologyData): ValidationIssue[] {
       };
       check(flow.producers, 'producer');
       check(flow.consumers, 'consumer');
+    }
+  }
+
+  // Business flows (ADR-022) annotate existing communication: every hand-off between two services
+  // must be backed by a relationship or an event type in each environment where both run.
+  for (const flow of data.businessFlows ?? []) {
+    const ids = new Set<string>();
+    for (const { id } of [...flow.steps, ...flow.outcomes]) {
+      if (id.trim() === '' || ids.has(id)) error('invalid-flow-step', flow.id, `Step or outcome ID "${id}" is empty or used twice`);
+      ids.add(id);
+    }
+    for (const step of flow.steps) {
+      if (!index.definitions.has(step.serviceDefinitionId)) {
+        error('missing-flow-service', flow.id, `Step "${step.id}" references unknown service definition "${step.serviceDefinitionId}"`);
+      }
+      if (step.compensatedBy !== undefined && stepById(flow, step.compensatedBy)?.kind !== 'compensation') {
+        error('invalid-flow-step', flow.id, `Step "${step.id}" is compensated by "${step.compensatedBy}", which is not a compensation step of this flow`);
+      }
+    }
+    const start = stepById(flow, flow.startStepId);
+    if (!start) error('invalid-flow-step', flow.id, `Start step "${flow.startStepId}" is not a step of this flow`);
+    const { trigger } = flow;
+    if (trigger.kind === 'call' && trigger.ref !== undefined && !index.definitions.has(trigger.ref)) {
+      error('invalid-flow-trigger', flow.id, `Trigger references unknown service definition "${trigger.ref}"`);
+    }
+    if (trigger.kind === 'event') {
+      const eventType = trigger.ref === undefined ? undefined : index.eventTypes.get(trigger.ref);
+      if (!eventType) error('invalid-flow-trigger', flow.id, `Trigger references unknown event type "${trigger.ref ?? ''}"`);
+      else if (start && !eventType.consumerServiceIds.includes(start.serviceDefinitionId)) {
+        error('invalid-flow-trigger', flow.id, `"${eventType.name}" is not consumed by "${start.serviceDefinitionId}", which runs the start step`);
+      }
+    }
+
+    const transitionIds = new Set<string>();
+    for (const t of flow.transitions) {
+      const bad = (message: string) => error('invalid-flow-transition', flow.id, `Transition "${t.id}": ${message}`);
+      if (t.id.trim() === '' || transitionIds.has(t.id)) bad('ID is empty or used twice');
+      transitionIds.add(t.id);
+      const from = stepById(flow, t.from);
+      const to = stepById(flow, t.to);
+      if (!from) {
+        bad(`unknown source step "${t.from}"`);
+        continue;
+      }
+      if (!to && !flow.outcomes.some((o) => o.id === t.to)) {
+        bad(`unknown target "${t.to}"`);
+        continue;
+      }
+      if (!to) continue; // to an outcome: ends the flow
+      if (t.via.kind === 'local' && from.serviceDefinitionId !== to.serviceDefinitionId) {
+        bad(`a local hand-off must stay in one service ("${from.serviceDefinitionId}" → "${to.serviceDefinitionId}")`);
+      } else if (t.via.kind === 'call' && t.via.callerServiceId !== undefined && !index.definitions.has(t.via.callerServiceId)) {
+        bad(`unknown caller "${t.via.callerServiceId}"`);
+      } else if (t.via.kind === 'event') {
+        const eventType = index.eventTypes.get(t.via.eventTypeId);
+        if (!eventType) bad(`unknown event type "${t.via.eventTypeId}"`);
+        else if (!eventType.producerServiceIds.includes(from.serviceDefinitionId)) bad(`"${from.serviceDefinitionId}" does not produce "${eventType.name}"`);
+        else if (!eventType.consumerServiceIds.includes(to.serviceDefinitionId)) bad(`"${to.serviceDefinitionId}" does not consume "${eventType.name}"`);
+        else {
+          for (const environment of data.environments) {
+            const backing = transitionBacking(index, flow, t, environment.id);
+            if (backing.status === 'unbacked') error('flow-transition-unbacked', flow.id, `Transition "${t.id}": ${backing.reason}`);
+          }
+        }
+        continue;
+      }
+      if (t.via.kind === 'call') {
+        for (const environment of data.environments) {
+          const backing = transitionBacking(index, flow, t, environment.id);
+          if (backing.status === 'unbacked') error('flow-transition-unbacked', flow.id, `Transition "${t.id}": ${backing.reason}`);
+        }
+      }
+    }
+    if (start) {
+      const reached = reachableFrom(flow);
+      if (!flow.outcomes.some((o) => o.kind === 'success' && reached.has(o.id))) {
+        error('flow-no-success-path', flow.id, `No path reaches a success outcome, starting at step "${flow.startStepId}"`);
+      }
     }
   }
 

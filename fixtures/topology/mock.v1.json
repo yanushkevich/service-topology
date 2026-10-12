@@ -1861,5 +1861,596 @@
         "routingKey": "notify.email.order"
       }
     }
+  ],
+  "businessFlows": [
+    {
+      "id": "flow-checkout",
+      "name": "Checkout",
+      "description": "From a placed order to a shipped, paid order and a customer notification.",
+      "owner": "Commerce",
+      "team": "Orders",
+      "trigger": {
+        "kind": "call",
+        "ref": "api-gateway"
+      },
+      "startStepId": "place-order",
+      "target": {
+        "p95Ms": 4000,
+        "completionMs": 900000
+      },
+      "steps": [
+        {
+          "id": "place-order",
+          "name": "Place order",
+          "serviceDefinitionId": "order-service",
+          "kind": "task",
+          "entryPoint": "POST /v1/orders"
+        },
+        {
+          "id": "reserve-stock",
+          "name": "Reserve stock",
+          "serviceDefinitionId": "inventory-service",
+          "kind": "task",
+          "entryPoint": "ReserveStock",
+          "compensatedBy": "release-stock",
+          "deadlineMs": 2000
+        },
+        {
+          "id": "authorize-payment",
+          "name": "Authorize payment",
+          "serviceDefinitionId": "payment-service",
+          "kind": "decision",
+          "entryPoint": "Authorize",
+          "compensatedBy": "void-authorization",
+          "deadlineMs": 3000
+        },
+        {
+          "id": "capture-payment",
+          "name": "Capture payment",
+          "serviceDefinitionId": "payment-service",
+          "kind": "task",
+          "entryPoint": "Capture",
+          "deadlineMs": 3000
+        },
+        {
+          "id": "await-settlement",
+          "name": "Await settlement",
+          "serviceDefinitionId": "payment-service",
+          "kind": "wait",
+          "entryPoint": "POST /webhooks/processor",
+          "deadlineMs": 600000
+        },
+        {
+          "id": "post-to-ledger",
+          "name": "Post to ledger",
+          "serviceDefinitionId": "ledger-service",
+          "kind": "task",
+          "entryPoint": "PostCapture"
+        },
+        {
+          "id": "ship-order",
+          "name": "Ship order",
+          "serviceDefinitionId": "order-service",
+          "kind": "task",
+          "entryPoint": "ShipOrder"
+        },
+        {
+          "id": "notify-customer",
+          "name": "Notify customer",
+          "serviceDefinitionId": "notification-service",
+          "kind": "task",
+          "entryPoint": "OrderShipped consumer"
+        },
+        {
+          "id": "send-email",
+          "name": "Send email",
+          "serviceDefinitionId": "email-dispatcher",
+          "kind": "task",
+          "entryPoint": "notifications.email consumer"
+        },
+        {
+          "id": "cancel-order",
+          "name": "Cancel order",
+          "serviceDefinitionId": "order-service",
+          "kind": "task",
+          "entryPoint": "CancelOrder"
+        },
+        {
+          "id": "release-stock",
+          "name": "Release stock",
+          "serviceDefinitionId": "inventory-service",
+          "kind": "compensation",
+          "entryPoint": "OrderCancelled consumer"
+        },
+        {
+          "id": "void-authorization",
+          "name": "Void authorization",
+          "serviceDefinitionId": "payment-service",
+          "kind": "compensation",
+          "entryPoint": "Void"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "placed",
+          "from": "place-order",
+          "to": "reserve-stock",
+          "via": {
+            "kind": "event",
+            "eventTypeId": "event-order-placed"
+          },
+          "policies": [
+            {
+              "type": "outbox",
+              "label": "no outbox",
+              "state": "missing"
+            },
+            {
+              "type": "redelivery",
+              "label": "redelivery ×5",
+              "state": "exercised",
+              "config": {
+                "maxAttempts": "5"
+              },
+              "stat": "fires on 0.4%"
+            },
+            {
+              "type": "idempotent-consumer",
+              "label": "no dedupe",
+              "state": "missing"
+            }
+          ]
+        },
+        {
+          "id": "authorize",
+          "from": "reserve-stock",
+          "to": "authorize-payment",
+          "via": {
+            "kind": "call",
+            "callerServiceId": "order-service"
+          },
+          "policies": [
+            {
+              "type": "timeout",
+              "label": "3 s",
+              "state": "exercised",
+              "config": {
+                "timeoutMs": "3000"
+              },
+              "stat": "hit by 0.6%"
+            },
+            {
+              "type": "retry",
+              "label": "retry ×3",
+              "state": "exercised",
+              "config": {
+                "maxAttempts": "3"
+              },
+              "stat": "fires on 1.1%"
+            },
+            {
+              "type": "idempotency",
+              "label": "idempotency key",
+              "state": "exercised"
+            }
+          ]
+        },
+        {
+          "id": "approved",
+          "from": "authorize-payment",
+          "to": "capture-payment",
+          "via": {
+            "kind": "local"
+          },
+          "condition": "approved",
+          "policies": []
+        },
+        {
+          "id": "declined",
+          "from": "authorize-payment",
+          "to": "cancel-order",
+          "via": {
+            "kind": "call"
+          },
+          "condition": "declined",
+          "policies": [
+            {
+              "type": "step-deadline",
+              "label": "reply ≤ 3 s",
+              "state": "exercised",
+              "config": {
+                "deadlineMs": "3000"
+              }
+            }
+          ]
+        },
+        {
+          "id": "captured",
+          "from": "capture-payment",
+          "to": "ship-order",
+          "via": {
+            "kind": "call"
+          },
+          "policies": [
+            {
+              "type": "timeout",
+              "label": "3 s",
+              "state": "exercised",
+              "config": {
+                "timeoutMs": "3000"
+              }
+            },
+            {
+              "type": "retry",
+              "label": "retry ×3",
+              "state": "exercised",
+              "config": {
+                "maxAttempts": "3"
+              },
+              "stat": "fires on 0.9%"
+            }
+          ]
+        },
+        {
+          "id": "settle",
+          "from": "capture-payment",
+          "to": "await-settlement",
+          "via": {
+            "kind": "local"
+          },
+          "policies": [
+            {
+              "type": "step-deadline",
+              "label": "settle ≤ 10 min",
+              "state": "exercised",
+              "config": {
+                "deadlineMs": "600000"
+              },
+              "stat": "missed by 0.3%"
+            }
+          ]
+        },
+        {
+          "id": "settled",
+          "from": "await-settlement",
+          "to": "post-to-ledger",
+          "via": {
+            "kind": "event",
+            "eventTypeId": "event-payment-captured"
+          },
+          "policies": [
+            {
+              "type": "outbox",
+              "label": "outbox",
+              "state": "exercised"
+            },
+            {
+              "type": "redelivery",
+              "label": "redelivery ×5",
+              "state": "exercised",
+              "config": {
+                "maxAttempts": "5"
+              },
+              "stat": "fires on 0.1%"
+            },
+            {
+              "type": "dead-letter",
+              "label": "no DLQ",
+              "state": "missing"
+            },
+            {
+              "type": "idempotent-consumer",
+              "label": "dedupe by payment",
+              "state": "exercised"
+            }
+          ]
+        },
+        {
+          "id": "not-settled",
+          "from": "await-settlement",
+          "to": "cancel-order",
+          "via": {
+            "kind": "call"
+          },
+          "condition": "not settled in 10 min",
+          "policies": [
+            {
+              "type": "manual-intervention",
+              "label": "review queue",
+              "state": "idle"
+            }
+          ]
+        },
+        {
+          "id": "ledger-done",
+          "from": "post-to-ledger",
+          "to": "completed",
+          "via": {
+            "kind": "local"
+          },
+          "policies": []
+        },
+        {
+          "id": "shipped",
+          "from": "ship-order",
+          "to": "notify-customer",
+          "via": {
+            "kind": "event",
+            "eventTypeId": "event-order-shipped"
+          },
+          "policies": [
+            {
+              "type": "outbox",
+              "label": "no outbox",
+              "state": "missing"
+            },
+            {
+              "type": "redelivery",
+              "label": "redelivery ×5",
+              "state": "exercised",
+              "config": {
+                "maxAttempts": "5"
+              }
+            },
+            {
+              "type": "idempotent-consumer",
+              "label": "dedupe by order",
+              "state": "exercised"
+            }
+          ]
+        },
+        {
+          "id": "notify",
+          "from": "notify-customer",
+          "to": "send-email",
+          "via": {
+            "kind": "event",
+            "eventTypeId": "event-notification-requested"
+          },
+          "policies": [
+            {
+              "type": "redelivery",
+              "label": "redelivery ×3",
+              "state": "exercised",
+              "config": {
+                "maxAttempts": "3"
+              }
+            },
+            {
+              "type": "dead-letter",
+              "label": "notifications.dlq",
+              "state": "idle"
+            }
+          ]
+        },
+        {
+          "id": "sent",
+          "from": "send-email",
+          "to": "completed",
+          "via": {
+            "kind": "local"
+          },
+          "policies": []
+        },
+        {
+          "id": "cancelled",
+          "from": "cancel-order",
+          "to": "release-stock",
+          "via": {
+            "kind": "event",
+            "eventTypeId": "event-order-cancelled"
+          },
+          "policies": [
+            {
+              "type": "redelivery",
+              "label": "redelivery ×5",
+              "state": "exercised",
+              "config": {
+                "maxAttempts": "5"
+              }
+            },
+            {
+              "type": "compensation",
+              "label": "release hold",
+              "state": "exercised"
+            }
+          ]
+        },
+        {
+          "id": "void",
+          "from": "cancel-order",
+          "to": "void-authorization",
+          "via": {
+            "kind": "call"
+          },
+          "condition": "payment was authorized",
+          "policies": [
+            {
+              "type": "retry",
+              "label": "retry ×3",
+              "state": "idle",
+              "config": {
+                "maxAttempts": "3"
+              }
+            },
+            {
+              "type": "compensation",
+              "label": "void",
+              "state": "idle"
+            }
+          ]
+        },
+        {
+          "id": "released",
+          "from": "release-stock",
+          "to": "order-cancelled",
+          "via": {
+            "kind": "local"
+          },
+          "policies": []
+        },
+        {
+          "id": "voided",
+          "from": "void-authorization",
+          "to": "order-cancelled",
+          "via": {
+            "kind": "local"
+          },
+          "policies": []
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "completed",
+          "name": "Completed",
+          "kind": "success"
+        },
+        {
+          "id": "order-cancelled",
+          "name": "Cancelled",
+          "kind": "cancelled"
+        }
+      ],
+      "source": {
+        "kind": "authored"
+      }
+    },
+    {
+      "id": "flow-refund",
+      "name": "Refund",
+      "description": "A customer refund from request to ledger posting.",
+      "owner": "Payments",
+      "team": "Payments",
+      "trigger": {
+        "kind": "call",
+        "ref": "api-gateway"
+      },
+      "startStepId": "request-refund",
+      "target": {
+        "p95Ms": 6000
+      },
+      "steps": [
+        {
+          "id": "request-refund",
+          "name": "Request refund",
+          "serviceDefinitionId": "order-service",
+          "kind": "task",
+          "entryPoint": "POST /v1/orders/{id}/refunds"
+        },
+        {
+          "id": "refund-payment",
+          "name": "Refund payment",
+          "serviceDefinitionId": "payment-service",
+          "kind": "decision",
+          "entryPoint": "Refund",
+          "deadlineMs": 5000
+        },
+        {
+          "id": "post-refund",
+          "name": "Post refund to ledger",
+          "serviceDefinitionId": "ledger-service",
+          "kind": "task",
+          "entryPoint": "PostRefund"
+        }
+      ],
+      "transitions": [
+        {
+          "id": "refund",
+          "from": "request-refund",
+          "to": "refund-payment",
+          "via": {
+            "kind": "call"
+          },
+          "policies": [
+            {
+              "type": "timeout",
+              "label": "5 s",
+              "state": "exercised",
+              "config": {
+                "timeoutMs": "5000"
+              }
+            },
+            {
+              "type": "retry",
+              "label": "retry ×2",
+              "state": "exercised",
+              "config": {
+                "maxAttempts": "2"
+              },
+              "stat": "fires on 1.2%"
+            },
+            {
+              "type": "idempotency",
+              "label": "no idem key",
+              "state": "missing"
+            }
+          ]
+        },
+        {
+          "id": "issued",
+          "from": "refund-payment",
+          "to": "post-refund",
+          "via": {
+            "kind": "event",
+            "eventTypeId": "event-refund-issued"
+          },
+          "condition": "refund accepted",
+          "policies": [
+            {
+              "type": "outbox",
+              "label": "outbox",
+              "state": "exercised"
+            },
+            {
+              "type": "redelivery",
+              "label": "redelivery ×5",
+              "state": "exercised",
+              "config": {
+                "maxAttempts": "5"
+              }
+            },
+            {
+              "type": "idempotent-consumer",
+              "label": "no dedupe",
+              "state": "missing"
+            }
+          ]
+        },
+        {
+          "id": "rejected",
+          "from": "refund-payment",
+          "to": "refund-rejected",
+          "via": {
+            "kind": "local"
+          },
+          "condition": "processor declined",
+          "policies": []
+        },
+        {
+          "id": "posted",
+          "from": "post-refund",
+          "to": "refunded",
+          "via": {
+            "kind": "local"
+          },
+          "policies": []
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "refunded",
+          "name": "Refunded",
+          "kind": "success"
+        },
+        {
+          "id": "refund-rejected",
+          "name": "Rejected",
+          "kind": "failed"
+        }
+      ],
+      "source": {
+        "kind": "authored"
+      }
+    }
   ]
 }

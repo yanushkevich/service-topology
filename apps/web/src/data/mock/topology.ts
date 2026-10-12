@@ -1,3 +1,4 @@
+import { businessFlows } from './businessFlows';
 import type {
   EventType,
   CommunicationPattern,
@@ -361,4 +362,5 @@ export const mockTopology: TopologyData = {
   resources,
   relationships,
   eventTypes,
+  businessFlows,
 };

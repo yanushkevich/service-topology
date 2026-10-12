@@ -10,6 +10,7 @@ const event = (id: string) => index.eventTypes.get(id)!;
 
 function withEvent(patch: Partial<EventType>): TopologyData {
   const data = structuredClone(mockTopology);
+  delete data.businessFlows; // the example flows use the mock's event types
   data.eventTypes = [
     { id: 'event-test', name: 'Test', channelResourceIds: ['topic-orders-events-prod'], producerServiceIds: ['order-service'], consumerServiceIds: [], ...patch },
   ];
@@ -73,6 +74,7 @@ describe('event flows (ADR-014)', () => {
   it('treats a topology without event types as an empty catalog', () => {
     const rest = { ...mockTopology };
     delete rest.eventTypes;
+    delete rest.businessFlows;
     expect(eventFlowsIn(buildTopologyIndex(rest), 'production')).toEqual([]);
     expect(validateTopology(rest)).toEqual([]);
   });

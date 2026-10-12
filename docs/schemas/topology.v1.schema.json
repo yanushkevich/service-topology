@@ -16,6 +16,11 @@
       "type": "array",
       "items": { "$ref": "#/$defs/EventType" },
       "description": "Optional (added within v1, ADR-014). Logical event contracts carried on topics, queues, or exchanges."
+    },
+    "businessFlows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/BusinessFlow" },
+      "description": "Optional (added within v1, ADR-022). Business processes across services; every transition between two services is backed by a relationship or an event type (validateTopology)."
     }
   },
   "$defs": {
@@ -115,6 +120,109 @@
         "team": { "type": "string" },
         "metrics": { "$ref": "#/$defs/Metrics" },
         "updatedAt": { "$ref": "#/$defs/Timestamp" },
+        "metadata": { "$ref": "#/$defs/Metadata" }
+      }
+    },
+    "FlowPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A protection on a business-flow transition (ADR-022): call, asynchronous, or process level.",
+      "required": ["type", "label"],
+      "properties": {
+        "type": {
+          "enum": ["timeout", "retry", "breaker", "bulkhead", "idempotency", "redelivery", "dead-letter", "idempotent-consumer", "outbox", "step-deadline", "compensation", "manual-intervention"]
+        },
+        "label": { "type": "string" },
+        "config": { "type": "object", "additionalProperties": { "type": "string" } },
+        "state": { "enum": ["exercised", "idle", "missing", "unknown"] },
+        "stat": { "type": "string" }
+      }
+    },
+    "FlowStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A step of a business flow, owned by one service. Step IDs are unique within their flow.",
+      "required": ["id", "name", "serviceDefinitionId", "kind"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string" },
+        "serviceDefinitionId": { "$ref": "#/$defs/EntityId" },
+        "kind": { "enum": ["task", "decision", "wait", "compensation", "manual"] },
+        "entryPoint": { "type": "string", "description": "Operation implementing the step; links to the service's transit board line." },
+        "deadlineMs": { "type": "number", "minimum": 0 },
+        "compensatedBy": { "type": "string", "minLength": 1, "description": "ID of the compensation step that undoes this one." }
+      }
+    },
+    "FlowTransition": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "How control passes between steps: local (same service), call (a relationship from the caller), or event (the event type's producer → consumer flow). To an outcome ID, it ends the flow.",
+      "required": ["id", "from", "to", "via", "policies"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "from": { "type": "string", "minLength": 1 },
+        "to": { "type": "string", "minLength": 1 },
+        "via": {
+          "oneOf": [
+            { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "local" } } },
+            { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "call" }, "callerServiceId": { "$ref": "#/$defs/EntityId" } } },
+            { "type": "object", "additionalProperties": false, "required": ["kind", "eventTypeId"], "properties": { "kind": { "const": "event" }, "eventTypeId": { "$ref": "#/$defs/EntityId" } } }
+          ]
+        },
+        "condition": { "type": "string", "description": "Taken only when this holds; unconditional transitions always run." },
+        "policies": { "type": "array", "items": { "$ref": "#/$defs/FlowPolicy" } }
+      }
+    },
+    "BusinessFlow": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A business process across services (ADR-022). Environment-independent, like an event type; consistency with relationships and event types is enforced by validateTopology.",
+      "required": ["id", "name", "trigger", "startStepId", "steps", "transitions", "outcomes", "source"],
+      "properties": {
+        "id": { "$ref": "#/$defs/EntityId" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "owner": { "type": "string" },
+        "team": { "type": "string" },
+        "trigger": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": { "kind": { "enum": ["call", "event", "schedule", "manual"] }, "ref": { "$ref": "#/$defs/EntityId" } }
+        },
+        "startStepId": { "type": "string", "minLength": 1 },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "p95Ms": { "type": "number", "minimum": 0 }, "completionMs": { "type": "number", "minimum": 0 } }
+        },
+        "steps": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/FlowStep" } },
+        "transitions": { "type": "array", "items": { "$ref": "#/$defs/FlowTransition" } },
+        "outcomes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "name", "kind"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "name": { "type": "string" },
+              "kind": { "enum": ["success", "cancelled", "failed", "compensated"] }
+            }
+          }
+        },
+        "source": {
+          "oneOf": [
+            { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "authored" } } },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "format", "ref", "importedAt"],
+              "properties": { "kind": { "const": "imported" }, "format": { "type": "string" }, "ref": { "type": "string" }, "importedAt": { "$ref": "#/$defs/Timestamp" } }
+            }
+          ]
+        },
         "metadata": { "$ref": "#/$defs/Metadata" }
       }
     },

@@ -1,4 +1,5 @@
 import type {
+  BusinessFlow,
   CommunicationRelationship,
   EnvironmentKind,
   EntityId,
@@ -23,6 +24,11 @@ export interface TopologyIndex {
   eventTypes: ReadonlyMap<EntityId, EventType>;
   /** Event types keyed by each channel resource that carries them. */
   eventTypesByChannel: ReadonlyMap<EntityId, readonly EventType[]>;
+  businessFlows: ReadonlyMap<EntityId, BusinessFlow>;
+  /** Business flows keyed by each service definition that owns one of their steps. */
+  flowsByService: ReadonlyMap<EntityId, readonly BusinessFlow[]>;
+  /** Business flows keyed by each event type one of their transitions uses. */
+  flowsByEventType: ReadonlyMap<EntityId, readonly BusinessFlow[]>;
   instancesByDefinition: ReadonlyMap<EntityId, readonly ServiceInstance[]>;
   instancesByResource: ReadonlyMap<EntityId, readonly ServiceInstance[]>;
   childResources: ReadonlyMap<EntityId, readonly InfrastructureResource[]>;
@@ -64,6 +70,9 @@ export function buildTopologyIndex(data: TopologyData): TopologyIndex {
     relationships: byId(data.relationships),
     eventTypes: byId(data.eventTypes ?? []),
     eventTypesByChannel: groupByMany(data.eventTypes ?? [], (e) => e.channelResourceIds),
+    businessFlows: byId(data.businessFlows ?? []),
+    flowsByService: groupByMany(data.businessFlows ?? [], (f) => f.steps.map((s) => s.serviceDefinitionId)),
+    flowsByEventType: groupByMany(data.businessFlows ?? [], (f) => f.transitions.flatMap((t) => (t.via.kind === 'event' ? [t.via.eventTypeId] : []))),
     instancesByDefinition: groupBy(data.serviceInstances, (i) => i.serviceDefinitionId),
     instancesByResource: groupBy(data.serviceInstances, (i) => i.resourceId),
     childResources: groupBy(data.resources, (r) => r.parentResourceId),

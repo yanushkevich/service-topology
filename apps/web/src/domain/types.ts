@@ -192,6 +192,116 @@ export interface EventType {
   metadata?: Record<string, unknown>;
 }
 
+// ---------------------------------------------------------------------------------------------
+// Business flows (ADR-022, docs/BUSINESS_FLOWS.md)
+// ---------------------------------------------------------------------------------------------
+
+export const FLOW_STEP_KINDS = ['task', 'decision', 'wait', 'compensation', 'manual'] as const;
+export type FlowStepKind = (typeof FLOW_STEP_KINDS)[number];
+
+export const FLOW_OUTCOME_KINDS = ['success', 'cancelled', 'failed', 'compensated'] as const;
+export type FlowOutcomeKind = (typeof FLOW_OUTCOME_KINDS)[number];
+
+export const FLOW_TRIGGER_KINDS = ['call', 'event', 'schedule', 'manual'] as const;
+export type FlowTriggerKind = (typeof FLOW_TRIGGER_KINDS)[number];
+
+export const FLOW_POLICY_TYPES = [
+  'timeout',
+  'retry',
+  'breaker',
+  'bulkhead',
+  'idempotency',
+  'redelivery',
+  'dead-letter',
+  'idempotent-consumer',
+  'outbox',
+  'step-deadline',
+  'compensation',
+  'manual-intervention',
+] as const;
+export type FlowPolicyType = (typeof FLOW_POLICY_TYPES)[number];
+
+export const FLOW_POLICY_STATES = ['exercised', 'idle', 'missing', 'unknown'] as const;
+export type FlowPolicyState = (typeof FLOW_POLICY_STATES)[number];
+
+/** A step of a business process, owned by one service. Step IDs are unique within their flow. */
+export interface FlowStep {
+  id: string;
+  name: string;
+  serviceDefinitionId: EntityId;
+  kind: FlowStepKind;
+  /** Operation implementing the step (e.g. 'Authorize'); links to the service's transit board line. */
+  entryPoint?: string;
+  /** How long the step may take (or, for a wait, how long the process waits). */
+  deadlineMs?: number;
+  /** ID of the compensation step that undoes this one. */
+  compensatedBy?: string;
+}
+
+export interface FlowPolicy {
+  type: FlowPolicyType;
+  label: string;
+  config?: Record<string, string>;
+  state?: FlowPolicyState;
+  /** Observed effect, e.g. 'fires on 3.1%'. */
+  stat?: string;
+}
+
+/**
+ * How control passes between steps. Every transition between two services must be backed by the
+ * topology (flows never invent communication, ADR-022):
+ * - `local`: both steps belong to the same service (no backing needed);
+ * - `call`: a relationship from the caller (`callerServiceId`, default the source step's service)
+ *   to the target step's service, or — without an explicit caller — the reply to a call the target
+ *   service made to the source service;
+ * - `event`: the event type, with the source service among its producers and the target among its consumers.
+ * Transitions to an outcome end the flow and need no backing.
+ */
+export type FlowTransitionVia =
+  | { kind: 'local' }
+  | { kind: 'call'; callerServiceId?: EntityId }
+  | { kind: 'event'; eventTypeId: EntityId };
+
+export interface FlowTransition {
+  id: string;
+  /** Step ID. */
+  from: string;
+  /** Step ID or outcome ID. */
+  to: string;
+  via: FlowTransitionVia;
+  /** Taken only when this holds (e.g. 'declined'); unconditional transitions always run (in parallel). */
+  condition?: string;
+  policies: FlowPolicy[];
+}
+
+export interface FlowOutcome {
+  id: string;
+  name: string;
+  kind: FlowOutcomeKind;
+}
+
+export type FlowSource = { kind: 'authored' } | { kind: 'imported'; format: string; ref: string; /** ISO 8601 */ importedAt: string };
+
+/** A business process across services (Checkout, Refund): logical and environment-independent, like an event type. */
+export interface BusinessFlow {
+  id: EntityId;
+  name: string;
+  description?: string;
+  owner?: string;
+  team?: string;
+  /** What starts the flow: a call from a service, an event type, a schedule, or a person. */
+  trigger: { kind: FlowTriggerKind; ref?: EntityId };
+  /** The first step. */
+  startStepId: string;
+  /** End-to-end objective. */
+  target?: { p95Ms?: number; completionMs?: number };
+  steps: FlowStep[];
+  transitions: FlowTransition[];
+  outcomes: FlowOutcome[];
+  source: FlowSource;
+  metadata?: Record<string, unknown>;
+}
+
 /** Everything a repository returns. Plain serializable data. */
 export interface TopologyData {
   environments: EnvironmentRecord[];
@@ -201,6 +311,8 @@ export interface TopologyData {
   relationships: CommunicationRelationship[];
   /** Optional (additive within v1, ADR-014). Absent means no event catalog is modeled. */
   eventTypes?: EventType[];
+  /** Optional (additive within v1, ADR-022). Absent means no business flows are modeled. */
+  businessFlows?: BusinessFlow[];
 }
 
 export const ENTITY_KINDS = [
