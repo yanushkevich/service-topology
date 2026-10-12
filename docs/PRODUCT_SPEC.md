@@ -326,3 +326,52 @@ Every navigation section is a working page built on the canonical data and share
 ### N.4 Acceptance additions
 - Create, edit, and delete work for every kind against the backend; invalid changes never reach storage; referenced entities cannot be deleted; stale edits are refused.
 - Forms, menus, and dialogs are keyboard-operable, label every field, announce errors, keep focus inside dialogs, and return it afterwards; axe audits pass.
+
+# Revision 8 Addendum — Transit board (2026-10-12, planned)
+
+**Source:** product owner direction: add the "Payment Service Transit Board" screen to the design. The prototype is in `docs/design-references/payment-transit-board/`, and the implementation spec in `docs/TRANSIT_BOARD.md` (the spec wins over the prototype). Authoritative where it conflicts with earlier text. Status: planned, not implemented. Delivery: Milestone 9 (`docs/milestones/MILESTONE_09_TRANSIT_BOARD.md`). Decision record: ADR-021 (proposed).
+
+## O. Transit board
+
+### O.1 Purpose
+- A per-service screen that shows how **one service** executes:
+  - one coloured line per entry point (gRPC/HTTP endpoint, webhook, consumed event, scheduled job, background worker);
+  - each line runs through the stations it touches (callers, gates, modules, clients, dependencies);
+  - policy stops (timeout, retry, bulkhead, breaker, fallback, cache) sit on every outbound call.
+- It answers "what does this endpoint call, in what order, with which protections, and where did this request spend its time?", for service owners, on-call engineers, and reviewers.
+- It complements, and does not replace, the cross-service views:
+  - the 2D map, the registry, and the 3D galaxy show the topology between services;
+  - the board shows the inside of one service.
+
+  Cross-service business flows, editing config, and live traffic streaming are out of scope.
+
+### O.2 Screen
+- The layout has five parts:
+  - a header with the breadcrumb (environment / service), the title, the mode switch (Typical route | Trace replay), and a data-freshness label;
+  - a searchable line index grouped by kind;
+  - a perspective SVG transit map with a legend;
+  - a line card;
+  - a stop strip under the map and the card.
+- Breakpoints, the detailed visuals, and the panel states (loading, empty, no selection, no traces, partial data, error) are as specified in `docs/TRANSIT_BOARD.md`.
+- **Typical route** shows:
+  - the most frequent route over a time window, with branches of at least 2% share;
+  - per-step stats;
+  - the policy states (solid / outline / missing / unknown);
+  - findings with evidence;
+  - the deadline budget bar.
+- **Trace replay** plays one sample request along the line:
+  - controls for play, pause, step, and scrub;
+  - retries, fallbacks, and errors shown on the map and the strip;
+  - divergence from the typical route marked;
+  - gaps where trace context was lost shown as gaps.
+- The selection, mode, search, trace, and paused playback time are shareable through the URL.
+
+### O.3 Data honesty
+- Every element shows its provenance: **declared** (specs, config), **observed** (traces), or **inferred** (code scan).
+- "Missing policy" (config read, policy absent) is never shown when the config source failed to load ("unknown").
+- Example and mock data are labelled as such, never as live (same rule as the rest of the app).
+
+### O.4 Acceptance additions (Milestone 9 scope: spec Phase 1, mock data)
+- Selection, search, typical mode, all panel states, and the responsive breakpoints work on the prototype's data converted to the spec's types.
+- The map is never the only way to reach information: the index and the strip are accessible lists. Colour is never the only signal. The keyboard shortcuts work. Reduced motion steps instead of animating.
+- New colours are tokens that pass the contrast test in both themes. The page has axe cases.

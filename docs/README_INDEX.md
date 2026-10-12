@@ -16,6 +16,7 @@ Use this file to navigate the project without loading every document into contex
 | Change future backend/API assumptions | `API_CONTRACT.md` | `DECISIONS.md` |
 | Styling (Tailwind) or the section pages | `PRODUCT_SPEC.md` Revision 5 | Milestone 6, ADR-013 |
 | Event catalog, event types, event highlight | `PRODUCT_SPEC.md` Revision 6 | Milestone 7, ADR-014 |
+| Transit board (per-service routes, policies, trace replay) | `TRANSIT_BOARD.md` | `PRODUCT_SPEC.md` Revision 8, Milestone 9, ADR-021, `design-references/payment-transit-board/` |
 | Run all services locally | `GETTING_STARTED.md` | `backend/LOCAL_DEVELOPMENT.md`, `backend/RUNBOOK.md` |
 | Go backend (MongoDB), monorepo layout | `backend/README.md` | `backend/IMPLEMENTATION_PLAN.md` (B1–B6, database migration), ADR-015, ADR-019 |
 | Set up, test, scale, or extend the app | `DEVELOPER_GUIDE.md` | `ARCHITECTURE.md` milestone notes, `BENCHMARKS.md` |

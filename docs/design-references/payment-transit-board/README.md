@@ -2,7 +2,7 @@
 
 A single-page concept exported from a claude.ai artifact
 (https://claude.ai/artifact/BrmV6rhi3wrKXJ4CT5th5N, version `1791834848-f24b`, pulled 2026-10-12).
-It is a design reference, not production code, and not part of any milestone.
+It is a design reference, not production code. The implementation spec is `docs/TRANSIT_BOARD.md`, which wins where they differ. The planned work is Milestone 9.
 
 **What it shows:** one service (Payment Service) drawn as a transit network.
 - Every endpoint, consumed event, scheduled job, or background worker is a "line".

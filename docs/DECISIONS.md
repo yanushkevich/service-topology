@@ -208,3 +208,23 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - **Frontend:** editing is offered only when the data comes from the backend (`?source=api`); with built-in mock data the buttons are disabled with a hint. Editing is also disabled while viewing history ("as of"). Saving reloads the topology, which restarts the browser simulation from it.
 - **Alternatives:** bulk `PUT /topology` (rejected: coarse, conflicts on every edit); JSON Patch (rejected: harder to validate and to build forms for); in-memory editing in mock mode (rejected by the product owner); cascading deletes (rejected: silent loss of instances and relationships).
 - **Consequences:** contract v1 gains three operations, an `ETag` header, and an `If-Match` parameter (additive). Writes are serialized by the revision: concurrent editors get 412 and reload. Every write re-reads the full topology for the next request (revision cache miss, about 80–100 ms at 1,000 entities). Audit trail and per-user ownership remain open (ADR-018).
+
+## ADR-021 — Transit board: a per-service read model beside the canonical topology (2026-10-12, Milestone 9)
+- **Status:** Proposed (product owner direction: add the Payment Service Transit Board screen to the design; spec `docs/TRANSIT_BOARD.md`). Points marked "open" need the product owner's decision before or during Milestone 9.
+- **Context:** The canonical model describes services and the topology between them. The transit board describes what happens inside one service: entry points, internal modules, clients, policies, and traces. Its data sources (API specs, OpenTelemetry, resilience config, code scan) are not integrated, and the backend has no trace store.
+- **Decision (proposed):**
+  - **Read model.**
+    - The board's data is a separate, per-service read model (`TransitBoard`, `TraceSummary`, `TraceStep`), keyed to the canonical service. It does not extend the canonical domain or the topology contract v1.
+    - Layout (track graph, bundling, projection) is computed client-side by pure functions; the backend returns routes, never geometry.
+  - **Milestone 9 scope.**
+    - Milestone 9 delivers only spec Phase 1: the board in the real frontend stack, on the prototype's example data behind a `TransitRepository` interface, clearly labelled as example data.
+    - The backend endpoints (`GET /services/{id}/transit`, `GET /traces/{traceId}/steps`) are added to the contract when phases 2–4 start.
+    - (Open: trace replay is spec Phase 4. The prototype already replays example traces client-side, so it could move into Milestone 9 on example data if the product owner wants it.)
+  - **Theming.** The board follows the app's themes and tokens (ADR-013) instead of the spec's dark-only raw palette. Its control-room look is the dark theme's rendering. (Open: the product owner may prefer a dark-only board.)
+  - **Entry point.** `/services/:serviceId/transit` in the selected environment, linked from the inspector of a service instance. (Open: also from the 3D galaxy "enter node", spec open question 5.)
+- **Alternatives:**
+  - Model stations and policies as canonical resources and relationships. Rejected: it mixes observed per-request internals into the inventory, and it inflates the 1,000-entity scale target.
+  - Render the map in 3D with Three.js. Rejected by the spec: plain SVG with a projection keeps labels upright and costs no WebGL.
+- **Consequences:**
+  - A second, independent data path. Mock-versus-observed labelling must be maintained for it too.
+  - The spec's open questions (tracing backend, internal spans, alias-table ownership, sampling, galaxy link) block phases 2–5, not Phase 1.

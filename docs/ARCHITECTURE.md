@@ -459,3 +459,26 @@ Decisions: `DECISIONS.md` ADR-014. Requirements: `PRODUCT_SPEC.md` Revision 6 (�
 
 Pipeline: `uiStore.eventHighlight` (URL `ev`) → `useEventHighlight(index)` → `resolveEventFlow` → `eventFlowReach` (a `Reach`, the same shape as selection reach) → 2D `computeHighlight` / 3D `buildScene`, used only when nothing is selected. Event types never add graph nodes or edges and do not change propagation; they select existing relationships. The catalog reads the same `TopologyIndex` as every view, so history mode works unchanged.
 
+
+## Revision 8 — Transit board architecture (planned, 2026-10-12)
+Status: planned (Milestone 9; ADR-021 proposed). Specification: `docs/TRANSIT_BOARD.md`. Nothing below exists yet.
+- **Separate read model.**
+  - Stations, lines, branches, policy stops, findings, and trace steps describe the internals of one service. They are not canonical topology entities, so they get their own types and module (proposed: `apps/web/src/transit/`), not additions to `apps/web/src/domain`.
+  - The only link to the canonical model is the service: a service definition, resolved to the service instance in the selected environment.
+- **Data access.**
+  - A `TransitRepository` interface (`getBoard(serviceId, window)`, `getTraceSteps(traceId, serviceId)`), with a mock implementation built from the prototype's example data (Phase 1).
+  - An HTTP implementation comes only once the backend endpoints are decided (spec phases 2–4). They are not part of `docs/api/openapi.json` yet.
+- **Pure layout pipeline.**
+  - The track graph (trunks, exit/approach nodes, the bus), bundling offsets, and the perspective projection are pure functions of the board data and the container size.
+  - They are computed once per data load and memoised, and tested in jsdom without React.
+  - Selection and playback change only styles and the overlay marker; they never rebuild paths.
+- **Rendering.**
+  - Two SVG layers: the static map, and an overlay for the train and highlights. No WebGL and no new dependencies.
+  - Below 760px the projection is turned off (top-down 2D).
+- **State.**
+  - Board view state (`line`, `mode`, `q`, `trace`, `t`) is local to the feature and mirrored to the URL (additive to URL state v1; `t` only while paused).
+  - The playback clock runs in the component (`requestAnimationFrame`), never in Zustand (ARCHITECTURE "State ownership").
+  - The global shared selection stays the canonical service instance.
+- **Styling.**
+  - Tokens only (ADR-013). The board's palette becomes new tokens with light-theme values that pass `contrast.test.ts`.
+  - Line colours are a token-backed categorical palette.

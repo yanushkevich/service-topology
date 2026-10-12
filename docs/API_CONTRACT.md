@@ -103,5 +103,8 @@ Full topology, snapshot, and layout examples: `apps/web/src/data/mock/topology.t
 - ~~**Server-side simulation**~~: decided in ADR-017 (isolated, deterministic, bounded runs; `POST /simulations`).
 - **Snapshot retention:** snapshots are kept until deleted; there is no delete endpoint yet.
 
+## Proposed, not in the contract: transit board (Revision 8)
+`docs/TRANSIT_BOARD.md` proposes `GET /services/{id}/transit?window=24h` (stations, lines, branches, policies, findings, stats) and `GET /traces/{traceId}/steps?service={id}` (a `TraceSummary` mapped to station IDs). They are not in `openapi.json`, and nothing serves them. They are added through the change process below when spec phases 2–4 start, after the tracing-backend questions are answered (ADR-021).
+
 ## Change process
 Change the schema and `openapi.json` together with the TypeScript types. Run `npm test` (contract tests fail on drift). Record breaking changes as an ADR in `DECISIONS.md` and bump the version as described above.
