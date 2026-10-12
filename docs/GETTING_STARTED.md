@@ -51,7 +51,7 @@ npm run dev         # Vite on http://localhost:5173; proxies /api to 127.0.0.1:8
 cd backend
 make db-ui          # mongo-express on http://127.0.0.1:8081
 ```
-Not yet verified end to end (2026-10-12): the local VM ran out of memory before mongo-express could connect; the Compose configuration is validated. Log in as `root` with the password in `backend/secrets/mongodb_root_password.txt`. The data is in the `topology` database. A desktop alternative that uses no Docker memory is MongoDB Compass with `mongodb://root@127.0.0.1:27017/?authSource=admin&directConnection=true`.
+Verified 2026-10-12 (4 GB VM): 401 without or with wrong credentials, 200 after login. Log in as `root` with the password in `backend/secrets/mongodb_root_password.txt`. The data is in the `topology` database. A desktop alternative that uses no Docker memory is MongoDB Compass with `mongodb://root@127.0.0.1:27017/?authSource=admin&directConnection=true`.
 
 ## Open the app
 | URL | Data |
