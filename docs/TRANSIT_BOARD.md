@@ -12,6 +12,8 @@ It does one job: an engineer picks an entry point and understands what happens t
 
 **Users:** service owners, on-call engineers, and reviewers who need to answer: "what does this endpoint call, in what order, with which protections, and where did this request spend its time?"
 
+**Amended 2026-10-12 (ADR-022):** this board is now the **drill-down of a business-flow step**; the top level is the business flow (`docs/BUSINESS_FLOWS.md`). The exclusion of cross-service business flows below is superseded.
+
 **Out of scope for v1:**
 - cross-service business flows (they live one level up, in the galaxy view);
 - editing config from the board;

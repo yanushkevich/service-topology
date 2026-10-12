@@ -26,6 +26,22 @@ Acceptance: no simulated event is presented as observed; snapshot and simulation
 Scope: auth decision, authorization boundaries, request limits, rate limits where needed, secrets handling, observability, backup/restore exercises, integration tests, performance tests and docs. Frontend integration: HTTP implementations of `TopologyRepository`, `SnapshotRepository`, and `SavedLayoutRepository` selected in `apps/web/src/data/selectRepository.ts`, with the UI labeling the source accurately (`isMock: false` only for real data).
 Acceptance: security tests, full integration suite, measured performance against targets, and runbook for local reset, backup/restore and recovery.
 
+## Milestone B8 — Business flows (ADR-022, planned)
+Scope:
+- the `business-flow` entity kind: Go types and the validation rules of `docs/BUSINESS_FLOWS.md` section 2, with the same codes as the TypeScript validator on the shared fixtures;
+- a `businessFlows` MongoDB collection with a `$jsonSchema` validator;
+- `businessFlows` in `GET /topology` and the snapshot payload;
+- `business-flow` as a writable kind of the entity API (ADR-020), where imported flows are refused (409, `imported-read-only`);
+- an importer behind a port, with adapters for the native JSON/YAML flow file and BPMN 2.0 XML. It is idempotent by id, validates the whole topology, and is exposed as `POST /imports/business-flows` (editor role) and `make import-flows FILE=…`;
+- OpenAPI and contract-check updates.
+
+Acceptance:
+- the parity tests pass;
+- an import of each example file round-trips;
+- a re-import is a no-op;
+- a BPMN file with an unmapped task is rejected with the task named;
+- `make check`, `make test-integration`, and `make contract-check` pass.
+
 ## Future milestone — provider integrations
 Cloud, Kubernetes, Kafka and other adapters are out of initial milestones. Introduce them only behind normalized source adapters and provenance rules.
 

@@ -191,6 +191,9 @@ Update only from actual repository state and checks.
 ## Milestone 9 — Transit board (Revision 8)
 **Deliver:** the per-service transit board (spec Phase 1): line index, perspective SVG transit map, stop strip, and line card, with selection, search, typical-route mode, every panel state, and the responsive breakpoints, on example data behind a `TransitRepository`. Trace replay is spec Phase 4 and out of scope unless the product owner adds it (open in ADR-021); real data sources and backend endpoints are later phases. Spec: `docs/TRANSIT_BOARD.md`. Acceptance criteria: `docs/milestones/MILESTONE_09_TRANSIT_BOARD.md`. Decision: ADR-021 (proposed).
 
+## Milestone 10 — Business flows (Revision 9, planned)
+**Deliver:** canonical business flows (model, validation, resolver, contract), example Checkout and Refund flows, the Flows catalog and flow board (two levels with drill-down to the transit board), typical mode with outcome shares and flow findings, business-transaction replay by business key, and authoring in the editing UI. Backend part: Milestone B8 (persistence, entity API, importer for native and BPMN 2.0 flow definitions). Spec: `docs/BUSINESS_FLOWS.md`. Acceptance criteria: `docs/milestones/MILESTONE_10_BUSINESS_FLOWS.md`. Decision: ADR-022.
+
 ## Status tracking
 Track both milestones and original phases. A milestone is not complete until its acceptance criteria are checked against the actual implementation. Do not claim performance or accessibility criteria pass without measurement or test evidence.
 
@@ -204,12 +207,14 @@ Track both milestones and original phases. A milestone is not complete until its
 | 6 | Implemented (2026-10-11) | See the Milestone 6 closeout below. |
 | 7 | Implemented (2026-10-11) | See the Milestone 7 closeout below. |
 | 8 | Implemented (2026-10-12) | Editing UI (ADR-020); see the Milestone 8 closeout below. |
+| 10 | Planned (not started) | Business flows (ADR-022); backend part B8. |
 | 9 | Implemented (2026-10-12) | Transit board on example data (ADR-021): spec Phase 1 plus the Phase 4 replay UI, hover tooltips, windows, and per-step stats; see the Milestone 9 closeout and follow-up below. Real data sources (phases 2, 3, and 5) are not started. |
 | B1 (backend) | Implemented (2026-10-11) | Go foundation in `backend/`; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B2 (backend) | Implemented (2026-10-11) | ArcadeDB adapter, schema, idempotent seed, integration tests; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. The database was replaced by MongoDB afterwards (ADR-019). |
 | B3 (backend) | Implemented (2026-10-11) | REST API for contract v1, registry parity, contract check; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B4 (backend) | Implemented (2026-10-11) | Bounded traversal, impact, event types, revision cache, benchmarks; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B5 (backend) | Implemented (2026-10-11) | Isolated simulation runs (ADR-017), events/telemetry with provenance, snapshot diff, retention; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
+| B8 (backend) | Planned (not started) | Business flows: persistence, entity API, validation parity, importer (native, BPMN 2.0); ADR-022. |
 | B7 (backend) | Implemented (2026-10-12) | Entity create/replace/delete with whole-topology validation and revision `ETag`/`If-Match` (ADR-020); closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B6 (backend) | Implemented (2026-10-11) | Auth (ADR-018), rate limits, CORS, metrics, backup/restore runbook, frontend HTTP integration (`?source=api`); closeout and open production decisions in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 

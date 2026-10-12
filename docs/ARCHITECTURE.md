@@ -500,3 +500,21 @@ Status: Phase 1 implemented (ADR-021). Specification: `docs/TRANSIT_BOARD.md`.
 - **Styling.**
   - Tokens only (ADR-013). The board's palette becomes new tokens with light-theme values that pass `contrast.test.ts`.
   - Line colours are a token-backed categorical palette.
+
+## Revision 9 — Business flows (planned, 2026-10-12)
+Status: planned (Milestones 10 and B8; ADR-022). Specification: `docs/BUSINESS_FLOWS.md`.
+- **Canonical domain.** `BusinessFlow` joins `apps/web/src/domain/types.ts`:
+  - validation rules in `validation.ts`, ported to Go;
+  - a pure per-environment resolver (`domain/businessFlow.ts`, like `eventFlow.ts`) that maps each transition to the backing relationships or event flows, or reports what is missing;
+  - an index (`flowsByService`, `flowsByEventType`).
+- **Observed side.** Separate from the domain, like the transit read model: `apps/web/src/transit/flows/` holds the flow stats and business transactions (steps with attempts, waits, redeliveries, compensation, and the trace ids per step). Example data is derived from the existing example traces' business keys.
+- **Layout.** `computeMapGeometry` gains a placement strategy:
+  - the per-service board keeps columns by station kind;
+  - the flow board uses step rank for columns and service bands for rows.
+
+  Track graph, bundling, projection, labels, and rendering are shared.
+- **UI.** `features/business-flows/`: catalog, `FlowBoardPage`, flow card, transaction replay (reusing `playback.ts` and the train), and the flow editor (`features/editing` pattern). Drill-down links to `/services/:id/transit?line=…&mode=trace&trace=…`.
+- **Backend (B8).**
+  - A `businessFlows` collection, a writable entity kind, and validation parity.
+  - An importer with format adapters (native, BPMN 2.0) behind a port.
+  - Later, observed flow endpoints once traces are integrated.

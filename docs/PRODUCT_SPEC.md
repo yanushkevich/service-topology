@@ -376,3 +376,31 @@ Every navigation section is a working page built on the canonical data and share
 - The map is never the only way to reach information: the index and the strip are accessible lists. Colour is never the only signal. The keyboard shortcuts work. Reduced motion steps instead of animating.
 - Trace replay on example traces: samples, playback with a train, scrubbing, divergence, off-map and lost-context steps, fan-out, keyboard, reduced motion, and a shareable URL. The window selector (1h, 24h, 7d), per-step stats, and hover tooltips are included.
 - The board follows the app's light/dark switch like every other page (not dark-only). New colours are tokens that pass the contrast test in both themes. The page has axe cases.
+
+# Revision 9 Addendum — Business flows (2026-10-12, planned)
+
+**Source:** product owner direction: the transit board should show the steps of a business process, keeping its policies and retries. Decisions: two levels, flows authored and imported, transaction replay included. Authoritative where it conflicts with earlier text (it supersedes "cross-service business flows are out of scope" in Revision 8 §O.1). Spec: `docs/BUSINESS_FLOWS.md`. Delivery: Milestone 10 (frontend) and B8 (backend). Decision: ADR-022.
+
+## P. Business flows
+
+### P.1 Flows
+- A **business flow** (Checkout, Refund) is a canonical, environment-independent entity. It has:
+  - **steps**, each owned by a service, of kind task, decision, wait, compensation, or manual;
+  - **transitions** between steps, each a call or an event, with conditions and policies;
+  - **outcomes**, an end-to-end **target**, and its **source** (authored, or imported from where).
+- Every transition must be backed by a modeled connection or an event type in each environment where both services run. Flows never invent communication.
+- Policies on transitions keep the transit board's model and states, extended with redelivery, dead-letter queue, idempotent consumer, outbox, step deadline, compensation, and manual intervention.
+
+### P.2 Screens
+- **Flows** in the navigation: a catalog (search, owner, steps, completion rate, warnings) and a flow board per flow.
+  - Lines are flows, stations are steps in service bands, branches are outcomes with shares, and undo tracks are compensation.
+  - The board has the budget bar, findings, typical mode with a window, and the same states, themes, and responsive rules as the transit board.
+- **Opening a step** shows that service's transit board with the step's line selected; there is a way back.
+- **Transaction replay** by business key or from samples (slowest, failed, compensated, with retries, typical): steps on compressed business time, retries, redeliveries, dead-letter parking, compensation, and uncorrelated gaps shown as such. Opening a step during replay shows its own trace on the service board.
+- **Editing:** create, edit, and delete authored flows when connected to the backend (rules of Revision 7). Imported flows are read-only, with "duplicate as authored flow".
+- **Import:** a native flow file (JSON or YAML) and BPMN 2.0, through the backend.
+
+### P.3 Acceptance additions
+- Every validation rule has a test in TypeScript and Go, with identical codes on the shared fixtures. The example Checkout and Refund flows validate with zero issues.
+- The flow board, drill-down, and replay have integration tests, axe cases in jsdom and in a real browser in both themes, keyboard access, and reduced motion.
+- Example observed data is labelled as example data, never as live.

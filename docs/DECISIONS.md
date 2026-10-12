@@ -211,6 +211,7 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 
 ## ADR-021 — Transit board: a per-service read model beside the canonical topology (2026-10-12, Milestone 9)
 - **Status:** Accepted for Phase 1 (product owner direction: add the Payment Service Transit Board screen to the design, then "lets start implementing"; spec `docs/TRANSIT_BOARD.md`). Implemented in Milestone 9 (2026-10-12) with the proposals below as defaults. Implementation details are in the Milestone 9 closeout. Points still marked "open" are the product owner's to change.
+- **Amended by ADR-022 (2026-10-12):** the board's top level becomes the business flow. This per-service board stays unchanged as the drill-down of a flow step.
 - **Context:** The canonical model describes services and the topology between them. The transit board describes what happens inside one service: entry points, internal modules, clients, policies, and traces. Its data sources (API specs, OpenTelemetry, resilience config, code scan) are not integrated, and the backend has no trace store.
 - **Decision (proposed):**
   - **Read model.**
@@ -228,3 +229,34 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 - **Consequences:**
   - A second, independent data path. Mock-versus-observed labelling must be maintained for it too.
   - The spec's open questions (tracing backend, internal spans, alias-table ownership, sampling, galaxy link) block phases 2–5, not Phase 1.
+
+## ADR-022 — Business flows: the transit board's top level, as canonical entities (2026-10-12, Milestones 10/B8)
+- **Status:** Accepted. Product owner direction: "this transit board should be considered like a business flow, showing different steps in business process execution, preserving its current model, like policies, retries". Answers to the proposal:
+  1. a flow level on top, with today's board as the drill-down;
+  2. flows both authored and imported;
+  3. business-transaction replay in the first release.
+
+  Spec: `docs/BUSINESS_FLOWS.md`. Amends ADR-021 and supersedes "out of scope: cross-service business flows" in `docs/TRANSIT_BOARD.md`.
+- **Context:** The per-service board shows how one service executes. Users need the business process across services: its steps, decisions, outcomes, and the protections on every hand-off. The example topology already contains a complete checkout (order → inventory → payment → ledger → shipping → notification) as relationships and event types.
+- **Decision:**
+  - **Two levels.**
+    - The flow board (`/flows/:flowId`): lines are business flows, stations are business steps owned by services (service zones as bands), branches are decision outcomes with shares, termini are outcomes, and dashed undo tracks are compensation.
+    - Opening a step shows the existing per-service board, unchanged.
+    - The layout pipeline is reused; only column placement changes (step rank instead of station kind).
+  - **Canonical, environment-independent entity `business-flow`.** It holds steps, transitions, outcomes, a target, and its source. It is validated by `validateTopology` (TypeScript and Go), resolved per environment like event types (ADR-014).
+    - Every transition must be backed by a modeled relationship (`call`) or an event type's producer → consumer flow (`event`). Flows never invent communication.
+    - Topology contract v1 gains an optional `businessFlows` array (additive), and `business-flow` becomes a writable kind of the entity API (ADR-020).
+  - **Policies are kept and extended** on transitions: today's call policies, plus asynchronous ones (redelivery, dead-letter, idempotent consumer, outbox) and process ones (step deadline, compensation, manual intervention), with the same `exercised` / `idle` / `missing` / `unknown` states. Flow-level findings: retry amplification, missing compensation, event transitions without a dead-letter queue, step deadlines above the target.
+  - **Sources.**
+    - Authored in the app (the editing UI, backend only).
+    - Imported from workflow definitions: native JSON or YAML first, then BPMN 2.0, then orchestrator adapters. Imported flows are read-only in the app (re-import overwrites them), with "duplicate as authored". The mapping from tasks to services is explicit, never guessed.
+  - **Observed data and replay.** Traces are joined into business transactions by business key, plus span links and the step mapping. Transactions replay across steps on compressed business time, with retries, redeliveries, dead-letter parking, and compensation. Uncorrelated gaps are shown, never bridged. Until real sources exist, observed flow data is labelled example data.
+- **Alternatives:**
+  - Replace the per-service board with flows. Rejected: it loses the inside of each service.
+  - Put business-step labels on the per-service board. Rejected: it cannot show a process that crosses services.
+  - Keep flows as a non-canonical read model like the transit board. Rejected: flows are authored, edited, validated against the topology, and imported, which is canonical-data behaviour (like event types).
+  - Infer flows from traces alone. Rejected: traces carry no business-step semantics, and inferred flows would be invented.
+- **Consequences:**
+  - A new entity kind across the schema, the TypeScript and Go validators, the fixtures, MongoDB (a `businessFlows` collection), the entity API, the editing UI, and parity tests.
+  - An importer in the backend (`POST /imports/business-flows` or `make import-flows`; to be decided in B8).
+  - The business-key attribute and flow ownership remain open questions (`BUSINESS_FLOWS.md` section 8).
