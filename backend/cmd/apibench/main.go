@@ -1,6 +1,6 @@
-// Command apibench measures API latency against ArcadeDB on a generated dataset
+// Command apibench measures API latency against MongoDB on a generated dataset
 // (docs/backend/TESTING_AND_PERFORMANCE.md). It loads the dataset into a temporary database, serves
-// the real HTTP handler in-process, times each endpoint class, prints query plans, and drops the
+// the real HTTP handler in-process, times each endpoint class, prints winning query plans, and drops the
 // database. Results go to docs/BENCHMARKS.md with machine and conditions.
 //
 //	go run ./cmd/apibench [-dataset inventory-1000] [-n 30]
@@ -20,8 +20,8 @@ import (
 	"sync"
 	"time"
 
-	"servicetopology/backend/internal/adapters/arcadedb"
 	"servicetopology/backend/internal/adapters/httpapi"
+	"servicetopology/backend/internal/adapters/mongodb"
 	"servicetopology/backend/internal/application"
 	"servicetopology/backend/internal/config"
 	"servicetopology/backend/internal/domain"
@@ -46,13 +46,14 @@ func run(dataset string, n, clients int, traversalInDB bool) error {
 	if err != nil {
 		return err
 	}
-	if cfg.ArcadeDB == nil {
-		return fmt.Errorf("ARCADEDB_BASE_URL not set (run via make bench)")
+	if cfg.MongoDB == nil {
+		return fmt.Errorf("MONGODB_URI not set (run via make bench)")
 	}
-	base, err := arcadedb.NewClient(cfg.ArcadeDB)
+	base, err := mongodb.Connect(cfg.MongoDB, nil)
 	if err != nil {
 		return err
 	}
+	defer base.Close(context.Background())
 	c := base.WithDatabase(fmt.Sprintf("topology_bench_%d", time.Now().UnixNano()))
 	defer c.DropDatabase(context.Background())
 
@@ -64,17 +65,17 @@ func run(dataset string, n, clients int, traversalInDB bool) error {
 	if err != nil {
 		return err
 	}
-	if err := arcadedb.EnsureSchema(ctx, c); err != nil {
+	if err := mongodb.EnsureSchema(ctx, c); err != nil {
 		return err
 	}
 	start := time.Now()
-	if _, err := arcadedb.NewTopologyRepository(c).ReplaceTopology(ctx, data, "fixture"); err != nil {
+	if _, err := mongodb.NewTopologyRepository(c).ReplaceTopology(ctx, data, "fixture"); err != nil {
 		return err
 	}
 	loadTime := time.Since(start)
 
-	svc := &application.Service{TopologyRepo: arcadedb.NewTopologyRepository(c), SnapshotRepo: arcadedb.NewSnapshotRepository(c),
-		LayoutRepo: arcadedb.NewLayoutRepository(c), GraphRepo: arcadedb.NewGraphRepository(c), TraversalInDatabase: traversalInDB}
+	svc := &application.Service{TopologyRepo: mongodb.NewTopologyRepository(c), SnapshotRepo: mongodb.NewSnapshotRepository(c),
+		LayoutRepo: mongodb.NewLayoutRepository(c), GraphRepo: mongodb.NewGraphRepository(c), TraversalInDatabase: traversalInDB}
 	srv := httptest.NewServer(httpapi.NewHandler(httpapi.Deps{Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), API: svc}))
 	defer srv.Close()
 
@@ -146,40 +147,42 @@ func run(dataset string, n, clients int, traversalInDB bool) error {
 			float64(clients*(n+3))/elapsed.Seconds(), size/1024)
 	}
 
-	// Where the full-topology endpoints spend their time.
-	repo := arcadedb.NewTopologyRepository(c)
-	var reads, builds []time.Duration
+	// Where the full-topology endpoints spend their time: an uncached read (new repository each
+	// time), a cached read (revision lookup only), and the Go work on top.
+	var cold, warm, builds []time.Duration
+	cached := mongodb.NewTopologyRepository(c)
 	for i := 0; i < n+3; i++ {
 		t0 := time.Now()
-		got, err := repo.GetTopology(ctx, "")
+		got, err := mongodb.NewTopologyRepository(c).GetTopology(ctx, "")
 		if err != nil {
 			return err
 		}
 		t1 := time.Now()
+		if _, err := cached.GetTopology(ctx, ""); err != nil {
+			return err
+		}
+		t2 := time.Now()
 		gix := domain.BuildIndex(got)
 		_ = domain.SortRegistryRows(gix.BuildRegistryRows(), domain.RegistrySort{Key: "name"})
 		if i >= 3 {
-			reads, builds = append(reads, t1.Sub(t0)), append(builds, time.Since(t1))
+			cold, warm, builds = append(cold, t1.Sub(t0)), append(warm, t2.Sub(t1)), append(builds, time.Since(t2))
 		}
 	}
 	med := func(d []time.Duration) time.Duration {
 		sort.Slice(d, func(i, j int) bool { return d[i] < d[j] })
 		return d[len(d)/2].Round(100 * time.Microsecond)
 	}
-	fmt.Printf("\nBreakdown (median): read full topology from ArcadeDB %v; index + registry rows + sort in Go %v\n", med(reads), med(builds))
+	hits, misses := cached.CacheStats()
+	fmt.Printf("\nBreakdown (median): read full topology from MongoDB %v uncached, %v cached (%d hits, %d misses); index + registry rows + sort in Go %v\n",
+		med(cold), med(warm), hits, misses, med(builds))
 
-	fmt.Println("\nQuery plans (EXPLAIN):")
-	for _, sql := range []string{
-		"SELECT FROM ServiceInstance WHERE id = :id",
-		"SELECT id FROM (TRAVERSE out(\"COMMUNICATES\") FROM (SELECT FROM ServiceInstance WHERE id = :id) MAXDEPTH 10 STRATEGY BREADTH_FIRST)",
-		"SELECT FROM COMMUNICATES WHERE sourceEntityId IN :ids AND targetEntityId IN :ids ORDER BY ord",
-		"SELECT FROM Resource ORDER BY ord",
-	} {
-		plan, err := explain(ctx, c, sql)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("\n%s\n%s\n", sql, plan)
+	fmt.Println("\nWinning query plans (explain, queryPlanner):")
+	plans, err := c.ExplainPlans(ctx, caller)
+	if err != nil {
+		return err
+	}
+	for _, p := range plans {
+		fmt.Printf("  %s: %s\n", p.Name, p.Plan)
 	}
 	return nil
 }
@@ -218,12 +221,4 @@ func pick(ix *domain.Index) (caller, callee, container, env string) {
 	sort.Strings(envs)
 	env = best(func(id string) int { return count[id] }, envs)
 	return
-}
-
-func explain(ctx context.Context, c *arcadedb.Client, sql string) (string, error) {
-	rows, err := c.Explain(ctx, "EXPLAIN "+sql, map[string]any{"id": "x", "ids": []string{"x"}})
-	if err != nil {
-		return "", err
-	}
-	return rows, nil
 }

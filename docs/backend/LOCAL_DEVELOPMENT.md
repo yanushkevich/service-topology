@@ -1,32 +1,23 @@
-# Local Development: ArcadeDB
+# Local Development: MongoDB
 
 ## Docker Compose
-The Compose file is kept in `docs/backend/scaffold/` and moves to `backend/docker-compose.yml` in Milestone B1; commands below run from `backend/`. Create the local secret file before starting the database; do not commit it. ArcadeDB is Apache-2.0 licensed, not MIT. Pin a tested image version and review support/operations requirements before production.
+`backend/docker-compose.yml` runs MongoDB 8.0 (`mongo:8.0.30`) as a **single-node replica set** (`rs0`): the backend's imports, simulation runs, and retention are multi-document transactions, which need one (ADR-DB-004). Commands below run from `backend/`. Create the local secret file before starting the database; do not commit it (`secrets/` is gitignored). MongoDB Community Server is licensed under SSPL-1.0; see ADR-019 before offering the product as a hosted service.
 
 ```bash
-mkdir -p secrets
-printf '%s' 'replace-with-a-local-password' > secrets/arcadedb_root_password.txt
-# Keep this file out of version control.
-docker compose up -d
+cd backend
+mkdir -p secrets && chmod 700 secrets
+(umask 077; openssl rand -base64 24 | tr -d '/+=\n' > secrets/mongodb_root_password.txt)
+make dev-up            # MongoDB on 127.0.0.1:27017; healthy (replica set primary) after ~10 s
 ```
 
-ArcadeDB Studio and HTTP API are available at `http://localhost:2480` (bound to `127.0.0.1` only). The initial Go adapter should use the HTTP/JSON API and `ARCADEDB_BASE_URL=http://localhost:2480`. The implementation must create or verify the `topology` database at startup using the documented ArcadeDB server API, then initialize schema and indexes idempotently.
+How the container works:
+- The official image creates the `root` user from the Docker secret (`MONGO_INITDB_ROOT_PASSWORD_FILE`) on first start.
+- With access control on, a replica set needs a key file for internal authentication. A single node never uses it, so the entrypoint generates a fresh one at every start (`/tmp/mongo-keyfile`).
+- The health check initiates the replica set on first start (idempotent) and reports healthy once the node is the writable primary. It reads the password inside `mongosh`, never from a command line.
+- The member host is `127.0.0.1:27017`, which is also how the host reaches the published port, so `replicaSet=rs0` in the URI works from the host.
+- Memory: `--wiredTigerCacheSizeGB 0.25` (MongoDB 8's minimum) and `mem_limit: 640m`; about 150–310 MB resident.
 
-Example environment variables (adjust to the implementation/config loader):
-```dotenv
-HTTP_ADDR=127.0.0.1:8080
-ARCADEDB_BASE_URL=http://localhost:2480
-ARCADEDB_DATABASE=topology
-ARCADEDB_USERNAME=root
-ARCADEDB_PASSWORD_FILE=./secrets/arcadedb_root_password.txt
-ARCADEDB_QUERY_LANGUAGE=sql
-ARCADEDB_REQUEST_TIMEOUT=10s
-SEED_MODE=demo
-```
-
-Do not hardcode credentials in Go source. Configuration validation should fail fast if required settings are missing or malformed. Never commit the populated secret file.
-
-## Configuration (implemented in B1, `backend/internal/config`)
+## Configuration (`backend/internal/config`)
 
 | Variable | Default | Notes |
 |---|---|---|
@@ -42,56 +33,59 @@ Do not hardcode credentials in Go source. Configuration validation should fail f
 | `TRUST_PROXY_HEADERS` | `false` | use `X-Forwarded-For` for the client address |
 | `CORS_ALLOWED_ORIGINS` | empty | comma-separated exact origins |
 | `METRICS_ADDR` | empty | e.g. `127.0.0.1:9090` for Prometheus `/metrics` (loopback only) |
-| `TRAVERSAL_SOURCE` | `memory` | `database` runs traversals with ArcadeDB TRAVERSE (ADR-DB-003) |
+| `TRAVERSAL_SOURCE` | `memory` | `database` runs dependency/neighborhood traversals with `$graphLookup` (ADR-DB-004) |
 | `SIMULATION_RETENTION` | `168h` | simulation runs, events, telemetry older than this are pruned after each run (ADR-017) |
 | `SIMULATION_MAX_RUNS` | `200` | keep at most this many runs |
-| `ARCADEDB_BASE_URL` | unset | when unset the API runs without a database and `/readyz` is 503 |
-| `ARCADEDB_DATABASE` | `topology` | |
-| `ARCADEDB_USERNAME` | — | required with `ARCADEDB_BASE_URL` |
-| `ARCADEDB_PASSWORD_FILE` | — | required with `ARCADEDB_BASE_URL`; `ARCADEDB_PASSWORD` is rejected, and URLs with credentials are rejected |
-| `ARCADEDB_QUERY_LANGUAGE` | `sql` | `sql` or `cypher` |
-| `ARCADEDB_REQUEST_TIMEOUT` | `10s` | |
+| `MONGODB_URI` | unset | e.g. `mongodb://127.0.0.1:27017/?replicaSet=rs0`; `mongodb+srv://` works too. When unset the API runs without a database and `/readyz` is 503. Credentials in the URI are rejected |
+| `MONGODB_DATABASE` | `topology` | letters, digits, `_` |
+| `MONGODB_USERNAME` | — | set together with `MONGODB_PASSWORD_FILE`, or neither for a server without authentication |
+| `MONGODB_PASSWORD_FILE` | — | the password is read from this file; `MONGODB_PASSWORD` is rejected |
+| `MONGODB_AUTH_SOURCE` | `admin` | authentication database |
+| `MONGODB_TIMEOUT` | `10s` | per operation; server selection and connect use at most 5 s of it |
 
-Invalid configuration exits with status 2 and lists every problem. Secrets and file paths are never logged.
+The Makefile exports local defaults for the `MONGODB_*` variables (override them in the environment or a gitignored `backend/.env`; see `.env.example`). Invalid configuration exits with status 2 and lists every problem. Secrets and file paths are never logged.
 
-## Required developer commands
-The implementation should expose Makefile targets or equivalent scripts:
-Run from `backend/` (`GO=/path/to/go` if Go is not on `PATH`). Implemented: `make check` (gofmt, vet, unit tests; no Docker), `make test-integration` (needs `make dev-up`), `make run`, `make seed` (load the mock fixture), `make validate` (no database), `make schema-check`.
-- `make dev-up` / `make dev-down`
-- `make test` / `make test-integration`
-- `make seed` — deterministic, idempotent mock dataset
-- `make schema-check` — verify required types/indexes/constraints exist
-- `make reset-local` — destructive local-only reset, requiring explicit confirmation
+## Commands (run in `backend/`)
+The Makefile uses `go` from `PATH`, else `/usr/local/go/bin/go`; override with `GO=...`.
 
-## Verified local setup (2026-10-11, Rancher Desktop, Docker 29.1.3, ArcadeDB 26.10.1)
+| Command | What it does |
+|---|---|
+| `make check` | gofmt, vet, unit tests (no Docker) |
+| `make dev-up` / `make dev-down` | start / stop MongoDB (data stays in the `backend_mongodb_data` volume) |
+| `make seed` | create collections/indexes if needed, load `fixtures/topology/mock.v1.json` and the snapshot fixtures (idempotent) |
+| `make validate` | validate the mock fixture without a database |
+| `make schema-check` | verify collections, validators, indexes, and schema version |
+| `make test-integration` | integration tests; each uses and drops its own temporary database |
+| `make run` | API on `127.0.0.1:8080`; `/readyz` is 200 once the schema is initialized |
+| `make contract-check` | run the API on a disposable database and validate every operation (Node needed) |
+| `make bench` | API latency on 1,000 entities (`BENCHFLAGS="-c 8"`, `-traversal database`) |
+| `make backup` / `make restore` | see `RUNBOOK.md` |
+| `make db-shell` | interactive `mongosh` in the container (prompts for the password) |
+| `make reset-local` | prints the destructive reset steps; deletes nothing itself |
+
+## Verified local setup (2026-10-11, Rancher Desktop, Docker 29.1.3, MongoDB 8.0.30)
 ```bash
-cd backend
-mkdir -p secrets && chmod 700 secrets
-LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24 > secrets/arcadedb_root_password.txt
-chmod 600 secrets/arcadedb_root_password.txt
-make dev-up            # ArcadeDB on 127.0.0.1:2480; healthy after ~20 s
-make seed              # load fixtures/topology/mock.v1.json (idempotent)
-make schema-check      # types, unique indexes, schema version
-make test-integration  # each test uses and drops its own temporary database
-make run               # API on :8080; /readyz is 200 once the schema is initialized
-make contract-check    # run the API on a disposable database and validate every operation (Node needed)
+make dev-up && make seed && make schema-check
+make test-integration  # 17 tests, including 918 traversal-parity checks
+make contract-check    # 59/59
+make run
 ```
-Findings from the first run:
-- **Memory.** The image defaults (generational ZGC, `-XX:MaxRAMPercentage=75`, uncapped page cache) exhausted Rancher Desktop's default 2 GB VM, which also runs k3s: the kernel OOM killer stopped ArcadeDB (Docker's `OOMKilled` stays false for a VM-wide OOM) and requests took seconds. The Compose file therefore sets Serial GC, a 384 MB heap, a 256 MB page cache, and `mem_limit: 768m` (about 150–250 MB in use). If you need more headroom, give the Rancher Desktop VM more memory or disable its Kubernetes.
-- **Healthcheck.** The image has no `curl` or `bash`; the healthcheck uses `wget` against `/api/v1/ready` (no credentials needed).
-- **Password rotation.** ArcadeDB applies `rootPasswordPath` only when it first creates its user file (`/home/arcadedb/config/server-users.jsonl`, inside the container). To rotate: write the new password file, then `docker compose down` and `make dev-up`. If that keeps the old password, remove the volume with `docker compose down -v` (deletes local databases), then re-seed.
-- **Credentials on the command line.** Never pass the password with `curl -u`; use a netrc file in `secrets/` (`curl --netrc-file secrets/netrc …`).
-- Wrong credentials return HTTP 403, an unknown database 404.
+Findings:
+- **Memory.** Rancher Desktop's default 2 GB VM also runs k3s, and its root filesystem is an in-memory tmpfs (about 600 MB). Under sustained load (8 concurrent benchmark clients with database traversal), the kernel's VM-wide OOM killer stopped `mongod` and `coredns`; Docker's `OOMKilled` stays false in that case and the container restarts. Give the VM more memory (4 GB) or disable its Kubernetes if you see `PrimarySteppedDown` warnings or 503s.
+- **Cache minimum.** MongoDB 8 refuses `--wiredTigerCacheSizeGB` below 0.25.
+- **Credentials on the command line.** Never pass the password to `mongosh -p`; use `scripts/mongosh.sh` (authenticates inside the container from the secret file) or `make db-shell` (prompts).
+- **Password rotation.** The root user is created only when the data volume is empty. To rotate, change it in `mongosh` (`db.getSiblingDB('admin').changeUserPassword('root', passwordPrompt())`) and then update `secrets/mongodb_root_password.txt`; or delete the volume and re-seed.
 
 ## Running with the frontend
 Start the API (`make run`, `127.0.0.1:8080`), then open the frontend with `?source=api` (e.g. `http://localhost:5173/map?source=api`) or build with `VITE_DATA_SOURCE=api`. The Vite dev and preview servers proxy `/api` to `VITE_API_PROXY_TARGET` (default `http://127.0.0.1:8080`), so no CORS is needed. The data-source tag reads "Backend API · mock inventory" because the stored data is the seeded fixture.
 
 ## Startup and readiness
-- Liveness indicates the Go process is running.
-- Readiness checks ArcadeDB connectivity and verifies database/schema initialization has completed.
-- Do not report the service ready if a required database dependency is unavailable.
-- Startup must validate database compatibility and create/check schema/indexes repeatably without deleting data.
-- Use graceful shutdown for HTTP listeners and client resources.
+- `/healthz` reports the Go process is running.
+- `/readyz` is 200 once collections, validators, and indexes are initialized and the primary answers a ping. Until then it is 503 with a generic reason (`initializing`, `credentials rejected`, `schema not initialized (database unreachable or failing)`).
+- The API initializes the schema in the background at start-up and retries every 5 s while MongoDB is unavailable. It refuses a database whose schema version is newer than its own.
+- Graceful shutdown closes HTTP listeners, then the MongoDB client.
 
 ## Local reset and credentials
-`make reset-local` must not delete data without explicit confirmation. `docker compose down -v` deletes the local ArcadeDB volume. The sample password is for local development only; use secrets management and a least-privilege database identity outside local development.
+`docker compose down -v` (or `docker volume rm backend_mongodb_data`) deletes the local MongoDB data; then `make dev-up && make seed`. The root user and generated password are for local development only; use secrets management and a least-privilege database user (`readWrite` on the application database) elsewhere.
+
+The former ArcadeDB volume `backend_arcadedb_data` and `secrets/arcadedb_root_password.txt` are no longer used; delete them when you no longer need the old data (`docker volume rm backend_arcadedb_data`).

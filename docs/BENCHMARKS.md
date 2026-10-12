@@ -115,3 +115,29 @@ Same machine and conditions as "Backend B4" (`make bench BENCHFLAGS="-c 8 -n 25"
 | `GET /event-types` | 13.6 / 25.0 ms / 542 | 8.1 / 14.6 ms / 870 | 2.9 / 5.6 ms |
 
 Outcome: traversal now runs on the cached index by default (ADR-DB-003 amendment). No ArcadeDB restarts or OOM kills during the runs. Rows without traversal differ between columns only by run-to-run noise on a shared VM.
+
+## 2026-10-11 — Backend on MongoDB (ADR-019)
+
+**Conditions:** Apple M2, 8 cores, 8 GB; Go 1.27.2; MongoDB 8.0.30 single-node replica set in Rancher Desktop (Docker 29.1.3, 2 GB VM shared with k3s, other containers, and a ~600 MB in-memory root filesystem; WiredTiger cache 0.25 GB, `mem_limit` 640 MB). Client and API on the host, database in the VM. Dataset `inventory-1000`: 768 instances, 239 resources, 2,100 relationships. `make bench` (temporary database, real HTTP handler; 30 timed requests per row after 3 warm-ups; `-c 8` = 8 concurrent clients). Not an idle machine.
+
+| Request (1,000 entities) | 1 client, traversal in memory (default): p50 / p95 | 8 clients, memory: p50 / p95 / req/s | 1 client, traversal in database (`$graphLookup`): p50 / p95 |
+|---|---|---|---|
+| `GET /topology` (all) | 5.7 / 8.5 ms | 16.2 / 24.9 ms / 308 | 4.7 / 6.1 ms |
+| `GET /topology?environmentId=` | 3.1 / 7.7 ms | 11.8 / 19.4 ms / 626 | 2.4 / 2.6 ms |
+| `GET /registry` page of 100 | 2.8 / 4.9 ms | 9.0 / 15.0 ms / 747 | 2.1 / 2.5 ms |
+| `GET /registry` search | 2.0 / 3.6 ms | 12.5 / 28.7 ms / 375 | 1.4 / 2.0 ms |
+| `GET /topology/dependencies` upstream, depth 10 | 2.9 / 5.2 ms | 12.1 / 20.3 ms / 577 | 20.9 / 22.3 ms |
+| `GET /topology/dependencies` downstream, depth 10 | 5.3 / 6.7 ms | 17.3 / 30.5 ms / 429 | 45.3 / 51.7 ms |
+| `GET /topology/neighborhood` depth 3 | 1.5 / 2.2 ms | — | 17.1 / 19.6 ms |
+| `GET /topology/impact` | 5.4 / 6.8 ms | — | 4.5 / 5.2 ms |
+| `GET /event-types` | 1.1 / 1.6 ms | — | 1.7 / 2.9 ms |
+
+The 8-client column comes from the cleanest of four runs, which printed only the rows shown (the others are not mixed in from other runs). The database-traversal column used `-n 10`.
+
+Breakdown (median, single client): reading the full topology from MongoDB 79–96 ms uncached (one snapshot transaction over six collections), 0.8–1.3 ms cached (revision lookup by `_id`); index, registry rows, and sort in Go 4.3 ms. Import of the dataset in one transaction: 230–340 ms (ArcadeDB: about 5 s, one statement per record).
+
+Winning plans (`explain`, printed by `make bench`): ID lookups `EXPRESS_IXSCAN _id_`; canonical reads `FETCH > IXSCAN _meta.ord_1`; relationships within a subgraph `SORT > FETCH > IXSCAN targetEntityId_1`; run events `FETCH > IXSCAN simulationId_1_seq_1`. No collection scans.
+
+**Instability on this VM (not a result):** with 8 concurrent clients the VM ran out of memory several times. The kernel's VM-wide OOM killer stopped `mongod` (about 280 MB resident) and `coredns`, and the container restarted (`OOMKilled` stays false for a VM-wide kill). Those runs showed 1–3 s outliers and 503s, and 8-client database-traversal runs never completed (p95 1.7–9.7 s before a 503). In-memory traversal, the default, does not depend on the database per request; the database-traversal path is not measurable with 8 clients on this VM. Re-measure on a VM with more memory (or without k3s) before drawing conclusions about database traversal under load.
+
+Compared with ArcadeDB (sections "Backend B4" and "B6"): single-client endpoints are in the same range or faster, because the cached path is unchanged and the revision lookup is cheaper. Database traversal single-client is 21–45 ms (ArcadeDB `TRAVERSE`: 11–56 ms). Uncached full reads are similar (ArcadeDB 86 ms).

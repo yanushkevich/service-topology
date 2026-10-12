@@ -16,45 +16,49 @@ func TestDefaultsWithoutDatabase(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.HTTPAddr != "127.0.0.1:8080" || cfg.ShutdownTimeout != 10*time.Second || cfg.LogLevel != slog.LevelInfo || cfg.LogFormat != "json" || cfg.SeedMode != "demo" || cfg.ArcadeDB != nil {
+	if cfg.HTTPAddr != "127.0.0.1:8080" || cfg.ShutdownTimeout != 10*time.Second || cfg.LogLevel != slog.LevelInfo || cfg.LogFormat != "json" || cfg.SeedMode != "demo" || cfg.MongoDB != nil {
 		t.Fatalf("unexpected defaults: %+v", cfg)
 	}
 }
 
-func TestArcadeDBSettings(t *testing.T) {
+func TestMongoDBSettings(t *testing.T) {
 	cfg, err := config.Load(env(map[string]string{
-		"ARCADEDB_BASE_URL":        "http://localhost:2480",
-		"ARCADEDB_USERNAME":        "root",
-		"ARCADEDB_PASSWORD_FILE":   "./secrets/arcadedb_root_password.txt",
-		"ARCADEDB_QUERY_LANGUAGE":  "SQL",
-		"ARCADEDB_REQUEST_TIMEOUT": "5s",
+		"MONGODB_URI":           "mongodb://127.0.0.1:27017/?replicaSet=rs0",
+		"MONGODB_USERNAME":      "root",
+		"MONGODB_PASSWORD_FILE": "./secrets/mongodb_root_password.txt",
+		"MONGODB_TIMEOUT":       "5s",
 	}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	db := cfg.ArcadeDB
-	if db == nil || db.BaseURL.Host != "localhost:2480" || db.Database != "topology" || db.QueryLanguage != "sql" || db.RequestTimeout != 5*time.Second {
-		t.Fatalf("unexpected ArcadeDB config: %+v", db)
+	db := cfg.MongoDB
+	if db == nil || db.URI.Host != "127.0.0.1:27017" || db.Database != "topology" || db.AuthSource != "admin" || db.Timeout != 5*time.Second {
+		t.Fatalf("unexpected MongoDB config: %+v", db)
+	}
+	// A server without authentication: neither username nor password file.
+	if cfg, err := config.Load(env(map[string]string{"MONGODB_URI": "mongodb+srv://cluster.example.test"})); err != nil || cfg.MongoDB.Username != "" {
+		t.Fatalf("unauthenticated settings: %v", err)
 	}
 }
 
 func TestReportsEveryProblemAtOnce(t *testing.T) {
 	_, err := config.Load(env(map[string]string{
-		"HTTP_ADDR":               "8080",
-		"AUTH_MODE":               "token",
-		"RATE_LIMIT_RPS":          "fast",
-		"CORS_ALLOWED_ORIGINS":    "*",
-		"SHUTDOWN_TIMEOUT":        "soon",
-		"LOG_LEVEL":               "loud",
-		"LOG_FORMAT":              "xml",
-		"ARCADEDB_BASE_URL":       "http://root:secret@localhost:2480",
-		"ARCADEDB_QUERY_LANGUAGE": "gremlin",
-		"ARCADEDB_PASSWORD":       "secret",
+		"HTTP_ADDR":            "8080",
+		"AUTH_MODE":            "token",
+		"RATE_LIMIT_RPS":       "fast",
+		"CORS_ALLOWED_ORIGINS": "*",
+		"SHUTDOWN_TIMEOUT":     "soon",
+		"LOG_LEVEL":            "loud",
+		"LOG_FORMAT":           "xml",
+		"MONGODB_URI":          "mongodb://root:secret@localhost:27017",
+		"MONGODB_DATABASE":     "top logy",
+		"MONGODB_USERNAME":     "root",
+		"MONGODB_PASSWORD":     "secret",
 	}))
 	if err == nil {
 		t.Fatal("expected errors")
 	}
-	for _, key := range []string{"HTTP_ADDR", "SHUTDOWN_TIMEOUT", "LOG_LEVEL", "LOG_FORMAT", "ARCADEDB_BASE_URL", "ARCADEDB_QUERY_LANGUAGE", "ARCADEDB_USERNAME", "ARCADEDB_PASSWORD_FILE", "ARCADEDB_PASSWORD:", "AUTH_TOKENS_FILE", "RATE_LIMIT_RPS", "CORS_ALLOWED_ORIGINS"} {
+	for _, key := range []string{"HTTP_ADDR", "SHUTDOWN_TIMEOUT", "LOG_LEVEL", "LOG_FORMAT", "MONGODB_URI", "MONGODB_DATABASE", "MONGODB_PASSWORD_FILE", "MONGODB_PASSWORD:", "AUTH_TOKENS_FILE", "RATE_LIMIT_RPS", "CORS_ALLOWED_ORIGINS"} {
 		if !strings.Contains(err.Error(), key) {
 			t.Errorf("error does not mention %s:\n%v", key, err)
 		}
@@ -66,7 +70,7 @@ func TestReportsEveryProblemAtOnce(t *testing.T) {
 
 func TestLogValueHidesSecrets(t *testing.T) {
 	cfg, err := config.Load(env(map[string]string{
-		"ARCADEDB_BASE_URL": "https://db.example.test", "ARCADEDB_USERNAME": "svc", "ARCADEDB_PASSWORD_FILE": "/run/secrets/pw",
+		"MONGODB_URI": "mongodb://db.example.test:27017", "MONGODB_USERNAME": "svc", "MONGODB_PASSWORD_FILE": "/run/secrets/pw",
 	}))
 	if err != nil {
 		t.Fatal(err)

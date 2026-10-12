@@ -134,6 +134,24 @@ Evidence: backend `make check` exit 0; `go test -race -count=1 ./...` passes; `m
 - Identity for browsers (OIDC/SSO), tenancy, per-user layout ownership and concurrency (`ETag`/`If-Match`), audit trail.
 - Observed telemetry ingestion and provider adapters (future milestone; provenance rules are in place).
 - Snapshot retention/deletion; incremental (non-replacing) imports.
-- TLS termination and deployment topology (reverse proxy), production ArcadeDB sizing and backups off-host.
+- TLS termination and deployment topology (reverse proxy), production database sizing (MongoDB since ADR-019) and backups off-host.
 - Measurements on production-like hardware (all numbers here come from a 2 GB laptop VM).
+
+## Database migration to MongoDB (2026-10-11, ADR-019)
+Product owner direction: replace ArcadeDB with MongoDB (no dual support). Scope: persistence adapter, configuration, local tooling, operations, and docs. The API contract, frontend, fixtures, domain logic, and parity tests are unchanged. Committed as `feat(db)`.
+
+Evidence: `make check` exit 0; `make test-integration` passes (17 tests in the MongoDB adapter, including 918 traversal-parity checks, transaction rollback, validators, operator- and key-injection round trips); `make contract-check` 59/59; `make seed` twice (idempotent) and `make schema-check` pass; `make backup` → `make restore` into a new database with schema check and equal document counts in 13 collections, and refusal to overwrite; `make bench` results in `docs/BENCHMARKS.md` "Backend on MongoDB".
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Same contract and behaviour | Pass | contract check 59/59; seeded fixture round-trips exactly; frontend unchanged except two Settings labels |
+| All-or-nothing writes | Pass | imports, simulation runs, and retention in transactions; a colliding run leaves nothing behind (integration test) |
+| Database-side constraints | Pass | unique `_id`; `$jsonSchema` validators reject documents without string `id`/`_meta` |
+| Injection safety | Pass | typed filters only; operator-shaped IDs match nothing; `$where`/`$date`/dotted keys in metadata and layout positions round-trip literally |
+| Traversal parity in the database | Pass | `$graphLookup` subgraphs give the client's results on 918 traversals; entity bound returns 400 |
+| Secrets | Pass | password via file and Docker secret; never on a command line (`scripts/mongosh.sh`, `mongodump --config` inside the container); credentials in the URI rejected; auth failures surface as "credentials rejected" without the password (test) |
+| Operations | Pass | online backup and restore (`RUNBOOK.md`), readiness, metrics per MongoDB command |
+| Performance | Pass (single client), not measurable under load on this VM | `docs/BENCHMARKS.md`; the 2 GB VM OOM-killed `mongod` under 8 concurrent clients |
+
+Not migrated: existing ArcadeDB data (re-seed instead). The `backend_arcadedb_data` volume and `secrets/arcadedb_root_password.txt` were left in place for the owner to delete.
 

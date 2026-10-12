@@ -33,7 +33,7 @@ Each operation names its frontend interface in `x-repository`. The frontend swit
 
 ### Operations (outside `/api/v1`)
 - `GET /healthz`: process liveness, no database dependency.
-- `GET /readyz`: ArcadeDB connectivity and schema initialized; no connection details in the body.
+- `GET /readyz`: MongoDB connectivity (primary reachable) and collections/indexes initialized; no connection details in the body.
 - `GET /api/v1/meta`: API version, schema versions, feature flags (e.g. event types, server simulation).
 
 ### Environments and entities
@@ -74,4 +74,4 @@ The simulation engine is pure TypeScript and runs in the browser (ADR-010); capt
 - Contract tests verify status codes, problem shape, stable IDs, and relationship integrity.
 
 ## Persistence boundary
-All endpoints read/write ArcadeDB through repository interfaces. There is no separate graph projection or projection-freshness field. Never expose ArcadeDB record IDs.
+All endpoints read/write MongoDB through repository interfaces. There is no separate graph projection or projection-freshness field. Never expose MongoDB internals (ObjectIds, collection names) as identity; `_id` is the stable application ID.

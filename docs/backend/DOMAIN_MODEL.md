@@ -7,7 +7,7 @@ The backend must accept, store, and return exactly the `TopologyData` v1 payload
 ## Identity
 - IDs are stable, opaque strings, **unique across all collections of one topology** (environments, definitions, instances, resources, relationships, event types), so a bare ID resolves to exactly one entity (ADR-008). Clients never parse IDs.
 - Selection and deep links use `{ kind, id }` with `kind` ∈ `environment`, `service-definition`, `service-instance`, `resource`, `relationship`.
-- Never expose ArcadeDB record IDs (`#12:3`) as identity.
+- Never expose database-internal identifiers (MongoDB ObjectIds) as identity; documents use the stable application ID as `_id`.
 - Seed/fixture IDs are the frontend mock's IDs (e.g. `order-service.production`, `topic-orders-events-prod`), so fixtures, deep links, and tests are interchangeable.
 
 ## Entities
@@ -86,5 +86,5 @@ Enums match the schema (`Provider`, `HealthStatus`, `EnvironmentKind`, `ServiceC
 
 ## Transport and Go types
 - JSON is camelCase exactly as in the schemas. Go domain structs use idiomatic names with JSON tags only on transport DTOs.
-- Go domain types are independent of HTTP and ArcadeDB packages.
+- Go domain types are independent of HTTP and MongoDB driver packages.
 - Metadata is free-form, display-only, bounded in size, JSON-compatible, never used for identity or hierarchy, and never treated as instructions.

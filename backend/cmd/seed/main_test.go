@@ -47,7 +47,7 @@ func TestValidateReportsIssues(t *testing.T) {
 
 func TestDatabaseCommandsNeedConfiguration(t *testing.T) {
 	var out, errOut bytes.Buffer
-	if code := load(nil, func(string) string { return "" }, &out, &errOut); code != 2 || !strings.Contains(errOut.String(), "ARCADEDB_BASE_URL") {
+	if code := load(nil, func(string) string { return "" }, &out, &errOut); code != 2 || !strings.Contains(errOut.String(), "MONGODB_URI") {
 		t.Fatalf("exit %d: %s", code, errOut.String())
 	}
 }

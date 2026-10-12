@@ -1,16 +1,19 @@
 #!/bin/sh
-# Online backup of the local ArcadeDB database (docs/backend/RUNBOOK.md). Runs BACKUP DATABASE, then
-# copies the zip out of the container (the container's backups directory is not on a volume).
-# Usage: scripts/backup.sh [database]   (default: $ARCADEDB_DATABASE or topology)
+# Online backup of one local MongoDB database with mongodump (docs/backend/RUNBOOK.md): a gzipped
+# archive streamed out of the container into backups/<db>-<UTC time>.archive.gz. The password goes
+# to mongodump through a temporary config file inside the container, never a command line.
+# Usage: scripts/backup.sh [database]   (default: $MONGODB_DATABASE or topology)
 set -eu
 cd "$(dirname "$0")/.."
-DB="${1:-${ARCADEDB_DATABASE:-topology}}"
-BASE="${ARCADEDB_BASE_URL:-http://127.0.0.1:2480}"
-netrc="$(mktemp)"; trap 'rm -f "$netrc"' EXIT
-printf 'machine 127.0.0.1 login %s password %s\n' "${ARCADEDB_USERNAME:-root}" "$(cat "${ARCADEDB_PASSWORD_FILE:-secrets/arcadedb_root_password.txt}")" > "$netrc"
-out="$(curl -sf --netrc-file "$netrc" -X POST "$BASE/api/v1/command/$DB" -d '{"language":"sql","command":"BACKUP DATABASE"}')"
-file="$(printf '%s' "$out" | sed -n 's/.*"backupFile":"\([^"]*\)".*/\1/p')"
-[ -n "$file" ] || { echo "backup failed: $out" >&2; exit 1; }
+DB="${1:-${MONGODB_DATABASE:-topology}}"
+case "$DB" in *[!A-Za-z0-9_]*|"") echo "invalid database name (letters, digits, '_')" >&2; exit 2;; esac
+umask 077  # backups hold the data; owner-only
 mkdir -p backups
-docker cp "topology-arcadedb:/home/arcadedb/backups/$DB/$file" "backups/$file" >/dev/null
-echo "backups/$file"
+file="backups/$DB-$(date -u +%Y%m%dT%H%M%SZ).archive.gz"
+docker exec topology-mongodb sh -c '
+  umask 077
+  printf "password: %s\n" "$(cat /run/secrets/mongodb_root_password)" > /tmp/dump.yaml
+  mongodump --quiet --config /tmp/dump.yaml --username root --authenticationDatabase admin --db "$1" --archive --gzip
+  status=$?; rm -f /tmp/dump.yaml; exit $status' sh "$DB" > "$file" || { rm -f "$file"; echo "backup failed" >&2; exit 1; }
+[ -s "$file" ] || { rm -f "$file"; echo "backup is empty" >&2; exit 1; }
+echo "$file"

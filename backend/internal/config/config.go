@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -35,19 +36,23 @@ type Config struct {
 	CORSAllowedOrigins   []string
 	MetricsAddr          string // "" disables /metrics
 	TraversalSource      string // "memory" (default) or "database" (ADR-DB-003)
-	// ArcadeDB is nil when ARCADEDB_BASE_URL is unset (B1 runs without a database).
-	ArcadeDB *ArcadeDB
+	// MongoDB is nil when MONGODB_URI is unset (the API then runs without a database).
+	MongoDB *MongoDB
 }
 
-// ArcadeDB holds connection settings. The password is read from PasswordFile by the adapter (B2).
-type ArcadeDB struct {
-	BaseURL        *url.URL
-	Database       string
-	Username       string
-	PasswordFile   string
-	QueryLanguage  string // "sql" (ADR-DB-002)
-	RequestTimeout time.Duration
+// MongoDB holds connection settings (ADR-019). The password is read from PasswordFile by the
+// adapter; the URI never carries credentials.
+type MongoDB struct {
+	URI          *url.URL
+	Database     string
+	Username     string // empty: no authentication (then PasswordFile is empty too)
+	PasswordFile string
+	AuthSource   string
+	Timeout      time.Duration // per operation, including server selection
 }
+
+// databaseName allowlists database names (they appear in logs and scripts).
+var databaseName = regexp.MustCompile(`^[A-Za-z0-9_]{1,63}$`)
 
 // IsLoopback reports whether a listen address only accepts local connections.
 func IsLoopback(addr string) bool {
@@ -76,14 +81,14 @@ func (c Config) LogValue() slog.Value {
 		slog.Any("corsAllowedOrigins", c.CORSAllowedOrigins),
 		slog.Bool("metrics", c.MetricsAddr != ""),
 	}
-	if c.ArcadeDB != nil {
-		attrs = append(attrs, slog.Group("arcadedb",
-			slog.String("baseURL", c.ArcadeDB.BaseURL.Redacted()),
-			slog.String("database", c.ArcadeDB.Database),
-			slog.String("queryLanguage", c.ArcadeDB.QueryLanguage),
+	if c.MongoDB != nil {
+		attrs = append(attrs, slog.Group("mongodb",
+			slog.String("uri", c.MongoDB.URI.Redacted()),
+			slog.String("database", c.MongoDB.Database),
+			slog.Bool("authenticated", c.MongoDB.Username != ""),
 		))
 	} else {
-		attrs = append(attrs, slog.String("arcadedb", "not configured"))
+		attrs = append(attrs, slog.String("mongodb", "not configured"))
 	}
 	return slog.GroupValue(attrs...)
 }
@@ -173,32 +178,31 @@ func Load(getenv func(string) string) (Config, error) {
 		errs = append(errs, fmt.Errorf("LOG_LEVEL: %q must be debug, info, warn, or error", get("LOG_LEVEL", "info")))
 	}
 
-	if raw := get("ARCADEDB_BASE_URL", ""); raw != "" {
-		db := &ArcadeDB{
-			Database:     get("ARCADEDB_DATABASE", "topology"),
-			Username:     get("ARCADEDB_USERNAME", ""),
-			PasswordFile: get("ARCADEDB_PASSWORD_FILE", ""),
-			// SQL is the one implemented query language (ADR-DB-002).
-			QueryLanguage:  oneOf("ARCADEDB_QUERY_LANGUAGE", "sql", "sql"),
-			RequestTimeout: duration("ARCADEDB_REQUEST_TIMEOUT", "10s"),
+	if raw := get("MONGODB_URI", ""); raw != "" {
+		db := &MongoDB{
+			Database:     get("MONGODB_DATABASE", "topology"),
+			Username:     get("MONGODB_USERNAME", ""),
+			PasswordFile: get("MONGODB_PASSWORD_FILE", ""),
+			AuthSource:   get("MONGODB_AUTH_SOURCE", "admin"),
+			Timeout:      duration("MONGODB_TIMEOUT", "10s"),
 		}
 		u, err := url.Parse(raw)
-		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-			errs = append(errs, fmt.Errorf("ARCADEDB_BASE_URL: must be an http(s) URL with a host"))
+		if err != nil || (u.Scheme != "mongodb" && u.Scheme != "mongodb+srv") || u.Host == "" {
+			errs = append(errs, errors.New("MONGODB_URI: must be a mongodb:// or mongodb+srv:// URI with a host"))
 		} else if u.User != nil {
-			errs = append(errs, fmt.Errorf("ARCADEDB_BASE_URL: must not contain credentials; use ARCADEDB_USERNAME and ARCADEDB_PASSWORD_FILE"))
+			errs = append(errs, errors.New("MONGODB_URI: must not contain credentials; use MONGODB_USERNAME and MONGODB_PASSWORD_FILE"))
 		}
-		db.BaseURL = u
-		if db.Username == "" {
-			errs = append(errs, errors.New("ARCADEDB_USERNAME: required when ARCADEDB_BASE_URL is set"))
+		db.URI = u
+		if !databaseName.MatchString(db.Database) {
+			errs = append(errs, fmt.Errorf("MONGODB_DATABASE: %q must be 1-63 letters, digits, or '_'", db.Database))
 		}
-		if db.PasswordFile == "" {
-			errs = append(errs, errors.New("ARCADEDB_PASSWORD_FILE: required when ARCADEDB_BASE_URL is set (passwords are never read from plain variables)"))
+		if (db.Username == "") != (db.PasswordFile == "") {
+			errs = append(errs, errors.New("MONGODB_USERNAME and MONGODB_PASSWORD_FILE: set both, or neither for a server without authentication"))
 		}
-		if getenv("ARCADEDB_PASSWORD") != "" {
-			errs = append(errs, errors.New("ARCADEDB_PASSWORD: not supported; put the password in the file named by ARCADEDB_PASSWORD_FILE"))
+		if getenv("MONGODB_PASSWORD") != "" {
+			errs = append(errs, errors.New("MONGODB_PASSWORD: not supported; put the password in the file named by MONGODB_PASSWORD_FILE"))
 		}
-		cfg.ArcadeDB = db
+		cfg.MongoDB = db
 	}
 
 	return cfg, errors.Join(errs...)

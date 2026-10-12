@@ -8,12 +8,10 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 
-	"servicetopology/backend/internal/adapters/arcadedb"
 	"servicetopology/backend/internal/adapters/httpapi"
+	"servicetopology/backend/internal/adapters/mongodb"
 	"servicetopology/backend/internal/application"
 	"servicetopology/backend/internal/auth"
 	"servicetopology/backend/internal/config"
@@ -26,7 +24,7 @@ type notConfigured struct{}
 
 func (notConfigured) Name() string { return "database" }
 func (notConfigured) Check(context.Context) error {
-	return errors.New("not configured (ARCADEDB_BASE_URL is unset)")
+	return errors.New("not configured (MONGODB_URI is unset)")
 }
 
 // Run serves HTTP until ctx is done. onListen, if set, receives the bound address (tests use
@@ -46,30 +44,30 @@ func Run(ctx context.Context, cfg config.Config, logger *slog.Logger, onListen f
 	}
 	var dbCheck ports.ReadinessCheck = notConfigured{}
 	var api *application.Service
-	if cfg.ArcadeDB != nil {
-		client, err := arcadedb.NewClient(cfg.ArcadeDB)
+	if cfg.MongoDB != nil {
+		store, err := mongodb.Connect(cfg.MongoDB, func(command string, ok bool, d time.Duration) {
+			status := map[bool]string{true: "ok", false: "error"}[ok] // command names only (find, insert…), never values
+			metrics.Inc("mongodb_commands_total", "MongoDB commands by name and outcome.", "command", command, "status", status)
+			metrics.Observe("mongodb_command_duration_seconds", "MongoDB command duration by name.", d, "command", command)
+		})
 		if err != nil {
 			return err
 		}
-		client.Observe = func(method, path string, status int, d time.Duration, err error) {
-			op, _, _ := strings.Cut(path, "/") // endpoint only (query, command, begin…), never IDs
-			metrics.Inc("arcadedb_requests_total", "ArcadeDB HTTP API calls by endpoint and status.", "endpoint", op, "status", strconv.Itoa(status))
-			metrics.Observe("arcadedb_request_duration_seconds", "ArcadeDB HTTP API call duration by endpoint.", d, "endpoint", op)
-		}
-		topo := arcadedb.NewTopologyRepository(client)
+		defer store.Close(context.WithoutCancel(ctx))
+		topo := mongodb.NewTopologyRepository(store)
 		metrics.Gauge("topology_cache_hits_total", "Topology reads served from the revision cache.", func() float64 { h, _ := topo.CacheStats(); return float64(h) })
-		metrics.Gauge("topology_cache_misses_total", "Topology reads that loaded from ArcadeDB.", func() float64 { _, m := topo.CacheStats(); return float64(m) })
-		init := arcadedb.NewInitializer(client, logger)
+		metrics.Gauge("topology_cache_misses_total", "Topology reads that loaded from MongoDB.", func() float64 { _, m := topo.CacheStats(); return float64(m) })
+		init := mongodb.NewInitializer(store, logger)
 		go init.Run(ctx, 5*time.Second)
 		dbCheck = init
 		api = &application.Service{
 			TopologyRepo: topo,
-			SnapshotRepo: arcadedb.NewSnapshotRepository(client),
-			LayoutRepo:   arcadedb.NewLayoutRepository(client),
-			GraphRepo:    arcadedb.NewGraphRepository(client),
+			SnapshotRepo: mongodb.NewSnapshotRepository(store),
+			LayoutRepo:   mongodb.NewLayoutRepository(store),
+			GraphRepo:    mongodb.NewGraphRepository(store),
 			// ADR-DB-003 amendment: in-memory traversal on the cached topology unless configured.
 			TraversalInDatabase: cfg.TraversalSource == "database",
-			SimRepo:             arcadedb.NewSimulationRepository(client),
+			SimRepo:             mongodb.NewSimulationRepository(store),
 
 			SimulationRetention: cfg.SimulationRetention,
 			SimulationMaxRuns:   cfg.SimulationMaxRuns,
@@ -82,7 +80,7 @@ func Run(ctx context.Context, cfg config.Config, logger *slog.Logger, onListen f
 		API:           api,
 		Security:      sec,
 		Metrics:       metrics,
-		SchemaVersion: arcadedb.SchemaVersion,
+		SchemaVersion: mongodb.SchemaVersion,
 		AuthMode:      cfg.AuthMode,
 	})
 	if cfg.MetricsAddr != "" {

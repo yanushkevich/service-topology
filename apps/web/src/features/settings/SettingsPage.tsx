@@ -18,7 +18,7 @@ const SOURCES = [
   { key: 'mock', href: '/map', label: 'Mock inventory in the browser (hand-written, with history fixtures)' },
   { key: 'dataset:scale-250', href: '/map?dataset=scale-250', label: 'Generated: 250 entities' },
   { key: 'dataset:inventory-1000', href: '/map?dataset=inventory-1000', label: 'Generated: 1,000 entities' },
-  { key: 'api', href: '/map?source=api', label: 'Backend API (Go + ArcadeDB; run the backend first)' },
+  { key: 'api', href: '/map?source=api', label: 'Backend API (Go + MongoDB; run the backend first)' },
 ] as const;
 
 function currentSource(search: string): string {
@@ -241,7 +241,7 @@ function DataCard() {
           ))}
         </ul>
       </Row>
-      <Row label="Backend contract" hint="The Go + ArcadeDB backend in backend/ implements docs/api/openapi.json (OpenAPI 3.1).">
+      <Row label="Backend contract" hint="The Go + MongoDB backend in backend/ implements docs/api/openapi.json (OpenAPI 3.1).">
         <code className="font-mono text-sm text-fg-2">docs/API_CONTRACT.md</code>
       </Row>
       <Row label="Reset all view state" hint="Clears selection, filters, layout mode, history, and 3D scope. Preferences are kept.">

@@ -33,4 +33,4 @@ The backend extends the product; it does not redefine it. The v4 pack was writte
 | URL state | Versioned query contract (`docs/schemas/topology-url-state.v1.md`); not a backend concern but IDs must stay stable | ADR-009 |
 
 ## Database choice
-The product docs do not prescribe a database. ArcadeDB-only persistence is a backend decision (`DATABASE_DECISIONS.md` ADR-DB-001), adopted for the monorepo by root ADR-015.
+The product docs do not prescribe a database. MongoDB-only persistence is a backend decision (`DATABASE_DECISIONS.md` ADR-DB-004), adopted by root ADR-019 (it replaced ArcadeDB, ADR-DB-001).

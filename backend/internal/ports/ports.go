@@ -1,5 +1,5 @@
-// Package ports declares the interfaces application services depend on. Adapters (ArcadeDB in
-// Milestone B2, in-memory fakes in tests) implement them. They mirror the frontend repositories
+// Package ports declares the interfaces application services depend on. Adapters (MongoDB since
+// ADR-019, in-memory fakes in tests) implement them. They mirror the frontend repositories
 // (apps/web/src/data/**/…Repository.ts) that the HTTP API backs (`x-repository` in docs/api/openapi.json).
 package ports
 

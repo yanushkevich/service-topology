@@ -1,5 +1,5 @@
-// Command seed validates shared fixtures (fixtures/) and loads them into ArcadeDB
-// (docs/backend/LOCAL_DEVELOPMENT.md). Database settings come from the ARCADEDB_* environment.
+// Command seed validates shared fixtures (fixtures/) and loads them into MongoDB
+// (docs/backend/LOCAL_DEVELOPMENT.md). Database settings come from the MONGODB_* environment.
 package main
 
 import (
@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"servicetopology/backend/internal/adapters/arcadedb"
+	"servicetopology/backend/internal/adapters/mongodb"
 	"servicetopology/backend/internal/config"
 	"servicetopology/backend/internal/domain"
 	"servicetopology/backend/internal/fixtures"
@@ -22,9 +22,9 @@ import (
 const usage = `usage: seed <command>
 
   validate [file]   validate a TopologyData JSON file (default: fixtures/topology/mock.v1.json)
-  load [file]       create the database and schema if needed, then replace the stored topology
+  load [file]       create the collections and indexes if needed, then replace the stored topology
                     with the file (idempotent; snapshots and layouts are untouched)
-  schema-check      verify the database, types, unique indexes, and schema version
+  schema-check      verify the database, collections, validators, indexes, and schema version
 `
 
 func main() { os.Exit(run(os.Args[1:], os.Stdout, os.Stderr)) }
@@ -83,17 +83,17 @@ func validate(args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
-func client(getenv func(string) string, stderr io.Writer) *arcadedb.Client {
+func client(getenv func(string) string, stderr io.Writer) *mongodb.Store {
 	cfg, err := config.Load(getenv)
 	if err != nil {
 		fmt.Fprintf(stderr, "invalid configuration:\n%v\n", err)
 		return nil
 	}
-	if cfg.ArcadeDB == nil {
-		fmt.Fprintln(stderr, "ARCADEDB_BASE_URL is not set (see docs/backend/LOCAL_DEVELOPMENT.md)")
+	if cfg.MongoDB == nil {
+		fmt.Fprintln(stderr, "MONGODB_URI is not set (see docs/backend/LOCAL_DEVELOPMENT.md)")
 		return nil
 	}
-	c, err := arcadedb.NewClient(cfg.ArcadeDB)
+	c, err := mongodb.Connect(cfg.MongoDB, nil)
 	if err != nil {
 		fmt.Fprintln(stderr, err)
 		return nil
@@ -118,13 +118,14 @@ func load(args []string, getenv func(string) string, stdout, stderr io.Writer) i
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
-	if err := arcadedb.EnsureSchema(ctx, c); err != nil {
+	defer c.Close(context.Background())
+	if err := mongodb.EnsureSchema(ctx, c); err != nil {
 		fmt.Fprintf(stderr, "schema: %v\n", err)
 		return 1
 	}
-	res, err := arcadedb.NewTopologyRepository(c).ReplaceTopology(ctx, data, "fixture")
+	res, err := mongodb.NewTopologyRepository(c).ReplaceTopology(ctx, data, "fixture")
 	if err != nil {
-		var v *arcadedb.ValidationError
+		var v *mongodb.ValidationError
 		if errors.As(err, &v) {
 			for _, i := range v.Issues {
 				fmt.Fprintf(stdout, "%s %s %s: %s\n", i.Severity, i.Code, i.EntityID, i.Message)
@@ -133,7 +134,7 @@ func load(args []string, getenv func(string) string, stdout, stderr io.Writer) i
 		fmt.Fprintf(stderr, "load: %v (nothing was written)\n", err)
 		return 1
 	}
-	fmt.Fprintf(stdout, "loaded %s into database %q: vertices %v, edges %v\n", path, c.Database(), res.Vertices, res.Edges)
+	fmt.Fprintf(stdout, "loaded %s into database %q: documents %v\n", path, c.Database(), res.Documents)
 	if len(args) == 0 {
 		// Default load also brings in the history fixtures the frontend uses.
 		if code := loadSnapshots(ctx, c, stdout, stderr); code != 0 {
@@ -145,14 +146,14 @@ func load(args []string, getenv func(string) string, stdout, stderr io.Writer) i
 
 // loadSnapshots stores fixtures/snapshots/*.json. Snapshots are immutable: an identical stored
 // snapshot is skipped, a different one with the same ID is an error (never overwritten).
-func loadSnapshots(ctx context.Context, c *arcadedb.Client, stdout, stderr io.Writer) int {
+func loadSnapshots(ctx context.Context, c *mongodb.Store, stdout, stderr io.Writer) int {
 	dir, err := fixtures.Dir()
 	if err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1
 	}
 	files, _ := filepath.Glob(filepath.Join(dir, "snapshots", "*.json"))
-	repo := arcadedb.NewSnapshotRepository(c)
+	repo := mongodb.NewSnapshotRepository(c)
 	added, same := 0, 0
 	for _, file := range files {
 		raw, err := os.ReadFile(file)
@@ -201,10 +202,11 @@ func schemaCheck(getenv func(string) string, stdout, stderr io.Writer) int {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	if err := arcadedb.CheckSchema(ctx, c); err != nil {
+	defer c.Close(context.Background())
+	if err := mongodb.CheckSchema(ctx, c); err != nil {
 		fmt.Fprintf(stderr, "schema-check: %v\n", err)
 		return 1
 	}
-	fmt.Fprintf(stdout, "schema-check: database %q has schema version %d with all types and unique indexes\n", c.Database(), arcadedb.SchemaVersion)
+	fmt.Fprintf(stdout, "schema-check: database %q has schema version %d with all collections, validators, and indexes\n", c.Database(), mongodb.SchemaVersion)
 	return 0
 }

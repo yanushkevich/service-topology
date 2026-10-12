@@ -1,4 +1,4 @@
-package arcadedb
+package mongodb
 
 import (
 	"context"
@@ -8,30 +8,30 @@ import (
 	"time"
 )
 
-// Initializer ensures the database and schema exist, retrying in the background until it succeeds,
-// and serves as the "database" readiness check (ports.ReadinessCheck).
+// Initializer ensures the collections, validators, and indexes exist, retrying in the background
+// until it succeeds, and serves as the "database" readiness check (ports.ReadinessCheck).
 type Initializer struct {
-	c      *Client
+	s      *Store
 	logger *slog.Logger
 	mu     sync.Mutex
 	done   bool
 	last   error
 }
 
-// NewInitializer returns an initializer for c.
-func NewInitializer(c *Client, logger *slog.Logger) *Initializer {
-	return &Initializer{c: c, logger: logger, last: errors.New("initializing")}
+// NewInitializer returns an initializer for s.
+func NewInitializer(s *Store, logger *slog.Logger) *Initializer {
+	return &Initializer{s: s, logger: logger, last: errors.New("initializing")}
 }
 
 // Run tries EnsureSchema every interval until it succeeds or ctx ends. A newer schema stops retries.
 func (i *Initializer) Run(ctx context.Context, interval time.Duration) {
 	for {
-		err := EnsureSchema(ctx, i.c)
+		err := EnsureSchema(ctx, i.s)
 		i.mu.Lock()
 		i.done, i.last = err == nil, err
 		i.mu.Unlock()
 		if err == nil {
-			i.logger.Info("database schema ready", "database", i.c.Database(), "schemaVersion", SchemaVersion)
+			i.logger.Info("database schema ready", "database", i.s.Database(), "schemaVersion", SchemaVersion)
 			return
 		}
 		i.logger.Warn("database initialization failed; retrying", "error", err.Error(), "retryIn", interval.String())
@@ -49,8 +49,8 @@ func (i *Initializer) Run(ctx context.Context, interval time.Duration) {
 // Name implements ports.ReadinessCheck.
 func (i *Initializer) Name() string { return "database" }
 
-// Check implements ports.ReadinessCheck: ready once the schema is initialized and the server answers.
-// Messages are generic; they never include connection details.
+// Check implements ports.ReadinessCheck: ready once the schema is initialized and the primary
+// answers. Messages are generic; they never include connection details.
 func (i *Initializer) Check(ctx context.Context) error {
 	i.mu.Lock()
 	done, last := i.done, i.last
@@ -67,7 +67,7 @@ func (i *Initializer) Check(ctx context.Context) error {
 			return errors.New("schema not initialized (database unreachable or failing)")
 		}
 	}
-	if err := i.c.Ready(ctx); err != nil {
+	if err := i.s.Ping(ctx); err != nil {
 		return errors.New("unreachable")
 	}
 	return nil

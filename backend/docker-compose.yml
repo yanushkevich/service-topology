@@ -1,38 +1,58 @@
 # Local development only (run from backend/: make dev-up).
 # Image tag verified on Docker Hub and tested locally 2026-10-11 (Rancher Desktop, Docker 29.1.3).
+#
+# MongoDB runs as a single-node replica set: multi-document transactions (topology import, simulation
+# runs, retention) need one. With access control on, a replica set also needs a key file for internal
+# authentication; a single node never uses it, so a fresh one is generated at every start.
 services:
-  arcadedb:
-    image: arcadedata/arcadedb:26.10.1
-    container_name: topology-arcadedb
+  mongodb:
+    image: mongo:8.0.30
+    container_name: topology-mongodb
     restart: unless-stopped
     environment:
-      ARCADEDB_SETTINGS: "-Darcadedb.server.rootPasswordPath=/run/secrets/arcadedb_root_password -Darcadedb.maxPageRAM=256"
-      # Explicit memory budget. The image default (-XX:MaxRAMPercentage=75, uncapped page cache) let the
-      # JVM grow until the kernel OOM killer stopped it inside Rancher Desktop's 2 GB VM.
-      ARCADEDB_OPTS_MEMORY: "-Xms128M -Xmx384M"
-      # Serial GC: smallest footprint for local development. The image default (generational ZGC)
-      # maps the heap through shared memory, which exhausted a 2 GB Rancher Desktop VM.
-      ARCADEDB_OPTS_GC: "-XX:+UseSerialGC"
-    # Over-budget kills only this container (visible as OOMKilled) instead of a VM-wide OOM kill.
-    mem_limit: 768m
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongodb_root_password
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >-
+        openssl rand -base64 756 > /tmp/mongo-keyfile &&
+        chmod 400 /tmp/mongo-keyfile && chown mongodb:mongodb /tmp/mongo-keyfile &&
+        exec docker-entrypoint.sh mongod --replSet rs0 --keyFile /tmp/mongo-keyfile --bind_ip_all
+        --wiredTigerCacheSizeGB 0.25
+    # Explicit memory budget for a 2 GB Rancher Desktop VM shared with k3s. WiredTiger's cache would
+    # default to half of (VM RAM - 1 GB); 0.25 GB is MongoDB 8's minimum and plenty for 1,000
+    # entities (about 310 MB resident under the integration tests). Over-budget kills only this
+    # container (visible as OOMKilled) instead of a VM-wide OOM kill.
+    mem_limit: 640m
     ports:
       # Localhost only (SECURITY.md); never publish the database on all interfaces.
-      - "127.0.0.1:2480:2480"
+      - "127.0.0.1:27017:27017"
     secrets:
-      - arcadedb_root_password
+      - mongodb_root_password
     volumes:
-      - arcadedb_data:/home/arcadedb/databases
-    # The image (Alpine) has wget but no curl or bash. /api/v1/ready needs no credentials and returns 204.
+      - mongodb_data:/data/db
+    # Initiates the replica set on first start (idempotent), then reports healthy once this node is
+    # the writable primary. The password is read inside mongosh, never put on a command line.
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:2480/api/v1/ready || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 20
-      start_period: 30s
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --norc
+        - --eval
+        - >-
+          db.getSiblingDB('admin').auth('root', require('fs').readFileSync('/run/secrets/mongodb_root_password', 'utf8').trim());
+          try { rs.status() } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: '127.0.0.1:27017' }] }) }
+          if (!db.hello().isWritablePrimary) quit(1)
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 20s
 
 secrets:
-  arcadedb_root_password:
-    file: ./secrets/arcadedb_root_password.txt
+  mongodb_root_password:
+    file: ./secrets/mongodb_root_password.txt
 
 volumes:
-  arcadedb_data:
+  mongodb_data:

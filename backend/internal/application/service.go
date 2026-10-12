@@ -39,8 +39,8 @@ type Service struct {
 	SnapshotRepo ports.SnapshotRepository
 	LayoutRepo   ports.SavedLayoutRepository
 	GraphRepo    ports.GraphRepository
-	// TraversalInDatabase runs dependency/neighbourhood traversals with ArcadeDB TRAVERSE instead of
-	// the cached in-memory index (ADR-DB-003 amendment: memory is the default, measured faster).
+	// TraversalInDatabase runs dependency/neighbourhood traversals in the database ($graphLookup)
+	// instead of the cached in-memory index (ADR-DB-004: memory is the default, measured faster).
 	TraversalInDatabase bool
 	SimRepo             ports.SimulationRepository
 	// Retention for simulation runs (zero values disable pruning).

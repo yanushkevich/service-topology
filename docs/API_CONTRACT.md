@@ -1,6 +1,6 @@
 # API Contract
 
-**Status:** Contract v1 (Milestone 5), implemented by the Go + ArcadeDB backend in `backend/` since Milestone B3 (`docs/backend/`, ADR-015). The frontend still runs on in-memory repositories until its HTTP adapters land (B6). Conformance is checked by `make contract-check` in `backend/`, which validates every operation against `openapi.json`. The app runs on in-memory mock repositories that already implement the interfaces this contract maps to. The contract is machine-readable and tested; the prose here explains it.
+**Status:** Contract v1 (Milestone 5), implemented by the Go backend in `backend/` since Milestone B3 (`docs/backend/`, ADR-015; MongoDB since ADR-019). The frontend still runs on in-memory repositories until its HTTP adapters land (B6). Conformance is checked by `make contract-check` in `backend/`, which validates every operation against `openapi.json`. The app runs on in-memory mock repositories that already implement the interfaces this contract maps to. The contract is machine-readable and tested; the prose here explains it.
 
 | Artifact | What it is |
 |---|---|

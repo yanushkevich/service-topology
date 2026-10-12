@@ -1,5 +1,7 @@
 # Claude Code Prompt — Implement the Go Backend (ArcadeDB)
 
+> **Historical.** This prompt drove Milestones B1–B6 on ArcadeDB. The database is MongoDB since ADR-019; where this prompt says ArcadeDB, follow `PERSISTENCE.md` and `DATABASE_DECISIONS.md` ADR-DB-004 instead.
+
 You are implementing the backend for the Service Topology & Registry Platform. This is a monorepo: the frontend is in `apps/web/`, the Go backend in `backend/`, shared fixtures in `fixtures/`. First inspect the root `CLAUDE.md`, `docs/backend/README.md`, `docs/backend/SOURCE_ALIGNMENT.md`, `docs/backend/BACKEND_SPEC.md`, `docs/backend/DOMAIN_MODEL.md`, `docs/backend/PERSISTENCE.md`, `docs/backend/DATABASE_DECISIONS.md`, `docs/backend/API_SPEC.md`, `docs/backend/TESTING_AND_PERFORMANCE.md`, `docs/backend/IMPLEMENTATION_PLAN.md`, the contract (`docs/api/openapi.json`, `docs/API_CONTRACT.md`, `docs/schemas/`), and the canonical domain in `apps/web/src/domain/`.
 
 ## Non-negotiable architecture

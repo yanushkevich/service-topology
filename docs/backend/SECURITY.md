@@ -7,14 +7,14 @@
 |---|---|---|
 | Authentication / roles | `AUTH_MODE=token`: bearer tokens, SHA-256 digests in `AUTH_TOKENS_FILE`, reader/editor | `security_test.go`, `auth_test.go` |
 | No accidental exposure | default `127.0.0.1:8080`; refuses `AUTH_MODE=none` on non-loopback without `ALLOW_UNAUTHENTICATED=true`; metrics loopback-only | `config_test.go` |
-| Parameterized queries, allowlisted names | all SQL binds values; type/property/edge names are constants or validated | injection tests (memory and ArcadeDB) |
+| No query injection | typed driver filters (`bson.D`) with input only as values; no `$where`, JavaScript, or query strings; field and collection names are constants; stored JSON is converted value by value, never parsed as Extended JSON | injection tests (memory and MongoDB): operator-shaped IDs match nothing, `$`/dotted keys round-trip literally |
 | Input bounds | body limits (16 MB / 1 MB), strict JSON, page/depth/limit/roots/ticks caps, 5,000 visited entities | `api_test.go`, contract check |
 | Rate limiting | per-client token bucket, 429 + `Retry-After`, health exempt | `security_test.go` |
 | CORS | exact-origin allowlist, no wildcard, no credentials; preflight 403 for others | `security_test.go` |
 | Response headers | `nosniff`, CSP `default-src 'none'; frame-ancestors 'none'`, `no-referrer`, `no-store` | `security_test.go` |
 | Error hygiene | RFC 9457 problems; no SQL, stack traces, credentials, or internal addresses; `requestId` for correlation | `api_test.go`, `client_test.go` |
-| Secrets | database password only via file; `ARCADEDB_PASSWORD` and credentials in URLs rejected; never logged | `config_test.go` |
-| Database exposure | ArcadeDB bound to `127.0.0.1:2480`; online file-URL restore left disabled | Compose file, RUNBOOK |
+| Secrets | database password only via file; `MONGODB_PASSWORD` and credentials in the URI rejected; never logged | `config_test.go` |
+| Database exposure | MongoDB bound to `127.0.0.1:27017` with access control on (root user from a Docker secret); backups owner-only | Compose file, RUNBOOK |
 | Dependency scanning | `make vulncheck` (govulncheck v1.8.0): no vulnerabilities; `npm audit`: 0 (2026-10-11) | closeout |
 
 ## Non-negotiable safeguards
@@ -42,4 +42,4 @@ Set policy for endpoint/resource metadata, event payloads, snapshot retention, u
 
 
 ## Database security
-Bind database ports to localhost in local development (the scaffold Compose file publishes `127.0.0.1:2480` only). Use separate least-privilege credentials per service in deployed environments, TLS where applicable, secret injection rather than committed credentials, network restrictions, and tested backup/restore. The sample Compose credentials are local-only and must never be reused.
+Bind database ports to localhost in local development (`backend/docker-compose.yml` publishes `127.0.0.1:27017` only). Use separate least-privilege credentials per service in deployed environments, TLS where applicable, secret injection rather than committed credentials, network restrictions, and tested backup/restore. The sample Compose credentials are local-only and must never be reused.
