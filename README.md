@@ -38,6 +38,7 @@ Execute one milestone at a time, in order:
 - `docs/milestones/MILESTONE_05_POLISH_HARDENING.md`
 - `docs/milestones/MILESTONE_06_TAILWIND_SECTIONS.md` (Revision 5)
 - `docs/milestones/MILESTONE_07_EVENT_CATALOG.md` (Revision 6)
+- `docs/milestones/MILESTONE_08_ENTITY_EDITING.md` (Revision 7, with backend B7)
 
 Backend (Go + MongoDB, ADR-019): `docs/backend/README.md`. Milestones B1–B6 are implemented in `backend/`; open the app with `?source=api` to use it (`docs/backend/LOCAL_DEVELOPMENT.md`).
 

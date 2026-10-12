@@ -62,6 +62,11 @@ Verified 2026-10-12 (4 GB VM): 401 without or with wrong credentials, 200 after 
 
 The `source` and `dataset` parameters stay in the URL while you navigate. To make the API the default, start the frontend with `VITE_DATA_SOURCE=api npm run dev`.
 
+## Editing
+With `?source=api`, **New** in the header creates any entity; select an entity and use **Edit** or **Delete** at the bottom of the inspector (event types: on the Events page). Built-in mock data is read-only. Changes are stored in MongoDB; `make seed` restores the mock inventory.
+
+To check the running stack in a real browser: `cd apps/web && npm run check:live -- --url http://localhost:5173` (add `--write` only against a disposable database: it creates, edits, and deletes data).
+
 ## Production build of the frontend (optional)
 ```sh
 npm run build

@@ -141,6 +141,12 @@ The Events page and inspector explain the new rule automatically.
 
 **Add a history fixture:** add a variant in `apps/web/src/data/mock/snapshots.ts`. Tests check validity and that no timestamp is later than `takenAt`.
 
+## 7a. Editing (ADR-020)
+- `apps/web/src/features/editing/`: `entityForms.ts` (pure form model: fields per kind with options from the topology, values ↔ entities, `applyChange`, `newIssues`), `EntityEditorProvider.tsx` (opens forms; availability), `EntityEditorDialog.tsx`, `DeleteEntityDialog.tsx`, `EditingControls.tsx` (New menu, inspector actions), `shared/ui/Modal.tsx` (focus trap, Escape, focus return).
+- Writes go through `TopologyRepository.writer` (HTTP only; `undefined` for mock data). `TopologyDataProvider` exposes `useTopologyEditing()` with the stored `baseline` and `reload()`.
+- Tests use `src/test/writableRepository.ts`, an in-memory writer that validates like the server. To check against the real backend: `npm run check:live -- --url <preview-url> [--write]` (`--write` changes data; use a disposable database).
+- Adding a field to an entity: update `fieldsFor` and the schema/types together; the form round-trip test in `entityForms.test.ts` catches fields that do not survive values ↔ entity.
+
 ## 8. Known limitations (current)
 - No real integrations, authentication, or tenancy. All data is mock; all telemetry is simulated.
 - Performance: 2D selection response and 3D frame rate need re-measurement on an idle machine or with a GPU (`docs/BENCHMARKS.md`).

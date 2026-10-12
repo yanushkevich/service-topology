@@ -119,6 +119,13 @@ export function endpointName(index: TopologyIndex, id: EntityId): string {
   return index.resources.get(id)?.name ?? id;
 }
 
+/** Display name for any entity: its name, or "source → target" for a relationship; the ID otherwise. */
+export function displayName(index: TopologyIndex, id: EntityId): string {
+  const relationship = index.relationships.get(id);
+  if (relationship) return `${endpointName(index, relationship.sourceEntityId)} → ${endpointName(index, relationship.targetEntityId)}`;
+  return index.definitions.get(id)?.name ?? index.environments.get(id)?.name ?? index.eventTypes.get(id)?.name ?? endpointName(index, id);
+}
+
 /**
  * Environment of an instance or resource. Resources inherit the nearest ancestor's environment;
  * undefined means environment-independent (e.g. an external SaaS API).

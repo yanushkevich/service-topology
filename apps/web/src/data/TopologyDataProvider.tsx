@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { TopologySnapshot } from '../domain/snapshot';
 import { buildTopologyIndex } from '../domain/topologyIndex';
 import type { TopologyData } from '../domain/types';
@@ -7,7 +7,7 @@ import { useSimulationStore } from '../state/simulationStore';
 import { useUiStore } from '../state/uiStore';
 import type { TopologyRepository } from './repositories/TopologyRepository';
 import { useSnapshotRepository } from './snapshots/snapshotContext';
-import { RepositoryContext, TopologyContext, type TopologyState } from './topologyContext';
+import { RepositoryContext, TopologyContext, TopologyEditingContext, type TopologyEditing, type TopologyState } from './topologyContext';
 
 export function RepositoryProvider({ repository, children }: { repository: TopologyRepository; children: ReactNode }) {
   return <RepositoryContext.Provider value={repository}>{children}</RepositoryContext.Provider>;
@@ -29,9 +29,21 @@ export function TopologyDataProvider({ children }: { children: ReactNode }) {
   const sim = useSimulationStore((s) => s.sim);
   const asOf = useUiStore((s) => s.asOf);
   const [history, setHistory] = useState<{ id: string; snapshot: TopologySnapshot | null } | null>(null);
+  // Reloads after an edit (ADR-020): bump the version; waiters settle when that load finishes.
+  const [version, setVersion] = useState(0);
+  const waiters = useRef<{ resolve: () => void; reject: (error: unknown) => void }[]>([]);
+  const loaded = useRef(false);
 
   useEffect(() => {
     const controller = new AbortController();
+    const settle = (error?: unknown) => {
+      const pending = waiters.current;
+      waiters.current = [];
+      for (const w of pending) {
+        if (error === undefined) w.resolve();
+        else w.reject(error);
+      }
+    };
     repository
       .getTopology(controller.signal)
       .then((data) => {
@@ -39,14 +51,27 @@ export function TopologyDataProvider({ children }: { children: ReactNode }) {
         const issues = validateTopology(data);
         if (issues.length > 0) console.warn('Topology validation issues', issues);
         useSimulationStore.getState().initialize(data);
+        loaded.current = true;
         setLoad({ status: 'loaded', baseline: data, issues });
+        settle();
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
-        setLoad({ status: 'error', message: error instanceof Error ? error.message : String(error) });
+        // A failed reload keeps the data on screen; only the first load turns into an error page.
+        if (!loaded.current) setLoad({ status: 'error', message: error instanceof Error ? error.message : String(error) });
+        settle(error);
       });
     return () => controller.abort();
-  }, [repository]);
+  }, [repository, version]);
+
+  const reload = useCallback(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        waiters.current.push({ resolve, reject });
+        setVersion((v) => v + 1);
+      }),
+    [],
+  );
 
   useEffect(() => {
     if (!asOf) return;
@@ -90,5 +115,14 @@ export function TopologyDataProvider({ children }: { children: ReactNode }) {
     };
   }
 
-  return <TopologyContext.Provider value={state}>{children}</TopologyContext.Provider>;
+  const editing = useMemo<TopologyEditing>(
+    () => ({ writer: repository.writer ?? null, baseline, reload }),
+    [repository, baseline, reload],
+  );
+
+  return (
+    <TopologyContext.Provider value={state}>
+      <TopologyEditingContext.Provider value={editing}>{children}</TopologyEditingContext.Provider>
+    </TopologyContext.Provider>
+  );
 }

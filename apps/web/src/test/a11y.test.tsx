@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { useSimulationStore } from '../state/simulationStore';
 import { useUiStore } from '../state/uiStore';
 import { renderApp, resetUiStore } from './renderApp';
+import { createWritableRepository } from './writableRepository';
 
 /**
  * Automated accessibility audit (axe-core, WCAG 2.0–2.2 A/AA rules) of every page and key state.
@@ -103,6 +104,36 @@ describe('accessibility audit (axe-core)', () => {
   it('not found page', async () => {
     renderApp('/nope');
     await screen.findByRole('heading', { level: 1 });
+    expect(await audit()).toEqual([]);
+  });
+});
+
+describe('accessibility audit: editing (ADR-020)', () => {
+  beforeEach(resetUiStore);
+
+  it('new-entity menu and editor sheet with field errors', async () => {
+    const user = userEvent.setup();
+    const { repository } = createWritableRepository();
+    renderApp('/registry', repository);
+    await screen.findByRole('table');
+    await user.click(screen.getByRole('button', { name: 'New' }));
+    expect(await audit()).toEqual([]);
+    await user.click(screen.getByRole('menuitem', { name: /^Service instance/ }));
+    const dialog = screen.getByRole('dialog', { name: 'New service instance' });
+    await user.clear(within(dialog).getByRole('textbox', { name: /^ID/ }));
+    await user.click(within(dialog).getByRole('button', { name: 'Create' }));
+    expect(within(dialog).getByRole('textbox', { name: /^ID/ })).toHaveAttribute('aria-invalid', 'true');
+    expect(await audit()).toEqual([]);
+  });
+
+  it('delete confirmation listing blockers', async () => {
+    const user = userEvent.setup();
+    const { repository } = createWritableRepository();
+    useUiStore.setState({ selection: { kind: 'service-definition', id: 'payment-service' } });
+    renderApp('/registry', repository);
+    const inspector = await screen.findByRole('complementary', { name: 'Inspector' });
+    await user.click(await within(inspector).findByRole('button', { name: 'Delete Payment Service' }));
+    expect(screen.getByRole('dialog', { name: 'Delete service definition?' })).toBeInTheDocument();
     expect(await audit()).toEqual([]);
   });
 });

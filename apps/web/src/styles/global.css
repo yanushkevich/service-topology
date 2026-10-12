@@ -18,6 +18,7 @@
   --color-stage: var(--color-stage);
   --color-float: var(--color-float);
   --color-tooltip: var(--color-tooltip);
+  --color-scrim: var(--color-scrim);
   --color-node: var(--color-node);
   --color-node-hover: var(--color-node-hover);
   --color-node-selected: var(--color-node-selected);

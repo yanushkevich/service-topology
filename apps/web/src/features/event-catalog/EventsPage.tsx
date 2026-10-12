@@ -6,6 +6,8 @@ import type { TopologyIndex } from '../../domain/topologyIndex';
 import type { EntityRef } from '../../domain/types';
 import { typeLabel } from '../../shared/mappings';
 import { buttonClass, cx, fieldClass, kickerClass } from '../../shared/ui/classes';
+import { EntityEditActions } from '../editing/EditingControls';
+import { useEntityEditing } from '../editing/editingContext';
 import { DataSourceTag } from '../../shared/ui/DataSourceTag';
 import { LoadState } from '../../shared/ui/LoadState';
 import { StatusShape } from '../../shared/ui/StatusShape';
@@ -61,6 +63,7 @@ function Catalog({ index, sourceLabel, isMock }: { index: TopologyIndex; sourceL
           <span className="font-mono text-[11.5px] text-fg-3">
             {plural(listed.length, 'event')} · {environmentName}
           </span>
+          <NewEventTypeButton />
         </div>
         <DataSourceTag sourceLabel={sourceLabel} isMock={isMock} />
         <label htmlFor={inputId} className="sr-only">
@@ -109,9 +112,15 @@ function Catalog({ index, sourceLabel, isMock }: { index: TopologyIndex; sourceL
         {selectedFlow ? (
           <EventDetail index={index} flow={selectedFlow} environmentName={environmentName} />
         ) : eventTypeId && requested ? (
-          <Note>
-            {requested.name} is not carried in {environmentName}. Choose another environment or event.
-          </Note>
+          <>
+            <Note>
+              {requested.name} is not carried in {environmentName}. Choose another environment or event
+              {requested.channelResourceIds.length === 0 ? ', or edit it to add the topic, queue, or exchange that carries it' : ''}.
+            </Note>
+            <div className="mt-3">
+              <EntityEditActions kind="event-type" id={requested.id} label={requested.name} />
+            </div>
+          </>
         ) : eventTypeId ? (
           <Note>No event type with ID “{eventTypeId}” exists in this data.</Note>
         ) : (
@@ -160,6 +169,9 @@ function EventDetail({ index, flow, environmentName }: { index: TopologyIndex; f
           <span className="rounded-md border border-line bg-surface-2 px-2 py-1 font-mono text-xs text-fg-2">schema {eventType.schemaVersion}</span>
         )}
         {owner && <span className="rounded-md border border-line bg-surface-2 px-2 py-1 text-xs text-fg-2">Owner · {owner}</span>}
+        <span className="ml-auto">
+          <EntityEditActions kind="event-type" id={eventType.id} label={eventType.name} />
+        </span>
       </div>
 
       {/* Horizontal producers → event → consumers when there is room (as in the mock), stacked otherwise. */}
@@ -290,5 +302,16 @@ function ParticipantColumn({
         </ul>
       )}
     </div>
+  );
+}
+
+/** Shortcut to create an event type; the header's New menu explains when editing is unavailable. */
+function NewEventTypeButton() {
+  const { unavailable, openCreate } = useEntityEditing();
+  if (unavailable) return null;
+  return (
+    <button type="button" className={buttonClass('secondary', 'ml-auto h-7 text-sm')} onClick={() => openCreate('event-type')}>
+      New event type
+    </button>
   );
 }

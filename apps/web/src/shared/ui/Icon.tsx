@@ -57,6 +57,8 @@ const PATHS = {
   chevronRight: <path d="M6 4l4 4-4 4" />,
   close: <path d="M4 4l8 8M12 4l-8 8" />,
   plus: <path d="M8 3.5v9M3.5 8h9" />,
+  edit: <path d="M10.5 2.5l3 3-8 8H2.5v-3zM9 4l3 3" />,
+  trash: <path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 9h5.6l.7-9" />,
   minus: <path d="M3.5 8h9" />,
   fit: <path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" />,
   focus: (

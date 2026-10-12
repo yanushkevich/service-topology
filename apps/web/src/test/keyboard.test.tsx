@@ -29,6 +29,8 @@ describe('keyboard access', () => {
     await user.tab();
     expect(screen.getByRole('searchbox', { name: 'Search services and resources' })).toHaveFocus();
     await user.tab();
+    expect(screen.getByRole('button', { name: 'New' })).toHaveFocus();
+    await user.tab();
     expect(screen.getByRole('link', { name: /Simulated\s*.*simulation paused/ })).toHaveFocus();
     await user.tab();
     expect(screen.getByRole('button', { name: /Switch to (light|dark) theme/ })).toHaveFocus();

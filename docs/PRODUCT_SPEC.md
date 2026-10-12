@@ -300,3 +300,29 @@ Every navigation section is a working page built on the canonical data and share
 - Event types validate against the rules in M.1 with tests per rule; the mock inventory has event types consistent with its relationships and validates with zero issues.
 - The JSON Schema and OpenAPI contract include event types; contract tests pass.
 - The Events and Simulation pages have integration tests and axe cases (jsdom and real browser, both themes).
+
+# Revision 7 Addendum — Editing the topology (2026-10-12)
+
+**Source:** product owner direction: "design buttons in the UI in order to create or update all resources", with delete, only when connected to the backend. Authoritative where it conflicts with earlier text (the product was read-only for inventory). Delivery: Milestones B7 (API) and 8 (UI), `docs/milestones/MILESTONE_08_ENTITY_EDITING.md`. Decision record: ADR-020.
+
+## N. Editing
+
+### N.1 Scope
+- Every canonical entity kind can be **created, edited, and deleted**: environments, service definitions, service instances, resources (including topics, queues, exchanges), connections (communication relationships), and event types.
+- Editing is available only when the data comes from the backend (`?source=api`). With built-in mock data the actions explain that the data is read-only and link to the backend source. Editing is unavailable while viewing history.
+- Edits start from the stored values, never from the simulated state. Telemetry is not editable; "updated" timestamps are set when saving.
+
+### N.2 Actions
+- **New** in the header (every page): one entry per entity kind with a one-line explanation.
+- **Edit** and **Delete** at the bottom of the inspector for the selected entity (map, registry, and every page with the inspector), and on the event detail of the Events page (plus **New event type** next to the catalog heading).
+- Forms open as a side sheet: one field per attribute, with pick-lists for references (environment, service definition, hosting resource, parent resource, connection endpoints, channels, producers, consumers) and enumerations. IDs are suggested from the name or the references and cannot change after creation.
+
+### N.3 Integrity
+- Before sending, the form checks the whole resulting topology with the same rules as the server and lists what the change would break; the server validates again.
+- A delete of anything that is still referenced is refused, listing each reference in plain words (e.g. "Order Service → Payment Service (connection): uses it as an endpoint").
+- If someone else changed the topology since it was loaded, the save is refused and the user can reload the data without losing the form.
+- After saving, the topology reloads, the simulation restarts from it, and the new or edited entity is selected (event types open in the catalog).
+
+### N.4 Acceptance additions
+- Create, edit, and delete work for every kind against the backend; invalid changes never reach storage; referenced entities cannot be deleted; stale edits are refused.
+- Forms, menus, and dialogs are keyboard-operable, label every field, announce errors, keep focus inside dialogs, and return it afterwards; axe audits pass.

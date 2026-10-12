@@ -16,6 +16,8 @@
   --color-stage-dot: rgba(125, 139, 255, 0.13);
   --color-float: rgba(13, 18, 32, 0.9);
   --color-tooltip: #1b2238;
+  /* Behind modal dialogs (mock command palette backdrop) */
+  --color-scrim: rgba(3, 5, 10, 0.6);
 
   /* Lines */
   --color-line: #1e2640;
@@ -73,6 +75,7 @@
   --color-stage-dot: rgba(74, 87, 214, 0.2);
   --color-float: rgba(255, 255, 255, 0.94);
   --color-tooltip: #ffffff;
+  --color-scrim: rgba(18, 26, 44, 0.35);
 
   --color-line: #d6dcea;
   --color-line-strong: #b9c3d9;

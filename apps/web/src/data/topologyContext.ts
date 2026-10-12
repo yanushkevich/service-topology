@@ -2,7 +2,8 @@ import { createContext, useContext } from 'react';
 import type { SnapshotSummary } from '../domain/snapshot';
 import type { TopologyIndex } from '../domain/topologyIndex';
 import type { ValidationIssue } from '../domain/validation';
-import type { TopologyRepository } from './repositories/TopologyRepository';
+import type { TopologyData } from '../domain/types';
+import type { TopologyRepository, TopologyWriter } from './repositories/TopologyRepository';
 import { createMockTopologyRepository } from './repositories/mockTopologyRepository';
 
 export type TopologyState =
@@ -26,4 +27,20 @@ export const TopologyContext = createContext<TopologyState>({ status: 'loading' 
 
 export function useTopology(): TopologyState {
   return useContext(TopologyContext);
+}
+
+/** Editing the stored topology (ADR-020). */
+export interface TopologyEditing {
+  /** null when the source cannot be edited (built-in mock data). */
+  writer: TopologyWriter | null;
+  /** The topology as stored (before the browser simulation changes it); edits start from it. */
+  baseline: TopologyData | null;
+  /** Reloads from the repository; resolves once the new data is shown (the simulation restarts from it). */
+  reload(): Promise<void>;
+}
+
+export const TopologyEditingContext = createContext<TopologyEditing>({ writer: null, baseline: null, reload: async () => {} });
+
+export function useTopologyEditing(): TopologyEditing {
+  return useContext(TopologyEditingContext);
 }

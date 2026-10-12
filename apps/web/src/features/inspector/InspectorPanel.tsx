@@ -4,7 +4,9 @@ import { useTopology } from '../../data/topologyContext';
 import {
   endpointName,
   environmentOf,
+  displayName,
   kindOfId,
+  refExists,
   resourceAncestors,
   type TopologyIndex,
 } from '../../domain/topologyIndex';
@@ -37,6 +39,7 @@ import { useSimulationStore } from '../../state/simulationStore';
 import { useUiStore } from '../../state/uiStore';
 import { PROPAGATION_RULES } from '../../domain/propagation';
 import { formatClock } from '../../shared/format';
+import { EntityEditActions } from '../editing/EditingControls';
 
 /** Details for the shared selection, resolved from canonical data. Used by every view. */
 export function InspectorPanel() {
@@ -62,10 +65,16 @@ export function InspectorPanel() {
   } else {
     content = <EntityDetails index={topology.index} selection={selection} />;
   }
+  const label = topology.status === 'ready' && selection && refExists(topology.index, selection) ? displayName(topology.index, selection.id) : null;
 
   return (
     <aside className="m-3 ml-0 flex w-[332px] flex-none flex-col overflow-hidden rounded-xl border border-line bg-float shadow-float max-md:m-2 max-md:mt-0 max-md:max-h-[45%] max-md:w-auto" aria-label="Inspector">
       {content}
+      {selection && label !== null && (
+        <div className="flex-none border-t border-line px-3.5 py-2.5">
+          <EntityEditActions kind={selection.kind} id={selection.id} label={label} />
+        </div>
+      )}
     </aside>
   );
 }

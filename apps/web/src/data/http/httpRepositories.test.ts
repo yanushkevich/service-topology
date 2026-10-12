@@ -93,3 +93,58 @@ describe('HTTP repositories (backend integration)', () => {
     expect(selectRepository('?dataset=scale-250').topology.sourceLabel).toContain('scale-250');
   });
 });
+
+describe('HTTP topology writer (ADR-020)', () => {
+  const env = { id: 'qa', name: 'QA', kind: 'other' } as const;
+
+  it('sends the revision of the last read or write as If-Match and keeps the new ETag', async () => {
+    const seen: (string | null)[] = [];
+    const ifMatch = (init: RequestInit | undefined) => new Headers(init?.headers).get('If-Match');
+    const { fn, calls } = fakeFetch({
+      'GET /api/v1/meta': () => ({ status: 200, body: { topology: { sourceType: 'fixture', isMock: true } } }),
+      'GET /api/v1/topology': () => ({ status: 200, body: mockTopology, headers: { ETag: '"rev-1"' } }),
+      'POST /api/v1/entities/environment': (init) => {
+        seen.push(ifMatch(init));
+        return { status: 201, body: { ...env, name: 'QA (stored)' }, headers: { ETag: '"rev-2"' } };
+      },
+      'PUT /api/v1/entities/environment/qa': (init) => {
+        seen.push(ifMatch(init));
+        return { status: 200, body: env, headers: { ETag: '"rev-3"' } };
+      },
+      'DELETE /api/v1/entities/relationship/rel%3Aa-%3Eb': (init) => {
+        seen.push(ifMatch(init));
+        return { status: 204, headers: { ETag: '"rev-4"' } };
+      },
+    });
+    const repo = createHttpTopologyRepository(createApiClient('/api/v1', fn));
+    await repo.getTopology();
+    const writer = repo.writer!;
+    expect(await writer.create('environment', env)).toEqual({ ...env, name: 'QA (stored)' });
+    await writer.update('environment', env);
+    await writer.remove('relationship', 'rel:a->b');
+    expect(seen).toEqual(['"rev-1"', '"rev-2"', '"rev-3"']);
+    expect(calls).toContain('DELETE /api/v1/entities/relationship/rel%3Aa-%3Eb');
+  });
+
+  it('rejects with the problem issues (422) and the precondition failure (412)', async () => {
+    const { fn } = fakeFetch({
+      'POST /api/v1/entities/environment': () => ({
+        status: 422,
+        body: { type: 'x', title: 'Validation failed', status: 422, detail: '1 validation issue(s).', errors: [{ code: 'invalid-field', entityId: 'qa', message: 'kind: "test" is not one of …' }] },
+      }),
+      'PUT /api/v1/entities/environment/qa': () => ({ status: 412, body: { type: 'x', title: 'Precondition failed', status: 412, detail: 'The topology changed since it was read.' } }),
+    });
+    const writer = createHttpTopologyRepository(createApiClient('/api/v1', fn)).writer!;
+    const invalid = await writer.create('environment', env).catch((e: unknown) => e);
+    expect(invalid).toBeInstanceOf(ApiError);
+    expect((invalid as ApiError).issues).toEqual([{ code: 'invalid-field', entityId: 'qa', message: 'kind: "test" is not one of …' }]);
+    const stale = await writer.update('environment', env).catch((e: unknown) => e);
+    expect((stale as ApiError).status).toBe(412);
+    expect((stale as ApiError).detail).toBe('The topology changed since it was read.');
+  });
+
+  it('is absent for built-in mock data (editing needs the backend)', () => {
+    expect(selectRepository('').topology.writer).toBeUndefined();
+    expect(selectRepository('?source=api').topology.writer).toBeDefined();
+  });
+});

@@ -7,6 +7,7 @@ import { sortEnvironments } from '../domain/topologyIndex';
 import { useUiStore } from '../state/uiStore';
 import { usePreferencesStore } from '../state/preferencesStore';
 import { Icon } from '../shared/ui/Icon';
+import { NewEntityMenu } from '../features/editing/EditingControls';
 
 export function Header() {
   const theme = useUiStore((s) => s.theme);
@@ -85,6 +86,7 @@ export function Header() {
       </div>
 
       <div className="ml-auto flex items-center gap-1.5">
+        <NewEntityMenu />
         <SimulationChip search={location.search} />
         <button
           type="button"

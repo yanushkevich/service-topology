@@ -185,6 +185,9 @@ Update only from actual repository state and checks.
 ## Milestone 7 — Event catalog (Revision 6)
 **Deliver:** canonical event types carried on Kafka topics / RabbitMQ channels, an Events catalog page matching the UI mock, and event-flow highlighting in 2D and 3D. The simulation page moves to `/simulation`. Acceptance criteria: `docs/milestones/MILESTONE_07_EVENT_CATALOG.md`.
 
+## Milestone 8 — Editing the topology (Revision 7)
+**Deliver:** create, edit, and delete every entity kind from the UI against the backend (backend part: Milestone B7). Acceptance criteria: `docs/milestones/MILESTONE_08_ENTITY_EDITING.md`. Decision: ADR-020.
+
 ## Status tracking
 Track both milestones and original phases. A milestone is not complete until its acceptance criteria are checked against the actual implementation. Do not claim performance or accessibility criteria pass without measurement or test evidence.
 
@@ -197,11 +200,13 @@ Track both milestones and original phases. A milestone is not complete until its
 | 5 | Implemented (2026-10-11) | See the Milestone 5 closeout below. |
 | 6 | Implemented (2026-10-11) | See the Milestone 6 closeout below. |
 | 7 | Implemented (2026-10-11) | See the Milestone 7 closeout below. |
+| 8 | Implemented (2026-10-12) | Editing UI (ADR-020); see the Milestone 8 closeout below. |
 | B1 (backend) | Implemented (2026-10-11) | Go foundation in `backend/`; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B2 (backend) | Implemented (2026-10-11) | ArcadeDB adapter, schema, idempotent seed, integration tests; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. The database was replaced by MongoDB afterwards (ADR-019). |
 | B3 (backend) | Implemented (2026-10-11) | REST API for contract v1, registry parity, contract check; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B4 (backend) | Implemented (2026-10-11) | Bounded traversal, impact, event types, revision cache, benchmarks; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B5 (backend) | Implemented (2026-10-11) | Isolated simulation runs (ADR-017), events/telemetry with provenance, snapshot diff, retention; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
+| B7 (backend) | Implemented (2026-10-12) | Entity create/replace/delete with whole-topology validation and revision `ETag`/`If-Match` (ADR-020); closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B6 (backend) | Implemented (2026-10-11) | Auth (ADR-018), rate limits, CORS, metrics, backup/restore runbook, frontend HTTP integration (`?source=api`); closeout and open production decisions in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 
 ### Milestone 1 closeout (2026-10-11)
@@ -323,3 +328,17 @@ Evidence: `npm run check` passes (typecheck, lint, 353 tests passed / 1 skipped,
 
 Known limitations: generated datasets have no event types; the snapshot diff ignores event types; there is no 3D unit test for event emphasis (verified by screenshot only); the shell test that runs two ELK layouts got a 15 s timeout after timing out at 5 s under full-suite load.
 
+### Milestone 8 closeout (2026-10-12)
+Evidence: frontend typecheck, lint, and build pass; `npx vitest run` 41 files / 385 tests passed (1 skipped), including 10 editing integration tests, 9 form-model tests, 3 HTTP writer tests, and 2 new axe audits (menu, form with errors, delete dialog). Before the change, the frontend was validated against the running backend in headless Chrome (`scripts/check-live-api.mjs`: map 27 nodes, registry 29 rows labelled "Backend API · mock inventory · simulated telemetry", inspector, event catalog, 8 API requests, none failed). After it, `node scripts/check-live-api.mjs --write` against the Go API on a disposable MongoDB database: 25/25 checks, including create → edit → delete of an environment through the UI verified through the API (201, 200, 204) and the disabled delete of a referenced resource. Screenshots reviewed at 1440×900 in both themes: New menu, form with field errors, delete dialog with blockers, read-only note with mock data.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Create, edit, delete every kind against the backend | Pass | `editing.test.tsx` (environment, connection, service definition, instance, event type, resource, connection delete); live `--write` check; backend tests per kind |
+| Invalid changes caught before sending and from the server | Pass | local whole-topology check (`newIssues`), field errors from `invalid-field`, 422 issue list (`editing.test.tsx`, `httpRepositories.test.ts`) |
+| Referenced entities cannot be deleted; blockers in plain words | Pass | `editing.test.tsx`, live check, screenshot |
+| Stale edits refused with reload | Pass | `editing.test.tsx` (412 → Reload data → save) |
+| Read-only for mock data and history | Pass | `editing.test.tsx` |
+| Stored, not simulated, values; telemetry stays simulated | Pass | `editing.test.tsx` (instance edit), `entityForms.test.ts` |
+| Accessibility | Pass | axe (jsdom) for menu, form with errors, delete dialog; keyboard test includes the New button; focus trap and return in `Modal` |
+
+Known limitations: the real-browser axe audit (`npm run audit:a11y`) runs on mock data, where editing is read-only, so the dialogs are audited in jsdom only (no color-contrast rule there; the new text uses existing contrast-tested tokens). Metadata is edited as JSON. Multi-selects are checkbox lists (fine at the mock's size; long at 1,000 entities). There is no undo; snapshots keep earlier states.

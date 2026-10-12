@@ -1,6 +1,6 @@
 import type { TopologyData } from '../../domain/types';
 import { parseSnapshot, type SnapshotSummary, type TopologySnapshot } from '../../domain/snapshot';
-import type { TopologyRepository } from '../repositories/TopologyRepository';
+import type { TopologyRepository, TopologyWriter, WritableKind } from '../repositories/TopologyRepository';
 import type { SnapshotRepository } from '../snapshots/SnapshotRepository';
 import { parseSavedLayout, type SavedLayout } from '../savedLayouts/savedLayout';
 import type { SavedLayoutRepository } from '../savedLayouts/SavedLayoutRepository';
@@ -16,11 +16,34 @@ interface Meta {
   topology?: { sourceType?: string; isMock?: boolean } | null;
 }
 
-/** Topology from GET /topology. The data-source label comes from GET /meta: still mock unless observed. */
+/**
+ * Topology from GET /topology. The data-source label comes from GET /meta: still mock unless
+ * observed. Writes (ADR-020) send the revision of the last read or write as If-Match, so an edit
+ * based on stale data is refused (412) instead of overwriting someone else's change.
+ */
 export function createHttpTopologyRepository(api: ApiClient = createApiClient()): TopologyRepository {
   let sourceLabel = 'Backend API';
   let isMock = true;
+  let revision: string | null = null;
+  const path = (kind: WritableKind, id?: string) => `/entities/${kind}${id === undefined ? '' : `/${encodeURIComponent(id)}`}`;
+  const writer: TopologyWriter = {
+    async create(kind, entity) {
+      const res = await api.sendTagged<typeof entity>('POST', path(kind), entity, revision);
+      revision = res.etag ?? revision;
+      return res.data ?? entity;
+    },
+    async update(kind, entity) {
+      const res = await api.sendTagged<typeof entity>('PUT', path(kind, entity.id), entity, revision);
+      revision = res.etag ?? revision;
+      return res.data ?? entity;
+    },
+    async remove(kind, id) {
+      const res = await api.sendTagged('DELETE', path(kind, id), undefined, revision);
+      revision = res.etag ?? revision;
+    },
+  };
   return {
+    writer,
     get sourceLabel() {
       return sourceLabel;
     },
@@ -28,7 +51,9 @@ export function createHttpTopologyRepository(api: ApiClient = createApiClient())
       return isMock;
     },
     async getTopology(signal?: AbortSignal): Promise<TopologyData> {
-      const [meta, data] = await Promise.all([api.get<Meta>('/meta', signal), api.get<TopologyData>('/topology', signal)]);
+      const [meta, tagged] = await Promise.all([api.get<Meta>('/meta', signal), api.getTagged<TopologyData>('/topology', signal)]);
+      const data = tagged.data;
+      revision = tagged.etag;
       const source = meta.topology?.sourceType || 'unknown source';
       isMock = meta.topology?.isMock !== false;
       sourceLabel = `Backend API · ${source === 'fixture' ? 'mock inventory' : source}`;

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { NAV_ITEMS } from '../app/navigation';
 import { TopologyDataProvider } from '../data/TopologyDataProvider';
+import { EntityEditorProvider } from '../features/editing/EntityEditorProvider';
 import { useUiStore } from '../state/uiStore';
 import { effectiveTheme, usePreferencesStore } from '../state/preferencesStore';
 import { useUrlStateSync } from '../state/useUrlStateSync';
@@ -23,6 +24,7 @@ export function AppShell() {
 
   return (
     <TopologyDataProvider>
+    <EntityEditorProvider>
     <div className="flex h-screen min-h-[640px] flex-col overflow-hidden bg-surface-0">
       <a
         className="skip-link"
@@ -44,6 +46,7 @@ export function AppShell() {
         </main>
       </div>
     </div>
+    </EntityEditorProvider>
     </TopologyDataProvider>
   );
 }
