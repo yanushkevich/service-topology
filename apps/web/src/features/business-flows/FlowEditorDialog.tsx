@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type ReactNode } from 'react';
+import { useId, useRef, useState } from 'react';
 import { ApiError } from '../../data/http/apiClient';
 import type { TopologyWriter } from '../../data/repositories/TopologyRepository';
 import {
@@ -14,7 +14,7 @@ import {
 } from '../../domain/types';
 import { Button } from '../../shared/ui/primitives';
 import { kickerClass } from '../../shared/ui/classes';
-import { NumberInput, SelectInput, TextInput } from '../../shared/ui/form';
+import { FieldGroup, NumberInput, SelectInput, TextInput } from '../../shared/ui/form';
 import { Modal } from '../../shared/ui/Modal';
 import { applyChange, idTaken, newIssues, type FormContext } from '../editing/entityForms';
 import { IssueList } from '../editing/issues';
@@ -154,7 +154,7 @@ export function FlowEditorDialog({
         )}
         <IssueList issues={issues} title="This flow would break the topology:" ctx={ctx} />
 
-        <Group legend="Basics">
+        <FieldGroup legend="Basics">
           <TextInput compact label="Name" path="name" required value={draft.name} error={error('name')} autoFocus onChange={(v) => update((d) => void (d.name = v))} />
           <TextInput
             compact
@@ -197,9 +197,9 @@ export function FlowEditorDialog({
             <NumberInput compact label="Target p95 (ms)" path="target.p95Ms" value={draft.target?.p95Ms} onChange={(v) => update((d) => void (d.target = withTarget(d.target, 'p95Ms', v)))} />
             <NumberInput compact label="Completion target (ms)" path="target.completionMs" value={draft.target?.completionMs} onChange={(v) => update((d) => void (d.target = withTarget(d.target, 'completionMs', v)))} />
           </div>
-        </Group>
+        </FieldGroup>
 
-        <Group legend={`Steps (${draft.steps.length})`} error={error('steps')}>
+        <FieldGroup legend={`Steps (${draft.steps.length})`} error={error('steps')}>
           {draft.steps.map((step, i) => (
             <StepFields
               key={i}
@@ -213,9 +213,9 @@ export function FlowEditorDialog({
             />
           ))}
           <Button onClick={() => update((d) => void d.steps.push({ id: nextId('step', d.steps.map((s) => s.id)), name: '', serviceDefinitionId: services[0]?.id ?? '', kind: 'task' }))}>Add step</Button>
-        </Group>
+        </FieldGroup>
 
-        <Group legend={`Outcomes (${draft.outcomes.length})`} error={error('outcomes')}>
+        <FieldGroup legend={`Outcomes (${draft.outcomes.length})`} error={error('outcomes')}>
           {draft.outcomes.map((o, i) => (
             <fieldset key={i} className="m-0 grid grid-cols-[1fr_1fr_auto] items-end gap-2 rounded-lg border border-line p-2">
               <legend className={kickerClass}>Outcome {i + 1}</legend>
@@ -237,9 +237,9 @@ export function FlowEditorDialog({
             </fieldset>
           ))}
           <Button onClick={() => update((d) => void d.outcomes.push({ id: nextId('outcome', d.outcomes.map((o) => o.id)), name: '', kind: 'success' }))}>Add outcome</Button>
-        </Group>
+        </FieldGroup>
 
-        <Group legend={`Transitions (${draft.transitions.length})`}>
+        <FieldGroup legend={`Transitions (${draft.transitions.length})`}>
           {draft.transitions.map((t, i) => (
             <TransitionFields
               key={i}
@@ -261,7 +261,7 @@ export function FlowEditorDialog({
           >
             Add transition
           </Button>
-        </Group>
+        </FieldGroup>
       </form>
     </Modal>
   );
@@ -270,16 +270,6 @@ export function FlowEditorDialog({
 function withTarget(target: BusinessFlow['target'], key: 'p95Ms' | 'completionMs', value: number | undefined): NonNullable<BusinessFlow['target']> {
   const rest = Object.fromEntries(Object.entries(target ?? {}).filter(([k]) => k !== key));
   return value === undefined ? rest : { ...rest, [key]: value };
-}
-
-function Group({ legend, error, children }: { legend: string; error?: string | undefined; children: ReactNode }) {
-  return (
-    <fieldset className="m-0 flex flex-col gap-2 border-0 border-t border-line p-0 pt-3">
-      <legend className="pr-2 text-sm font-semibold">{legend}</legend>
-      {error && <p className="m-0 text-xs text-crit-fg">{error}</p>}
-      {children}
-    </fieldset>
-  );
 }
 
 function StepFields({

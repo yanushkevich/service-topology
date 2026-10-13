@@ -74,11 +74,11 @@ export interface Branch {
   /** alternative = only on some requests */
   kind: 'sequential' | 'alternative';
   /** 0.06 = 6% of requests take it */
-  share?: number;
+  share?: number | undefined;
   /** When an alternative branch runs, as declared (e.g. 'cache miss'); shown in the process view. */
-  condition?: string;
+  condition?: string | undefined;
   /** Runs at the same time as the rest of the line from the fork (declared; ADR-028). */
-  parallel?: boolean;
+  parallel?: boolean | undefined;
 }
 
 export interface Finding {
@@ -143,7 +143,7 @@ export interface DataTable {
   stationId: string;
   name: string;
   /** The pattern the table serves; absent for plain state. */
-  pattern?: Extract<PatternId, 'outbox' | 'inbox'>;
+  pattern?: Extract<PatternId, 'outbox' | 'inbox'> | undefined;
   /** Line IDs. */
   writes: string[];
   reads: string[];

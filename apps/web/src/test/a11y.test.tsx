@@ -6,6 +6,10 @@ import { useSimulationStore } from '../state/simulationStore';
 import { useUiStore } from '../state/uiStore';
 import { renderApp, resetUiStore } from './renderApp';
 import { createWritableRepository } from './writableRepository';
+import { mockTopology } from '../data/mock/topology';
+import { createSandbox } from '../data/sandbox/sandbox';
+import { createSandboxStorage } from '../data/sandbox/storage';
+import { createTransitRepository } from '../data/transitRepository';
 
 /**
  * Automated accessibility audit (axe-core, WCAG 2.0–2.2 A/AA rules) of every page and key state.
@@ -121,6 +125,25 @@ describe('accessibility audit (axe-core)', () => {
     await waitFor(() => expect(document.querySelector('[data-contract-toggle="POST /v1/orders"]')).not.toBeNull());
     await user.click(document.querySelector<HTMLButtonElement>('[data-contract-toggle="POST /v1/orders"]')!);
     await waitFor(() => expect(document.querySelectorAll('[data-contract="POST /v1/orders"]').length).toBe(2));
+    expect(await audit()).toEqual([]);
+  });
+
+  it('transit board editor open, and Settings with the local sandbox (ADR-031)', async () => {
+    const user = userEvent.setup();
+    const sandbox = createSandbox(mockTopology, createSandboxStorage(null));
+    renderApp('/services/payment-service/transit?v=1&env=production', sandbox.topology, undefined, undefined, createTransitRepository(sandbox.boards));
+    await user.click(await screen.findByRole('button', { name: 'Edit board' }));
+    await screen.findByRole('region', { name: 'Preview' });
+    expect(await audit()).toEqual([]);
+    // Axe walks the open editor and the whole board behind it, both maps included: slow in jsdom.
+  }, 30_000);
+
+  it('settings with the local sandbox and its reset confirmation', async () => {
+    const user = userEvent.setup();
+    const sandbox = createSandbox(mockTopology, createSandboxStorage(null));
+    renderApp('/settings', sandbox.topology);
+    await user.click(await screen.findByRole('button', { name: 'Reset sandbox' }));
+    await screen.findByRole('button', { name: 'Confirm reset' });
     expect(await audit()).toEqual([]);
   });
 

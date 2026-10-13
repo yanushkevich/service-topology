@@ -17,6 +17,7 @@ export function Modal({
   children,
   footer,
   side = false,
+  wide = false,
   closeLabel = 'Close',
   busy = false,
 }: {
@@ -26,6 +27,8 @@ export function Modal({
   children: ReactNode;
   footer?: ReactNode;
   side?: boolean;
+  /** A wider side panel, for an editor with a live preview beside the form. */
+  wide?: boolean;
   closeLabel?: string;
   /** While busy, Escape and the scrim do not close it (a save is in flight). */
   busy?: boolean;
@@ -86,7 +89,7 @@ export function Modal({
         tabIndex={-1}
         className={cx(
           'flex flex-col overflow-hidden border border-line bg-float shadow-float backdrop-blur-[10px] focus:outline-none',
-          side ? 'h-full w-[460px] max-w-full rounded-l-xl' : 'max-h-[76vh] w-[520px] max-w-full rounded-xl',
+          side ? cx('h-full max-w-full rounded-l-xl', wide ? 'w-[900px]' : 'w-[460px]') : 'max-h-[76vh] w-[520px] max-w-full rounded-xl',
         )}
       >
         <div className="flex items-start gap-3 border-b border-line px-4 py-3">

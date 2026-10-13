@@ -30,6 +30,8 @@ import { TraceCard, TraceStrip, TrainMarker } from './TraceReplay';
 import { MapLegend, TransitMap } from './TransitMap';
 import { FlowRows, FlowsWithoutBoard, UsedByChips, UsedByFlows } from './FlowsOnService';
 import { DependencyList } from './DependencyList';
+import { BoardEditActions } from './editor/BoardEditActions';
+import { boardSourceLabel, useStoredBoard } from './editor/useStoredBoard';
 import { ProcessDiagram } from '../boards/ProcessDiagram';
 import { EndpointContractPanel } from '../contracts/EndpointContractPanel';
 import { StripSwitch } from '../boards/StripSwitch';
@@ -98,6 +100,7 @@ function Board({ definition, environmentId, environmentName }: { definition: Ser
   const url = useBoardParams();
   const state = useTransitBoard(definition.id, environmentId, url.window, attempt);
   const repository = useContext(TransitRepositoryContext);
+  const { stored, kind } = useStoredBoard(definition.id, attempt);
   const board = state.status === 'ready' ? state.board : state.status === 'error' ? state.last : null;
   const line = board ? findLine(board.lines, url.lineId) : null;
   const mode: Mode = url.mode === 'trace' && line && !isUnobserved(line) ? 'trace' : 'typical';
@@ -128,8 +131,9 @@ function Board({ definition, environmentId, environmentName }: { definition: Ser
               }
             />
             <span className="tag tag-simulated">
-              {repository.sourceLabel} · {windowLabel(url.window)}
+              {boardSourceLabel(stored, kind, board?.isExample, repository.sourceLabel)} · {windowLabel(url.window)}
             </span>
+            <BoardEditActions service={definition} loaded={state.status === 'ready' ? state.board : null} stored={stored} onChanged={() => setAttempt((n) => n + 1)} />
           </>
         }
       />

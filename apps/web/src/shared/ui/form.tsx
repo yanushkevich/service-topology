@@ -172,3 +172,14 @@ export function CheckboxGroup({ label, required, hint, error, name, autoFocus, o
     </fieldset>
   );
 }
+
+/** A titled group of fields in a long form (an editor section), with an optional group-level error. */
+export function FieldGroup({ legend, error, children }: { legend: string; error?: string | undefined; children: ReactNode }) {
+  return (
+    <fieldset className="m-0 flex flex-col gap-2 border-0 border-t border-line p-0 pt-3">
+      <legend className="pr-2 text-sm font-semibold">{legend}</legend>
+      {error && <p className="m-0 text-xs text-crit-fg">{error}</p>}
+      {children}
+    </fieldset>
+  );
+}
