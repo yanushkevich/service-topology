@@ -539,3 +539,16 @@ Status: implemented (ADR-022). Specification: `docs/BUSINESS_FLOWS.md`, includin
   - A `businessFlows` collection, a writable entity kind, and validation parity.
   - An importer with format adapters (native, BPMN 2.0) behind a port.
   - Later, observed flow endpoints once traces are integrated.
+
+## Revision 10 — Flow swimlanes, two-way navigation, and the pattern catalog (2026-10-12, Milestone 11)
+Decisions: ADR-023 and ADR-024. Spec: `docs/BUSINESS_FLOWS.md` Revision 2.
+
+- **Swimlane layout** (`apps/web/src/transit/flows/swimlane.ts`):
+  - It is pure and computed once per flow: lanes, columns, node boxes, routed edge paths, and label and policy positions.
+  - React Flow renders it on the flow board (`apps/web/src/features/business-flows`) with fixed positions.
+  - Selection, search, and replay pass state through node and edge data only.
+- **Matching steps to lines:** `lineForStep` (`transit/flows/flowModel.ts`) is the single rule used by retry amplification and by the service board's flow highlighting.
+- **Pattern catalog** (`apps/web/src/domain/patterns.ts`): a pure catalog of pattern IDs, labels, categories, where each applies, and descriptions. `FlowPolicyType` and the transit `PolicyType` are subsets of it. Three additive enumeration values in contract v1 are mirrored in Go (`backend/internal/domain/fields.go`).
+- **Specified for later:**
+  - flow impact: a pure `flowImpact` plus an optional `flows` in the impact response (ADR-025, Milestone 12 and B9);
+  - the 3D drill-down (ADR-026, Milestone 13).

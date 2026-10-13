@@ -208,6 +208,9 @@ Track both milestones and original phases. A milestone is not complete until its
 | 7 | Implemented (2026-10-11) | See the Milestone 7 closeout below. |
 | 8 | Implemented (2026-10-12) | Editing UI (ADR-020); see the Milestone 8 closeout below. |
 | 10 | Implemented (2026-10-12) | Business flows (ADR-022): model, board, typical mode, transaction replay, and authoring, on example observed data; see the Milestone 10 closeout. |
+| 11 | In progress (2026-10-12) | Flow swimlanes, flows on the service board, pattern catalog (ADR-023, ADR-024); `docs/milestones/MILESTONE_11_FLOW_SWIMLANES_PATTERNS.md`. |
+| 12 | Specified (2026-10-12) | Flows in impact analysis and simulation, with backend B9 (ADR-025, proposed). Not started. |
+| 13 | Specified (2026-10-12) | 3D drill-down from a flow into its services (ADR-026, proposed). Not started. |
 | 9 | Implemented (2026-10-12) | Transit board on example data (ADR-021): spec Phase 1 plus the Phase 4 replay UI, hover tooltips, windows, and per-step stats; see the Milestone 9 closeout and follow-up below. Real data sources (phases 2, 3, and 5) are not started. |
 | B1 (backend) | Implemented (2026-10-11) | Go foundation in `backend/`; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B2 (backend) | Implemented (2026-10-11) | ArcadeDB adapter, schema, idempotent seed, integration tests; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. The database was replaced by MongoDB afterwards (ADR-019). |

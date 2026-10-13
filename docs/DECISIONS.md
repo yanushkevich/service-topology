@@ -261,3 +261,62 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - An importer in the backend: both `POST /imports/business-flows` and `make import-flows`, with a new dependency on `go.yaml.in/yaml/v3`.
 - **Implemented (2026-10-12):** Milestones 10 and B8. Details decided while building it (local and orchestrated calls, the reply rule, `startStepId`, the import endpoint and its codes) are in the implementation notes of `docs/BUSINESS_FLOWS.md`.
   - The business-key attribute and flow ownership remain open questions (`BUSINESS_FLOWS.md` section 8).
+
+## ADR-023 — Flow board as swimlanes on React Flow; flows visible on the service board (2026-10-12, Milestone 11)
+- **Status:** Accepted (product owner, 2026-10-12: "1 — yes"). Spec: `docs/BUSINESS_FLOWS.md` Revision 2, sections 9–10. Amends ADR-022 (the flow board's rendering only; the model is unchanged).
+- **Context:** The flow board reused the transit board's tilted multi-line map. That map earns its place when many lines share stations, inside one service. A flow is one process with branches. The review found:
+  - wasted width;
+  - captions colliding with labels;
+  - long cross-lane runs to far-away termini;
+  - faded stations from other flows with no explanation.
+
+  Navigation was also one-way: a step opened its service board, but the board did not know which flows used it.
+- **Decision:**
+  - **Swimlane view.** Flows are drawn one at a time as swimlanes:
+    - lanes are services, columns are step rank, and outcomes get the last lane;
+    - edges are orthogonal, routed in a pure layout (`transit/flows/swimlane.ts`);
+    - rendered with React Flow 12 (already used, ADR-009): pan, zoom, fit, and focusable steps;
+    - nodes are not draggable;
+    - selection and replay never move anything.
+  - **Two-way navigation.** The service board lists the flows that use the service, highlights the lines a selected flow enters (URL `flow`), and the line card links each using flow step back to the flow board. One matching rule (`lineForStep`) serves this and retry amplification.
+- **Alternatives:**
+  - Keep the tilted map and fix the label collisions. Rejected: it does not fix the wasted width or the cross-lane runs, and the metaphor still doesn't fit a single process.
+  - React Flow with ELK layout. Rejected: ELK's layered algorithm assigns columns but cannot pin nodes to lanes.
+  - Hand-written SVG swimlanes. Rejected: they would duplicate the pan, zoom, fit, and focus handling that React Flow already provides.
+  - Drawing flow topology on the service board. Rejected: it mixes the process level with the component level.
+- **Consequences:**
+  - The flow board's SVG map, the multi-flow index highlighting, and the train overlay are replaced.
+  - The service board gains a flow selection that is local to the page.
+  - Tests that read SVG paths move to node and edge data attributes.
+
+## ADR-024 — One pattern catalog for both boards, extended with inbox and polling patterns (2026-10-12, Milestone 11)
+- **Status:** Accepted (product owner, 2026-10-12: "not all patterns": messaging reliability, without retry topics and parking lots, ordering, or consumer lag; "maybe polling"). Spec: `docs/BUSINESS_FLOWS.md` Revision 2, section 11.
+- **Context:** Two vocabularies had grown apart:
+  - the service board's `PolicyType` (seven values) plus free-text pattern tags;
+  - the flows' `FlowPolicyType` (twelve values).
+
+  Labels and descriptions were repeated in several components.
+- **Decision:**
+  - **One catalog.** A pure catalog (`domain/patterns.ts`) is the only source of pattern IDs, labels, categories, where each applies, descriptions, and related findings. The two policy types become subsets of it, and free-text tags become catalog IDs.
+  - **Three additions.** `inbox`, `polling-publisher`, and `async-request-reply` are added as additive values of the flow-policy enumeration. That touches the JSON Schema, the TypeScript and Go enumerations, and the fixtures.
+  - **Three findings.** They check the additions: an outbox without a relay, at-least-once delivery without deduplication, and polling without a deadline.
+- **Alternatives:**
+  - A broad catalog (sagas, resilience extras, event sourcing, …). Not selected by the product owner. It can be added later through the same catalog.
+  - Free-text patterns everywhere. Rejected: they cannot drive findings or pick-lists.
+- **Consequences:** contract v1 changes additively (three enumeration values). Imports and the entity API accept them, and both validators check them against the schema.
+
+## ADR-025 — Flows in impact analysis and simulation (2026-10-12, Milestone 12 with B9; proposed)
+- **Status:** Proposed. Approved for specification only (product owner: "3 — yes"; "spec all, build M11 only"). Spec: `docs/BUSINESS_FLOWS.md` Revision 2, section 12.
+- **Decision (proposed):**
+  - A pure `flowImpact` maps the existing explained propagation result onto flows: affected steps, the first affected step on the typical path, and the likely outcome (compensated, failed or cancelled, or delayed).
+  - It is shown, labelled *simulated*, in four places: the inspector, the simulation page, a flow board banner, and the catalog.
+  - The backend impact response gains an optional `flows` array, ported to Go with shared conformance fixtures.
+- **Alternatives:** compute flow impact only in the browser. Rejected: API clients of `/topology/impact` would miss it, and parity is the rule (ADR-016).
+
+## ADR-026 — 3D drill-down from a flow into its services (2026-10-12, Milestone 13; proposed)
+- **Status:** Proposed. Approved for specification only (product owner: "4 — yes"). Spec: `docs/BUSINESS_FLOWS.md` Revision 2, section 13. Follows `docs/3D_GALAXY_EXPERIENCE.md` and ADR-011.
+- **Decision (proposed):**
+  - An optional, lazy-loaded 3D view: the swimlane plane above the service boards' planes, light shafts from steps to their lines, replay particles, and camera fly-down with Escape to climb back.
+  - Built with React Three Fiber and drei (`CameraControls`, `Text`, `Line`, `Instances`, `Bvh`), plus two new pinned dependencies: `@react-three/postprocessing` (selective Bloom) and `maath` (easing).
+  - The 2D views and lists stay primary and accessible.
+- **Alternatives:** a 3D flow board in place of the swimlane. Rejected: 3D adds nothing for one process. Its value is showing the drill-down between levels.

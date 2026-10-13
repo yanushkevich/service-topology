@@ -5,7 +5,7 @@
 2. **Both sources:** flows are authored in the app *and* imported from workflow definitions.
 3. **Replay included:** replaying a business transaction by its business key is part of the first release.
 
-**Status:** implemented on example observed data (Milestone 10 and B8, 2026-10-12; closeouts in `docs/IMPLEMENTATION_PLAN.md` and `docs/backend/IMPLEMENTATION_PLAN.md`). The section "Implementation notes" at the end records the decisions made while building it. Decision: ADR-022, which amends ADR-021. This spec extends `docs/TRANSIT_BOARD.md` and supersedes its "out of scope: cross-service business flows".
+**Status:** implemented on example observed data (Milestone 10 and B8, 2026-10-12). **Revision 2** (end of this file) changes the flow board to swimlanes and adds flows on the service board and a pattern catalog (Milestone 11), with flow impact (Milestone 12) and a 3D drill-down (Milestone 13) specified. Earlier status: (Milestone 10 and B8, 2026-10-12; closeouts in `docs/IMPLEMENTATION_PLAN.md` and `docs/backend/IMPLEMENTATION_PLAN.md`). The section "Implementation notes" at the end records the decisions made while building it. Decision: ADR-022, which amends ADR-021. This spec extends `docs/TRANSIT_BOARD.md` and supersedes its "out of scope: cross-service business flows".
 
 ## 1. What the board shows
 
@@ -194,3 +194,129 @@ These refine sections 2–7. Where they differ, these notes win.
   - Retry amplification reads the inner retries from the step's service transit board: the clients of the line that implements the step.
   - Missing compensation flags any step that can still reach both a success outcome and a non-success outcome, has no compensation, and is not the start, a decision, a wait, or a compensation step.
 - **Example observed data:** `apps/web/src/transit/flows/exampleFlows.ts`, behind `TransitRepository` (`getFlowStats`, `getTransactions`, `getTransaction`). It includes 8 Checkout and 3 Refund transactions. Waits, and any step longer than 6 s, are compressed to at most 1.5 s on the replay clock, with their real duration labelled.
+
+---
+
+# Revision 2 — Swimlanes, flows on the service board, patterns, impact, and the 3D drill-down (2026-10-12)
+
+**Source:** product owner review of the Milestone 10 board: "flows seem like a part designed as the transit board — do flows need to be visible on the transit board too? What React Three Fiber stack could make them friendlier? I see only the outbox pattern, but system design has many more." Decisions on the proposal:
+1. **Yes:** a flat swimlane view for flows, plus two-way navigation between flows and service boards.
+2. **Not all patterns:** one catalog for both boards, extended only with messaging reliability (inbox) and polling (polling publisher, async request-reply). Retry topics with delay, parking lots, ordering, consumer lag, saga semantics, and the resilience extras are out.
+3. **Yes:** flows in impact analysis and simulation.
+4. **Yes:** a 3D drill-down from the flow to its services, built with React Three Fiber.
+
+Specify all three, build Milestone 11 only. Decisions: ADR-023 (sections 9–10), ADR-024 (section 11), ADR-025 (section 12), ADR-026 (section 13). Where this revision differs from sections 1, 3, and 7, it wins.
+
+## 9. The flow board as swimlanes (Milestone 11)
+
+**Why.** The transit metaphor pays off when many lines share stations, which is the inside of one service. A flow is one process with branches, so on the tilted multi-flow map:
+- the perspective wastes width and squeezes the upper lanes;
+- band captions collide with step labels;
+- lines cross lanes to reach far-away termini;
+- other flows' steps appear as unexplained faded stations.
+
+**Layout** (pure, `transit/flows/swimlane.ts`, computed once per flow):
+- **Lanes** are services. Their order is the first time each service is reached on a breadth-first walk from the start step, so the start's service comes first. An **outcomes** lane comes last.
+- **Columns** are step rank (`flowRanks`, longest path from the start). Several steps of one lane in the same column stack inside the lane, and the lane grows to fit them.
+- **Step nodes** are cards showing:
+  - the step name;
+  - the service and entry point;
+  - a kind glyph: diamond for a decision, ring for a wait, dashed for a compensation, a hand for a manual step;
+  - a deadline chip when the step has one.
+
+  **Outcomes** are pills with a shape and the outcome kind written out, never colour alone.
+- **Edges** are orthogonal and routed by the layout:
+  - Forward edges run through the channel between two columns. Each edge gets its own track, so vertical segments never overlap.
+  - Edges that go back, to the same or an earlier column, use a return track under their source lane.
+  - Compensation edges are dashed.
+  - The condition and the observed share label the first segment. Policy diamonds sit along the edge near its source.
+- **One flow per board.** A step that other flows also use shows an "also in Refund" marker that links to that flow. The catalog lists the flows. The tilted multi-flow map leaves the flow board; the service board keeps it.
+
+**Renderer:** React Flow 12, already used for the topology map (ADR-009).
+- Nodes are placed by the layout and are not draggable. Lanes are background nodes.
+- Pan, zoom, and fit-to-view are available.
+- Steps are focusable, and Enter selects one.
+- Selection, search, findings focus, and replay change node and edge data only, never positions (tested).
+- ELK is not used here: its layered algorithm assigns columns, but it cannot pin nodes to lanes.
+
+**Replay** marks the transaction's current step with a status ring (`data-train`), highlights the transitions already traversed, and marks the divergence point.
+
+**Narrow screens (≤ 760 px):** the swimlane opens fitted to the width with pan and zoom. The step strip stays the primary, accessible list.
+
+## 10. Flows on the service board (Milestone 11)
+
+- **Index:** a "Business flows · n" group lists the flows with a step on this service in the current environment. Each row shows the flow badge, the name, and the number of its steps here.
+- **Selecting a flow** (`flow` in the URL; a page parameter of `/services/`):
+  - highlights the lines its steps enter and dims the others;
+  - clearing the selection or pressing Escape restores the board;
+  - geometry is not rebuilt.
+- **Line card:** a "Used by business flows" section lists every flow step that enters the line, with a link to `/flows/:flowId?step=…`.
+- **Matching:** a step enters a line when its entry point equals the line's name or signature, ignoring case. This is the same rule retry amplification uses, written once in `transit/flows/flowModel.ts` (`lineForStep`). A step with no entry point, or with no matching line, is listed under its flow as "not mapped to a line".
+
+## 11. One pattern catalog (Milestone 11)
+
+- **One catalog** (`domain/patterns.ts`, pure). Each entry has:
+  - an `id` and a `label`;
+  - a `category`: call, messaging, process, or platform;
+  - `appliesTo`: a call transition, an event transition, a step, or a service-board line or client;
+  - a one-sentence description;
+  - the findings that check it.
+
+  Both boards, the tooltips, the legends, the flow form's pick-list, and the findings read labels and descriptions from it. The transit board's `PolicyType` and the flow's `FlowPolicyType` become subsets of the catalog's IDs.
+- **Existing tags become catalog entries.** The service board's free-text pattern tags (mTLS, rate limit, transaction, transactional outbox, idempotent receiver, …) become catalog IDs. This types what is already shown; it adds no behaviour.
+- **New in Milestone 11** (the product owner's scope: messaging reliability and polling). Each is a `FlowPolicyType`, an additive schema enumeration value:
+
+| Pattern | Applies to | Meaning | Config |
+|---|---|---|---|
+| `inbox` | event transition (consumer) | The consumer records each received message in its own database, in the same transaction as handling it, and drops duplicates. This is stronger than `idempotent-consumer`, which accepts any deduplication. | `retention` |
+| `polling-publisher` | event transition (producer) | A relay polls the outbox table and publishes what it finds, as the service board's `OutboxRelay` does. | `intervalMs` |
+| `async-request-reply` | call transition | The callee answers 202 Accepted with a status location, and the caller polls until it is done or the deadline passes. | `pollIntervalMs`, `timeoutMs` |
+
+- **New findings:**
+  - **Outbox without a relay** (info): an event transition declares `outbox` but no `polling-publisher`.
+  - **At-least-once delivery without deduplication** (warn): an event transition has `outbox` or `redelivery`, but the consumer side has neither `inbox` nor `idempotent-consumer`. Duplicates will reach the step.
+  - **Polling without a deadline** (warn): `async-request-reply` has no `timeoutMs`, and the target step has no deadline.
+- **Out of scope** (not selected): saga semantics (pivot, compensatable, and retriable steps), resilience extras (backoff with jitter, retry budget, rate limiting, load shedding, hedging), retry topics and parking lots, ordering keys, consumer lag, event sourcing, CQRS, anti-corruption layer, strangler fig, BFF, claim check, and scatter-gather.
+
+## 12. Flows in impact analysis and simulation (Milestone 12; specified, not built)
+
+- **Pure function** `flowImpact(flow, resolved, impacts)` in `domain/`. It takes the existing propagation result (`AnalyzeImpact`, which explains every effect) and returns, for each flow:
+  - the affected steps, each unavailable or degraded, with its cause chain;
+  - the **first affected step on the typical path**;
+  - the **likely outcome**:
+    - *compensated*, when a compensation path is reachable from that step;
+    - *failed* or *cancelled*, from the outcome its failure edge reaches;
+    - *delayed*, when the step sits behind an event transition with redelivery or a dead-letter queue and the broker is healthy.
+- **Where it shows** (all labelled *simulated*):
+  - the inspector's "Business flows affected" for an impacted entity;
+  - the simulation page's list of affected flows;
+  - a banner on the flow board, e.g. "Simulated: Payment Service unavailable → Checkout stops at Authorize payment, likely Cancelled", with the affected steps marked in the swimlane;
+  - a column in the catalog.
+- **Backend (B9):** the impact response gains an optional `flows` array (additive to contract v1), ported to Go with conformance fixtures shared with TypeScript.
+- **Acceptance:**
+  - Parity on the shared fixtures.
+  - The example scenario (the card processor unavailable) marks Checkout's Authorize payment and Refund's Refund payment as affected, with Cancelled and Rejected as the likely outcomes.
+  - Nothing simulated is called live.
+
+## 13. The 3D drill-down: the process over its services (Milestone 13; specified, not built)
+
+- **What it shows.** An optional "3D" view of the flow board, lazy-loaded like the galaxy:
+  - The swimlane plane floats on top.
+  - Under each service lane hangs that service's transit plane, using the transit layout's plane coordinates (u, v) with no new layout.
+  - Light shafts drop from each step to the entry station of its line (section 10's matching).
+  - Replay particles descend into the service's line and come back up.
+- **Navigation.**
+  - Clicking a service plane flies the camera down to it; Escape climbs back.
+  - The scope is in the URL.
+  - Selection is shared with the 2D views.
+- **Stack:**
+  - Kept: React Three Fiber and drei (`CameraControls`, `Text`/`Billboard`, `Line`, `Instances`, `Bvh`).
+  - New, pinned when built: `@react-three/postprocessing` (selective `Bloom`) and `maath` (frame-local easing).
+  - No other new dependency without approval.
+- **Rules:** those of `3D_GALAXY_EXPERIENCE.md`:
+  - motion policy and reduced motion;
+  - the 2D fallback without WebGL;
+  - the lists stay the accessible path;
+  - colours from tokens through a palette module;
+  - no Three.js objects in Zustand, and no per-frame global state.
+- **Performance** is measured with `npm run bench:3d` at 12 steps × 6 service boards and recorded in `BENCHMARKS.md`.
