@@ -25,8 +25,22 @@ var (
 // other kinds only.
 const KindEventType = "event-type"
 
+// KindBusinessFlow names business flows in write requests (ADR-022).
+const KindBusinessFlow = "business-flow"
+
 // WritableKinds are the entity kinds the write API accepts (ADR-020).
-var WritableKinds = []string{KindEnvironment, KindServiceDefinition, KindServiceInstance, KindResource, KindRelationship, KindEventType}
+var WritableKinds = []string{KindEnvironment, KindServiceDefinition, KindServiceInstance, KindResource, KindRelationship, KindEventType, KindBusinessFlow}
+
+// Business-flow enumerations, equal to the schema (docs/schemas/topology.v1.schema.json).
+var (
+	FlowStepKindValues    = []string{"task", "decision", "wait", "compensation", "manual"}
+	FlowOutcomeKindValues = []string{"success", "cancelled", "failed", "compensated"}
+	FlowTriggerKindValues = []string{"call", "event", "schedule", "manual"}
+	FlowViaKindValues     = []string{"local", "call", "event"}
+	FlowPolicyTypeValues  = []string{"timeout", "retry", "breaker", "bulkhead", "idempotency", "redelivery", "dead-letter", "idempotent-consumer", "outbox", "step-deadline", "compensation", "manual-intervention"}
+	FlowPolicyStateValues = []string{"exercised", "idle", "missing", "unknown"}
+	FlowSourceKindValues  = []string{"authored", "imported"}
+)
 
 // CodeInvalidField reports a field that breaks the TopologyData v1 schema (enum value, required
 // field, ID format). Used by the write API before domain validation.
@@ -126,6 +140,39 @@ func ValidateEntityFields(kind string, entity any) []Issue {
 		for field, ids := range map[string][]EntityID{"channelResourceIds": e.ChannelResourceIDs, "producerServiceIds": e.ProducerServiceIDs, "consumerServiceIds": e.ConsumerServiceIDs} {
 			for _, v := range ids {
 				checkID(field, v)
+			}
+		}
+	case *BusinessFlow:
+		id = e.ID
+		checkID("id", e.ID)
+		name(e.Name)
+		enum("trigger.kind", e.Trigger.Kind, FlowTriggerKindValues)
+		enum("source.kind", e.Source.Kind, FlowSourceKindValues)
+		if len(e.Steps) == 0 {
+			bad("steps", "must not be empty")
+		}
+		if len(e.Outcomes) == 0 {
+			bad("outcomes", "must not be empty")
+		}
+		for _, s := range e.Steps {
+			checkID("steps.id", s.ID)
+			name(s.Name)
+			checkID("steps.serviceDefinitionId", s.ServiceDefinitionID)
+			enum("steps.kind", s.Kind, FlowStepKindValues)
+		}
+		for _, o := range e.Outcomes {
+			checkID("outcomes.id", o.ID)
+			enum("outcomes.kind", o.Kind, FlowOutcomeKindValues)
+		}
+		for _, t := range e.Transitions {
+			checkID("transitions.id", t.ID)
+			enum("transitions.via.kind", t.Via.Kind, FlowViaKindValues)
+			if t.Via.Kind == "event" && (t.Via.EventTypeID == nil || *t.Via.EventTypeID == "") {
+				bad("transitions.via.eventTypeId", "is required for an event transition")
+			}
+			for _, p := range t.Policies {
+				enum("transitions.policies.type", p.Type, FlowPolicyTypeValues)
+				optEnum("transitions.policies.state", p.State, FlowPolicyStateValues)
 			}
 		}
 	default:

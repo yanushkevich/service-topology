@@ -27,6 +27,7 @@ const (
 	collResources          = "resources"
 	collRelationships      = "relationships"
 	collEventTypes         = "eventTypes"
+	collBusinessFlows      = "businessFlows"
 )
 
 // Other collections.
@@ -40,7 +41,7 @@ const (
 	collTelemetry     = "telemetryObservations"
 )
 
-var canonicalCollections = []string{collEnvironments, collServiceDefinitions, collServiceInstances, collResources, collRelationships, collEventTypes}
+var canonicalCollections = []string{collEnvironments, collServiceDefinitions, collServiceInstances, collResources, collRelationships, collEventTypes, collBusinessFlows}
 
 func allCollections() []string {
 	return append(slices.Clone(canonicalCollections), collTopologyState, collSchemaInfo, collSnapshots, collLayouts, collRuns, collEvents, collTelemetry)

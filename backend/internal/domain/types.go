@@ -106,7 +106,7 @@ type EventType struct {
 	Metadata           map[string]any `json:"metadata,omitempty"`
 }
 
-// TopologyData is the canonical payload (TopologyData v1). EventTypes is optional (nil = absent).
+// TopologyData is the canonical payload (TopologyData v1). EventTypes and BusinessFlows are optional (nil = absent).
 type TopologyData struct {
 	Environments       []Environment               `json:"environments"`
 	ServiceDefinitions []ServiceDefinition         `json:"serviceDefinitions"`
@@ -114,6 +114,7 @@ type TopologyData struct {
 	Resources          []InfrastructureResource    `json:"resources"`
 	Relationships      []CommunicationRelationship `json:"relationships"`
 	EventTypes         []EventType                 `json:"eventTypes,omitempty"`
+	BusinessFlows      []BusinessFlow              `json:"businessFlows,omitempty"`
 }
 
 // Entity kinds used by selection and deep links ({kind, id}).

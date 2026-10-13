@@ -27,6 +27,10 @@ type ErrPrecondition struct{ Current string }
 func (e *ErrPrecondition) Error() string { return "the topology changed since it was read" }
 func (e *ErrPrecondition) Unwrap() error { return ports.ErrPreconditionFailed }
 
+// ErrImportedFlow refuses API writes to an imported business flow, and creating one marked imported:
+// imported flows change only through the importer (ADR-022), so the next import cannot lose edits.
+var ErrImportedFlow = errors.New("imported business flows are read-only; change the source and import again, or duplicate it as an authored flow")
+
 // ErrReadOnly reports a repository that cannot write (HTTP 405).
 var ErrReadOnly = errors.New("this deployment's topology is read-only")
 
@@ -81,6 +85,8 @@ func DecodeEntity(kind string, raw []byte) (any, error) {
 		v = &domain.CommunicationRelationship{}
 	case domain.KindEventType:
 		v = &domain.EventType{}
+	case domain.KindBusinessFlow:
+		v = &domain.BusinessFlow{}
 	default:
 		return nil, invalidKind()
 	}
@@ -91,7 +97,7 @@ func DecodeEntity(kind string, raw []byte) (any, error) {
 }
 
 func invalidKind() error {
-	return &ErrInvalid{"kind", "must be environment, service-definition, service-instance, resource, relationship, or event-type"}
+	return &ErrInvalid{"kind", "must be environment, service-definition, service-instance, resource, relationship, event-type, or business-flow"}
 }
 
 // CreateEntity stores a new entity. ifMatch, when set, must equal the current revision.
@@ -136,6 +142,14 @@ func (s *Service) write(ctx context.Context, op, kind, pathID string, entity any
 		}
 	}
 	existing := findEntity(candidate, kind, id)
+	if kind == domain.KindBusinessFlow {
+		if f, ok := entity.(*domain.BusinessFlow); ok && f.Source.Kind == "imported" {
+			return nil, ErrImportedFlow
+		}
+		if existing >= 0 && candidate.BusinessFlows[existing].Source.Kind == "imported" {
+			return nil, ErrImportedFlow
+		}
+	}
 	switch {
 	case op == ports.OpCreate && entityExists(candidate, id):
 		return nil, fmt.Errorf("%w: %s", ports.ErrConflict, id)
@@ -180,6 +194,8 @@ func entityID(entity any) string {
 		return e.ID
 	case *domain.EventType:
 		return e.ID
+	case *domain.BusinessFlow:
+		return e.ID
 	}
 	return ""
 }
@@ -217,6 +233,8 @@ func findEntity(d *domain.TopologyData, kind, id string) int {
 		return indexOf(d.Relationships, id, func(e *domain.CommunicationRelationship) string { return e.ID })
 	case domain.KindEventType:
 		return indexOf(d.EventTypes, id, func(e *domain.EventType) string { return e.ID })
+	case domain.KindBusinessFlow:
+		return indexOf(d.BusinessFlows, id, func(e *domain.BusinessFlow) string { return e.ID })
 	}
 	return -1
 }
@@ -256,6 +274,12 @@ func applyChange(d *domain.TopologyData, kind, op string, at int, entity any) {
 		if len(d.EventTypes) == 0 {
 			d.EventTypes = nil
 		}
+	case domain.KindBusinessFlow:
+		e, _ := entity.(*domain.BusinessFlow)
+		d.BusinessFlows = change(d.BusinessFlows, op, at, e)
+		if len(d.BusinessFlows) == 0 {
+			d.BusinessFlows = nil
+		}
 	}
 }
 
@@ -294,6 +318,15 @@ func (s *Service) setServerFields(d *domain.TopologyData, existing int, entity a
 		for _, p := range []*[]domain.EntityID{&e.ChannelResourceIDs, &e.ProducerServiceIDs, &e.ConsumerServiceIDs} {
 			if *p == nil {
 				*p = []domain.EntityID{}
+			}
+		}
+	case *domain.BusinessFlow:
+		if e.Transitions == nil {
+			e.Transitions = []domain.FlowTransition{}
+		}
+		for i := range e.Transitions {
+			if e.Transitions[i].Policies == nil {
+				e.Transitions[i].Policies = []domain.FlowPolicy{}
 			}
 		}
 	}

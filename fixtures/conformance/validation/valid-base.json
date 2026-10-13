@@ -255,6 +255,114 @@
           "svc-worker"
         ]
       }
+    ],
+    "businessFlows": [
+      {
+        "id": "flow-base",
+        "name": "Base flow",
+        "trigger": {
+          "kind": "call",
+          "ref": "svc-api"
+        },
+        "startStepId": "create",
+        "steps": [
+          {
+            "id": "create",
+            "name": "Create",
+            "serviceDefinitionId": "svc-api",
+            "kind": "task",
+            "compensatedBy": "undo"
+          },
+          {
+            "id": "process",
+            "name": "Process",
+            "serviceDefinitionId": "svc-worker",
+            "kind": "task"
+          },
+          {
+            "id": "finish",
+            "name": "Finish",
+            "serviceDefinitionId": "svc-worker",
+            "kind": "task"
+          },
+          {
+            "id": "undo",
+            "name": "Undo",
+            "serviceDefinitionId": "svc-api",
+            "kind": "compensation"
+          }
+        ],
+        "transitions": [
+          {
+            "id": "t-created",
+            "from": "create",
+            "to": "process",
+            "via": {
+              "kind": "event",
+              "eventTypeId": "evt-created"
+            },
+            "policies": [
+              {
+                "type": "redelivery",
+                "label": "redelivery ×3",
+                "state": "exercised"
+              }
+            ]
+          },
+          {
+            "id": "t-local",
+            "from": "process",
+            "to": "finish",
+            "via": {
+              "kind": "local"
+            },
+            "policies": []
+          },
+          {
+            "id": "t-done",
+            "from": "finish",
+            "to": "done",
+            "via": {
+              "kind": "local"
+            },
+            "policies": []
+          },
+          {
+            "id": "t-saas",
+            "from": "create",
+            "to": "undo",
+            "via": {
+              "kind": "call"
+            },
+            "condition": "rejected",
+            "policies": []
+          },
+          {
+            "id": "t-undone",
+            "from": "undo",
+            "to": "failed",
+            "via": {
+              "kind": "local"
+            },
+            "policies": []
+          }
+        ],
+        "outcomes": [
+          {
+            "id": "done",
+            "name": "Done",
+            "kind": "success"
+          },
+          {
+            "id": "failed",
+            "name": "Failed",
+            "kind": "compensated"
+          }
+        ],
+        "source": {
+          "kind": "authored"
+        }
+      }
     ]
   },
   "expected": []

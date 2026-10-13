@@ -121,6 +121,9 @@ func (r *TopologyRepository) ReplaceTopology(ctx context.Context, data *domain.T
 	for i, e := range data.EventTypes {
 		err = errors.Join(err, add(collEventTypes, e.ID, i, e))
 	}
+	for i, f := range data.BusinessFlows {
+		err = errors.Join(err, add(collBusinessFlows, f.ID, i, f))
+	}
 	if err != nil {
 		return ImportResult{}, err
 	}
@@ -230,6 +233,7 @@ func (r *TopologyRepository) CurrentTopology(ctx context.Context) (*domain.Topol
 			{collResources, &data.Resources},
 			{collRelationships, &data.Relationships},
 			{collEventTypes, &data.EventTypes},
+			{collBusinessFlows, &data.BusinessFlows},
 		}
 		for _, read := range reads {
 			if err := findAll(ctx, r.s.coll(read.coll), bson.D{}, read.into); err != nil {
@@ -245,6 +249,9 @@ func (r *TopologyRepository) CurrentTopology(ctx context.Context) (*domain.Topol
 	if len(data.EventTypes) == 0 {
 		data.EventTypes = nil
 	}
+	if len(data.BusinessFlows) == 0 {
+		data.BusinessFlows = nil
+	}
 	if revision != "" {
 		r.mu.Lock()
 		r.revision, r.cached = revision, data
@@ -258,6 +265,7 @@ var collectionOf = map[string]string{
 	domain.KindEnvironment: collEnvironments, domain.KindServiceDefinition: collServiceDefinitions,
 	domain.KindServiceInstance: collServiceInstances, domain.KindResource: collResources,
 	domain.KindRelationship: collRelationships, domain.KindEventType: collEventTypes,
+	domain.KindBusinessFlow: collBusinessFlows,
 }
 
 // ApplyChange applies one validated change in a transaction (ports.TopologyWriter): it checks that

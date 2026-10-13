@@ -642,3 +642,48 @@ func TestEntityWritesOnTheDatabase(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestBusinessFlowWritesOnTheDatabase(t *testing.T) {
+	s, ctx := ready(t)
+	data, _ := mockTopology(t)
+	topo := mongodb.NewTopologyRepository(s)
+	if _, err := topo.ReplaceTopology(ctx, data, "fixture"); err != nil {
+		t.Fatal(err)
+	}
+	svc := &application.Service{TopologyRepo: topo}
+	reader := mongodb.NewTopologyRepository(s)
+	stored, _, err := reader.CurrentTopology(ctx)
+	if err != nil || len(stored.BusinessFlows) != len(data.BusinessFlows) || len(stored.BusinessFlows) == 0 {
+		t.Fatalf("flows round trip: %v %d", err, len(stored.BusinessFlows))
+	}
+
+	// An authored copy of Refund: created, replaced, and deleted like any entity.
+	flow := data.BusinessFlows[1]
+	flow.ID = "flow-refund-copy"
+	flow.Name = "Refund (copy)"
+	if _, err := svc.CreateEntity(ctx, domain.KindBusinessFlow, &flow, ""); err != nil {
+		t.Fatal(err)
+	}
+	flow.Name = "Refund (edited)"
+	if _, err := svc.ReplaceEntity(ctx, domain.KindBusinessFlow, flow.ID, &flow, ""); err != nil {
+		t.Fatal(err)
+	}
+	got, _, _ := reader.CurrentTopology(ctx)
+	if last := got.BusinessFlows[len(got.BusinessFlows)-1]; last.ID != flow.ID || last.Name != "Refund (edited)" {
+		t.Fatalf("stored flow: %+v", last)
+	}
+	// Imported flows are read-only through the API.
+	imported := flow
+	format, ref, at := "native", "flows.yaml", "2026-10-12T08:00:00Z"
+	imported.Source = domain.FlowSource{Kind: "imported", Format: &format, Ref: &ref, ImportedAt: &at}
+	if _, err := svc.ReplaceEntity(ctx, domain.KindBusinessFlow, flow.ID, &imported, ""); !errors.Is(err, application.ErrImportedFlow) {
+		t.Fatalf("imported write: %v", err)
+	}
+	if _, err := svc.DeleteEntity(ctx, domain.KindBusinessFlow, flow.ID, ""); err != nil {
+		t.Fatal(err)
+	}
+	final, _, _ := reader.CurrentTopology(ctx)
+	if len(final.BusinessFlows) != len(data.BusinessFlows) || domain.Validate(final) != nil {
+		t.Fatalf("final: %d flows, issues %v", len(final.BusinessFlows), domain.Validate(final))
+	}
+}

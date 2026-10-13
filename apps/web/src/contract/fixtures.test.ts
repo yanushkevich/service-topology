@@ -73,6 +73,32 @@ function base(): TopologyData {
       { id: 'evt-created', name: 'Created', channelResourceIds: ['topic'], producerServiceIds: ['svc-api'], consumerServiceIds: ['svc-worker'] },
       { id: 'evt-notify', name: 'NotifyRequested', channelResourceIds: ['exchange'], producerServiceIds: ['svc-api'], consumerServiceIds: ['svc-worker'] },
     ],
+    businessFlows: [
+      {
+        id: 'flow-base',
+        name: 'Base flow',
+        trigger: { kind: 'call', ref: 'svc-api' },
+        startStepId: 'create',
+        steps: [
+          { id: 'create', name: 'Create', serviceDefinitionId: 'svc-api', kind: 'task', compensatedBy: 'undo' },
+          { id: 'process', name: 'Process', serviceDefinitionId: 'svc-worker', kind: 'task' },
+          { id: 'finish', name: 'Finish', serviceDefinitionId: 'svc-worker', kind: 'task' },
+          { id: 'undo', name: 'Undo', serviceDefinitionId: 'svc-api', kind: 'compensation' },
+        ],
+        transitions: [
+          { id: 't-created', from: 'create', to: 'process', via: { kind: 'event', eventTypeId: 'evt-created' }, policies: [{ type: 'redelivery', label: 'redelivery ×3', state: 'exercised' }] },
+          { id: 't-local', from: 'process', to: 'finish', via: { kind: 'local' }, policies: [] },
+          { id: 't-done', from: 'finish', to: 'done', via: { kind: 'local' }, policies: [] },
+          { id: 't-saas', from: 'create', to: 'undo', via: { kind: 'call' }, condition: 'rejected', policies: [] },
+          { id: 't-undone', from: 'undo', to: 'failed', via: { kind: 'local' }, policies: [] },
+        ],
+        outcomes: [
+          { id: 'done', name: 'Done', kind: 'success' },
+          { id: 'failed', name: 'Failed', kind: 'compensated' },
+        ],
+        source: { kind: 'authored' },
+      },
+    ],
   };
 }
 
@@ -85,6 +111,7 @@ const instance = (d: TopologyData, id: string) => d.serviceInstances.find((i) =>
 const resource = (d: TopologyData, id: string) => d.resources.find((r) => r.id === id)!;
 const relationship = (d: TopologyData, id: string) => d.relationships.find((r) => r.id === id)!;
 const eventType = (d: TopologyData, id: string) => d.eventTypes!.find((e) => e.id === id)!;
+const flow = (d: TopologyData) => d.businessFlows![0]!;
 
 /** One case per rule (some rules have two shapes). Names are stable file names. */
 const CASES: Record<string, { description: string; mutate: Mutate }> = {
@@ -123,6 +150,14 @@ const CASES: Record<string, { description: string; mutate: Mutate }> = {
     description: 'Consumer reads nothing from the channel (direction matters)',
     mutate: (d) => void (eventType(d, 'evt-created').consumerServiceIds = ['svc-api']),
   },
+  'missing-flow-service': { description: 'Flow step owned by an unknown service definition', mutate: (d) => void (flow(d).steps[2]!.serviceDefinitionId = 'ghost-service') },
+  'invalid-flow-step-start': { description: 'Flow starts at a step it does not have', mutate: (d) => void (flow(d).startStepId = 'ghost-step') },
+  'invalid-flow-step-compensation': { description: 'Flow step compensated by a step that is not a compensation', mutate: (d) => void (flow(d).steps[0]!.compensatedBy = 'finish') },
+  'invalid-flow-trigger': { description: 'Flow triggered by an event its first service does not consume', mutate: (d) => void (flow(d).trigger = { kind: 'event', ref: 'evt-created' }) },
+  'invalid-flow-transition-local': { description: 'Local hand-off between two services', mutate: (d) => void (flow(d).transitions[0]!.via = { kind: 'local' }) },
+  'invalid-flow-transition-event': { description: 'Event transition to a service that does not consume the event', mutate: (d) => void (flow(d).transitions[0]!.to = 'undo') },
+  'flow-no-success-path': { description: 'No path reaches a success outcome', mutate: (d) => void (flow(d).outcomes[0]!.kind = 'failed') },
+  'flow-transition-unbacked': { description: 'A call between services with no relationship in production', mutate: (d) => void (flow(d).transitions[0]!.via = { kind: 'call' }) },
 };
 
 type Expected = Pick<ValidationIssue, 'severity' | 'code' | 'entityId'>;

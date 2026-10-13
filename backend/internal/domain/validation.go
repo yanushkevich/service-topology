@@ -35,6 +35,12 @@ const (
 	CodeDuplicateEventChannelEnvironment = "duplicate-event-channel-environment"
 	CodeMissingEventService              = "missing-event-service"
 	CodeEventFlowMissingRelationship     = "event-flow-missing-relationship"
+	CodeMissingFlowService               = "missing-flow-service"
+	CodeInvalidFlowStep                  = "invalid-flow-step"
+	CodeInvalidFlowTrigger               = "invalid-flow-trigger"
+	CodeInvalidFlowTransition            = "invalid-flow-transition"
+	CodeFlowNoSuccessPath                = "flow-no-success-path"
+	CodeFlowTransitionUnbacked           = "flow-transition-unbacked"
 )
 
 // Issue is one integrity problem. Code and EntityID are stable; Message is for people.
@@ -76,6 +82,9 @@ func Validate(data *TopologyData) []Issue {
 	}
 	for _, e := range data.EventTypes {
 		all = append(all, e.ID)
+	}
+	for _, f := range data.BusinessFlows {
+		all = append(all, f.ID)
 	}
 	for _, id := range all {
 		if strings.TrimSpace(id) == "" {
@@ -238,7 +247,139 @@ func Validate(data *TopologyData) []Issue {
 		}
 	}
 
+	for i := range data.BusinessFlows {
+		validateFlow(ix, data, &data.BusinessFlows[i], fail)
+	}
+
 	return issues
+}
+
+// validateFlow checks one business flow (ADR-022) in the same order as validateTopology.
+func validateFlow(ix *Index, data *TopologyData, flow *BusinessFlow, fail func(code string, id EntityID, format string, args ...any)) {
+	ids := map[string]bool{}
+	for _, id := range flowIDs(flow) {
+		if strings.TrimSpace(id) == "" || ids[id] {
+			fail(CodeInvalidFlowStep, flow.ID, "Step or outcome ID %q is empty or used twice", id)
+		}
+		ids[id] = true
+	}
+	for _, step := range flow.Steps {
+		if ix.Definitions[step.ServiceDefinitionID] == nil {
+			fail(CodeMissingFlowService, flow.ID, "Step %q references unknown service definition %q", step.ID, step.ServiceDefinitionID)
+		}
+		if step.CompensatedBy != nil {
+			if c := flow.Step(*step.CompensatedBy); c == nil || c.Kind != "compensation" {
+				fail(CodeInvalidFlowStep, flow.ID, "Step %q is compensated by %q, which is not a compensation step of this flow", step.ID, *step.CompensatedBy)
+			}
+		}
+	}
+	start := flow.Step(flow.StartStepID)
+	if start == nil {
+		fail(CodeInvalidFlowStep, flow.ID, "Start step %q is not a step of this flow", flow.StartStepID)
+	}
+	trigger := flow.Trigger
+	if trigger.Kind == "call" && trigger.Ref != nil && ix.Definitions[*trigger.Ref] == nil {
+		fail(CodeInvalidFlowTrigger, flow.ID, "Trigger references unknown service definition %q", *trigger.Ref)
+	}
+	if trigger.Kind == "event" {
+		var eventType *EventType
+		if trigger.Ref != nil {
+			eventType = ix.EventTypes[*trigger.Ref]
+		}
+		if eventType == nil {
+			fail(CodeInvalidFlowTrigger, flow.ID, "Trigger references unknown event type %q", deref(trigger.Ref))
+		} else if start != nil && !containsID(eventType.ConsumerServiceIDs, start.ServiceDefinitionID) {
+			fail(CodeInvalidFlowTrigger, flow.ID, "%q is not consumed by %q, which runs the start step", eventType.Name, start.ServiceDefinitionID)
+		}
+	}
+
+	transitionIDs := map[string]bool{}
+	checkBacking := func(t *FlowTransition) {
+		for _, env := range data.Environments {
+			if b := ix.TransitionBacking(flow, t, env.ID); b.Status == BackingUnbacked {
+				fail(CodeFlowTransitionUnbacked, flow.ID, "Transition %q: %s", t.ID, b.Reason)
+			}
+		}
+	}
+	for i := range flow.Transitions {
+		t := &flow.Transitions[i]
+		bad := func(format string, args ...any) {
+			fail(CodeInvalidFlowTransition, flow.ID, "Transition %q: %s", t.ID, fmt.Sprintf(format, args...))
+		}
+		if strings.TrimSpace(t.ID) == "" || transitionIDs[t.ID] {
+			bad("ID is empty or used twice")
+		}
+		transitionIDs[t.ID] = true
+		from, to := flow.Step(t.From), flow.Step(t.To)
+		if from == nil {
+			bad("unknown source step %q", t.From)
+			continue
+		}
+		if to == nil && !flow.hasOutcome(t.To) {
+			bad("unknown target %q", t.To)
+			continue
+		}
+		if to == nil {
+			continue // to an outcome: ends the flow
+		}
+		switch {
+		case t.Via.Kind == "local" && from.ServiceDefinitionID != to.ServiceDefinitionID:
+			bad("a local hand-off must stay in one service (%q → %q)", from.ServiceDefinitionID, to.ServiceDefinitionID)
+		case t.Via.Kind == "call" && t.Via.CallerServiceID != nil && ix.Definitions[*t.Via.CallerServiceID] == nil:
+			bad("unknown caller %q", *t.Via.CallerServiceID)
+		case t.Via.Kind == "event":
+			var eventType *EventType
+			if t.Via.EventTypeID != nil {
+				eventType = ix.EventTypes[*t.Via.EventTypeID]
+			}
+			switch {
+			case eventType == nil:
+				bad("unknown event type %q", deref(t.Via.EventTypeID))
+			case !containsID(eventType.ProducerServiceIDs, from.ServiceDefinitionID):
+				bad("%q does not produce %q", from.ServiceDefinitionID, eventType.Name)
+			case !containsID(eventType.ConsumerServiceIDs, to.ServiceDefinitionID):
+				bad("%q does not consume %q", to.ServiceDefinitionID, eventType.Name)
+			default:
+				checkBacking(t)
+			}
+			continue
+		}
+		if t.Via.Kind == "call" {
+			checkBacking(t)
+		}
+	}
+	if start != nil {
+		reached := flow.ReachableFrom(flow.StartStepID)
+		success := false
+		for _, o := range flow.Outcomes {
+			if o.Kind == "success" && reached[o.ID] {
+				success = true
+			}
+		}
+		if !success {
+			fail(CodeFlowNoSuccessPath, flow.ID, "No path reaches a success outcome, starting at step %q", flow.StartStepID)
+		}
+	}
+}
+
+func flowIDs(flow *BusinessFlow) []string {
+	var ids []string
+	for _, s := range flow.Steps {
+		ids = append(ids, s.ID)
+	}
+	for _, o := range flow.Outcomes {
+		ids = append(ids, o.ID)
+	}
+	return ids
+}
+
+func containsID(ids []EntityID, id EntityID) bool {
+	for _, x := range ids {
+		if x == id {
+			return true
+		}
+	}
+	return false
 }
 
 func deref(s *string) string {

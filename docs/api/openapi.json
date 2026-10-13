@@ -325,6 +325,9 @@
                   },
                   {
                     "$ref": "../schemas/topology.v1.schema.json#/$defs/EventType"
+                  },
+                  {
+                    "$ref": "../schemas/topology.v1.schema.json#/$defs/BusinessFlow"
                   }
                 ]
               },
@@ -369,6 +372,9 @@
                     },
                     {
                       "$ref": "../schemas/topology.v1.schema.json#/$defs/EventType"
+                    },
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/BusinessFlow"
                     }
                   ]
                 }
@@ -516,6 +522,9 @@
                   },
                   {
                     "$ref": "../schemas/topology.v1.schema.json#/$defs/EventType"
+                  },
+                  {
+                    "$ref": "../schemas/topology.v1.schema.json#/$defs/BusinessFlow"
                   }
                 ]
               }
@@ -551,6 +560,9 @@
                     },
                     {
                       "$ref": "../schemas/topology.v1.schema.json#/$defs/EventType"
+                    },
+                    {
+                      "$ref": "../schemas/topology.v1.schema.json#/$defs/BusinessFlow"
                     }
                   ]
                 }
@@ -561,6 +573,9 @@
             "$ref": "#/components/responses/Problem"
           },
           "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
             "$ref": "#/components/responses/Problem"
           },
           "412": {
@@ -623,6 +638,9 @@
             "$ref": "#/components/responses/Problem"
           },
           "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
             "$ref": "#/components/responses/Problem"
           },
           "412": {
@@ -2751,14 +2769,15 @@
         }
       },
       "WritableEntityKind": {
-        "description": "Entity kinds accepted by the write operations (ADR-020): the selection kinds plus event-type.",
+        "description": "Entity kinds accepted by the write operations (ADR-020): the selection kinds plus event-type and business-flow (ADR-022). Imported business flows are read-only (409 imported-read-only).",
         "enum": [
           "environment",
           "service-definition",
           "service-instance",
           "resource",
           "relationship",
-          "event-type"
+          "event-type",
+          "business-flow"
         ]
       }
     },

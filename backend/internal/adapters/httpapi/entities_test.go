@@ -121,3 +121,47 @@ func TestEntityWriteErrors(t *testing.T) {
 		res.problem(t)
 	}
 }
+
+func TestBusinessFlowWrites(t *testing.T) {
+	h, _ := apiHandler(t)
+	etag := call(h, "GET", "/api/v1/topology", "").hdr.Get("ETag")
+	flow := `{"id":"flow-reorder","name":"Reorder","trigger":{"kind":"manual"},"startStepId":"place","steps":[` +
+		`{"id":"place","name":"Place order","serviceDefinitionId":"order-service","kind":"task"},` +
+		`{"id":"charge","name":"Charge","serviceDefinitionId":"payment-service","kind":"task"}],` +
+		`"transitions":[{"id":"t1","from":"place","to":"charge","via":{"kind":"call"}},{"id":"t2","from":"charge","to":"done","via":{"kind":"local"}}],` +
+		`"outcomes":[{"id":"done","name":"Done","kind":"success"}],"source":{"kind":"authored"}}`
+	res := callIfMatch(h, "POST", "/api/v1/entities/business-flow", flow, etag)
+	if res.code != 201 {
+		t.Fatalf("create flow: %d %s", res.code, res.body)
+	}
+	var created domain.BusinessFlow
+	res.json(t, &created)
+	if created.Transitions[0].Policies == nil {
+		t.Fatal("policies must default to []")
+	}
+	if !strings.Contains(string(call(h, "GET", "/api/v1/topology", "").body), `"flow-reorder"`) {
+		t.Fatal("GET /topology must include the new flow")
+	}
+
+	// A transition the topology does not back is refused (flows never invent communication).
+	unbacked := strings.Replace(flow, `"flow-reorder"`, `"flow-bad"`, 1)
+	unbacked = strings.Replace(unbacked, `"serviceDefinitionId":"payment-service"`, `"serviceDefinitionId":"ledger-service"`, 1)
+	if res = callIfMatch(h, "POST", "/api/v1/entities/business-flow", unbacked, ""); res.code != 422 || !strings.Contains(string(res.body), "flow-transition-unbacked") {
+		t.Fatalf("unbacked flow: %d %s", res.code, res.body)
+	}
+	// Enumerations are checked like the schema.
+	badKind := strings.Replace(flow, `"kind":"task"}`, `"kind":"chore"}`, 1)
+	if res = callIfMatch(h, "PUT", "/api/v1/entities/business-flow/flow-reorder", badKind, ""); res.code != 422 || !strings.Contains(string(res.body), "invalid-field") {
+		t.Fatalf("bad step kind: %d %s", res.code, res.body)
+	}
+
+	// Imported flows change only through the importer.
+	imported := strings.Replace(flow, `"source":{"kind":"authored"}`, `"source":{"kind":"imported","format":"native","ref":"flows.yaml","importedAt":"2026-10-12T08:00:00Z"}`, 1)
+	if res = callIfMatch(h, "PUT", "/api/v1/entities/business-flow/flow-reorder", imported, ""); res.code != 409 || !strings.Contains(string(res.body), "imported-read-only") {
+		t.Fatalf("marking a flow imported through the API: %d %s", res.code, res.body)
+	}
+
+	if res = callIfMatch(h, "DELETE", "/api/v1/entities/business-flow/flow-reorder", "", ""); res.code != 204 {
+		t.Fatalf("delete flow: %d %s", res.code, res.body)
+	}
+}

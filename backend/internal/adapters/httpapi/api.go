@@ -492,6 +492,9 @@ func (d Deps) writeError(w http.ResponseWriter, r *http.Request, err error) {
 			Detail: "The topology changed since it was read. Reload it and try again."})
 	case errors.Is(err, application.ErrReadOnly):
 		WriteProblem(w, r, Problem{Type: problemBase + "read-only", Title: "Method not allowed", Status: http.StatusMethodNotAllowed, Detail: err.Error()})
+	case errors.Is(err, application.ErrImportedFlow):
+		WriteProblem(w, r, Problem{Type: problemBase + "imported-read-only", Title: "Conflict", Status: http.StatusConflict, Detail: err.Error(),
+			Errors: []ProblemError{{Code: "imported-read-only", Message: err.Error()}}})
 	case errors.Is(err, ports.ErrConflict):
 		WriteProblem(w, r, Problem{Type: problemBase + "conflict", Title: "Conflict", Status: http.StatusConflict, Detail: "An item with this ID already exists."})
 	case errors.As(err, &tooLarge):

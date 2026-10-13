@@ -169,6 +169,36 @@ await check('delete entity, still referenced', 'delete', '/entities/{kind}/{id}'
 await check('delete entity', 'delete', '/entities/{kind}/{id}', `/entities/environment/${envId}`, { status: 204 });
 await check('delete entity, missing', 'delete', '/entities/{kind}/{id}', `/entities/environment/${envId}`, { status: 404 });
 
+// Business flows (ADR-022): a writable kind; transitions must be backed; imported flows are read-only.
+const flowId = `contract-flow-${Date.now()}`;
+const flow = {
+  id: flowId,
+  name: 'Contract flow',
+  trigger: { kind: 'manual' },
+  startStepId: 'place',
+  steps: [
+    { id: 'place', name: 'Place order', serviceDefinitionId: 'order-service', kind: 'task' },
+    { id: 'charge', name: 'Charge', serviceDefinitionId: 'payment-service', kind: 'task' },
+  ],
+  transitions: [
+    { id: 't1', from: 'place', to: 'charge', via: { kind: 'call' }, policies: [{ type: 'timeout', label: '3 s', state: 'exercised', config: { timeoutMs: '3000' } }] },
+    { id: 't2', from: 'charge', to: 'done', via: { kind: 'local' }, policies: [] },
+  ],
+  outcomes: [{ id: 'done', name: 'Done', kind: 'success' }],
+  source: { kind: 'authored' },
+};
+await check('create business flow', 'post', '/entities/{kind}', '/entities/business-flow', { status: 201, body: flow });
+await check('create business flow, unbacked transition', 'post', '/entities/{kind}', '/entities/business-flow', {
+  status: 422,
+  body: { ...flow, id: `${flowId}-x`, steps: [flow.steps[0], { ...flow.steps[1], serviceDefinitionId: 'ledger-service' }] },
+});
+await check('replace business flow', 'put', '/entities/{kind}/{id}', `/entities/business-flow/${flowId}`, { status: 200, body: { ...flow, name: 'Contract flow (edited)' } });
+await check('replace business flow, marked imported', 'put', '/entities/{kind}/{id}', `/entities/business-flow/${flowId}`, {
+  status: 409,
+  body: { ...flow, source: { kind: 'imported', format: 'native', ref: 'flows.json', importedAt: '2026-10-12T08:00:00Z' } },
+});
+await check('delete business flow', 'delete', '/entities/{kind}/{id}', `/entities/business-flow/${flowId}`, { status: 204 });
+
 const layout = openapi.paths['/layouts'].post.requestBody.content['application/json'].examples.default.value;
 const mine = { ...layout, id: `contract-${stamp}` };
 await check('create layout', 'post', '/layouts', '/layouts', { status: 201, body: mine });

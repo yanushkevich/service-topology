@@ -365,6 +365,8 @@ func (s *Store) ApplyChange(_ context.Context, change ports.EntityChange, expect
 		d.Relationships, err = applyTo(d.Relationships, change, func(e *domain.CommunicationRelationship) string { return e.ID })
 	case domain.KindEventType:
 		d.EventTypes, err = applyTo(d.EventTypes, change, func(e *domain.EventType) string { return e.ID })
+	case domain.KindBusinessFlow:
+		d.BusinessFlows, err = applyTo(d.BusinessFlows, change, func(e *domain.BusinessFlow) string { return e.ID })
 	default:
 		err = fmt.Errorf("memory: kind %q is not writable", change.Kind)
 	}

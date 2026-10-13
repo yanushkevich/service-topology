@@ -10,6 +10,7 @@ type Index struct {
 	Resources             map[EntityID]*InfrastructureResource
 	Relationships         map[EntityID]*CommunicationRelationship
 	EventTypes            map[EntityID]*EventType
+	BusinessFlows         map[EntityID]*BusinessFlow
 	InstancesByDefinition map[EntityID][]*ServiceInstance
 	InstancesByResource   map[EntityID][]*ServiceInstance
 	ChildResources        map[EntityID][]*InfrastructureResource
@@ -28,6 +29,7 @@ func BuildIndex(data *TopologyData) *Index {
 		Resources:             make(map[EntityID]*InfrastructureResource, len(data.Resources)),
 		Relationships:         make(map[EntityID]*CommunicationRelationship, len(data.Relationships)),
 		EventTypes:            make(map[EntityID]*EventType, len(data.EventTypes)),
+		BusinessFlows:         make(map[EntityID]*BusinessFlow, len(data.BusinessFlows)),
 		InstancesByDefinition: map[EntityID][]*ServiceInstance{},
 		InstancesByResource:   map[EntityID][]*ServiceInstance{},
 		ChildResources:        map[EntityID][]*InfrastructureResource{},
@@ -63,6 +65,9 @@ func BuildIndex(data *TopologyData) *Index {
 	}
 	for i := range data.EventTypes {
 		ix.EventTypes[data.EventTypes[i].ID] = &data.EventTypes[i]
+	}
+	for i := range data.BusinessFlows {
+		ix.BusinessFlows[data.BusinessFlows[i].ID] = &data.BusinessFlows[i]
 	}
 	return ix
 }
