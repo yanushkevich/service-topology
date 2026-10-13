@@ -375,3 +375,15 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - A `contracts` layer (pure, guarded like `transit`).
   - Example specs ship in the bundle, and must be replaced by ingested ones before real use.
 - **Implemented (2026-10-12, Milestone 11.3):** see the closeout in `docs/IMPLEMENTATION_PLAN.md`.
+
+## ADR-030 — Real data through the existing repository seams and a backend observability module (2026-10-12, Milestone 14; proposed, on hold)
+- **Status:** Proposed, **on hold** until the product owner answers `docs/REAL_DATA_INTEGRATION.md` §6. Spec: `docs/REAL_DATA_INTEGRATION.md`.
+- **Decision (proposed):**
+  - **Contract.** Freeze the transit, flow-stats, and transaction read models as JSON Schemas.
+  - **Backend module.** Serve the read models from a backend observability module: ports for traces, metrics, specs, config, transactions, and health; aggregation into MongoDB; raw traces fetched for replay.
+  - **Frontend swap.** Swap the frontend from the example `TransitRepository` to an HTTP one, as `?source=api` already does for the topology. The UI does not change.
+  - **Recommended sources:** OpenTelemetry trace aggregation (A2), Prometheus metrics for policy states, declared config pushed from CI, and business keys or orchestrator history for flows.
+- **Alternatives:**
+  - Query the trace store at read time (A1): slow and vendor-specific.
+  - Collector connectors only (A3): no per-route data.
+  - Hand-maintained example data: not real.

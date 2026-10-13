@@ -21,6 +21,7 @@ Use this file to navigate the project without loading every document into contex
 | Run all services locally | `GETTING_STARTED.md` | `backend/LOCAL_DEVELOPMENT.md`, `backend/RUNBOOK.md` |
 | Go backend (MongoDB), monorepo layout | `backend/README.md` | `backend/IMPLEMENTATION_PLAN.md` (B1–B6, database migration), ADR-015, ADR-019 |
 | Write or review code (components, Tailwind, hooks, Go packages, endpoints) | `CONVENTIONS.md` | `DEVELOPER_GUIDE.md` |
+| Replace example data with real data (traces, metrics, specs, flows) | `REAL_DATA_INTEGRATION.md` (on hold) | Milestone 14, ADR-030, `TRANSIT_BOARD.md` "Data sources" |
 | Set up, test, scale, or extend the app | `DEVELOPER_GUIDE.md` | `ARCHITECTURE.md` milestone notes, `BENCHMARKS.md` |
 | Backend/API work | `API_CONTRACT.md` | `api/openapi.json`, `schemas/` |
 | Positioning or competitor questions | `POSITIONING.md` | `PRODUCT_SPEC.md` §I |
