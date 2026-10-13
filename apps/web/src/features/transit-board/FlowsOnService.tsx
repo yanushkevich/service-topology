@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router';
 import type { FlowBoardIndex } from '../../transit/flows/flowIndex';
 import type { FlowOnService } from '../../transit/flows/flowModel';
 import { indexRowClass } from '../../shared/ui/classes';
-import { Kicker } from '../../shared/ui/primitives';
+import { Chip, Kicker } from '../../shared/ui/primitives';
 import { FlowBadge } from '../business-flows/FlowBadge';
 
 /**
@@ -64,5 +64,59 @@ export function UsedByFlows({ fx, uses }: { fx: FlowBoardIndex; uses: readonly {
         );
       })}
     </ul>
+  );
+}
+
+/**
+ * "Used by" under the service board's header (ADR-027 §16): one chip per business flow with a step
+ * here. A chip toggles the flow, like its row in the index.
+ */
+export function UsedByChips({ fx, flows, selectedFlowId, onSelect }: { fx: FlowBoardIndex; flows: readonly FlowOnService[]; selectedFlowId: string | null; onSelect: (flowId: string | null) => void }) {
+  if (flows.length === 0) return null;
+  return (
+    <div role="group" aria-label="Used by business flows" className="flex flex-wrap items-center gap-2 text-sm">
+      <span className="text-fg-3">Used by</span>
+      {flows.map(({ flow, steps }) => {
+        const pressed = flow.id === selectedFlowId;
+        return (
+          <Chip key={flow.id} pressed={pressed} onClick={() => onSelect(pressed ? null : flow.id)} data-flow-chip={flow.id}>
+            <FlowBadge fx={fx} flowId={flow.id} />
+            {flow.name}
+            <span className="text-xs text-fg-3">
+              {steps.length} step{steps.length === 1 ? '' : 's'}
+            </span>
+          </Chip>
+        );
+      })}
+    </div>
+  );
+}
+
+/** On a service without board data: the flows that still run here, with links to their steps. */
+export function FlowsWithoutBoard({ fx, flows }: { fx: FlowBoardIndex; flows: readonly FlowOnService[] }) {
+  const { search } = useLocation();
+  if (flows.length === 0) return null;
+  const params = new URLSearchParams(search);
+  for (const name of ['line', 'mode', 'trace', 't', 'flow']) params.delete(name);
+  return (
+    <section aria-label="Business flows on this service" className="mt-4 text-left">
+      <Kicker className="mb-2">Business flows on this service</Kicker>
+      <ul className="m-0 flex list-none flex-col gap-1.5 p-0 text-sm">
+        {flows.flatMap(({ flow, steps }) =>
+          steps.map(({ step }) => {
+            const to = new URLSearchParams(params);
+            to.set('step', step.id);
+            return (
+              <li key={`${flow.id}:${step.id}`} className="flex items-center gap-2">
+                <FlowBadge fx={fx} flowId={flow.id} />
+                <Link to={{ pathname: `/flows/${encodeURIComponent(flow.id)}`, search: `?${to.toString()}` }} className="text-accent-fg underline">
+                  {flow.name}: {step.name}
+                </Link>
+              </li>
+            );
+          }),
+        )}
+      </ul>
+    </section>
   );
 }

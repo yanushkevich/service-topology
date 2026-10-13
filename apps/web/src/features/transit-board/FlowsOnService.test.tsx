@@ -58,3 +58,28 @@ describe('business flows on the service board (ADR-023)', () => {
     await waitFor(() => expect(within(panel('Lines')).getByRole('button', { name: /Checkout/ })).toHaveAttribute('aria-pressed', 'true'));
   });
 });
+
+describe('flows are findable from every service board (ADR-027)', () => {
+  beforeEach(resetUiStore);
+
+  it('toggles a flow from the "Used by" chips, and lists flows first in the index', async () => {
+    const user = userEvent.setup();
+    const router = renderApp(BOARD);
+    const chips = await waitFor(() => panel('Used by business flows'));
+    await user.click(within(chips).getByRole('button', { name: /Checkout/ }));
+    await waitFor(() => expect(params(router).get('flow')).toBe('flow-checkout'));
+    expect(within(chips).getByRole('button', { name: /Checkout/ })).toHaveAttribute('aria-pressed', 'true');
+    await user.click(within(chips).getByRole('button', { name: /Checkout/ }));
+    await waitFor(() => expect(params(router).get('flow')).toBeNull());
+    // The flow group comes right after "All lines".
+    const regions = within(panel('Lines')).getAllByRole('region').map((r) => r.getAttribute('aria-label'));
+    expect(regions[0]).toBe('Business flows, 2');
+  });
+
+  it('lists the flows of a service that has no board data, with links to their steps', async () => {
+    renderApp('/services/order-service/transit?v=1&env=production');
+    const section = await waitFor(() => panel('Business flows on this service'));
+    const links = within(section).getAllByRole('link').map((a) => a.textContent);
+    expect(links).toEqual(expect.arrayContaining(['Checkout: Place order', 'Checkout: Ship order', 'Checkout: Cancel order', 'Refund: Request refund']));
+  });
+});

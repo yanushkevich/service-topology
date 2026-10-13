@@ -135,7 +135,10 @@ describe('transit board (ADR-021, spec Phase 1)', () => {
     await ready();
     const all = within(panel('Lines')).getByRole('button', { name: /^All lines/ });
     all.focus();
+    // The business flows on this service come first (ADR-027), then the lines.
     await user.keyboard('{ArrowDown}');
+    expect(within(panel('Lines')).getByRole('button', { name: /Checkout/ })).toHaveFocus();
+    await user.keyboard('{ArrowDown}{ArrowDown}');
     expect(lineRow('A1')).toHaveFocus();
     await user.keyboard('{ArrowDown}{ArrowDown}{ArrowUp}');
     expect(lineRow('A2')).toHaveFocus();

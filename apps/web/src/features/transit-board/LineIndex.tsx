@@ -23,7 +23,7 @@ export function LineIndex({
   matches: Set<string>;
   selectedId: string | null;
   onSelect: (lineId: string | null) => void;
-  /** More rows after the line groups (the business flows on this service, ADR-023). */
+  /** Rows after "All lines", before the line groups: the business flows on this service (ADR-023, ADR-027). */
   flows?: ReactNode;
 }) {
   const list = useRef<HTMLDivElement>(null);
@@ -47,6 +47,7 @@ export function LineIndex({
           <span className="min-w-0 flex-1">All lines</span>
           <span className="text-[10.5px] text-fg-3">network</span>
         </button>
+        {flows}
         {GROUP_ORDER.map((group) => {
           const lines = listed.filter((l) => l.group === group);
           if (lines.length === 0) return null;
@@ -87,7 +88,6 @@ export function LineIndex({
             </section>
           );
         })}
-        {flows}
         {listed.length === 0 && (
           <p className="m-0 p-2 text-sm text-fg-3" role="status">
             No line matches “{query}”. Try an endpoint name, a caller such as “Admin”, a transport such as “kafka”, or a station such as “ledger”.

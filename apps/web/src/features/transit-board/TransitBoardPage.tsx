@@ -28,7 +28,7 @@ import { createPlayback, playbackActions, usePlaybackClock, useReplayUrlTime, ty
 import { StopStrip } from './StopStrip';
 import { TraceCard, TraceStrip, TrainMarker } from './TraceReplay';
 import { MapLegend, TransitMap } from './TransitMap';
-import { FlowRows, UsedByFlows } from './FlowsOnService';
+import { FlowRows, FlowsWithoutBoard, UsedByChips, UsedByFlows } from './FlowsOnService';
 import { DependencyList } from './DependencyList';
 import { useTraceDetail, useTraceList, useTransitBoard } from './useTransitBoard';
 
@@ -150,6 +150,7 @@ function Board({ definition, environmentId, environmentName }: { definition: Ser
                 No entry points are known for {definition.name} in {environmentName}. The board needs API specs (proto, OpenAPI, AsyncAPI) or scheduler config for its lines, and
                 OpenTelemetry traces for its routes; see <code className="font-mono text-sm">docs/TRANSIT_BOARD.md</code> (“Data sources”). Only Payment Service has example data.
               </p>
+              <NoBoardFlows definition={definition} />
             </div>
           </div>
         )
@@ -193,7 +194,7 @@ function BoardView({ board: loaded, definition, mode, onMode, url }: { board: Tr
   // Dependencies take their names and health from the topology (ADR-027); geometry follows only real changes.
   const { board, links } = useLinkedBoard(loaded);
   const index = useMemo(() => indexBoard(board), [board]);
-  const { fx, onService } = useFlowsOnService(definition, board);
+  const { fx, onService } = useFlowsOnService(definition, board.lines);
   const selectedFlow = onService.find((f) => f.flow.id === url.flowId) ?? null;
   const flowLines = useMemo(() => (selectedFlow ? new Set(selectedFlow.steps.flatMap((s) => (s.lineId ? [s.lineId] : []))) : null), [selectedFlow]);
   const selectFlow = (flowId: string | null) => url.update((p) => (flowId ? p.set('flow', flowId) : p.delete('flow')));
@@ -289,94 +290,97 @@ function BoardView({ board: loaded, definition, mode, onMode, url }: { board: Tr
   };
 
   return (
-    <BoardGrid
-      labels={{ index: 'Lines', map: 'Map', strip: 'Stop strip', card: 'Line card' }}
-      onKeyDown={onKeyDown}
-      narrowIndex={<LineSelect index={index} selectedId={line?.id ?? null} onSelect={select} />}
-      index={
-        <LineIndex
-          index={index}
-          query={query}
-          onQuery={setQuery}
-          matches={matches}
-          selectedId={line?.id ?? null}
-          onSelect={select}
-          flows={<FlowRows fx={fx} flows={onService} selectedFlowId={selectedFlow?.flow.id ?? null} onSelect={selectFlow} />}
-        />
-      }
-      map={
-        <TransitMap
-          index={index}
-          geometry={geometry}
-          serviceName={definition.name}
-          selectedId={line?.id ?? null}
-          matches={query.trim() ? matches : flowLines}
-          focusStations={focusStations}
-          showStepStats={mode === 'typical'}
-          onSelect={select}
-          links={links}
-          overlay={mode === 'trace' && trace ? <TrainMarker geometry={geometry} trace={trace} playback={playback} reduced={reduced} /> : undefined}
-        />
-      }
-      legend={<MapLegend className="max-md:hidden" />}
-      strip={
-        mode === 'trace' && line && trace ? (
-          <TraceStrip line={line} trace={trace} playback={playback} divergence={divergence} onSeek={actions.seek} onJump={actions.jump} />
-        ) : (
-          <StopStrip index={index} line={line} focusStations={focusStations} />
-        )
-      }
-      card={
-        <>
-          {mode === 'trace' && line ? (
-            <TraceCard
-              index={index}
-              line={line}
-              samples={samples}
-              tracesStatus={traces.status}
-              trace={trace}
-              traceError={traceError}
-              playback={playback}
-              divergence={divergence}
-              onPick={pickTrace}
-              onOpenId={pickTrace}
-              onPlay={actions.toggle}
-              onStep={actions.step}
-            />
+    <>
+      <UsedByChips fx={fx} flows={onService} selectedFlowId={selectedFlow?.flow.id ?? null} onSelect={selectFlow} />
+      <BoardGrid
+        labels={{ index: 'Lines', map: 'Map', strip: 'Stop strip', card: 'Line card' }}
+        onKeyDown={onKeyDown}
+        narrowIndex={<LineSelect index={index} selectedId={line?.id ?? null} onSelect={select} />}
+        index={
+          <LineIndex
+            index={index}
+            query={query}
+            onQuery={setQuery}
+            matches={matches}
+            selectedId={line?.id ?? null}
+            onSelect={select}
+            flows={<FlowRows fx={fx} flows={onService} selectedFlowId={selectedFlow?.flow.id ?? null} onSelect={selectFlow} />}
+          />
+        }
+        map={
+          <TransitMap
+            index={index}
+            geometry={geometry}
+            serviceName={definition.name}
+            selectedId={line?.id ?? null}
+            matches={query.trim() ? matches : flowLines}
+            focusStations={focusStations}
+            showStepStats={mode === 'typical'}
+            onSelect={select}
+            links={links}
+            overlay={mode === 'trace' && trace ? <TrainMarker geometry={geometry} trace={trace} playback={playback} reduced={reduced} /> : undefined}
+          />
+        }
+        legend={<MapLegend className="max-md:hidden" />}
+        strip={
+          mode === 'trace' && line && trace ? (
+            <TraceStrip line={line} trace={trace} playback={playback} divergence={divergence} onSeek={actions.seek} onJump={actions.jump} />
           ) : (
-            <LineCard
-              index={index}
-              line={line}
-              focusedFinding={focusedFinding}
-              onFocusFinding={(at) => setFocus(at === null || !line ? null : { lineId: line.id, at })}
-              onReplay={line && !isUnobserved(line) ? () => onMode('trace') : undefined}
-              usedBy={line && onService.length > 0 ? <UsedByFlows fx={fx} uses={usesOf(onService, line.id)} /> : undefined}
-              dependsOn={line ? <DependencyList index={index} line={line} links={links} /> : undefined}
-            />
-          )}
-          {line && (
-            <p className="m-0 mt-4 text-xs">
-              <Link to={{ pathname: '/map', search: search.replace(/([?&])line=[^&]*&?/, '$1') }} className="text-accent-fg underline">
-                Back to the service map
-              </Link>
-            </p>
-          )}
-        </>
-      }
-    />
+            <StopStrip index={index} line={line} focusStations={focusStations} />
+          )
+        }
+        card={
+          <>
+            {mode === 'trace' && line ? (
+              <TraceCard
+                index={index}
+                line={line}
+                samples={samples}
+                tracesStatus={traces.status}
+                trace={trace}
+                traceError={traceError}
+                playback={playback}
+                divergence={divergence}
+                onPick={pickTrace}
+                onOpenId={pickTrace}
+                onPlay={actions.toggle}
+                onStep={actions.step}
+              />
+            ) : (
+              <LineCard
+                index={index}
+                line={line}
+                focusedFinding={focusedFinding}
+                onFocusFinding={(at) => setFocus(at === null || !line ? null : { lineId: line.id, at })}
+                onReplay={line && !isUnobserved(line) ? () => onMode('trace') : undefined}
+                usedBy={line && onService.length > 0 ? <UsedByFlows fx={fx} uses={usesOf(onService, line.id)} /> : undefined}
+                dependsOn={line ? <DependencyList index={index} line={line} links={links} /> : undefined}
+              />
+            )}
+            {line && (
+              <p className="m-0 mt-4 text-xs">
+                <Link to={{ pathname: '/map', search: search.replace(/([?&])line=[^&]*&?/, '$1') }} className="text-accent-fg underline">
+                  Back to the service map
+                </Link>
+              </p>
+            )}
+          </>
+        }
+      />
+    </>
   );
 }
 
 /** The business flows deployed in the environment that have a step on this service (ADR-023). */
-function useFlowsOnService(definition: ServiceDefinition, board: TransitBoard): { fx: FlowBoardIndex; onService: FlowOnService[] } {
+function useFlowsOnService(definition: ServiceDefinition, lines: TransitBoard['lines']): { fx: FlowBoardIndex; onService: FlowOnService[] } {
   const topology = useTopology();
   const environmentId = useUiStore((s) => s.environmentId);
   const index = topology.status === 'ready' ? topology.index : null;
   return useMemo(() => {
     const flows = index ? businessFlowsIn(index, environmentId).map((r) => r.flow) : [];
     const fx = indexFlows(flows, (id) => index?.definitions.get(id)?.name ?? id);
-    return { fx, onService: flowsOnService(fx.flows, definition.id, board.lines) };
-  }, [index, environmentId, definition.id, board.lines]);
+    return { fx, onService: flowsOnService(fx.flows, definition.id, lines) };
+  }, [index, environmentId, definition.id, lines]);
 }
 
 function usesOf(onService: readonly FlowOnService[], lineId: string) {
@@ -393,4 +397,12 @@ function useLinkedBoard(loaded: TransitBoard): { board: TransitBoard; links: Rea
   const links = useKeyed(fresh, linksKey(fresh));
   const board = useMemo(() => applyLinks(checked, links), [checked, links]);
   return { board, links };
+}
+
+const NO_LINES: TransitBoard['lines'] = [];
+
+/** A service without board data still shows the flows that run on it (ADR-027 §16). */
+function NoBoardFlows({ definition }: { definition: ServiceDefinition }) {
+  const { fx, onService } = useFlowsOnService(definition, NO_LINES);
+  return <FlowsWithoutBoard fx={fx} flows={onService} />;
 }
