@@ -1,6 +1,6 @@
 # Milestone 11.3 — Endpoint contracts from OpenAPI
 
-**Status:** in progress (2026-10-12).
+**Status:** implemented 2026-10-12 (closeout in `docs/IMPLEMENTATION_PLAN.md`).
 
 **Read first:** `docs/BUSINESS_FLOWS.md` Revision 5, section 19; `docs/DECISIONS.md` ADR-029; `docs/CONVENTIONS.md`.
 

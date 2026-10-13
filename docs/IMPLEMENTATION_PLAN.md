@@ -211,7 +211,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 11 | Implemented (2026-10-12) | Flow swimlanes, flows on the service board, pattern catalog (ADR-023, ADR-024); see the Milestone 11 closeout. |
 | 11.1 | Implemented (2026-10-12) | Data stores on both boards (linked dependencies, tables, store chips) and findable flows (ADR-027); `docs/milestones/MILESTONE_11_1_DATA_STORES.md`. |
 | 11.2 | Implemented (2026-10-12) | Process view (sequence diagram with alt/opt/loop/par/transaction/compensation) for lines and flows, and visible endpoints (ADR-028); `docs/milestones/MILESTONE_11_2_PROCESS_VIEW.md`. |
-| 11.3 | In progress (2026-10-12) | Endpoint contracts from OpenAPI on flow steps and process arrows (ADR-029); `docs/milestones/MILESTONE_11_3_ENDPOINT_CONTRACTS.md`. |
+| 11.3 | Implemented (2026-10-12) | Endpoint contracts from OpenAPI on flow steps and process arrows (ADR-029); `docs/milestones/MILESTONE_11_3_ENDPOINT_CONTRACTS.md`. |
 | 12 | Specified (2026-10-12) | Flows in impact analysis and simulation, with backend B9 (ADR-025, proposed). Not started. |
 | 13 | Specified (2026-10-12) | 3D drill-down from a flow into its services (ADR-026, proposed). Not started. |
 | 9 | Implemented (2026-10-12) | Transit board on example data (ADR-021): spec Phase 1 plus the Phase 4 replay UI, hover tooltips, windows, and per-step stats; see the Milestone 9 closeout and follow-up below. Real data sources (phases 2, 3, and 5) are not started. |
@@ -615,3 +615,36 @@ Process view (sequence diagram) for lines and flows, and visible endpoints (ADR-
 **Known limitations:**
 - **Data is declared, never inferred.** Conditions, parallelism, repetition, and transactions on service-board lines come only from declared example data (A5, J2, O1, and the transactions of Capture and the webhook). Other lines show plain sequences.
 - **Wide flows scroll.** A flow's process grows wide with many services and scrolls sideways inside its strip.
+
+### Milestone 11.3 closeout (2026-10-12)
+Endpoint contracts from OpenAPI on flow steps and process arrows (ADR-029; `docs/BUSINESS_FLOWS.md` Revision 5).
+
+**Commits:**
+- `409aa0d` spec;
+- `6384191` parser and example specifications;
+- `47eaa14` contract view, step detail, and process arrows (phases 2 and 3 in one commit);
+- the close-out commit.
+
+**Checks run:**
+- **Frontend (`apps/web`):** `npx tsc -b`, `npx eslint .` (no warnings), and `npx vitest run --maxWorkers=3`: 70 files, 1,006 passed, 1 skipped. `npm run build` passes.
+- **Real-browser audit:** `npm run audit:a11y`, 25 pages × 2 themes, all pass on two runs. The new page is the step contract.
+  - Found in jsdom before that: a dropped space in the toggle's accessible name ("contractof"), and duplicate landmarks when a contract shows twice. The contract's sub-parts are now groups.
+- **Screenshots** reviewed:
+  - Place order's step contract (light);
+  - the webhook's process arrow opened (dark);
+  - Request refund at 390 px.
+
+  No horizontal scroll; no console errors.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| `POST /v1/orders`: Idempotency-Key header, `CreateOrderRequest` with `items` (required `sku`, `quantity`), and responses 201 Order, 400/409 Problem, with examples | Pass | `openapi.test.ts`; `ContractView.test.tsx` |
+| `$ref` cycles terminate; `allOf` merges required fields; `oneOf` lists the webhook's events | Pass | `openapi.test.ts` |
+| Place order, Request refund, and Await settlement show contracts; Authorize payment says it is gRPC in payments.proto | Pass | `ContractView.test.tsx`; screenshots |
+| Process arrows into those endpoints open the same contract; the webhook line's first arrow too | Pass | `ContractView.test.tsx` |
+| axe in jsdom and the real browser, both themes; `npm run check` | Pass | `a11y.test.tsx`; `npm run audit:a11y`; as listed |
+
+**Known limitations:**
+- **Example specifications only.** The specs ship in the bundle. Backend import of real OpenAPI files (JSON and YAML) is next, behind the same `getOpenApi`.
+- **OpenAPI only.** gRPC, events, and jobs show what they are and where their contract lives, not the contract itself.
+- **Exact path matching.** Matching is by method and path template as written in the step or line; `/v1/orders/{id}` and `/v1/orders/{orderId}` do not match each other.

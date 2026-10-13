@@ -125,6 +125,8 @@ a raw policy or pattern ID in the UI.
   layout, responsive at `max-md`.
 - `StripScroller`: the body of every horizontally scrolling strip; a focusable, labelled region.
 - `StripSwitch` (what a strip shows) and `ProcessDiagram` (a sequence diagram from `transit/process.ts`).
+
+**Contracts** (`features/contracts/`): `ContractView` with `useEndpointContract` shows an endpoint's OpenAPI contract anywhere. `EndpointContractPanel` plugs it into a process view.
 - Playback store and clock: `createPlayback`, `usePlaybackClock`, `playbackActions`,
   `useReplayUrlTime`.
 - `PlaybackControls`, `WindowSelect`.

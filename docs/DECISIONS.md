@@ -374,3 +374,4 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 - **Consequences:**
   - A `contracts` layer (pure, guarded like `transit`).
   - Example specs ship in the bundle, and must be replaced by ingested ones before real use.
+- **Implemented (2026-10-12, Milestone 11.3):** see the closeout in `docs/IMPLEMENTATION_PLAN.md`.

@@ -597,3 +597,17 @@ Decision: ADR-028. Spec: `docs/BUSINESS_FLOWS.md` Revision 4.
   - `StripSwitch.tsx`;
   - the `strip` page parameter on `/services/` and `/flows/`.
 - **Endpoint chip:** in `features/transit-board/TransitMap.tsx`.
+
+## Revision 13 — Endpoint contracts (2026-10-12, Milestone 11.3)
+Decision: ADR-029. Spec: `docs/BUSINESS_FLOWS.md` Revision 5.
+
+- **Pure contracts layer** (`apps/web/src/contracts/`, in the layer guard):
+  - `openapi.ts`: `parseHttpEndpoint`, `findContract`, `exampleOf`, `schemaTypeName`;
+  - `examples.ts` and `examples/*.openapi.json`.
+- **Source:** `TransitRepository.getOpenApi(serviceDefinitionId)`.
+- **UI** (`features/contracts/`):
+  - `useEndpointContract`;
+  - `ContractView`;
+  - `EndpointContractPanel`, passed to `ProcessDiagram` as `endpointPanel`.
+- **Flow step detail:** `StepContract` in `features/business-flows/FlowPanels.tsx`.
+- **Process model:** messages and notes carry `endpoint` (`EndpointRef`).

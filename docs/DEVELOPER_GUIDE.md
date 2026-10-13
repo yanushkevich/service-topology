@@ -174,6 +174,10 @@ The Events page and inspector explain the new rule automatically.
   - Link a service-board dependency with `entityId` (a service definition or resource ID); never match by name.
   - Declare a database's tables on the board (`tables`), with writer and reader lines that reach the station. `tables.test.ts` checks this on the example.
   - Flow steps get their stores from `dataStoresOf` (topology relationships).
+- **Endpoint contracts (ADR-029):**
+  - Add a service's OpenAPI document as `src/contracts/examples/<service-definition-id>.openapi.json` (until backend import exists).
+  - Endpoints match by "METHOD /path" exactly as the step's `entryPoint` or the line's `signature` says.
+  - Render contracts with `ContractView` and `useEndpointContract`; never parse documents in components.
 - **Process view (ADR-028):**
   - `lineProcess` and `flowProcess` (`src/transit/process.ts`) build the sequence; `ProcessDiagram` draws it.
   - To show a condition, a parallel fork, a repeat, or a transaction on a service-board line, declare it (`Branch.condition`, `Branch.parallel`, `Line.repeat`, `Line.transactions`); never infer it.
