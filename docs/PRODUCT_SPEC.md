@@ -430,3 +430,11 @@ Spec: `docs/BUSINESS_FLOWS.md` Revision 2. Decisions: ADR-023 to ADR-026.
 
 ### Q.3 Acceptance additions
 Those of `docs/milestones/MILESTONE_11_FLOW_SWIMLANES_PATTERNS.md`, `MILESTONE_12_FLOW_IMPACT.md`, and `MILESTONE_13_FLOW_3D_DRILLDOWN.md`.
+
+## Revision R — Authoring boards, and editing mock data in a local sandbox (2026-10-13, Milestone 11.4)
+**Source:** product owner: "now data is mocked, i want you to implement a functionality to create/edit/delete a transit board or a new flow". Decision: ADR-031. Spec: `docs/TRANSIT_BOARD.md` Revision 2. This revision supersedes the Revision 7 rule that built-in mock data is read-only.
+
+- **Transit boards are authored.** A board's declared structure (endpoints and routes, stations, client policies, tables) can be created, edited, and deleted per service. Statistics and traces are observed, never typed in; a new board's lines read "not observed".
+- **Mock data is editable in a local sandbox.** With the built-in data, entities, business flows, and boards are editable. The changes stay in this browser, are validated like the server, and are always labelled as the local sandbox. Settings can reset the sandbox to the built-in data.
+- **With the backend** (`?source=api`), boards are stored by the API under the same revision rules as entities (412 on stale writes, 422 with codes on invalid ones).
+- Imported flows stay read-only; generated datasets stay read-only.

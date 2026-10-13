@@ -20,6 +20,7 @@ The stored model maps 1:1 to the canonical domain (`DOMAIN_MODEL.md`, `TopologyD
 | Schema version | `schemaInfo` | one document `{_id: "schema", version}` |
 | TopologySnapshot | `snapshots` | `{_id, takenAt, summary, payload}`; immutable, validated before insert |
 | SavedLayout | `savedLayouts` | `{_id, createdAt, payload}`; presentation only |
+| Transit board definition (B10, ADR-031) | `transitBoards` | `{_id: serviceDefinitionId, revision, updatedAt, payload}`; declared structure only, validated against the topology before every write; the revision guards `PUT`/`DELETE` (`If-Match`) |
 | SimulationRun (B5) | `simulationRuns` | `{_id, createdAt, payload}` |
 | StoredEvent, TelemetryObservation (B5) | `simulationEvents`, `telemetryObservations` | `{simulationId, seq, <filter fields>, payload}`; unique `(simulationId, seq)`; removed with their run by retention |
 
@@ -41,7 +42,7 @@ Documents are built from the domain values' canonical JSON (the contract's field
 - creates missing collections;
 - sets a `$jsonSchema` validator on canonical collections (`_id` and `id` strings, `_meta` with `ord`, `recordedAt`, `sourceType`), `validationLevel: strict`;
 - creates named indexes: `_meta.ord_1` on canonical collections; `sourceEntityId_1`, `targetEntityId_1`, `_meta.endpoints_1` on `relationships`; `environmentId_1`; `type_1`, `parentResourceId_1`; `takenAt_1`; `createdAt_1`; unique `simulationId_1_seq_1` on run records;
-- records `schemaInfo.version` (currently 1) and refuses a database with a newer version.
+- records `schemaInfo.version` (currently 2: version 2 added `transitBoards`) and refuses a database with a newer version.
 
 `make schema-check` verifies every collection, validator, index, and the version. Changes are additive; breaking ones need an ADR.
 

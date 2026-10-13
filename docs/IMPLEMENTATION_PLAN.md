@@ -212,7 +212,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 11.1 | Implemented (2026-10-12) | Data stores on both boards (linked dependencies, tables, store chips) and findable flows (ADR-027); `docs/milestones/MILESTONE_11_1_DATA_STORES.md`. |
 | 11.2 | Implemented (2026-10-12) | Process view (sequence diagram with alt/opt/loop/par/transaction/compensation) for lines and flows, and visible endpoints (ADR-028); `docs/milestones/MILESTONE_11_2_PROCESS_VIEW.md`. |
 | 11.3 | Implemented (2026-10-12) | Endpoint contracts from OpenAPI on flow steps and process arrows (ADR-029); `docs/milestones/MILESTONE_11_3_ENDPOINT_CONTRACTS.md`. |
-| 11.4 | In progress (2026-10-12) | Authoring transit boards (declared structure) and flows; backend B10 storage and API; local sandbox for mock data (ADR-031); `docs/milestones/MILESTONE_11_4_AUTHORING.md`. |
+| 11.4 | Implemented (2026-10-13) | Authoring transit boards (declared structure) and flows; backend B10 storage and API; local sandbox for mock data (ADR-031); `docs/milestones/MILESTONE_11_4_AUTHORING.md`. |
 | 14 | **On hold** (2026-10-12) | Real data instead of example data: sources, contract freeze, backend observability module, HTTP repository (ADR-030, proposed). Waits for the answers in `docs/REAL_DATA_INTEGRATION.md` §6; `docs/milestones/MILESTONE_14_REAL_DATA.md`. |
 | 12 | Specified (2026-10-12) | Flows in impact analysis and simulation, with backend B9 (ADR-025, proposed). Not started. |
 | 13 | Specified (2026-10-12) | 3D drill-down from a flow into its services (ADR-026, proposed). Not started. |
@@ -650,3 +650,46 @@ Endpoint contracts from OpenAPI on flow steps and process arrows (ADR-029; `docs
 - **Example specifications only.** The specs ship in the bundle. Backend import of real OpenAPI files (JSON and YAML) is next, behind the same `getOpenApi`.
 - **OpenAPI only.** gRPC, events, and jobs show what they are and where their contract lives, not the contract itself.
 - **Exact path matching.** Matching is by method and path template as written in the step or line; `/v1/orders/{id}` and `/v1/orders/{orderId}` do not match each other.
+
+### Milestone 11.4 closeout (2026-10-13)
+Authoring transit boards (declared structure) and flows, backend B10 storage and API, and a local sandbox that makes the built-in mock data editable (ADR-031; `docs/TRANSIT_BOARD.md` Revision 2, with implementation notes in section F).
+
+**Commits:**
+- `1214202` spec;
+- `453e893` board definitions, schema, and shared fixtures;
+- `80da620` backend B10;
+- `8ff8034` board stores, composed transit repository, and the sandbox;
+- `a8aa34e` board editor with live preview, and flows editable in the sandbox;
+- the close-out commit.
+
+**Checks run:**
+- **Frontend (`apps/web`):** `npx tsc -b`, `npx eslint .`, and `npx vitest run --maxWorkers=3`: 75 files, 1,063 passed, 1 skipped. `npm run build` passes.
+  - `npm run check` at default parallelism had three 5-second timeouts on this loaded machine (`FlowEditor.test.tsx`, `Topology2D.test.tsx`, and one more). The same tests pass with three workers.
+- **Backend:** `make check`, `make test-integration`, and `make contract-check` (91/91) pass.
+- **Real-browser audit:** `npm run audit:a11y`, 27 pages × 2 themes, all pass. New pages: Order Service's board with no board yet (the create action), and Settings with the sandbox row.
+- **End to end against the backend** (`?source=api`, a disposable database, dropped afterwards). In the browser:
+  - created a board for Order Service (read back at revision `"1"`, labelled "Saved board · not observed");
+  - renamed its line through the editor (revision `"2"`, name read back);
+  - deleted it through the confirm dialog (then 404, and "Create a transit board" again).
+
+  Through the API: a stale `If-Match` gave 412, and a duplicate line code gave 422 `invalid-board-line` at `lines[1].code`. No console errors.
+- **Screenshots** reviewed:
+  - editing the example board at 1440 px (dark and light);
+  - creating Order Service's board at 390 px (dark and light);
+  - Settings at 390 px.
+
+  No horizontal scroll; no console errors. The preview's counts were pluralised wrongly ("1 endpoints"); fixed.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Each board rule has a TypeScript and a Go test with identical codes on shared fixtures | Pass | `definition.test.ts`; `board_test.go` on `fixtures/conformance/boards` (12 cases) |
+| With `?source=api`: create, edit, and delete for Order Service; read back matches; 412 stale; 422 with codes; `make contract-check` | Pass | End-to-end run above; `boards_test.go`; `boards_integration_test.go`; contract check 91/91 |
+| With mock data: flows, entities, and boards editable in the sandbox; edits survive a reload; reset restores; labelled | Pass | `sandbox.test.ts`; `BoardEditor.test.tsx`; `httpRepositories.test.ts`; Settings screenshots |
+| A new board's lines are "not observed"; the edited example keeps its stats on unchanged line IDs | Pass | `definition.test.ts`; `BoardEditor.test.tsx`; end-to-end label |
+| Preview updates while editing; errors focus their field; axe in jsdom and the real browser, both themes | Pass | `BoardEditor.test.tsx`; `a11y.test.tsx`; `npm run audit:a11y` |
+| `npm run check`, `make check`, `make test-integration`, `make contract-check` | Pass, with the timeout note above | As listed |
+
+**Known limitations:**
+- **Browser-only sandbox.** Edits stay in one browser. There is no export or import of sandbox changes, and no board-definition file import.
+- **Map-only preview.** The editor previews the map, not the process view.
+- **Not observed until Milestone 14.** Authored boards have no observed data, except where the example board's IDs match.

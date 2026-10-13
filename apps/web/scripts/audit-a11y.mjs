@@ -44,6 +44,8 @@ const PAGES = [
   { name: 'Transit board (process view)', path: '/services/payment-service/transit?v=1&env=production&line=W1&strip=process', ready: '[aria-label="Process of line W1"]' },
   { name: 'Flow board (process view)', path: '/flows/flow-checkout?v=1&env=production&strip=process', ready: '[aria-label="Process of Checkout"]' },
   { name: 'Flow board (step contract)', path: '/flows/flow-checkout?v=1&env=production&step=place-order', ready: '[data-contract="POST /v1/orders"]' },
+  { name: 'Transit board (no board: create)', path: '/services/order-service/transit?v=1&env=production', ready: '[data-board-action="create"]' },
+  { name: 'Settings (local sandbox)', path: '/settings?v=1', ready: 'button' },
   { name: 'Business flows catalog', path: '/flows?v=1&env=production', ready: '[aria-label="Business flows"] li' },
   { name: 'Flow board (swimlane)', path: '/flows/flow-checkout?v=1&env=production', ready: '.react-flow__node-step' },
   { name: 'Flow board (step selected)', path: '/flows/flow-checkout?v=1&env=production&step=capture-payment', ready: '[aria-label="Flow card"] h2' },

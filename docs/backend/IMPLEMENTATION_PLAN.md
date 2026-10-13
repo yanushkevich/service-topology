@@ -202,3 +202,17 @@ Delivered:
 | Re-import is a no-op | Pass | API test (same ETag) and integration test (same revision) |
 | BPMN with an unmapped task is rejected with the task named | Pass | `TestBPMNRejectsUnmappedTasksAndAcceptsAMapping`; API 422 `import-invalid` for `Task_void` |
 | `make check`, `make test-integration`, `make contract-check` | Pass | 80/80 contract checks; `make vulncheck`: no reachable vulnerabilities |
+
+## Milestone B10 closeout — transit board definitions (2026-10-13, ADR-031)
+Delivered with frontend Milestone 11.4 (closeout in `docs/IMPLEMENTATION_PLAN.md`):
+- **Domain:** `internal/domain/board.go` holds the types and `ValidateBoard`, a port of `validateBoardDefinition` with the same codes, order, and field paths (`Issue.Path`).
+- **Storage:** the `transitBoards` collection (schema version 2), `_id` = service definition ID, with an integer revision bumped atomically (`FindOneAndUpdate` with a revision guard). Implemented for MongoDB and memory.
+- **Application:** `application/boards.go` validates every write against the current topology. The path's service must equal the body's.
+- **API:** `GET`/`POST /api/v1/transit-boards` and `GET`/`PUT`/`DELETE /api/v1/transit-boards/{serviceId}`, with `ETag` / `If-Match`. Errors: 404, 409 (exists), 412 (stale), 422 (`errors[]` with `path`), and 503 without a board store. Documented in `docs/api/openapi.json`.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Validation parity on shared fixtures | Pass | `board_test.go` (conformance plus enums against the schema) |
+| Revision-guarded writes on the database | Pass | `TestBoardRepositoryOnTheDatabase` (`make test-integration`) |
+| API matches the contract | Pass | `httpapi/boards_test.go`; `make contract-check` 91/91 |
+| End to end with the UI | Pass | Milestone 11.4 closeout |

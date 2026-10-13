@@ -202,7 +202,8 @@ function Preview({
         )}
       </div>
       <p className="m-0 text-xs text-fg-3">
-        {draft.lines.length} endpoints · {draft.stations.length} stations · {draft.policies.length} policies · {draft.tables.length} tables
+        {count(draft.lines.length, 'endpoint', 'endpoints')} · {count(draft.stations.length, 'station', 'stations')} · {count(draft.policies.length, 'policy', 'policies')} ·{' '}
+        {count(draft.tables.length, 'table', 'tables')}
       </p>
       {issues.length === 0 ? (
         <p className="m-0 text-sm text-ok-fg" role="status">
@@ -226,4 +227,8 @@ function Preview({
       )}
     </section>
   );
+}
+
+function count(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`;
 }

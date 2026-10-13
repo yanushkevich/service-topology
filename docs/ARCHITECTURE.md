@@ -611,3 +611,15 @@ Decision: ADR-029. Spec: `docs/BUSINESS_FLOWS.md` Revision 5.
   - `EndpointContractPanel`, passed to `ProcessDiagram` as `endpointPanel`.
 - **Flow step detail:** `StepContract` in `features/business-flows/FlowPanels.tsx`.
 - **Process model:** messages and notes carry `endpoint` (`EndpointRef`).
+
+## Revision 14 — Authored boards and the local sandbox (2026-10-13, Milestone 11.4 and B10)
+Decision: ADR-031. Spec: `docs/TRANSIT_BOARD.md` Revision 2.
+
+- **Definitions** (`apps/web/src/transit/definition.ts`, pure): `BoardDefinition`, `definitionOf`, `boardFromDefinition` (merges observed data by ID), `validateBoardDefinition` (codes and paths shared with `backend/internal/domain/board.go`).
+- **Board stores** (`transit/boardStore.ts`): the `BoardStore` interface, kind `backend` or `sandbox`, with revisions.
+  - `data/boards/httpBoardStore.ts`: `/api/v1/transit-boards`, ETag / If-Match.
+  - `data/sandbox/`: `createSandbox(base, storage)` gives a topology repository with a writer and `SandboxControls`, and a board store, over `localStorage` (`storage.ts`, with a memory fallback and a fingerprint reset).
+- **Composed transit repository** (`data/transitRepository.ts`): `createTransitRepository(store, observed)`; stored definitions win over the example board. Selected in `data/selectRepository.ts` (`Repositories.transit`) and provided by `TransitRepositoryContext` in `App.tsx`.
+- **Shared change logic:** `domain/topologyChanges.ts` (`applyChange`, `idTaken`) is used by the sandbox writer and the entity forms.
+- **Editor UI** (`features/transit-board/editor/`): `BoardEditorDialog` (sections plus a preview `TransitMap`), `BoardSections`, `boardForm.ts` (pure helpers), `BoardEditActions`, `useStoredBoard` and `boardSourceLabel`. The Settings page has the sandbox row.
+- **Backend:** `transitBoards` collection (schema version 2), `ports.BoardRepository` (MongoDB and memory), `application/boards.go`, `httpapi/routes_boards.go`.

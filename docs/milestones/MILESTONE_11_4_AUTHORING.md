@@ -1,6 +1,6 @@
 # Milestone 11.4 — Authoring transit boards and flows, with a local sandbox (with backend B10)
 
-**Status:** in progress (2026-10-12).
+**Status:** implemented 2026-10-13 (closeout in `docs/IMPLEMENTATION_PLAN.md`).
 
 **Read first:** `docs/TRANSIT_BOARD.md` Revision 2; `docs/DECISIONS.md` ADR-031 (and ADR-020, ADR-021, ADR-027); `docs/CONVENTIONS.md`.
 

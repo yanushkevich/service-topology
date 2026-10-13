@@ -389,7 +389,7 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - Hand-maintained example data: not real.
 
 ## ADR-031 — Authored transit boards (declared structure) in the backend, and a local sandbox for mock data (2026-10-12, Milestone 11.4 / B10)
-- **Status:** Accepted (product owner, 2026-10-12: backend plus local sandbox; declared structure; structured form with preview). Spec: `docs/TRANSIT_BOARD.md` Revision 2. Amends ADR-020 and ADR-021.
+- **Status:** Accepted (product owner, 2026-10-12: backend plus local sandbox; declared structure; structured form with preview). Implemented 2026-10-13 (Milestone 11.4 and backend B10; closeout in `docs/IMPLEMENTATION_PLAN.md`). Spec: `docs/TRANSIT_BOARD.md` Revision 2. Amends ADR-020 and ADR-021.
 - **Decision:**
   - **Definitions.** Board definitions are the declared part of a transit board (stations, lines, routes, policies, tables), validated in TypeScript and Go with shared codes. They are stored per service in MongoDB (`transitBoards`, revision-guarded API).
   - **Observed data.** Observed data is never authored; it merges onto definitions by ID.

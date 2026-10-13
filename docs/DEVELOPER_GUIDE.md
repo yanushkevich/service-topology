@@ -145,7 +145,7 @@ The Events page and inspector explain the new rule automatically.
 
 ## 7a. Editing (ADR-020)
 - `apps/web/src/features/editing/`: `entityForms.ts` (pure form model: fields per kind with options from the topology, values ↔ entities, `applyChange`, `newIssues`), `EntityEditorProvider.tsx` (opens forms; availability), `EntityEditorDialog.tsx`, `DeleteEntityDialog.tsx`, `EditingControls.tsx` (New menu, inspector actions), `shared/ui/Modal.tsx` (focus trap, Escape, focus return).
-- Writes go through `TopologyRepository.writer` (HTTP only; `undefined` for mock data). `TopologyDataProvider` exposes `useTopologyEditing()` with the stored `baseline` and `reload()`.
+- Writes go through `TopologyRepository.writer`: HTTP with `?source=api`, the local sandbox with the built-in mock data (ADR-031), and `undefined` for generated datasets. `TopologyDataProvider` exposes `useTopologyEditing()` with the stored `baseline` and `reload()`.
 - Tests use `src/test/writableRepository.ts`, an in-memory writer that validates like the server. To check against the real backend: `npm run check:live -- --url <preview-url> [--write]` (`--write` changes data; use a disposable database).
 - Adding a field to an entity: update `fieldsFor` and the schema/types together; the form round-trip test in `entityForms.test.ts` catches fields that do not survive values ↔ entity.
 
@@ -156,6 +156,12 @@ The Events page and inspector explain the new rule automatically.
 - **URL state:** page-local parameters (`line`, `mode`, `trace`, `t`, `window`) are kept by `useUrlStateSync` only on `/services/…` routes (`PAGE_PARAMS`).
 - **Colours:** `--transit-*` tokens, tested in `contrast.test.ts`.
 - **Tests:** query board panels within their landmark (`[aria-label="Lines"]` and so on). Role queries over the whole page walk every SVG element of the map and are slow in jsdom.
+
+## 7b.1 Authoring boards and the sandbox (ADR-031)
+- **Definition first.** A field added to a board definition goes into `transit/definition.ts` (type, `definitionOf`, and the rule if it has one), the schema `docs/schemas/transit-board-definition.v1.schema.json`, and the Go type in `backend/internal/domain/board.go`. A new rule also needs a case in `boardCases()` (`src/contract/fixtures.test.ts`); run `npm run fixtures:update`, then `make -C backend check`.
+- **Stores.** Code reads and writes boards through `BoardStore` only; tests use `createSandbox(base, createSandboxStorage(null))` for an in-memory store.
+- **Sandbox in the browser.** Its data lives under `service-topology.sandbox.v1`; Settings → "Reset sandbox" clears it. It resets itself when the built-in mock changes.
+- **Against the backend:** create, edit, and delete a board on a disposable database (`MONGODB_DATABASE=…`, password only through `MONGODB_PASSWORD_FILE`), then drop it with `backend/scripts/mongosh.sh`.
 
 ## 7c. Business flows (ADR-022)
 - **Domain:** flows are canonical (`BusinessFlow` in `src/domain/types.ts`). Change the validation rules in `src/domain/validation.ts` and `backend/internal/domain/validation.go` together. Add a case to `CASES` in `src/contract/fixtures.test.ts` and run `npm run fixtures:update`; the Go conformance test then enforces parity.
@@ -186,6 +192,7 @@ The Events page and inspector explain the new rule automatically.
 
 ## 8. Known limitations (current)
 - No real integrations, authentication, or tenancy. All data is mock; all telemetry is simulated.
+- Sandbox edits stay in one browser; there is no export to the backend yet.
 - Performance: 2D selection response and 3D frame rate need re-measurement on an idle machine or with a GPU (`docs/BENCHMARKS.md`).
 - Grouped 2D mode at full detail fits at a small zoom; read it collapsed or through the Groups panel. Saved positions do not resize groups.
 - 3D: dense 250-node overviews need zooming for member labels; explore deeper than grandchildren by entering further.

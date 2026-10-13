@@ -466,3 +466,16 @@ The same codes are used in TypeScript (`validateBoardDefinition`) and Go, on sha
   - A **live preview** (map and process view) and the validation issues update while editing.
   - Errors focus their field.
 - **Flows.** They use the existing flow editor, which now also works in the sandbox.
+
+### F. Implementation notes (2026-10-13)
+
+Where the build differs from, or adds to, A–E:
+
+- **Definitions** live in `apps/web/src/transit/definition.ts`: `definitionOf`, `boardFromDefinition`, `validateBoardDefinition`. The schema is `docs/schemas/transit-board-definition.v1.schema.json`; the fixtures are `fixtures/conformance/boards/`. Issues carry a field `path` (for example `lines[1].code`) on both stacks and in the API's `errors[]`.
+- **Which board shows.** The composed transit repository (`data/transitRepository.ts`) returns the stored definition, merged with the example board by ID, when one exists; otherwise the example board; otherwise none. Generated datasets (`?dataset=…`) have no board store and are read-only.
+- **Editing the example board** stores a copy. Unchanged line and station IDs keep the example statistics; new ones are "not observed". Deleting the copy brings the example back.
+- **Source label.** The board header reads "Sandbox board" or "Saved board", followed by "example stats" or "not observed" (`boardSourceLabel`). The topology source is labelled "Mock inventory · local sandbox". The editor and the delete dialog say that the sandbox is this browser only.
+- **Sandbox storage.** Key `service-topology.sandbox.v1`. It stores a fingerprint of the built-in data, and resets itself when the built-in mock changes. Without storage, it runs in memory and Settings says so. Reset is in Settings ("Reset sandbox", then "Confirm reset").
+- **Preview.** The editor previews the map with counts and issues. The process view is not in the preview; it shows on the board after saving.
+- **Not in this milestone:** importing board definitions from files, and observed data for authored boards (Milestone 14).
+

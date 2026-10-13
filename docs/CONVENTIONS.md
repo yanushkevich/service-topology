@@ -74,6 +74,8 @@ domain/                            canonical types, validation, traversal (pure 
 | A canonical type, rule, or graph query | `domain/` (port the rule to `backend/internal/domain` too, §4.5) |
 | A read model or layout for a board | `transit/` (pure, with tests next to it) |
 | A data source or adapter | `data/` behind the repository interfaces (`data/repositories`) |
+| A change to stored topology data (shared by the sandbox and the forms) | `domain/topologyChanges.ts` |
+| A write path for mock data | the local sandbox (`data/sandbox/`): it validates like the server and returns the same `ApiError` shapes |
 | Cross-view UI state (selection, environment, filters, view) | `state/uiStore.ts`, mirrored in the URL by `urlState.ts` |
 | Page-local URL parameters | `PAGE_PARAMS` in `state/useUrlStateSync.ts` |
 | A button, field, heading, or panel style used in 2+ places | `shared/ui/` (§3.3) |
@@ -103,8 +105,10 @@ control (a render prop that receives `id`, `aria-*`, `data-path`, and `data-auto
 field gets a visible label, `(required)`, a hint, and an error, all wired to ARIA. Use `compact`
 in dense nested forms. Never hand-roll `<label>` + `<input>`.
 
+`FieldGroup` (also in `form.tsx`) is a titled group of fields inside an editor section.
+
 **Other shared UI:**
-- `Modal`: dialogs with a focus trap and Escape handling.
+- `Modal`: dialogs with a focus trap and Escape handling. `wide` gives a side dialog with room for a preview (the board editor).
 - `LoadState`: loading, empty, and error states.
 - `DataSourceTag` / `SimulatedTag`: provenance labels.
 - `StatusShape`: health shown as a shape, not colour only.
