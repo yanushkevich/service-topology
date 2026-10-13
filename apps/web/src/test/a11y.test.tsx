@@ -174,6 +174,21 @@ describe('accessibility audit (axe-core)', () => {
     expect(await audit()).toEqual([]);
   });
 
+  it('simulated flow impact: simulation page, flow board banner, and catalog (ADR-025)', async () => {
+    const router = renderApp('/simulation?v=1&env=production');
+    await waitFor(() => expect(useSimulationStore.getState().sim).not.toBeNull());
+    act(() => useSimulationStore.getState().inject('ext-card-processor', 'unavailable'));
+    await screen.findByRole('list', { name: 'Business flows affected' });
+    expect(await audit()).toEqual([]);
+    await act(() => router.navigate('/flows/flow-checkout?v=1&env=production'));
+    const banner = await screen.findByRole('region', { name: 'Simulated impact on this flow' });
+    fireEvent.click(within(banner).getByText(/affected steps/));
+    expect(await audit()).toEqual([]);
+    await act(() => router.navigate('/flows?v=1&env=production'));
+    await screen.findAllByText('Simulated impact');
+    expect(await audit()).toEqual([]);
+  });
+
   it('business flows catalog', async () => {
     renderApp('/flows');
     await screen.findByRole('list', { name: 'Business flows' });

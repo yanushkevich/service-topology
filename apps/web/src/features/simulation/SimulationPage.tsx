@@ -14,6 +14,7 @@ import { LoadState } from '../../shared/ui/LoadState';
 import { SIMULATION_SPEEDS, useSimulationStore } from '../../state/simulationStore';
 import { useUiStore } from '../../state/uiStore';
 import { InspectorPanel } from '../inspector/InspectorPanel';
+import { AffectedFlowsPanel } from './AffectedFlowsPanel';
 import { describeEvent, formatClock } from './describeEvent';
 
 export function SimulationPage() {
@@ -34,6 +35,7 @@ export function SimulationPage() {
         ) : (
           <>
             <SimulationPanel index={baselineIndex} readOnly={topology.history !== null} />
+            <AffectedFlowsPanel index={baselineIndex} />
             <EventLog index={baselineIndex} events={sim.events} />
             <HistoryPanel index={baselineIndex} current={sim.data} clock={sim.clock} />
             <RulesPanel />

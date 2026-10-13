@@ -47,7 +47,7 @@ const TRAIN_RING: Record<'ok' | 'warn' | 'fail', string> = { ok: 'border-accent'
 
 /** A business step: name, kind, deadline, service and entry point, and the flows it is shared with. */
 export const StepView = memo(function StepView({ data }: NodeProps<StepNode>) {
-  const { step, serviceName, alsoIn, stores, emphasis, selected, train, divergence } = data;
+  const { step, serviceName, alsoIn, stores, emphasis, selected, train, divergence, simulated } = data;
   return (
     <div
       data-step={step.id}
@@ -57,6 +57,7 @@ export const StepView = memo(function StepView({ data }: NodeProps<StepNode>) {
       data-train={train ? step.id : undefined}
       data-status={train?.status}
       data-divergence={divergence || undefined}
+      data-simulated={simulated ?? undefined}
       className={cx(
         'relative flex h-full w-full cursor-pointer flex-col justify-center gap-px rounded-lg border bg-surface-1 px-2.5 text-left shadow-sm transition-opacity',
         selected ? 'border-accent shadow-[0_0_0_2px_var(--color-accent)]' : 'border-line-strong hover:border-fg-3',
@@ -98,6 +99,12 @@ export const StepView = memo(function StepView({ data }: NodeProps<StepNode>) {
       )}
 
       {train && <span aria-hidden="true" className={cx('pointer-events-none absolute -inset-1.5 rounded-xl border-2', TRAIN_RING[train.status], !train.correlated && 'border-dashed')} />}
+      {simulated && (
+        // A simulated failure reaches this step (ADR-025): dashed like every simulated mark, plus the health shape.
+        <span aria-hidden="true" className={cx('pointer-events-none absolute -inset-1 flex items-start justify-end rounded-[10px] border-2 border-dashed p-0.5', simulated === 'unavailable' ? 'border-crit' : 'border-warn')}>
+          <StatusShape health={simulated} />
+        </span>
+      )}
       {divergence && (
         <span className="absolute -top-2.5 right-2 rounded-sm bg-warn px-1 text-[10px] font-semibold text-on-accent" data-divergence-tag>
           diverged

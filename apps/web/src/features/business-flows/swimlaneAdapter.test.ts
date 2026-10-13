@@ -34,8 +34,13 @@ describe('swimlane view model (ADR-023)', () => {
       selectedStepId: 'capture-payment',
       focus: { steps: new Set(['capture-payment']), transitions: new Set() },
       matches: null,
+      simulated: new Map([['authorize-payment', 'degraded']]),
       replay: { active: [{ stepId: 'reserve-stock', status: 'warn', correlated: true }], traversed: new Set(['placed']), divergence: { stepId: 'reserve-stock', transitionId: 'placed' } },
     });
+    // A simulated failure reaching a step is in its data and its accessible name (ADR-025).
+    expect(step(viewed.nodes, 'authorize-payment').data.simulated).toBe('degraded');
+    expect(step(viewed.nodes, 'authorize-payment').ariaLabel).toMatch(/, simulated degraded$/);
+    expect(step(viewed.nodes, 'capture-payment').data.simulated).toBeNull();
     expect(viewed.nodes.map((n) => [n.id, n.position, n.width, n.height])).toEqual(base.nodes.map((n) => [n.id, n.position, n.width, n.height]));
     expect(viewed.edges.map((e) => e.data?.route.path)).toEqual(base.edges.map((e) => e.data?.route.path));
     expect(step(viewed.nodes, 'capture-payment').data).toMatchObject({ selected: true, emphasis: 'focus' });

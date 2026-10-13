@@ -1,4 +1,5 @@
 import type { Edge, Node } from '@xyflow/react';
+import type { FailureMode } from '../../domain/propagation';
 import type { BusinessFlow, FlowOutcome, FlowStep, FlowTransition, HealthStatus } from '../../domain/types';
 import type { FlowBoardIndex } from '../../transit/flows/flowIndex';
 import type { TxStep } from '../../transit/flows/observed';
@@ -26,6 +27,8 @@ export interface StepData extends Record<string, unknown> {
   train: Pick<TxStep, 'status' | 'correlated'> | null;
   /** The replay left the typical path here. */
   divergence: boolean;
+  /** A simulated failure reaches this step (ADR-025). */
+  simulated: FailureMode | null;
 }
 
 export interface OutcomeData extends Record<string, unknown> {
@@ -75,6 +78,8 @@ export interface SwimlaneView {
   focus: { steps: ReadonlySet<string>; transitions: ReadonlySet<string> } | null;
   /** Steps matching the search, or null without a query. */
   matches: ReadonlySet<string> | null;
+  /** Steps a simulated failure reaches, with their effect (ADR-025); null without failures. */
+  simulated: ReadonlyMap<string, FailureMode> | null;
   replay: {
     /** Steps the transaction is in now. */
     active: { stepId: string; status: TxStep['status']; correlated: boolean }[];
@@ -85,7 +90,7 @@ export interface SwimlaneView {
   } | null;
 }
 
-export const NO_VIEW: SwimlaneView = { selectedStepId: null, focus: null, matches: null, replay: null };
+export const NO_VIEW: SwimlaneView = { selectedStepId: null, focus: null, matches: null, simulated: null, replay: null };
 
 /** Nodes and edges at their fixed positions, with neutral view data. Build once per flow. */
 export function swimlaneElements(
@@ -129,7 +134,7 @@ export function swimlaneElements(
       const service = options.serviceName(step.serviceDefinitionId);
       const stores = options.storesOf(step.serviceDefinitionId);
       const storeText = stores.length ? `, using ${stores.map((s) => s.name).join(', ')}` : '';
-      nodes.push({ ...common, type: 'step', ariaLabel: `${step.name}, ${step.kind} step of ${service}${storeText}`, data: { step, serviceName: service, alsoIn, stores, emphasis: 'normal', selected: false, train: null, divergence: false } });
+      nodes.push({ ...common, type: 'step', ariaLabel: `${step.name}, ${step.kind} step of ${service}${storeText}`, data: { step, serviceName: service, alsoIn, stores, emphasis: 'normal', selected: false, train: null, divergence: false, simulated: null } });
       continue;
     }
     const outcome = outcomes.get(n.id);
@@ -188,8 +193,11 @@ export function applyView(elements: { nodes: SwimlaneNode[]; edges: RoutedEdge[]
   const trainAt = new Map((view.replay?.active ?? []).map((a) => [a.stepId, { status: a.status, correlated: a.correlated }]));
   const nodes = elements.nodes.map((n): SwimlaneNode => {
     switch (n.type) {
-      case 'step':
-        return { ...n, data: { ...n.data, emphasis: lit(n.id), selected: view.selectedStepId === n.id, train: trainAt.get(n.id) ?? null, divergence: view.replay?.divergence?.stepId === n.id } };
+      case 'step': {
+        const simulated = view.simulated?.get(n.id) ?? null;
+        const ariaLabel = simulated ? `${n.ariaLabel ?? n.id}, simulated ${simulated}` : n.ariaLabel;
+        return { ...n, ...(ariaLabel ? { ariaLabel } : {}), data: { ...n.data, emphasis: lit(n.id), selected: view.selectedStepId === n.id, train: trainAt.get(n.id) ?? null, divergence: view.replay?.divergence?.stepId === n.id, simulated } };
+      }
       case 'outcome':
         return { ...n, data: { ...n.data, emphasis: view.focus || view.matches ? 'dim' : 'normal', train: trainAt.get(n.id) ?? null } };
       default:

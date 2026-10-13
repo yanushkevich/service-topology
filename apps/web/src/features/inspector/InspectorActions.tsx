@@ -9,6 +9,8 @@ import { useSimulationStore } from '../../state/simulationStore';
 import { useUiStore } from '../../state/uiStore';
 import { PROPAGATION_RULES } from '../../domain/propagation';
 import { formatClock } from '../../shared/format';
+import { useFlowImpacts } from '../../state/useFlowImpacts';
+import { AffectedFlowsList } from '../business-flows/FlowImpactPanels';
 
 /** Actions and notices in the inspector: map and 3D actions, transit board link, simulation, environment notice. */
 export function SimulationSection({ index, entityId }: { index: TopologyIndex; entityId: EntityId }) {
@@ -58,6 +60,7 @@ export function SimulationSection({ index, entityId }: { index: TopologyIndex; e
         </p>
       )}
       {!failure && !impact && <p className="m-0 mb-2 text-sm text-fg-2 [&_b]:text-fg">Not affected by simulated failures at {formatClock(sim.clock)}.</p>}
+      <FlowsAffected index={index} entityId={entityId} />
       <div className="mb-3 flex flex-wrap gap-2">
         {failure ? (
           <button type="button" className="inline-flex h-7 items-center gap-[7px] rounded-md border border-line-strong px-3 whitespace-nowrap text-fg hover:bg-surface-3" onClick={() => recover(entityId)}>
@@ -75,6 +78,20 @@ export function SimulationSection({ index, entityId }: { index: TopologyIndex; e
         )}
       </div>
     </section>
+  );
+}
+
+/** Business flows whose simulated impact runs through this entity (ADR-025): its failure, or one it carries. */
+function FlowsAffected({ index, entityId }: { index: TopologyIndex; entityId: EntityId }) {
+  const environmentId = useUiStore((s) => s.environmentId);
+  const { flows, failures } = useFlowImpacts(index, environmentOf(index, entityId) ?? environmentId);
+  const through = flows.filter((f) => f.steps.some((s) => s.path.includes(entityId)));
+  if (through.length === 0) return null;
+  return (
+    <div className="mb-2">
+      <h4 className="m-0 mb-1 text-[10px] font-normal tracking-[0.08em] text-fg-3 uppercase">Business flows affected</h4>
+      <AffectedFlowsList index={index} impacts={through} failures={failures} label="Business flows affected" />
+    </div>
   );
 }
 

@@ -1,15 +1,21 @@
 import { useId, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { businessFlowsIn } from '../../domain/businessFlow';
+import type { FlowImpact } from '../../domain/flowImpact';
+import type { FailureRoot } from '../../domain/propagation';
+import type { TopologyIndex } from '../../domain/topologyIndex';
+import type { BusinessFlow } from '../../domain/types';
 import { useTopology } from '../../data/topologyContext';
 import { indexFlows } from '../../transit/flows/flowIndex';
 import { flowFindings, flowSearchText } from '../../transit/flows/flowModel';
 import { fieldClass, kickerClass } from '../../shared/ui/classes';
 import { LoadState } from '../../shared/ui/LoadState';
+import { useFlowImpacts } from '../../state/useFlowImpacts';
 import { useUiStore } from '../../state/uiStore';
 import { Note } from '../pages/PageShell';
 import { FlowBadge } from './FlowBadge';
 import { NewFlowButton } from './FlowEditActions';
+import { describeFlowImpact, flowImpactNames } from './flowImpactText';
 import { stripPageParams } from './flowVisuals';
 
 /**
@@ -25,6 +31,7 @@ export function FlowsCatalogPage() {
   const index = topology.status === 'ready' ? topology.index : null;
   const resolved = useMemo(() => (index ? businessFlowsIn(index, environmentId) : []), [index, environmentId]);
   const fx = useMemo(() => indexFlows(resolved.map((r) => r.flow), (id) => index?.definitions.get(id)?.name ?? id), [resolved, index]);
+  const simulation = useFlowImpacts(topology.status === 'ready' && !topology.history ? index : null, environmentId);
   if (!index) {
     return (
       <div className="absolute inset-0 overflow-auto px-5 pt-[18px] pb-8">
@@ -91,6 +98,7 @@ export function FlowsCatalogPage() {
                     {gaps ? ` · ${gaps} unbacked` : ''}
                     {notHere ? ` · ${notHere} step${notHere === 1 ? '' : 's'} not deployed here` : ''}
                   </dd>
+                  {simulation.failures.length > 0 && <SimulatedImpactRow index={index} flow={flow} impact={simulation.flows.find((f) => f.flowId === flow.id)} failures={simulation.failures} />}
                 </dl>
               </li>
             );
@@ -100,3 +108,17 @@ export function FlowsCatalogPage() {
     </div>
   );
 }
+
+/** A flow's simulated impact in its catalog card (ADR-025), while failures are simulated. */
+function SimulatedImpactRow({ index, flow, impact, failures }: { index: TopologyIndex; flow: BusinessFlow; impact: FlowImpact | undefined; failures: readonly FailureRoot[] }) {
+  const text = impact ? describeFlowImpact(impact, flow, failures, flowImpactNames(index)) : null;
+  return (
+    <>
+      <dt className={kickerClass}>Simulated impact</dt>
+      <dd className={`m-0 ${impact ? 'text-warn-fg' : 'text-fg-3'}`} data-flow-impact-summary={flow.id}>
+        {text ? `${text.stop}${text.likely ? `, ${text.likely}` : ''}` : 'not affected'}
+      </dd>
+    </>
+  );
+}
+

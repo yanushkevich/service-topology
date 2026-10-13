@@ -15,6 +15,7 @@ import { ignoreShortcut } from '../../shared/keyboard';
 import { Segment, Segmented } from '../../shared/ui/primitives';
 import { LoadState } from '../../shared/ui/LoadState';
 import { useMotionReduced } from '../../state/motion';
+import { useFlowImpacts } from '../../state/useFlowImpacts';
 import { useUiStore } from '../../state/uiStore';
 import { Note } from '../pages/PageShell';
 import { BoardFrame, BoardGrid, BoardHeader } from '../boards/BoardLayout';
@@ -22,6 +23,7 @@ import { createPlayback, playbackActions, usePlaybackClock, useReplayUrlTime, ty
 import { WindowSelect } from '../boards/WindowSelect';
 import { useRepositoryRead } from '../transit-board/useTransitBoard';
 import { FlowEditActions } from './FlowEditActions';
+import { FlowImpactBanner } from './FlowImpactPanels';
 import { FlowSwimlane } from './FlowSwimlane';
 import { SwimlaneLegend } from './SwimlaneParts';
 import { FlowCard, FlowPicker, FlowStrip } from './FlowPanels';
@@ -59,10 +61,10 @@ export function FlowBoardPage() {
       </BoardFrame>
     );
   }
-  return <Board key={`${flow.id}\u0000${environmentId}`} index={topology.index} flow={flow} environmentId={environmentId} />;
+  return <Board key={`${flow.id}\u0000${environmentId}`} index={topology.index} flow={flow} environmentId={environmentId} viewingHistory={topology.history !== null} />;
 }
 
-function Board({ index, flow, environmentId }: { index: TopologyIndex; flow: BusinessFlow; environmentId: string }) {
+function Board({ index, flow, environmentId, viewingHistory }: { index: TopologyIndex; flow: BusinessFlow; environmentId: string; viewingHistory: boolean }) {
   const [params, setParams] = useSearchParams();
   const update = (change: (p: URLSearchParams) => void, replace = false) =>
     setParams(
@@ -94,6 +96,10 @@ function Board({ index, flow, environmentId }: { index: TopologyIndex; flow: Bus
   // Computed once per flow; selection, search, and replay never rebuild it (ADR-023).
   const layout = useMemo(() => computeSwimlanes(flow, serviceName, eventName), [flow, serviceName, eventName]);
   const resolved = useMemo(() => resolveBusinessFlow(index, flow, environmentId), [index, flow, environmentId]);
+  // Simulated failures mapped onto this flow (ADR-025); not while viewing history.
+  const simulation = useFlowImpacts(viewingHistory ? null : index, environmentId);
+  const impact = simulation.flows.find((f) => f.flowId === flow.id) ?? null;
+  const simulatedSteps = useMemo(() => (impact ? new Map(impact.steps.map((s) => [s.stepId, s.effect])) : null), [impact]);
 
   const stats = useRepositoryRead(`${flow.id}\u0000${environmentId}\u0000${windowValue}`, (r, signal) => r.getFlowStats(flow, environmentId, windowValue, signal));
   const flowStats = stats.status === 'ready' ? stats.value : null;
@@ -118,8 +124,8 @@ function Board({ index, flow, environmentId }: { index: TopologyIndex; flow: Bus
     const finding = focus !== null && mode === 'typical' ? findings[focus] : undefined;
     const q = query.trim().toLowerCase();
     const stepMatches = q ? new Set(flow.steps.filter((s) => `${s.name} ${serviceName(s.serviceDefinitionId)} ${s.entryPoint ?? ''}`.toLowerCase().includes(q)).map((s) => s.id)) : null;
-    return { selectedStepId: stepId, focus: finding ? { steps: new Set(finding.stepIds), transitions: new Set(finding.transitionIds) } : null, matches: stepMatches };
-  }, [focus, mode, findings, query, flow, serviceName, stepId]);
+    return { selectedStepId: stepId, focus: finding ? { steps: new Set(finding.stepIds), transitions: new Set(finding.transitionIds) } : null, matches: stepMatches, simulated: simulatedSteps };
+  }, [focus, mode, findings, query, flow, serviceName, stepId, simulatedSteps]);
   const selectedStep: FlowStep | null = (stepId && flow.steps.find((s) => s.id === stepId)) || null;
 
   // Replay: samples, the chosen (or first) transaction, a local playback clock.
@@ -218,6 +224,7 @@ function Board({ index, flow, environmentId }: { index: TopologyIndex; flow: Bus
           </>
         }
       />
+      {impact && <FlowImpactBanner index={index} flow={flow} impact={impact} failures={simulation.failures} />}
       <BoardGrid
         labels={{ index: 'Flows', map: 'Map', strip: 'Step strip', card: 'Flow card' }}
         cardWidth={340}
