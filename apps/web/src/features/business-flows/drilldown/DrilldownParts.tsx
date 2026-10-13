@@ -50,7 +50,7 @@ export const BoardPlane = memo(function BoardPlane({ board, colors, entered, onE
       <Html position={boardLabelAnchor(board) as [number, number, number]} center zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
         <div ref={attach} className={`${LABEL} font-semibold`} data-board-label={board.serviceDefinitionId}>
           {board.name}
-          {!board.hasBoard && <span className="ml-1.5 font-normal text-fg-3">no board yet</span>}
+          {board.kind === 'pad' && <span className="ml-1.5 font-normal text-fg-3">no board yet</span>}
         </div>
       </Html>
     </group>

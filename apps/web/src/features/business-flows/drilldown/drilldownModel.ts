@@ -2,32 +2,35 @@ import type { BusinessFlow, FlowOutcomeKind, FlowStepKind } from '../../../domai
 import type { BoardIndex } from '../../../transit/board';
 import { lineForStep } from '../../../transit/flows/flowModel';
 import { OUTCOMES_LANE, type SwimlaneLayout } from '../../../transit/flows/swimlane';
-import { buildTrackGraph, bundledPolyline, placeStations, type PlanePoint } from '../../../transit/layout';
-import type { StationKind } from '../../../transit/types';
+import { buildTrackGraph, bundledPolyline, placeStations, stopPosition, type PlanePoint } from '../../../transit/layout';
+import type { PolicyState, PolicyType, StationKind } from '../../../transit/types';
 
 /**
- * The 3D drill-down's scene model (ADR-026, docs/BUSINESS_FLOWS.md §13): the flow's swimlane plane
- * on top, each service's transit plane hanging under its lane, and a shaft from each step down to
- * the entry station of the line it enters. Pure and deterministic: it reuses the swimlane layout
- * and the transit layout's plane coordinates (u, v) and adds no layout of its own. World units,
- * y up; the flow plane is at y = 0.
+ * The 3D drill-down's scene model (ADR-026, Milestone 13.1): the flow's swimlane plane on top and,
+ * under each service lane, what the flow does inside that service — the lines its steps enter,
+ * their stations and policies — on a plane fitted to them and placed under those steps. Services
+ * without a board are compact pads. Pure and deterministic: positions come from the swimlane layout
+ * and the transit layout's plane coordinates (u, v). World units, y up; the flow plane is at y = 0.
  */
 
 export type Vec3 = readonly [number, number, number];
 
-/** How far the service planes hang below the flow plane: at least this, more for a big flow (DROP_RATIO of its extent), so the floors read as stacked. */
+/** Plane units → world units: one scale for every service, so planes compare. */
+export const BOARD_SCALE = 0.47;
+/** How far planes hang below the flow plane: at least this, more for a big flow (DROP_RATIO of its extent). */
 export const BOARD_DROP = 420;
-const DROP_RATIO = 0.35;
-/** Width of every service plane: the transit plane's u range scaled to this. */
-export const BOARD_WIDTH = 640;
-/** Depth of a service without a board, and the gap between service planes. */
-export const EMPTY_BOARD_DEPTH = 160;
-export const BOARD_GAP = 90;
-/** The transit plane's frame (layout.ts column bands) and the margin around its rows. */
-const PLANE_U: readonly [number, number] = [-720, 640];
-const PLANE_V_MARGIN = 60;
-/** Depth of the outcomes band on the flow plane. */
-const OUTCOMES_DEPTH = 140;
+const DROP_RATIO = 0.3;
+/** Margin around what a plane shows, in plane units. */
+const PLANE_MARGIN = 70;
+/** A service without a board: a pad of this size. */
+export const PAD_WIDTH = 240;
+export const PAD_DEPTH = 70;
+/** Lanes are at least this deep, and this far apart, on the flow plane. */
+export const MIN_BAND = 130;
+export const BAND_GAP = 60;
+/** Room on the left of the flow plane for the lane captions. */
+export const CAPTION_GUTTER = 260;
+const OUTCOMES_DEPTH = 120;
 
 export interface DrilldownStep {
   id: string;
@@ -59,33 +62,55 @@ export interface DrilldownStation {
   name: string;
   kind: StationKind;
   position: Vec3;
+  /** On a line this flow enters. */
+  inFlow: boolean;
 }
 
 export interface DrilldownLine {
   lineId: string;
   code: string;
+  name: string;
   /** Position in the board's global line order: picks the line colour (`--transit-line-N`). */
   colorIndex: number;
+  /** A line this flow's steps enter (shown by default). */
+  inFlow: boolean;
   branches: Vec3[][];
 }
 
-export interface DrilldownBoard {
-  serviceDefinitionId: string;
-  name: string;
-  /** False: the service has no transit board yet (drawn as an empty plane). */
-  hasBoard: boolean;
-  center: Vec3;
-  /** Plane size along x and z. */
-  width: number;
-  depth: number;
-  stations: DrilldownStation[];
-  lines: DrilldownLine[];
+export interface DrilldownPolicy {
+  id: string;
+  type: PolicyType;
+  state: PolicyState;
+  label: string;
+  position: Vec3;
 }
 
+/** A plane's footprint: centre and size along x and z. */
+export interface Footprint {
+  center: Vec3;
+  width: number;
+  depth: number;
+}
+
+export interface DrilldownBoard extends Footprint {
+  serviceDefinitionId: string;
+  name: string;
+  /** 'board': the service's transit board (fitted to the flow's lines); 'pad': it has no board yet. */
+  kind: 'board' | 'pad';
+  /** The whole board, for "Show all lines". Equals the footprint for a pad. */
+  full: Footprint;
+  stations: DrilldownStation[];
+  lines: DrilldownLine[];
+  /** Policy stops on the flow's lines. */
+  policies: DrilldownPolicy[];
+}
+
+/** A step's drop to its service: to the entry station of its line, or (no line) to the plane or pad. */
 export interface DrilldownShaft {
   stepId: string;
   serviceDefinitionId: string;
-  lineId: string;
+  /** Null: the step maps to no line here (a stub to the pad or plane). */
+  lineId: string | null;
   from: Vec3;
   to: Vec3;
 }
@@ -94,7 +119,7 @@ export interface DrilldownModel {
   flowId: string;
   /** How far below the flow plane the service planes hang. */
   drop: number;
-  /** The flow plane's extent: x0..x1 across, z0..z1 deep, at y = 0. */
+  /** The flow plane's extent: x0..x1 across (x0 includes the caption gutter), z0..z1 deep, at y = 0. */
   flowPlane: { x0: number; x1: number; z0: number; z1: number };
   lanes: DrilldownLane[];
   steps: DrilldownStep[];
@@ -114,118 +139,110 @@ export interface DrilldownInput {
   serviceName: (id: string) => string;
 }
 
-/** The scene model, in stages: service planes, the lane bands over them, the flow plane, then the shafts. */
+/** The scene model, in stages: what each service shows, the lane bands, the flow plane, the planes, the shafts. */
 export function buildDrilldown(input: DrilldownInput): DrilldownModel {
   const { flow, layout } = input;
   const serviceLanes = layout.lanes.filter((l) => l.id !== OUTCOMES_LANE);
-  const sized = serviceLanes.map((l) => {
-    const index = input.boards.get(l.id) ?? null;
-    return { serviceId: l.id, index, plane: index ? planeOf(index) : null };
-  });
-  const depth = sized.reduce((sum, s) => sum + (s.plane?.depth ?? EMPTY_BOARD_DEPTH) + BOARD_GAP, OUTCOMES_DEPTH);
-  const drop = Math.max(BOARD_DROP, round(DROP_RATIO * Math.max(layout.width, depth)));
-  const planes = placeBoardPlanes(input, sized, drop);
-  const bands = laneBands(layout, planes);
-  const toWorld = flowPlaneMapping(layout, bands);
+  const centeredX = (n: { x: number; width: number }) => n.x + n.width / 2 - layout.width / 2;
+  const stepLines = new Map(flow.steps.map((s) => [s.id, lineOfStep(input, s.id)]));
+  const contents = serviceLanes.map((lane) => serviceContent(input, lane.id, stepLines));
+  const bands = laneBands(layout, contents.map((c) => ({ id: c.serviceId, depth: c.footprintDepth })));
+  const toFlowPlane = flowPlaneMapping(layout, bands);
   const steps = flow.steps.flatMap((step): DrilldownStep[] => {
     const node = layout.nodes.find((n) => n.id === step.id);
-    if (!node) return [];
-    const board = input.boards.get(step.serviceDefinitionId);
-    const line = board ? lineForStep(board.lines, step) : null;
-    return [{ id: step.id, name: step.name, kind: step.kind, serviceDefinitionId: step.serviceDefinitionId, position: toWorld(node.x + node.width / 2, node.y + node.height / 2), lineId: line?.id ?? null }];
+    return node ? [{ id: step.id, name: step.name, kind: step.kind, serviceDefinitionId: step.serviceDefinitionId, position: toFlowPlane(node.x + node.width / 2, node.y + node.height / 2), lineId: stepLines.get(step.id) ?? null }] : [];
   });
   const outcomes = flow.outcomes.flatMap((outcome): DrilldownOutcome[] => {
     const node = layout.nodes.find((n) => n.id === outcome.id);
-    return node ? [{ id: outcome.id, name: outcome.name, kind: outcome.kind, position: toWorld(node.x + node.width / 2, node.y + node.height / 2) }] : [];
+    return node ? [{ id: outcome.id, name: outcome.name, kind: outcome.kind, position: toFlowPlane(node.x + node.width / 2, node.y + node.height / 2) }] : [];
   });
-  const transitions = layout.edges.map((e) => ({ id: e.id, points: e.points.map((p) => toWorld(p.x, p.y)) }));
+  const transitions = layout.edges.map((e) => ({ id: e.id, points: e.points.map((p) => toFlowPlane(p.x, p.y)) }));
   const lanes = serviceLanes.map((l) => {
     const band = bands.get(l.id) ?? { z0: 0, z1: 0 };
     return { serviceDefinitionId: l.id, label: l.label, z0: band.z0, z1: band.z1 };
   });
-  const outcomesBand = bands.get(OUTCOMES_LANE);
-  const flowPlane = { x0: -layout.width / 2, x1: layout.width / 2, z0: lanes[0]?.z0 ?? 0, z1: outcomesBand?.z1 ?? lanes.at(-1)?.z1 ?? 0 };
-  const boards = planes.map((p) => p.board);
+  const flowPlane = { x0: -layout.width / 2 - CAPTION_GUTTER, x1: layout.width / 2, z0: lanes[0]?.z0 ?? 0, z1: bands.get(OUTCOMES_LANE)?.z1 ?? lanes.at(-1)?.z1 ?? 0 };
+  const drop = Math.max(BOARD_DROP, round(DROP_RATIO * Math.max(flowPlane.x1 - flowPlane.x0, flowPlane.z1 - flowPlane.z0)));
+  const placed = contents.map((c) => placeService(input, c, bands.get(c.serviceId) ?? { z0: 0, z1: 0 }, drop, steps, centeredX));
+  const boards = placed.map((p) => p.board);
   const shafts = steps.flatMap((step): DrilldownShaft[] => {
-    const entry = step.lineId ? planes.find((p) => p.board.serviceDefinitionId === step.serviceDefinitionId)?.entries.get(step.lineId) : undefined;
-    return step.lineId && entry ? [{ stepId: step.id, serviceDefinitionId: step.serviceDefinitionId, lineId: step.lineId, from: step.position, to: entry }] : [];
+    const service = placed.find((p) => p.board.serviceDefinitionId === step.serviceDefinitionId);
+    if (!service) return [];
+    const entry = step.lineId ? service.entries.get(step.lineId) : undefined;
+    const fallback: Vec3 = [step.position[0], service.board.center[1], clamp(step.position[2], service.board.center[2] - service.board.depth / 2, service.board.center[2] + service.board.depth / 2)];
+    const to = entry ?? (service.board.kind === 'pad' ? padTop(service.board, step.position[0]) : fallback);
+    return [{ stepId: step.id, serviceDefinitionId: step.serviceDefinitionId, lineId: entry ? step.lineId : null, from: step.position, to }];
   });
   return { flowId: flow.id, drop, flowPlane, lanes, steps, outcomes, transitions, boards, shafts, bounds: boundsOf(flowPlane, boards, drop) };
 }
 
-// ---------------------------------------------------------------------------------------------
-// Service planes
-// ---------------------------------------------------------------------------------------------
-
-interface PlacedPlane {
-  board: DrilldownBoard;
-  /** Line → world position of its entry station. */
-  entries: Map<string, Vec3>;
+/** The line a step enters on its service's board, if any. */
+function lineOfStep(input: DrilldownInput, stepId: string): string | null {
+  const step = input.flow.steps.find((s) => s.id === stepId);
+  const board = step ? input.boards.get(step.serviceDefinitionId) : null;
+  return step && board ? (lineForStep(board.lines, step)?.id ?? null) : null;
 }
 
-type PlaneGeometry = ReturnType<typeof planeOf>;
+// ---------------------------------------------------------------------------------------------
+// What each service shows (in its own plane units)
+// ---------------------------------------------------------------------------------------------
 
-/** One plane per service lane, in lane order along z, each centred under the lane's steps along x. */
-function placeBoardPlanes(input: DrilldownInput, sized: readonly { serviceId: string; index: BoardIndex | null; plane: PlaneGeometry | null }[], drop: number): PlacedPlane[] {
-  const out: PlacedPlane[] = [];
-  let z = 0;
-  for (const { serviceId, index, plane } of sized) {
-    const depth = plane ? plane.depth : EMPTY_BOARD_DEPTH;
-    const center: Vec3 = [laneCenterX(input, serviceId), -drop, z + depth / 2];
-    out.push(index && plane ? placedBoard(input, serviceId, index, plane, center) : { board: { serviceDefinitionId: serviceId, name: input.serviceName(serviceId), hasBoard: false, center, width: BOARD_WIDTH, depth, stations: [], lines: [] }, entries: new Map() });
-    z += depth + BOARD_GAP;
-  }
-  return out;
+interface ServiceContent {
+  serviceId: string;
+  index: BoardIndex | null;
+  positions: Map<string, PlanePoint>;
+  /** Plane polylines per line (all branches). */
+  polylines: Map<string, PlanePoint[][]>;
+  flowLineIds: Set<string>;
+  /** The fitted extent (flow lines, else the whole board) and the whole board's, in plane units. */
+  fitted: PlaneBox;
+  full: PlaneBox;
+  /** Depth of the footprint in world units (the lane band needs at least this). */
+  footprintDepth: number;
 }
 
-/** A board's plane geometry in its own (u, v) frame, before placement. */
-function planeOf(index: BoardIndex): { positions: Map<string, PlanePoint>; uc: number; vc: number; k: number; depth: number } {
+interface PlaneBox {
+  u0: number;
+  u1: number;
+  v0: number;
+  v1: number;
+}
+
+function serviceContent(input: DrilldownInput, serviceId: string, stepLines: Map<string, string | null>): ServiceContent {
+  const index = input.boards.get(serviceId) ?? null;
+  const flowLineIds = new Set(input.flow.steps.filter((s) => s.serviceDefinitionId === serviceId).flatMap((s) => stepLines.get(s.id) ?? []));
+  if (!index) return { serviceId, index, positions: new Map(), polylines: new Map(), flowLineIds, fitted: EMPTY_BOX, full: EMPTY_BOX, footprintDepth: PAD_DEPTH };
   const positions = placeStations(index);
-  const vs = [...positions.values()].map((p) => p.v);
-  const v0 = Math.min(0, ...vs) - PLANE_V_MARGIN;
-  const v1 = Math.max(0, ...vs) + PLANE_V_MARGIN;
-  const k = BOARD_WIDTH / (PLANE_U[1] - PLANE_U[0]);
-  return { positions, uc: (PLANE_U[0] + PLANE_U[1]) / 2, vc: (v0 + v1) / 2, k, depth: (v1 - v0) * k };
+  const graph = buildTrackGraph(index, positions);
+  const polylines = new Map(index.lines.map((line) => [line.id, (graph.paths.get(line.id) ?? []).map((path) => bundledPolyline(graph, path, line.id))]));
+  const full = boxOf([...positions.values(), ...[...polylines.values()].flat(2)]);
+  const fitted = flowLineIds.size ? boxOf([...flowLineIds].flatMap((id) => (polylines.get(id) ?? []).flat())) : full;
+  return { serviceId, index, positions, polylines, flowLineIds, fitted, full, footprintDepth: (fitted.v1 - fitted.v0) * BOARD_SCALE };
 }
 
-function placedBoard(input: DrilldownInput, serviceId: string, index: BoardIndex, plane: PlaneGeometry, center: Vec3): PlacedPlane {
-  const at = (p: PlanePoint): Vec3 => [round(center[0] + (p.u - plane.uc) * plane.k), center[1], round(center[2] + (p.v - plane.vc) * plane.k)];
-  const graph = buildTrackGraph(index, plane.positions);
-  const stations = index.board.stations.map((s) => ({ id: s.id, name: s.name, kind: s.kind, position: at(plane.positions.get(s.id) ?? { u: 0, v: 0 }) }));
-  const lines = index.lines.map((line, i) => ({
-    lineId: line.id,
-    code: line.code,
-    colorIndex: i,
-    branches: (graph.paths.get(line.id) ?? []).map((path) => bundledPolyline(graph, path, line.id).map(at)),
-  }));
-  const entries = new Map<string, Vec3>();
-  for (const line of index.lines) {
-    const route = line.route[0]?.stations ?? [];
-    // The entry station: the first one the service owns (a gate, else the first after the caller).
-    const entryId = route.find((id) => index.stations.get(id)?.kind === 'gate') ?? route.find((id) => index.stations.get(id)?.kind !== 'caller') ?? route[0];
-    const point = entryId ? plane.positions.get(entryId) : undefined;
-    if (point) entries.set(line.id, at(point));
-  }
-  return { board: { serviceDefinitionId: serviceId, name: input.serviceName(serviceId), hasBoard: true, center, width: BOARD_WIDTH, depth: plane.depth, stations, lines }, entries };
-}
+const EMPTY_BOX: PlaneBox = { u0: 0, u1: 0, v0: 0, v1: 0 };
 
-/** Mean x of the lane's steps on the (centred) flow plane, so a board hangs under its steps. */
-function laneCenterX(input: DrilldownInput, serviceId: string): number {
-  const xs = input.layout.nodes.filter((n) => n.lane === serviceId).map((n) => n.x + n.width / 2 - input.layout.width / 2);
-  return xs.length ? round(xs.reduce((a, b) => a + b, 0) / xs.length) : 0;
+function boxOf(points: readonly PlanePoint[]): PlaneBox {
+  if (points.length === 0) return EMPTY_BOX;
+  const us = points.map((p) => p.u);
+  const vs = points.map((p) => p.v);
+  return { u0: Math.min(...us) - PLANE_MARGIN, u1: Math.max(...us) + PLANE_MARGIN, v0: Math.min(...vs) - PLANE_MARGIN, v1: Math.max(...vs) + PLANE_MARGIN };
 }
 
 // ---------------------------------------------------------------------------------------------
-// The flow plane over the service planes
+// Lane bands on the flow plane
 // ---------------------------------------------------------------------------------------------
 
-/** Each service lane's band spans its plane's depth along z; the outcomes band follows the last. */
-function laneBands(layout: SwimlaneLayout, planes: readonly PlacedPlane[]): Map<string, { z0: number; z1: number }> {
+/** Each service lane's band is as deep as its plane or pad (at least MIN_BAND), in lane order; outcomes follow. */
+function laneBands(layout: SwimlaneLayout, services: readonly { id: string; depth: number }[]): Map<string, { z0: number; z1: number }> {
   const bands = new Map<string, { z0: number; z1: number }>();
-  for (const { board } of planes) bands.set(board.serviceDefinitionId, { z0: board.center[2] - board.depth / 2, z1: board.center[2] + board.depth / 2 });
-  const last = planes.at(-1)?.board;
-  const start = last ? last.center[2] + last.depth / 2 + BOARD_GAP : 0;
-  if (layout.lanes.some((l) => l.id === OUTCOMES_LANE)) bands.set(OUTCOMES_LANE, { z0: start, z1: start + OUTCOMES_DEPTH });
+  let z = 0;
+  for (const s of services) {
+    const depth = Math.max(MIN_BAND, s.depth);
+    bands.set(s.id, { z0: z, z1: z + depth });
+    z += depth + BAND_GAP;
+  }
+  if (layout.lanes.some((l) => l.id === OUTCOMES_LANE)) bands.set(OUTCOMES_LANE, { z0: z, z1: z + OUTCOMES_DEPTH });
   return bands;
 }
 
@@ -240,18 +257,84 @@ function flowPlaneMapping(layout: SwimlaneLayout, bands: Map<string, { z0: numbe
   };
 }
 
+// ---------------------------------------------------------------------------------------------
+// Placing each service's plane (or pad) under its steps
+// ---------------------------------------------------------------------------------------------
+
+interface PlacedService {
+  board: DrilldownBoard;
+  /** Line → world position of its entry station. */
+  entries: Map<string, Vec3>;
+}
+
+function placeService(input: DrilldownInput, c: ServiceContent, band: { z0: number; z1: number }, drop: number, steps: readonly DrilldownStep[], centeredX: (n: { x: number; width: number }) => number): PlacedService {
+  const name = input.serviceName(c.serviceId);
+  const laneSteps = steps.filter((s) => s.serviceDefinitionId === c.serviceId);
+  const laneX = mean(input.layout.nodes.filter((n) => n.lane === c.serviceId).map(centeredX)) ?? 0;
+  const bandZ = (band.z0 + band.z1) / 2;
+  if (!c.index) {
+    const pad: Footprint = { center: [round(laneX), -drop, round(bandZ)], width: PAD_WIDTH, depth: PAD_DEPTH };
+    return { board: { serviceDefinitionId: c.serviceId, name, kind: 'pad', ...pad, full: pad, stations: [], lines: [], policies: [] }, entries: new Map() };
+  }
+  const index = c.index;
+  const entryIdOf = (lineId: string) => {
+    const route = index.lines.find((l) => l.id === lineId)?.route[0]?.stations ?? [];
+    // The entry station: the first one the service owns (a gate, else the first after the caller).
+    return route.find((id) => index.stations.get(id)?.kind === 'gate') ?? route.find((id) => index.stations.get(id)?.kind !== 'caller') ?? route[0];
+  };
+  // Under-step placement: the flow lines' entry stations sit under the steps that enter them.
+  const mapped = laneSteps.filter((s) => s.lineId !== null);
+  const entryUs = mapped.flatMap((s) => {
+    const id = s.lineId ? entryIdOf(s.lineId) : undefined;
+    const p = id ? c.positions.get(id) : undefined;
+    return p ? [p.u] : [];
+  });
+  const fittedU = (c.fitted.u0 + c.fitted.u1) / 2;
+  const fittedV = (c.fitted.v0 + c.fitted.v1) / 2;
+  const anchorU = mean(entryUs) ?? fittedU;
+  const anchorX = mean(mapped.map((s) => s.position[0])) ?? laneX;
+  const at = (p: PlanePoint): Vec3 => [round(anchorX + (p.u - anchorU) * BOARD_SCALE), -drop, round(bandZ + (p.v - fittedV) * BOARD_SCALE)];
+  const footprint = (box: PlaneBox): Footprint => {
+    const center = at({ u: (box.u0 + box.u1) / 2, v: (box.v0 + box.v1) / 2 });
+    return { center, width: round((box.u1 - box.u0) * BOARD_SCALE), depth: round((box.v1 - box.v0) * BOARD_SCALE) };
+  };
+  const flowStations = new Set([...c.flowLineIds].flatMap((id) => index.lines.find((l) => l.id === id)?.route.flatMap((b) => b.stations) ?? []));
+  const stations = index.board.stations.map((s) => ({ id: s.id, name: s.name, kind: s.kind, position: at(c.positions.get(s.id) ?? { u: 0, v: 0 }), inFlow: flowStations.has(s.id) }));
+  const lines = index.lines.map((line, i) => ({ lineId: line.id, code: line.code, name: line.name, colorIndex: i, inFlow: c.flowLineIds.has(line.id), branches: (c.polylines.get(line.id) ?? []).map((poly) => poly.map(at)) }));
+  const policies = index.board.policies.flatMap((stop): DrilldownPolicy[] => {
+    if (!flowStations.has(stop.clientId)) return [];
+    const p = stopPosition(index, c.positions, stop.id);
+    return p ? [{ id: stop.id, type: stop.type, state: stop.state, label: stop.label, position: at(p) }] : [];
+  });
+  const entries = new Map<string, Vec3>();
+  for (const line of index.lines) {
+    const id = entryIdOf(line.id);
+    const p = id ? c.positions.get(id) : undefined;
+    if (p) entries.set(line.id, at(p));
+  }
+  return { board: { serviceDefinitionId: c.serviceId, name, kind: 'board', ...footprint(c.fitted), full: footprint(c.full), stations, lines, policies }, entries };
+}
+
+/** Where a stub from a step lands on a pad: on its top, under the step as far as the pad reaches. */
+function padTop(pad: DrilldownBoard, x: number): Vec3 {
+  return [clamp(x, pad.center[0] - pad.width / 2 + 20, pad.center[0] + pad.width / 2 - 20), pad.center[1], pad.center[2]];
+}
+
 function boundsOf(flowPlane: DrilldownModel['flowPlane'], boards: readonly DrilldownBoard[], drop: number): DrilldownModel['bounds'] {
   const xs = [flowPlane.x0, flowPlane.x1, ...boards.flatMap((b) => [b.center[0] - b.width / 2, b.center[0] + b.width / 2])];
   const zs = [flowPlane.z0, flowPlane.z1, ...boards.flatMap((b) => [b.center[2] - b.depth / 2, b.center[2] + b.depth / 2])];
   return { min: [Math.min(...xs), boards.length ? -drop : 0, Math.min(...zs)], max: [Math.max(...xs), 0, Math.max(...zs)] };
 }
 
-/** The part of the scene a scope looks at: the whole flow, or one service's plane. */
-export function scopeBounds(model: DrilldownModel, serviceDefinitionId: string | null): DrilldownModel['bounds'] {
+/** The part of the scene a scope looks at: the whole flow, or one service's plane (its whole board when all lines show). */
+export function scopeBounds(model: DrilldownModel, serviceDefinitionId: string | null, allLines = false): DrilldownModel['bounds'] {
   const board = serviceDefinitionId ? model.boards.find((b) => b.serviceDefinitionId === serviceDefinitionId) : undefined;
   if (!board) return model.bounds;
-  const [x, y, z] = board.center;
-  return { min: [x - board.width / 2, y, z - board.depth / 2], max: [x + board.width / 2, y, z + board.depth / 2] };
+  const f = allLines ? board.full : board;
+  const [x, y, z] = f.center;
+  return { min: [x - f.width / 2, y, z - f.depth / 2], max: [x + f.width / 2, y, z + f.depth / 2] };
 }
 
 const round = (n: number) => Math.round(n * 10) / 10;
+const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
+const mean = (xs: readonly number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : undefined);

@@ -97,7 +97,7 @@ function Drilldown({ flow, layout, boards, serviceName, scope, onScope, selected
 }
 
 /** Where you are, the way back, and every service plane as a button (the keyboard and screen-reader path). */
-function Overlay({ flowName, boards, entered, enteredName, onScope, onExit }: { flowName: string; boards: { serviceDefinitionId: string; name: string; hasBoard: boolean }[]; entered: string | null; enteredName: string | null; onScope: (id: string | null) => void; onExit: () => void }) {
+function Overlay({ flowName, boards, entered, enteredName, onScope, onExit }: { flowName: string; boards: { serviceDefinitionId: string; name: string; kind: 'board' | 'pad' }[]; entered: string | null; enteredName: string | null; onScope: (id: string | null) => void; onExit: () => void }) {
   return (
     <>
       <nav aria-label="3D scope" className={cx(floatClass, 'top-3 left-3 z-30 flex flex-wrap items-center gap-2 px-2.5 py-1.5 text-sm')}>
@@ -126,7 +126,7 @@ function Overlay({ flowName, boards, entered, enteredName, onScope, onExit }: { 
               <li key={b.serviceDefinitionId}>
                 <button type="button" className="min-h-6 w-full rounded-sm px-1.5 py-0.5 text-left text-fg hover:bg-surface-3 aria-pressed:bg-accent-soft" aria-pressed={entered === b.serviceDefinitionId} onClick={() => onScope(b.serviceDefinitionId)}>
                   Enter {b.name}
-                  {!b.hasBoard && <span className="text-xs text-fg-3"> · no board yet</span>}
+                  {b.kind === 'pad' && <span className="text-xs text-fg-3"> · no board yet</span>}
                 </button>
               </li>
             ))}
