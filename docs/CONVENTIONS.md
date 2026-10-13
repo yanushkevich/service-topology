@@ -78,7 +78,7 @@ domain/                            canonical types, validation, traversal (pure 
 | Page-local URL parameters | `PAGE_PARAMS` in `state/useUrlStateSync.ts` |
 | A button, field, heading, or panel style used in 2+ places | `shared/ui/` (§3.3) |
 | A piece shared by the transit and flow boards | `features/boards/` |
-| A generic hook (media query, keyboard) | `shared/hooks/`, `shared/keyboard.ts` |
+| A generic hook (media query, keyboard, `useKeyed` for values rebuilt every tick) | `shared/hooks/`, `shared/keyboard.ts` |
 | Formatting (durations, numbers, labels) | `shared/format.ts`, `shared/mappings.ts` |
 | A new colour | `styles/tokens.css`, both themes (§3.4) |
 | A page | `features/<feature>/…Page.tsx`, a route in `app/routes.tsx`, and a case in `test/a11y.test.tsx` |

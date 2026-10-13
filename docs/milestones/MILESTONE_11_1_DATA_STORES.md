@@ -1,6 +1,6 @@
 # Milestone 11.1 — Data stores on both boards, and flows you can find
 
-**Status:** in progress (2026-10-12).
+**Status:** implemented 2026-10-12 (closeout in `docs/IMPLEMENTATION_PLAN.md`).
 
 **Read first:**
 - `docs/BUSINESS_FLOWS.md` Revision 3, sections 14–16;

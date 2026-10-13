@@ -82,7 +82,8 @@ export function UsedByChips({ fx, flows, selectedFlowId, onSelect }: { fx: FlowB
           <Chip key={flow.id} pressed={pressed} onClick={() => onSelect(pressed ? null : flow.id)} data-flow-chip={flow.id}>
             <FlowBadge fx={fx} flowId={flow.id} />
             {flow.name}
-            <span className="text-xs text-fg-3">
+            {/* Inherits the chip's text colour: fg-3 fails 4.5:1 on the pressed tint. */}
+            <span className="text-xs">
               {steps.length} step{steps.length === 1 ? '' : 's'}
             </span>
           </Chip>

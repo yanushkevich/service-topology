@@ -170,6 +170,10 @@ The Events page and inspector explain the new rule automatically.
   - Add a `--transit-policy-<id>` token in both themes; the contrast test reads the list from code.
   - Run `npm run fixtures:update`.
 - **Steps ↔ lines:** `lineForStep` is the only rule. The service board lists flows through `flowsOnService`.
+- **Data stores (ADR-027):**
+  - Link a service-board dependency with `entityId` (a service definition or resource ID); never match by name.
+  - Declare a database's tables on the board (`tables`), with writer and reader lines that reach the station. `tables.test.ts` checks this on the example.
+  - Flow steps get their stores from `dataStoresOf` (topology relationships).
 - **Editing:** `features/business-flows/FlowEditorDialog.tsx` is wired into `EntityEditorProvider` for the `business-flow` kind.
 - **Import:** `make -C backend import-flows FILE=…` (examples in `fixtures/flows/`).
 

@@ -209,7 +209,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 8 | Implemented (2026-10-12) | Editing UI (ADR-020); see the Milestone 8 closeout below. |
 | 10 | Implemented (2026-10-12) | Business flows (ADR-022): model, board, typical mode, transaction replay, and authoring, on example observed data; see the Milestone 10 closeout. |
 | 11 | Implemented (2026-10-12) | Flow swimlanes, flows on the service board, pattern catalog (ADR-023, ADR-024); see the Milestone 11 closeout. |
-| 11.1 | In progress (2026-10-12) | Data stores on both boards (linked dependencies, tables, store chips) and findable flows (ADR-027); `docs/milestones/MILESTONE_11_1_DATA_STORES.md`. |
+| 11.1 | Implemented (2026-10-12) | Data stores on both boards (linked dependencies, tables, store chips) and findable flows (ADR-027); `docs/milestones/MILESTONE_11_1_DATA_STORES.md`. |
 | 12 | Specified (2026-10-12) | Flows in impact analysis and simulation, with backend B9 (ADR-025, proposed). Not started. |
 | 13 | Specified (2026-10-12) | 3D drill-down from a flow into its services (ADR-026, proposed). Not started. |
 | 9 | Implemented (2026-10-12) | Transit board on example data (ADR-021): spec Phase 1 plus the Phase 4 replay UI, hover tooltips, windows, and per-step stats; see the Milestone 9 closeout and follow-up below. Real data sources (phases 2, 3, and 5) are not started. |
@@ -538,3 +538,43 @@ Flow swimlanes, business flows on the service board, and one pattern catalog (AD
 - **Untested display path.** The example flows share no step, so "also in" appears only with more flows (unit-tested).
 - **Placeholders for the new patterns.** Async request-reply has no example in the topology yet. Inbox and polling-publisher stats are example placeholders.
 - **Unmeasured render cost.** React Flow render times in the browser were not measured.
+
+### Milestone 11.1 closeout (2026-10-12)
+Data stores on both boards, and flows you can find (ADR-027; `docs/BUSINESS_FLOWS.md` Revision 3).
+
+**Commits:**
+- `632c86a` spec;
+- `662d1c6` linked dependencies;
+- `7525870` tables;
+- `7cf6304` data stores on flows;
+- `12922c9` findable flows;
+- the close-out commit.
+
+**Checks run:**
+- **Frontend (`apps/web`):** `npx tsc -b`, `npx eslint .`, and `npx vitest run --maxWorkers=3`: 66 files, 963 passed, 1 skipped. `npm run build` passes.
+  - During phase 2, one run of a combined subset timed out once in the 2D map accessibility case (ELK in jsdom). It passed alone (24/24) and in every later full run.
+- **Real-browser audit:** `npm run audit:a11y`, 22 pages × 2 themes, all pass on two runs. New pages: Capture's data and dependencies, and a service with no board data.
+  - The first run found one real failure: the step count in a pressed "Used by" chip was 3.82:1 in light mode. It now inherits the chip's text colour.
+- **Screenshots** reviewed:
+  - Capture with Checkout selected (light);
+  - the webhook (dark);
+  - the Checkout swimlane (dark);
+  - Order Service without board data (dark);
+  - the flow board at 390 px.
+
+  No horizontal page scroll; no console errors.
+- **Backend:** not changed (the transit read model is frontend-only).
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| `payments-pg` resolves to `payments-db`; simulated unavailability shows on the board; Redis flagged | Pass | `links.test.ts`; `DependencyLinks.test.tsx` (card, link, strip "down", Findings) |
+| Every table's writers and readers reach its station; Capture writes `payment_outbox`; OutboxRelay polls it; the webhook's inbox is `processed_webhooks` | Pass | `tables.test.ts`; `DependencyLinks.test.tsx` |
+| Each new rule triggers and clears | Pass | `links.test.ts` (dependency-not-in-topology); `tables.test.ts` (store-pattern-without-table); `messagingFindings.test.ts` (store-pattern-without-store) |
+| Checkout's steps show `orders-db`, `inventory-db`, `payments-db`, `ledger-db`; outbox names `payments-db`; inbox names `ledger-db` | Pass | `dataStores.test.ts`; `FlowDataStores.test.tsx` |
+| "Used by" chips toggle the flow; a service without board data lists its flows | Pass | `FlowsOnService.test.tsx` |
+| Checks and real-browser audit | Pass | As listed |
+
+**Known limitations:**
+- **Stores per service.** Stores belong to services in the topology, so a step shows its service's stores, and the UI says so. Per-operation data access needs `db.*` span attributes from real traces.
+- **Example tables.** Tables are example data, and only Payment Service has a board.
+- **The strip's stop text gets tall.** A database stop that a line writes several tables at wraps to several lines.

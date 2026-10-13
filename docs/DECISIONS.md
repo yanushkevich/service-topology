@@ -344,3 +344,4 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 - **Consequences:**
   - The transit read model changes additively (`entityId`, `tables`), frontend only. Real adapters must fill them from service catalogues and traces.
   - Flow impact (ADR-025, Milestone 12) can start from a database.
+- **Implemented (2026-10-12, Milestone 11.1):** see the Revision 3 implementation notes in `docs/BUSINESS_FLOWS.md`.

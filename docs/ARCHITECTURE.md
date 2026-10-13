@@ -571,3 +571,18 @@ Decisions: ADR-023 and ADR-024. Spec: `docs/BUSINESS_FLOWS.md` Revision 2.
 - **Service board:**
   - `features/transit-board/FlowsOnService.tsx` (`FlowRows`, `UsedByFlows`);
   - the `flow` page parameter (`state/useUrlStateSync.ts`).
+
+## Revision 11 — Data stores on both boards (2026-10-12, Milestone 11.1)
+Decision: ADR-027. Spec: `docs/BUSINESS_FLOWS.md` Revision 3.
+
+- **Transit read model:** `Station.entityId` and `TransitBoard.tables` (`apps/web/src/transit/types.ts`).
+  - `transit/links.ts`: `linkDependencies`, `applyLinks`, `linksKey`.
+  - `transit/board.ts`: `tablesOfLine`, `withTableFindings`, `tablesByStation` in the index.
+- **Domain:** `apps/web/src/domain/dataStores.ts` (`dataStoresOf`, `flowDataStores`).
+- **Service board** (`features/transit-board/`):
+  - `useLinkedBoard` (in `TransitBoardPage.tsx`) applies the table rules and the links before indexing;
+  - `DependencyList` is the card's "Depends on"; `linkText.ts` holds the link wording;
+  - `LineData` is the card's "Data";
+  - `FlowsOnService.tsx` holds `UsedByChips` and `FlowsWithoutBoard`.
+- **Flow board:** `StoreRef` and `policyStores` in `swimlaneAdapter.ts`, store chips in `SwimlaneParts.tsx`, and `DataStores` in `FlowPanels.tsx`.
+- **Shared:** `shared/hooks/useKeyed.ts`.

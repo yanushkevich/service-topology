@@ -399,3 +399,9 @@ The service board drew databases only as anonymous endpoints (`payments-pg`), no
   - A **"Used by"** row of flow chips under the header toggles a flow, the same as the index's flow group.
   - That group moves to the top of the index, after "All lines".
   - A service with no board data still lists the flows that use it, with links to their steps.
+
+## Revision 3 implementation notes (Milestone 11.1, 2026-10-12)
+- **Linked names.** A linked dependency shows its topology name (`payments-pg` became `payments-db`; Card Processor became Card Processor API) and its topology health, which includes a running simulation. Its example health is dropped. The stop strip shows a degraded or down dependency even next to its step stats.
+- **No rebuilds on simulation ticks.** The linked board is rebuilt only when a link or a linked health changes (`useKeyed`).
+- **The outbox rule.** The outbox pattern is satisfied by writing or polling an outbox table (the relay carries it too). The inbox must be written; the polling publisher must read.
+- **Where flows show.** The flow group in the index sits right after "All lines", so the arrow keys reach it first.
