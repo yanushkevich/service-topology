@@ -1,0 +1,88 @@
+# Data bundle: export and import of all data (Milestone 11.5, backend B11)
+
+**Status:** specified 2026-10-13. Decision: ADR-032.
+
+**Source:** the product owner asked for "another option, to export json or yaml file from frontend, that would contain all data modules, and it would be visible in UI ... infra, services, flows, events, etc.". Their answers:
+1. **Scope:** export and import.
+2. **Contents:** everything.
+3. **Placement:** Settings → Data source.
+
+## 1. The bundle
+
+A **data bundle** is one file holding every data module the app shows. It is JSON or YAML, with the same structure either way. The schema is `docs/schemas/data-bundle.v1.schema.json`.
+
+| Key | Contents |
+|---|---|
+| `format` | always `service-topology.bundle` |
+| `version` | `1` |
+| `exportedAt` | RFC 3339 time of the export |
+| `source` | `{label, isMock}`: where the data came from (for example "Mock inventory · local sandbox"). Informational only |
+| `environments` | environments |
+| `serviceDefinitions` | logical services |
+| `serviceInstances` | services deployed per environment |
+| `resources` | infrastructure: clusters, databases, topics, queues, and the rest, with containment |
+| `relationships` | communication between services and resources |
+| `eventTypes` | the event catalog (ADR-014) |
+| `businessFlows` | business flows, authored and imported (ADR-022) |
+| `transitBoards` | transit board definitions, the declared structure only (ADR-031) |
+
+- **Module shapes.** The topology modules are exactly `TopologyData` (`docs/schemas/topology.v1.schema.json`), and each board is a board definition (`transit-board-definition.v1.schema.json`). The bundle adds no fields to either.
+- **Simulated metrics.** Telemetry fields keep `isSimulated`, so imported data never reads as observed.
+- **Boards in an export.** The export holds every board the app shows:
+  - each stored definition (backend or sandbox);
+  - for a service that only has the built-in example board, the example's declared structure.
+
+  Once imported, these boards are stored. Example statistics still merge onto matching IDs, as with an edited example (ADR-031).
+- **Not in a bundle:**
+  - history snapshots, saved layouts, simulation runs, and preferences;
+  - observed or example statistics and traces.
+
+## 2. Export
+
+- **Where.** Settings → Data source → **Export data**: counts per module and **Export JSON** / **Export YAML**.
+- **What.** The data the app has loaded now, from any source: the sandbox, the backend, or a generated dataset. When viewing history ("as of"), the export is still the current data, and the row says so.
+- **File name.** `service-topology-<source>-<yyyy-mm-dd>.json` or `.yaml`.
+- **Format.** Keys are written in the order of section 1. YAML is block style.
+
+## 3. Import
+
+- **Where.** Settings → Data source → **Import data**: choose a `.json`, `.yaml`, or `.yml` file.
+- **Preview.** The app reads and validates the file, then shows:
+  - counts per module, current against the file;
+  - the validation issues, the first 20 with a total.
+
+  **Replace data** is enabled only when there are no errors and needs a confirmation. It replaces all modules, boards included.
+- **Destinations:**
+  - **Built-in mock data (sandbox):** the bundle becomes the sandbox's data. **Reset sandbox** still restores the built-in data.
+  - **Backend (`?source=api`):** `POST /api/v1/imports/bundle`, described in section 5.
+  - **Generated datasets:** export only. Import says it is unavailable and why.
+- **Afterwards.** The app reloads the data and says what was imported. Selection or filters that no longer match are handled as for any reload.
+
+## 4. Validation (frontend and backend, same codes)
+
+| Code | Path | Rule |
+|---|---|---|
+| `bundle-unreadable` | — | Not valid JSON or YAML, or not an object. Frontend only; the API answers 400 for a malformed body |
+| `bundle-unsupported` | `format` / `version` | Another format, or a version other than 1 |
+| `bundle-invalid-module` | the module key | A module present but not an array, or a required topology module missing |
+| `bundle-duplicate-board` | `transitBoards[i].serviceDefinitionId` | Two boards for one service |
+| topology codes | entity ID | `validateTopology` on the bundle's topology (errors only block) |
+| board codes | `transitBoards[i].<path>` | `validateBoardDefinition` of each board against the bundle's topology |
+
+Field-level schema checks of entities (unknown fields, enums) are the API's existing `invalid-field` rule on the backend. In the frontend they come from the same validators as the editors.
+
+## 5. API (backend B11)
+
+`POST /api/v1/imports/bundle`:
+- **Request.**
+  - The body is a JSON bundle; YAML is converted by the frontend.
+  - At most 16 MB.
+  - Requires the editor role when `AUTH_MODE=token`.
+  - Optional `If-Match`: the topology revision the user saw.
+- **Effect.** One transaction replaces the canonical collections and `transitBoards`. Boards start at revision 1, and the topology gets a new revision with `sourceType: "import"`.
+- **Responses:**
+  - `200` with `{revision, documents: {<collection>: n}, boards: n}` and the new topology `ETag`;
+  - `400` for malformed JSON;
+  - `412` for a stale `If-Match`;
+  - `422` with `errors[]` (codes and paths of section 4);
+  - `503` when there is no database.

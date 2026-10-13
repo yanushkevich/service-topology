@@ -402,3 +402,19 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - A new collection, endpoints, OpenAPI operations, conformance fixtures, and a Go port of the board rules.
   - Mock mode becomes editable (the sandbox).
   - The transit repository becomes a composition: stored or sandbox definitions plus observed or example data.
+
+## ADR-032 — One data bundle for export and import, JSON or YAML (2026-10-13, Milestone 11.5 / B11)
+- **Status:** Accepted (product owner, 2026-10-13: export and import; everything; in Settings → Data source). Spec: `docs/DATA_BUNDLE.md`.
+- **Decision:**
+  - **One file.** A versioned bundle (`docs/schemas/data-bundle.v1.schema.json`) holds every topology module plus transit board definitions, with module keys at the top level. It contains declared data only.
+  - **Two formats.** JSON and YAML have the same structure; the frontend reads and writes both. The API takes JSON.
+  - **Import replaces everything,** after the same validation as editing: in the sandbox for mock data, or in one backend transaction (`POST /imports/bundle`, If-Match on the topology revision).
+- **Alternatives:**
+  - **Merge instead of replace.** Rejected for now: per-entity conflict rules are a larger design, and entity edits already cover small changes.
+  - **A backend export endpoint.** Not needed: the frontend exports what it has loaded, which is what the user sees.
+  - **YAML on the API.** Deferred: one wire format keeps the API contract simple.
+- **Consequences:**
+  - A new frontend dependency, `yaml` (pinned).
+  - A new import endpoint and port, which replaces the topology and boards atomically.
+  - Sandbox data can move to the backend through a file.
+
