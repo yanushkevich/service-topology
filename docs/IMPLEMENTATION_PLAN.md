@@ -214,6 +214,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 11.3 | Implemented (2026-10-12) | Endpoint contracts from OpenAPI on flow steps and process arrows (ADR-029); `docs/milestones/MILESTONE_11_3_ENDPOINT_CONTRACTS.md`. |
 | 11.4 | Implemented (2026-10-13) | Authoring transit boards (declared structure) and flows; backend B10 storage and API; local sandbox for mock data (ADR-031); `docs/milestones/MILESTONE_11_4_AUTHORING.md`. |
 | 11.5 | Implemented (2026-10-13) | Export and import all data as one JSON or YAML bundle from Settings; backend B11 import endpoint (ADR-032); `docs/milestones/MILESTONE_11_5_DATA_BUNDLE.md`. |
+| 11.6 | Specified (2026-10-13) | UI polish: defects from a real-browser review, quick search across everything (ADR-033), inspector only when useful, map opens at the selection, phone header, flows on the Overview, clearer flow targets; `docs/milestones/MILESTONE_11_6_UI_POLISH.md`. |
 | 14 | **On hold** (2026-10-12) | Real data instead of example data: sources, contract freeze, backend observability module, HTTP repository (ADR-030, proposed). Waits for the answers in `docs/REAL_DATA_INTEGRATION.md` §6; `docs/milestones/MILESTONE_14_REAL_DATA.md`. |
 | 12 | Specified (2026-10-12) | Flows in impact analysis and simulation, with backend B9 (ADR-025, proposed). Not started. |
 | 13 | Specified (2026-10-12) | 3D drill-down from a flow into its services (ADR-026, proposed). Not started. |

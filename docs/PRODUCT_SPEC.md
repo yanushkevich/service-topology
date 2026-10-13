@@ -449,3 +449,13 @@ Those of `docs/milestones/MILESTONE_11_FLOW_SWIMLANES_PATTERNS.md`, `MILESTONE_1
 
   Generated datasets export only.
 - **Mock labelling.** Statistics and traces are never in the file. Imported data is labelled as mock, like any other data.
+
+## Revision T — UI polish and quick search (2026-10-13, Milestone 11.6)
+**Source:** product owner: "implement these recommendations", after a real-browser review of every page. Decision: ADR-033. Spec: `docs/milestones/MILESTONE_11_6_UI_POLISH.md`.
+
+- **Quick search.** The header search finds services, resources, business flows, event types, endpoints, and pages, and opens the one you choose. ⌘K / Ctrl+K focuses it. It no longer filters the map or registry; their own filter boxes do.
+- **Less empty space.** Section pages show the inspector only when something is selected. The map opens at the selected entity and its neighbours.
+- **Phones.** A two-row header; transit-map labels stay inside the map.
+- **Overview.** Business flows and their warnings are listed.
+- **Fixes.** Badges wrap, the flow board's controls no longer cover steps, crowded 3D labels give way, and truncated names show their full text on hover.
+
