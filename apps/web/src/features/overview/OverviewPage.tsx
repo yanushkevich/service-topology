@@ -15,6 +15,7 @@ import { useSimulationStore } from '../../state/simulationStore';
 import { useUiStore } from '../../state/uiStore';
 import { describeEvent } from '../simulation/describeEvent';
 import { Card, Note, PageShell } from '../pages/PageShell';
+import { FlowsCard } from './FlowsCard';
 
 const HEALTH_ORDER: HealthStatus[] = ['unavailable', 'degraded', 'unknown', 'healthy'];
 
@@ -99,7 +100,7 @@ function OverviewContent({ index }: { index: TopologyIndex }) {
         ))}
       </section>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-3.5">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,480px),1fr))] gap-3.5">
         <Card title="Needs attention" aside={<span className="font-mono text-sm text-fg-3">{summary.needsAttention.length}</span>}>
           {summary.needsAttention.length === 0 ? (
             <Note>Nothing in {environmentName} is degraded or unavailable.</Note>
@@ -130,6 +131,8 @@ function OverviewContent({ index }: { index: TopologyIndex }) {
             </ul>
           )}
         </Card>
+
+        <FlowsCard index={index} environmentId={environmentId} environmentName={environmentName} />
 
         <Card title="Providers">
           <table className="w-full border-collapse text-sm [&_td]:border-t [&_td]:border-line [&_td]:py-1.5 [&_th]:pb-1.5 [&_th]:text-left [&_th]:font-normal">

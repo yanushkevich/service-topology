@@ -38,6 +38,16 @@ describe('overview page', () => {
     expect(within(await screen.findByRole('complementary', { name: 'Inspector' })).getByRole('heading', { name: 'Order Service' })).toBeInTheDocument();
   });
 
+  it('lists the business flows with their warnings, most first, linking to each board', async () => {
+    const user = userEvent.setup();
+    const router = renderApp('/overview?v=1&env=production');
+    const flows = await screen.findByRole('list', { name: 'Business flows in this environment' });
+    const items = within(flows).getAllByRole('listitem');
+    expect(items.map((li) => li.textContent)).toEqual([expect.stringMatching(/Checkout.*12 steps.*9 warnings/), expect.stringMatching(/Refund.*3 steps.*3 warnings/)]);
+    await user.click(within(flows).getByRole('link', { name: 'Checkout' }));
+    expect(router.state.location.pathname).toBe('/flows/flow-checkout');
+  });
+
   it('labels simulated failures as simulated', async () => {
     renderApp('/overview');
     await screen.findByRole('list', { name: 'Unhealthy entities' });
