@@ -32,7 +32,7 @@ export function EventsPage() {
           <LoadState state={topology} />
         </div>
       )}
-      <InspectorPanel />
+      <InspectorPanel hideWhenEmpty />
     </div>
   );
 }

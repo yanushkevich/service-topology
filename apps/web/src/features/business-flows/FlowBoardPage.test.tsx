@@ -49,7 +49,7 @@ describe('flow board, typical mode', () => {
     expect(panel('Step strip')).toHaveTextContent(/no dedupe \(Idempotent consumer, missing\) · missing/);
     expect(panel('Step strip')).toHaveTextContent(/relay every 200 ms \(Polling publisher, declared and observed\)/);
     const card = panel('Flow card');
-    expect(card).toHaveTextContent(/The typical path may take 23 s against a 4 s p95 target: 19 s over\./);
+    expect(card).toHaveTextContent(/The synchronous steps of the typical path may take up to 23 s against the 4 s response-time target \(p95\): 19 s over\./);
     expect(within(card).getByRole('region', { name: 'Outcomes' })).toHaveTextContent(/Completed \(success\)97.5%/);
     const findings = within(card).getByRole('region', { name: 'Findings' });
     // Retries multiplied across levels, read from the Payment Service transit board's card client.

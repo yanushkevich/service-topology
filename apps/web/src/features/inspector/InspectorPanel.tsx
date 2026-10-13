@@ -11,9 +11,14 @@ import { InstanceDetails } from './InstanceDetails';
 import { RelationshipDetails } from './RelationshipDetails';
 import { ResourceDetails } from './ResourceDetails';
 
-export function InspectorPanel() {
+/**
+ * The shared inspector. `hideWhenEmpty` (section pages, where selecting is rare) leaves the space to
+ * the page until something is selected; the map and registry keep the "Nothing selected" hint.
+ */
+export function InspectorPanel({ hideWhenEmpty = false }: { hideWhenEmpty?: boolean }) {
   const topology = useTopology();
   const selection = useUiStore((s) => s.selection);
+  if (hideWhenEmpty && !selection) return null;
 
   let content: ReactNode;
   if (topology.status !== 'ready') {

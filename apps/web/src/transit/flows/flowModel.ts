@@ -231,7 +231,7 @@ export function flowFindings(
     out.push({
       ruleId: 'deadline-over-target',
       severity: 'warn',
-      text: `Timeouts and deadlines on the typical path add up to ${fmt(budget.totalMs)}, above the ${fmt(budget.targetMs)} target.`,
+      text: `Timeouts and deadlines on the typical path add up to ${fmt(budget.totalMs)}, above the ${fmt(budget.targetMs)} response-time target (p95).`,
       stepIds: budget.segments.map((s) => s.stepId),
       transitionIds: [],
     });

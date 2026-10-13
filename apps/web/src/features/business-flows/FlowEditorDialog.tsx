@@ -194,8 +194,8 @@ export function FlowEditorDialog({
           </div>
           <SelectInput compact label="First step" path="startStepId" required value={draft.startStepId} error={error('startStepId')} empty="Choose" options={stepOptions} onChange={(v) => update((d) => void (d.startStepId = v))} />
           <div className="grid grid-cols-2 gap-2">
-            <NumberInput compact label="Target p95 (ms)" path="target.p95Ms" value={draft.target?.p95Ms} onChange={(v) => update((d) => void (d.target = withTarget(d.target, 'p95Ms', v)))} />
-            <NumberInput compact label="Completion target (ms)" path="target.completionMs" value={draft.target?.completionMs} onChange={(v) => update((d) => void (d.target = withTarget(d.target, 'completionMs', v)))} />
+            <NumberInput compact label="Response-time target, p95 (ms)" path="target.p95Ms" value={draft.target?.p95Ms} onChange={(v) => update((d) => void (d.target = withTarget(d.target, 'p95Ms', v)))} />
+            <NumberInput compact label="Completion target, end to end (ms)" path="target.completionMs" value={draft.target?.completionMs} onChange={(v) => update((d) => void (d.target = withTarget(d.target, 'completionMs', v)))} />
           </div>
         </FieldGroup>
 

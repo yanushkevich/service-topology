@@ -40,7 +40,7 @@ export function SimulationPage() {
           </>
         )}
       </div>
-      <InspectorPanel />
+      <InspectorPanel hideWhenEmpty />
     </div>
   );
 }

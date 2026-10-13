@@ -256,10 +256,10 @@ export function FlowCard({
       <dl className="m-0">
         <KeyValueRow label="Owner">{[flow.owner, flow.team].filter(Boolean).join(' / ') || '—'}</KeyValueRow>
         <KeyValueRow label="Trigger">{trigger}</KeyValueRow>
-        <KeyValueRow label="Target p95">{flow.target?.p95Ms ? formatMs(flow.target.p95Ms) : '—'}</KeyValueRow>
-        <KeyValueRow label="Completion target">{flow.target?.completionMs ? formatMs(flow.target.completionMs) : '—'}</KeyValueRow>
+        <KeyValueRow label="Response-time target (p95)">{flow.target?.p95Ms ? formatMs(flow.target.p95Ms) : '—'}</KeyValueRow>
+        <KeyValueRow label="Completion target (end to end)">{flow.target?.completionMs ? formatMs(flow.target.completionMs) : '—'}</KeyValueRow>
         {stats && <KeyValueRow label={`Transactions, ${windowLabel(stats.window)}`}>{formatCount(stats.transactions)}</KeyValueRow>}
-        {stats && <KeyValueRow label="Completion p50 / p95">{`${formatMs(stats.completion.p50Ms)} / ${formatMs(stats.completion.p95Ms)}`}</KeyValueRow>}
+        {stats && <KeyValueRow label="Completion p50 / p95 (end to end)">{`${formatMs(stats.completion.p50Ms)} / ${formatMs(stats.completion.p95Ms)}`}</KeyValueRow>}
       </dl>
       <section aria-label="Outcomes">
         <Kicker className="mb-1.5">Outcomes</Kicker>
@@ -355,7 +355,7 @@ function FlowBudgetBar({ budget }: { budget: NonNullable<ReturnType<typeof flowB
   return (
     <section aria-labelledby={id} className="flex flex-col gap-1.5">
       <Kicker id={id}>
-        Flow budget
+        Response-time budget
       </Kicker>
       <div className="relative h-3 overflow-hidden rounded-sm bg-surface-3" aria-hidden="true">
         <div className="absolute inset-y-0 left-0 border-r-2 border-fg" style={{ width: pct(budget.targetMs) }} />
@@ -373,8 +373,10 @@ function FlowBudgetBar({ budget }: { budget: NonNullable<ReturnType<typeof flowB
         })}
       </div>
       <p className={cx('m-0 text-sm', over ? 'text-warn-fg' : 'text-fg-2')}>
-        {over && <SeverityMark severity="warn" />} The typical path may take {formatMs(budget.totalMs)} against a {formatMs(budget.targetMs)} p95 target{over ? `: ${formatMs(budget.overflowMs)} over.` : '.'}
+        {over && <SeverityMark severity="warn" />} The synchronous steps of the typical path may take up to {formatMs(budget.totalMs)} against the {formatMs(budget.targetMs)} response-time target (p95)
+        {over ? `: ${formatMs(budget.overflowMs)} over.` : '.'}
       </p>
+      <p className="m-0 text-xs text-fg-3">Waits and asynchronous hand-offs count toward the completion target, not this budget.</p>
       <ol className="m-0 list-none p-0 font-mono text-[11px] text-fg-3">
         {budget.segments.map((s) => (
           <li key={s.stepId}>

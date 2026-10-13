@@ -26,7 +26,7 @@ export function PageShell({
         </div>
         {topology.status === 'ready' ? children(topology.index) : <LoadState state={topology} />}
       </div>
-      <InspectorPanel />
+      <InspectorPanel hideWhenEmpty />
     </div>
   );
 }

@@ -25,6 +25,7 @@ import { isMotionReduced } from '../../../state/motion';
 import { FilterBar } from '../../filters/FilterBar';
 import {
   computeHighlight,
+  openingFit,
   refForEdge,
   reuseUnchanged,
   refForNode,
@@ -232,12 +233,17 @@ function TopologyCanvas({ index }: { index: TopologyIndex }) {
     [edgeById, select],
   );
 
-  // Fit the whole graph whenever a new layout lands (not on data-only updates).
+  // Fit whenever a new layout lands (not on data-only updates): around the selection when there is
+  // one, else the whole graph. The latest highlight is read through a ref so selecting never refits.
   const shownKey = tooMany ? null : (laidOut?.key ?? null);
+  const fitRef = useRef(openingFit(null));
+  useEffect(() => {
+    fitRef.current = openingFit(highlight);
+  }, [highlight]);
   useEffect(() => {
     if (!shownKey) return;
     const frame = requestAnimationFrame(() => {
-      void reactFlow.fitView({ padding: 0.12, duration: isMotionReduced() ? 0 : 250 });
+      void reactFlow.fitView({ ...fitRef.current, duration: isMotionReduced() ? 0 : 250 });
       performance.mark('topology-rendered');
     });
     return () => cancelAnimationFrame(frame);

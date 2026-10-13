@@ -46,7 +46,7 @@ describe('flow model (ADR-022)', () => {
     expect(by('missing-compensation')).toEqual(['Capture payment is not undone when the flow ends Cancelled: it has no compensation step.']);
     expect(by('event-without-dead-letter')).toEqual(expect.arrayContaining([expect.stringMatching(/^OrderPlaced \(Place order → Reserve stock\) has no dead-letter queue/)]));
     expect(by('event-without-dead-letter').some((t) => t.startsWith('event-notification-requested'))).toBe(false); // that hand-off has a DLQ
-    expect(by('deadline-over-target')).toEqual(['Timeouts and deadlines on the typical path add up to 23 s, above the 4 s target.']);
+    expect(by('deadline-over-target')).toEqual(['Timeouts and deadlines on the typical path add up to 23 s, above the 4 s response-time target (p95).']);
     expect(by('missing-policy').length).toBeGreaterThan(0);
     expect(findings.every((f) => f.severity === 'warn' || f.ruleId === 'missing-policy')).toBe(true);
   });

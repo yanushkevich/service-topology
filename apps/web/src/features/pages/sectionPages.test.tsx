@@ -1,4 +1,4 @@
-import { act, screen, within } from '@testing-library/react';
+import { act, cleanup, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createInMemorySavedLayoutRepository } from '../../data/savedLayouts/SavedLayoutRepository';
@@ -24,6 +24,18 @@ describe('overview page', () => {
     await user.click(within(attention).getByRole('button', { name: 'Show on map: inventory-db' }));
     expect(router.state.location.pathname).toBe('/map');
     expect(useUiStore.getState().selection).toEqual({ kind: 'resource', id: 'rds-inventory-prod' });
+  });
+
+  it('leaves the inspector out until something is selected, on every section page', async () => {
+    for (const path of ['/overview', '/dependencies', '/infrastructure', '/events', '/simulation']) {
+      renderApp(path);
+      await screen.findByRole('heading', { level: 1 });
+      expect(screen.queryByRole('complementary', { name: 'Inspector' }), path).not.toBeInTheDocument();
+      cleanup();
+    }
+    useUiStore.setState({ selection: { kind: 'service-instance', id: 'order-service.production' } });
+    renderApp('/overview');
+    expect(within(await screen.findByRole('complementary', { name: 'Inspector' })).getByRole('heading', { name: 'Order Service' })).toBeInTheDocument();
   });
 
   it('labels simulated failures as simulated', async () => {

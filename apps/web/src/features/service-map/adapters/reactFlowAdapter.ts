@@ -103,6 +103,16 @@ export function computeHighlight(
   };
 }
 
+/**
+ * How the map fits a new layout: around the selection and what it highlights, so a deep link
+ * opens readable (Milestone 11.6); the whole graph without a selection.
+ */
+export function openingFit(highlight: HighlightState | null): { nodes?: { id: string }[]; padding: number; maxZoom?: number } {
+  if (!highlight || highlight.selectedIds.size === 0) return { padding: 0.12 };
+  const ids = new Set([...highlight.selectedIds, ...highlight.nodeIds]);
+  return { nodes: [...ids].map((id) => ({ id })), padding: 0.3, maxZoom: 1 };
+}
+
 function emphasisOf(id: string, highlight: HighlightState, set: Set<string>): Emphasis {
   if (highlight.selectedIds.has(id)) return 'selected';
   return highlight.active && set.has(id) ? 'highlighted' : 'none';
