@@ -501,8 +501,29 @@ Status: Phase 1 implemented (ADR-021). Specification: `docs/TRANSIT_BOARD.md`.
   - Tokens only (ADR-013). The board's palette becomes new tokens with light-theme values that pass `contrast.test.ts`.
   - Line colours are a token-backed categorical palette.
 
-## Revision 9 — Business flows (planned, 2026-10-12)
-Status: planned (Milestones 10 and B8; ADR-022). Specification: `docs/BUSINESS_FLOWS.md`.
+## Revision 9 — Business flows (2026-10-12, Milestones 10 and B8)
+Status: implemented (ADR-022). Specification: `docs/BUSINESS_FLOWS.md`, including its implementation notes.
+
+**Code map:**
+- **Domain:**
+  - `apps/web/src/domain/businessFlow.ts`: the resolver and transition backing;
+  - `validation.ts`: the flow rules;
+  - `topologyIndex.ts`: `businessFlows`, `flowsByService`, `flowsByEventType`.
+- **Flows read side and layout:** `apps/web/src/transit/flows/`:
+  - `flowLayout.ts`: indexing, ranks, the placement strategy, the track graph, `computeFlowGeometry`;
+  - `flowModel.ts`: stages, typical path, budget, findings, search;
+  - `observed.ts`: stats, transactions, samples, divergence;
+  - `exampleFlows.ts` and `generateFlows.ts`.
+- **UI:** `apps/web/src/features/business-flows/`:
+  - catalog and board pages;
+  - `FlowMap`, `FlowPanels` (list, strip, card), `FlowReplay`;
+  - `FlowEditorDialog` and `flowForm.ts`; `FlowEditActions`.
+- **Backend:**
+  - `backend/internal/domain/businessflow.go` and `validation.go`;
+  - `internal/adapters/flowformats/` (native, BPMN);
+  - `internal/application/importflows.go`;
+  - `cmd/importflows`;
+  - the `businessFlows` collection.
 - **Canonical domain.** `BusinessFlow` joins `apps/web/src/domain/types.ts`:
   - validation rules in `validation.ts`, ported to Go;
   - a pure per-environment resolver (`domain/businessFlow.ts`, like `eventFlow.ts`) that maps each transition to the backing relationships or event flows, or reports what is missing;

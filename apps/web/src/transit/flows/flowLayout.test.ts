@@ -73,3 +73,16 @@ describe('flow board layout (ADR-022)', () => {
     expect(g.lines.every((l) => l.transitions.every((t) => !t.top.includes('NaN')))).toBe(true);
   });
 });
+
+describe('flow layout at the scale target', () => {
+  it('lays out 50 flows of 40 steps', async () => {
+    const { generateFlows } = await import('./generateFlows');
+    const flows = generateFlows({ flows: 50, steps: 40 });
+    const big = indexFlows(flows, (id) => id);
+    const g = computeFlowGeometry(big, { flat: false });
+    expect(g.lines).toHaveLength(50);
+    expect(g.lines.every((l) => l.transitions.length === 41)).toBe(true);
+    expect(g.lines.every((l) => l.transitions.every((t) => !t.top.includes('NaN')))).toBe(true);
+  });
+});
+

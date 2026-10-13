@@ -15,6 +15,7 @@ The stored model maps 1:1 to the canonical domain (`DOMAIN_MODEL.md`, `TopologyD
 | InfrastructureResource | `resources` | canonical JSON + `_id` + `_meta`; `type` and `parentResourceId` indexed. One collection for all resource types, so queries never depend on dynamic names |
 | CommunicationRelationship | `relationships` | canonical JSON + `_id` + `_meta` (with `endpoints`); `sourceEntityId`, `targetEntityId`, `_meta.endpoints` indexed |
 | EventType | `eventTypes` | canonical JSON + `_id` + `_meta` (ADR-014) |
+| BusinessFlow | `businessFlows` | canonical JSON + `_id` + `_meta` (ADR-022); imported flows carry `source.kind = imported` |
 | Topology revision | `topologyState` | one document `{_id: "topology", revision, recordedAt, sourceType}` |
 | Schema version | `schemaInfo` | one document `{_id: "schema", version}` |
 | TopologySnapshot | `snapshots` | `{_id, takenAt, summary, payload}`; immutable, validated before insert |

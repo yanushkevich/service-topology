@@ -54,6 +54,7 @@ The Makefile uses `go` from `PATH`, else `/usr/local/go/bin/go`; override with `
 | `make check` | gofmt, vet, unit tests (no Docker) |
 | `make dev-up` / `make dev-down` | start / stop MongoDB (data stays in the `backend_mongodb_data` volume) |
 | `make seed` | create collections/indexes if needed, load `fixtures/topology/mock.v1.json` and the snapshot fixtures (idempotent) |
+| `make import-flows FILE=../fixtures/flows/order-cancellation.bpmn` | import business flows from a native flow file or BPMN 2.0 (`FORMAT`, `MAPPING` optional; ADR-022) |
 | `make validate` | validate the mock fixture without a database |
 | `make schema-check` | verify collections, validators, indexes, and schema version |
 | `make test-integration` | integration tests; each uses and drops its own temporary database |

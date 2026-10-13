@@ -5,7 +5,7 @@
 2. **Both sources:** flows are authored in the app *and* imported from workflow definitions.
 3. **Replay included:** replaying a business transaction by its business key is part of the first release.
 
-**Status:** planned (Milestone 10 frontend, Milestone B8 backend). Decision: ADR-022, which amends ADR-021. This spec extends `docs/TRANSIT_BOARD.md` and supersedes its "out of scope: cross-service business flows".
+**Status:** implemented on example observed data (Milestone 10 and B8, 2026-10-12; closeouts in `docs/IMPLEMENTATION_PLAN.md` and `docs/backend/IMPLEMENTATION_PLAN.md`). The section "Implementation notes" at the end records the decisions made while building it. Decision: ADR-022, which amends ADR-021. This spec extends `docs/TRANSIT_BOARD.md` and supersedes its "out of scope: cross-service business flows".
 
 ## 1. What the board shows
 
@@ -171,3 +171,26 @@ Accessibility, performance, and responsive rules are those of `TRANSIT_BOARD.md`
 1. Which attribute carries the business key in real traces (`order.id`, `app.business_key`, baggage)?
 2. Who owns flow definitions: product teams or the platform team?
 3. Which orchestrator adapter comes first after BPMN?
+
+## Implementation notes (2026-10-12)
+These refine sections 2–7. Where they differ, these notes win.
+
+- **Model additions:**
+  - `startStepId` names the first step.
+  - A `local` transition joins two steps of the same service; it needs no backing.
+  - A `call` may name its `callerServiceId`, the orchestrator that makes the call; this defaults to the source step's service. Without an explicit caller, the reply to a call the target service made to the source service also counts as backing (for example, Capture payment → Ship order is backed by Order Service → Payment Service).
+  - Unconditional transitions from a step run in parallel; conditional ones run when their condition holds.
+  - A policy without `state` is declared without observations, and is drawn like `idle`.
+- **Validation codes** (TypeScript and Go, identical on the shared conformance fixtures): `missing-flow-service`, `invalid-flow-step`, `invalid-flow-trigger`, `invalid-flow-transition`, `flow-no-success-path`, `flow-transition-unbacked`. Writes add `invalid-field` (schema enumerations), and the import adds `import-invalid` (naming the element). 409 codes: `imported-read-only`, `import-overwrites-authored`.
+- **Import:**
+  - `POST /api/v1/imports/business-flows` with `{format: native|bpmn, content, ref, mapping}`, or `make -C backend import-flows FILE=… [FORMAT=…] [MAPPING=…]`.
+  - Examples: `fixtures/flows/daily-payout.flow.yaml` and `fixtures/flows/order-cancellation.bpmn`. The native file schema is `docs/schemas/business-flow.v1.schema.json`.
+  - BPMN uses the namespace `https://service-topology.dev/bpmn`, with the attributes `st:service`, `st:entryPoint`, and `st:eventType`.
+  - The flows are validated as a whole before anything is written, then written one at a time on the revision chain.
+- **Screens and URL state:** `/flows` and `/flows/:flowId`. The flow board keeps `step`, `mode=replay`, `tx`, `t`, and `window` in the URL. A step's drill-down passes its entry point as `line`; the transit board resolves it by name or signature and rewrites it to the line ID.
+- **Typical path:** the unconditional exits of each step; where a step has only conditional exits, the most frequent one.
+- **Flow budget:** each synchronous step on the typical path counts its incoming call timeout × retry attempts, else its own deadline. Waits are excluded.
+- **Findings:**
+  - Retry amplification reads the inner retries from the step's service transit board: the clients of the line that implements the step.
+  - Missing compensation flags any step that can still reach both a success outcome and a non-success outcome, has no compensation, and is not the start, a decision, a wait, or a compensation step.
+- **Example observed data:** `apps/web/src/transit/flows/exampleFlows.ts`, behind `TransitRepository` (`getFlowStats`, `getTransactions`, `getTransaction`). It includes 8 Checkout and 3 Refund transactions. Waits, and any step longer than 6 s, are compressed to at most 1.5 s on the replay clock, with their real duration labelled.

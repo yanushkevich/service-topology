@@ -1,6 +1,6 @@
 # Go Backend Implementation Plan (ArcadeDB)
 
-**Status:** B1–B6 implemented (closeouts below). Open decisions that block production are listed in the B6 closeout. Execute one milestone at a time; do not automatically start the next. Backend milestones are B1–B6, a separate track from frontend Milestones 1–7. Code lives in `backend/`. Commit each milestone with scope `b1`…`b6`. Track status in the root `docs/IMPLEMENTATION_PLAN.md`.
+**Status:** B1–B8 implemented (closeouts below; B7 entity writes, B8 business flows). Open decisions that block production are listed in the B6 closeout. Execute one milestone at a time; do not automatically start the next. Backend milestones are B1–B6, a separate track from frontend Milestones 1–7. Code lives in `backend/`. Commit each milestone with scope `b1`…`b6`. Track status in the root `docs/IMPLEMENTATION_PLAN.md`.
 
 ## Milestone B1 — Go service foundation and domain
 Scope: `backend/` Go module (scaffold files moved in from `docs/backend/scaffold/`), configuration validation, HTTP lifecycle, health/readiness skeleton, structured logging, domain types and the full `validateTopology` rule set, repository/query interfaces, shared fixture export (`fixtures/`, from the frontend mock via a script) and the conformance fixture format.
@@ -184,3 +184,21 @@ Evidence: `make check` exit 0 (new unit tests: field rules equal the schema enum
 | No lost updates | Pass | `ETag` / `If-Match` → 412; adapter re-checks the revision inside the transaction (integration test) |
 | Telemetry and timestamps not client-writable | Pass | `updatedAt` server-set; metrics dropped on create, kept on replace (tests) |
 | Authorization | Pass | non-GET requires the editor role in token mode (existing middleware, ADR-018) |
+
+## Milestone B8 closeout — business flows (2026-10-12, ADR-022)
+Delivered:
+- **Domain:** `internal/domain/businessflow.go` holds the types and transition backing; the validation codes are identical to TypeScript, with 8 new conformance cases.
+- **Storage:** a `businessFlows` collection with the canonical validator and an `_meta.ord` index; flows are part of `GET /topology` and snapshots.
+- **Entity API:** `business-flow` is a writable kind, with schema-level field checks (`invalid-field`). Imported flows are read-only through it (409 `imported-read-only`).
+- **Import:**
+  - Port `ports.FlowFormat`, with adapters in `internal/adapters/flowformats` (native JSON/YAML through `go.yaml.in/yaml/v3`, and BPMN 2.0 through `encoding/xml`).
+  - `application.ImportFlows`: whole-topology validation first; no writes on an unchanged re-import; never overwrites an authored flow (409 `import-overwrites-authored`).
+  - `POST /api/v1/imports/business-flows` (editor role) and `make import-flows FILE=… [FORMAT=…] [MAPPING=…]` (`cmd/importflows`).
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Parity tests pass | Pass | `make check` (conformance on `fixtures/conformance/validation`) |
+| Import of each example file round-trips | Pass | `flowformats_test.go` (both examples validate against the example topology); `TestImportFlowsOnTheDatabase` |
+| Re-import is a no-op | Pass | API test (same ETag) and integration test (same revision) |
+| BPMN with an unmapped task is rejected with the task named | Pass | `TestBPMNRejectsUnmappedTasksAndAcceptsAMapping`; API 422 `import-invalid` for `Task_void` |
+| `make check`, `make test-integration`, `make contract-check` | Pass | 80/80 contract checks; `make vulncheck`: no reachable vulnerabilities |

@@ -7,6 +7,7 @@ Procedures verified on 2026-10-11 against MongoDB 8.0.30 (single-node replica se
 |---|---|---|
 | Start the database | `make dev-up` | container `topology-mongodb` healthy (replica set primary) after ~10 s (`docker inspect -f '{{.State.Health.Status}}' topology-mongodb`) |
 | Seed / reseed | `make seed` | idempotent: replaces the canonical topology, adds missing history fixtures |
+| Import business flows | `make import-flows FILE=… [FORMAT=native\|bpmn] [MAPPING=mapping.json]` | idempotent; validates the whole topology first; never overwrites an authored flow (ADR-022) |
 | Verify schema | `make schema-check` | `schema version 1 with all collections, validators, and indexes` |
 | Run the API | `make run` | listens on `127.0.0.1:8080`; `curl -s localhost:8080/readyz` → 200 once the schema is initialized |
 | Database shell | `make db-shell` | `mongosh` in the container; prompts for the password in `secrets/mongodb_root_password.txt` |

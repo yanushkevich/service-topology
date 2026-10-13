@@ -377,7 +377,7 @@ Every navigation section is a working page built on the canonical data and share
 - Trace replay on example traces: samples, playback with a train, scrubbing, divergence, off-map and lost-context steps, fan-out, keyboard, reduced motion, and a shareable URL. The window selector (1h, 24h, 7d), per-step stats, and hover tooltips are included.
 - The board follows the app's light/dark switch like every other page (not dark-only). New colours are tokens that pass the contrast test in both themes. The page has axe cases.
 
-# Revision 9 Addendum — Business flows (2026-10-12, planned)
+# Revision 9 Addendum — Business flows (2026-10-12; implemented, Milestones 10 and B8)
 
 **Source:** product owner direction: the transit board should show the steps of a business process, keeping its policies and retries. Decisions: two levels, flows authored and imported, transaction replay included. Authoritative where it conflicts with earlier text (it supersedes "cross-service business flows are out of scope" in Revision 8 §O.1). Spec: `docs/BUSINESS_FLOWS.md`. Delivery: Milestone 10 (frontend) and B8 (backend). Decision: ADR-022.
 

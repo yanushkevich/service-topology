@@ -155,6 +155,12 @@ The Events page and inspector explain the new rule automatically.
 - **Colours:** `--transit-*` tokens, tested in `contrast.test.ts`.
 - **Tests:** query board panels within their landmark (`[aria-label="Lines"]` and so on). Role queries over the whole page walk every SVG element of the map and are slow in jsdom.
 
+## 7c. Business flows (ADR-022)
+- **Domain:** flows are canonical (`BusinessFlow` in `src/domain/types.ts`). Change the validation rules in `src/domain/validation.ts` and `backend/internal/domain/validation.go` together. Add a case to `CASES` in `src/contract/fixtures.test.ts` and run `npm run fixtures:update`; the Go conformance test then enforces parity.
+- **Layout:** the board uses `computeFlowGeometry` (`src/transit/flows/flowLayout.ts`), which shares bundling, projection, and labels with the transit board. Observed data and transactions come from `TransitRepository` (`getFlowStats`, `getTransactions`, `getTransaction`); the example implementation is `src/transit/flows/exampleFlows.ts`.
+- **Editing:** `features/business-flows/FlowEditorDialog.tsx` is wired into `EntityEditorProvider` for the `business-flow` kind.
+- **Import:** `make -C backend import-flows FILE=…` (examples in `fixtures/flows/`).
+
 ## 8. Known limitations (current)
 - No real integrations, authentication, or tenancy. All data is mock; all telemetry is simulated.
 - Performance: 2D selection response and 3D frame rate need re-measurement on an idle machine or with a GPU (`docs/BENCHMARKS.md`).

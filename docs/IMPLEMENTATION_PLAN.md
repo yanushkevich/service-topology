@@ -191,7 +191,7 @@ Update only from actual repository state and checks.
 ## Milestone 9 — Transit board (Revision 8)
 **Deliver:** the per-service transit board (spec Phase 1): line index, perspective SVG transit map, stop strip, and line card, with selection, search, typical-route mode, every panel state, and the responsive breakpoints, on example data behind a `TransitRepository`. Trace replay is spec Phase 4 and out of scope unless the product owner adds it (open in ADR-021); real data sources and backend endpoints are later phases. Spec: `docs/TRANSIT_BOARD.md`. Acceptance criteria: `docs/milestones/MILESTONE_09_TRANSIT_BOARD.md`. Decision: ADR-021 (proposed).
 
-## Milestone 10 — Business flows (Revision 9, planned)
+## Milestone 10 — Business flows (Revision 9)
 **Deliver:** canonical business flows (model, validation, resolver, contract), example Checkout and Refund flows, the Flows catalog and flow board (two levels with drill-down to the transit board), typical mode with outcome shares and flow findings, business-transaction replay by business key, and authoring in the editing UI. Backend part: Milestone B8 (persistence, entity API, importer for native and BPMN 2.0 flow definitions). Spec: `docs/BUSINESS_FLOWS.md`. Acceptance criteria: `docs/milestones/MILESTONE_10_BUSINESS_FLOWS.md`. Decision: ADR-022.
 
 ## Status tracking
@@ -207,14 +207,14 @@ Track both milestones and original phases. A milestone is not complete until its
 | 6 | Implemented (2026-10-11) | See the Milestone 6 closeout below. |
 | 7 | Implemented (2026-10-11) | See the Milestone 7 closeout below. |
 | 8 | Implemented (2026-10-12) | Editing UI (ADR-020); see the Milestone 8 closeout below. |
-| 10 | Planned (not started) | Business flows (ADR-022); backend part B8. |
+| 10 | Implemented (2026-10-12) | Business flows (ADR-022): model, board, typical mode, transaction replay, and authoring, on example observed data; see the Milestone 10 closeout. |
 | 9 | Implemented (2026-10-12) | Transit board on example data (ADR-021): spec Phase 1 plus the Phase 4 replay UI, hover tooltips, windows, and per-step stats; see the Milestone 9 closeout and follow-up below. Real data sources (phases 2, 3, and 5) are not started. |
 | B1 (backend) | Implemented (2026-10-11) | Go foundation in `backend/`; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B2 (backend) | Implemented (2026-10-11) | ArcadeDB adapter, schema, idempotent seed, integration tests; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. The database was replaced by MongoDB afterwards (ADR-019). |
 | B3 (backend) | Implemented (2026-10-11) | REST API for contract v1, registry parity, contract check; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B4 (backend) | Implemented (2026-10-11) | Bounded traversal, impact, event types, revision cache, benchmarks; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B5 (backend) | Implemented (2026-10-11) | Isolated simulation runs (ADR-017), events/telemetry with provenance, snapshot diff, retention; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
-| B8 (backend) | Planned (not started) | Business flows: persistence, entity API, validation parity, importer (native, BPMN 2.0); ADR-022. |
+| B8 (backend) | Implemented (2026-10-12) | Business flows: persistence, entity API, validation parity, and the importer (native, BPMN 2.0); closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B7 (backend) | Implemented (2026-10-12) | Entity create/replace/delete with whole-topology validation and revision `ETag`/`If-Match` (ADR-020); closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B6 (backend) | Implemented (2026-10-11) | Auth (ADR-018), rate limits, CORS, metrics, backup/restore runbook, frontend HTTP integration (`?source=api`); closeout and open production decisions in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 
@@ -425,3 +425,61 @@ Decisions:
 
 Still not started: spec phases 2, 3, and 5 (ingesting specs, scheduler and resilience config, and OpenTelemetry traces; the `/transit` and `/steps` endpoints; the alias table; real findings rules; grouped trunks; code scan). They depend on the open questions in `docs/TRANSIT_BOARD.md` (tracing backend, internal spans, alias ownership, sampling).
 
+### Milestone 10 closeout (2026-10-12)
+Commits (one per phase):
+1. `1c80576`: model and validation.
+2. `02a07a5`: B8 storage and entity API.
+3. `d248ea1`: phases 3–5, the flow board, typical mode, and replay.
+4. `2eb9eb0`: authoring.
+5. `4568879`: B8 import.
+6. The close-out commit: schema, benchmarks, and docs.
+
+Evidence:
+- **Frontend:**
+  - Typecheck, lint, and build pass.
+  - `npx vitest run --maxWorkers=2` passes: 52 files, 516 passed, 1 skipped.
+  - With the default number of workers and the Docker VM busy (other containers running, load average about 11), different map and editing tests hit the 5 s timeout on each run. Every failing file passes when run alone.
+  - New tests:
+    - 12 domain tests;
+    - 17 layout tests;
+    - 16 model and example-data tests;
+    - 4 form tests;
+    - 17 board and replay integration tests;
+    - 6 authoring integration tests;
+    - 1 schema test;
+    - 4 jsdom axe cases.
+- **Real-browser audit** (`npm run audit:a11y`): the flows catalog, the flow board with a step selected, and transaction replay pass in both themes, along with every earlier page.
+- **Backend:**
+  - `make check` passes, including validation conformance with 8 new flow cases (codes, entity IDs, and order identical to TypeScript), flow-format tests, and API tests for writes and imports.
+  - `make test-integration` passes, including flows round-tripping through MongoDB, flow writes, and imports.
+  - `make contract-check` passes 80/80, including flow writes and imports.
+  - `make vulncheck` reports no reachable vulnerabilities.
+- **Screenshots** reviewed:
+  - catalog, dark and light;
+  - Checkout board, dark at 1440px and light at 1000px and 390px;
+  - a selected step, light;
+  - replay of the settlement timeout, dark.
+
+  No page scrolls horizontally.
+- **Benchmarks:** `npm run bench` at 50 flows × 40 steps, recorded in `docs/BENCHMARKS.md`.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Every rule tested in TypeScript and Go with identical codes; example flows validate in every environment | Pass | `businessFlow.test.ts`; `fixtures/conformance/validation/*flow*`; Go conformance test |
+| No transition without backing; removing one is an error | Pass | `businessFlow.test.ts` (relationship and event consumer removed); API 422 `flow-transition-unbacked` |
+| Flow board reuses the layout pipeline; selection and replay do not rebuild paths | Pass | `FlowBoardPage.test.tsx` (same path nodes); shared `bundledPolyline`, `fitProjection`, `placeLabels` |
+| Drill-down opens the right service board, line, and trace | Pass | Step link → `/services/payment-service/transit?line=A1`; replay link → `mode=trace&trace=…` |
+| Replay joins by business key; gaps shown, not bridged; compensation on the undo track | Pass | `FlowBoardPage.test.tsx`, `flowModel.test.ts` |
+| Authored flows created, edited, and deleted against the backend; imported flows not editable; re-import is a no-op | Pass | `FlowEditor.test.tsx`; Go API and integration tests; contract check |
+| Real-browser axe for catalog, board, and replay in both themes; flow form in jsdom; keyboard and reduced motion | Pass | `npm run audit:a11y`; `a11y.test.tsx`; replay keyboard tests; reduced-motion stepping shared with the transit board |
+| Example observed data labelled | Pass | Header "Example data · …"; no "live" (tested) |
+| `npm run check`, `make check`, `make test-integration`, `make contract-check` | Pass, with the load caveat above | As listed |
+| Layout timings at 50 × 40 recorded | Pass | `docs/BENCHMARKS.md` |
+
+Known limitations:
+- **Example data:** observed flow data and transactions are examples until trace ingestion exists (spec phases 2–3). The business-key attribute in real traces is an open question.
+- **Real-browser audit:** the flow form is audited in jsdom only, because the mock data is read-only in the browser.
+- **Visual editor:** there is none; flows are edited in a structured form.
+- **BPMN:** collaboration pools merge into one flow; sub-processes count as a single step.
+- **Import writes:** an import writes flows one at a time after validating them together. A concurrent write can stop it part-way (412); running it again completes it.
+- **Catalog warnings:** the catalog's warning counts leave out retry amplification, which needs the transit boards and is counted on the board.

@@ -174,10 +174,15 @@
       }
     },
     "BusinessFlow": {
+      "description": "A business process across services (ADR-022): a definition plus its source. Environment-independent, like an event type; consistency with relationships and event types is enforced by validateTopology.",
+      "allOf": [{ "$ref": "#/$defs/BusinessFlowDefinition" }],
+      "required": ["source"]
+    },
+    "BusinessFlowDefinition": {
       "type": "object",
       "additionalProperties": false,
-      "description": "A business process across services (ADR-022). Environment-independent, like an event type; consistency with relationships and event types is enforced by validateTopology.",
-      "required": ["id", "name", "trigger", "startStepId", "steps", "transitions", "outcomes", "source"],
+      "description": "A business flow as written in a native flow file (schemas/business-flow.v1.schema.json): source is optional there because the importer sets it.",
+      "required": ["id", "name", "trigger", "startStepId", "steps", "transitions", "outcomes"],
       "properties": {
         "id": { "$ref": "#/$defs/EntityId" },
         "name": { "type": "string" },

@@ -31,6 +31,7 @@ const json = (suffix: string) => JSON.parse(Object.entries(files).find(([p]) => 
 const topologySchema = json('schemas/topology.v1.schema.json');
 const snapshotSchema = json('schemas/topology-snapshot.v1.schema.json');
 const layoutSchema = json('schemas/saved-layout.v1.schema.json');
+const flowFileSchema = json('schemas/business-flow.v1.schema.json');
 const openapi = json('api/openapi.json');
 const OPENAPI_ID = 'https://example.test/api/openapi.json';
 
@@ -40,6 +41,7 @@ function makeAjv() {
   ajv.addSchema(topologySchema);
   ajv.addSchema(snapshotSchema);
   ajv.addSchema(layoutSchema);
+  ajv.addSchema(flowFileSchema);
   ajv.addSchema({ ...openapi, $id: OPENAPI_ID });
   return ajv;
 }
@@ -51,6 +53,16 @@ const validate = (id: string, data: unknown) => {
   return ok ? [] : (fn.errors ?? []).map((e) => `${e.instancePath} ${e.message}`);
 };
 const pointer = (...parts: string[]) => `${OPENAPI_ID}#/${parts.map((p) => p.replace(/~/g, '~0').replace(/\//g, '~1')).join('/')}`;
+
+describe('business-flow definition file schema (ADR-022)', () => {
+  it('accepts flows without a source, one or wrapped, and rejects unknown fields', () => {
+    const { source: _source, ...definition } = mockTopology.businessFlows![0]!;
+    void _source;
+    expect(validate(flowFileSchema.$id, definition)).toEqual([]);
+    expect(validate(flowFileSchema.$id, { flows: mockTopology.businessFlows })).toEqual([]);
+    expect(validate(flowFileSchema.$id, { ...definition, surprise: 1 })).not.toEqual([]);
+  });
+});
 
 describe('TopologyData v1 schema', () => {
   it.each([

@@ -258,5 +258,6 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - Infer flows from traces alone. Rejected: traces carry no business-step semantics, and inferred flows would be invented.
 - **Consequences:**
   - A new entity kind across the schema, the TypeScript and Go validators, the fixtures, MongoDB (a `businessFlows` collection), the entity API, the editing UI, and parity tests.
-  - An importer in the backend (`POST /imports/business-flows` or `make import-flows`; to be decided in B8).
+  - An importer in the backend: both `POST /imports/business-flows` and `make import-flows`, with a new dependency on `go.yaml.in/yaml/v3`.
+- **Implemented (2026-10-12):** Milestones 10 and B8. Details decided while building it (local and orchestrated calls, the reply rule, `startStepId`, the import endpoint and its codes) are in the implementation notes of `docs/BUSINESS_FLOWS.md`.
   - The business-key attribute and flow ownership remain open questions (`BUSINESS_FLOWS.md` section 8).

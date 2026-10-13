@@ -1,6 +1,6 @@
 # Milestone 10 — Business flows (with backend Milestone B8)
 
-**Status:** planned, not started.
+**Status:** implemented 2026-10-12 (closeout in `docs/IMPLEMENTATION_PLAN.md`; backend closeout in `docs/backend/IMPLEMENTATION_PLAN.md`).
 
 **Read first:**
 - `docs/BUSINESS_FLOWS.md`;
