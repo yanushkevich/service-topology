@@ -56,3 +56,23 @@ describe('messaging reliability and polling findings (ADR-024)', () => {
     expect(rules(refundFlow, 'issued')).toEqual(expect.arrayContaining(['outbox-without-relay', 'at-least-once-without-dedup']));
   });
 });
+
+describe('store patterns need a database (ADR-027)', () => {
+  const databases = (map: Record<string, string[]>) => (id: string) => map[id] ?? [];
+  const stores = (flow: BusinessFlow, map: Record<string, string[]>, transitionId: string) =>
+    flowFindings(flow, { databasesOf: databases(map) })
+      .filter((f) => f.ruleId === 'store-pattern-without-store' && f.transitionIds.includes(transitionId))
+      .map((f) => f.stepIds);
+
+  it('flags an outbox whose producer, or an inbox whose consumer, has no database', () => {
+    const flow = withPolicies('settled', [p('outbox'), p('polling-publisher'), p('inbox')]);
+    // await-settlement runs on Payment Service; post-to-ledger on Ledger Service.
+    expect(stores(flow, { 'payment-service': ['payments-db'], 'ledger-service': ['ledger-db'] }, 'settled')).toEqual([]);
+    expect(stores(flow, { 'ledger-service': ['ledger-db'] }, 'settled')).toEqual([['await-settlement'], ['await-settlement']]);
+    expect(stores(flow, { 'payment-service': ['payments-db'] }, 'settled')).toEqual([['post-to-ledger']]);
+  });
+
+  it('skips the rule when the caller cannot tell which databases exist', () => {
+    expect(flowFindings(withPolicies('settled', [p('outbox')])).some((f) => f.ruleId === 'store-pattern-without-store')).toBe(false);
+  });
+});

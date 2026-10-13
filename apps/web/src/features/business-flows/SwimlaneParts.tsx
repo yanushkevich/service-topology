@@ -6,6 +6,7 @@ import type { FlowOutcomeKind, FlowStepKind } from '../../domain/types';
 import { formatMs } from '../../transit/board';
 import { cx, kickerClass } from '../../shared/ui/classes';
 import { POLICY_STATE_LABEL, policySummary } from '../transit-board/colors';
+import { StatusShape } from '../../shared/ui/StatusShape';
 import { PolicyDiamond } from '../transit-board/visuals';
 import { stripPageParams } from './flowVisuals';
 import type { SwimlaneLane } from '../../transit/flows/swimlane';
@@ -46,8 +47,7 @@ const TRAIN_RING: Record<'ok' | 'warn' | 'fail', string> = { ok: 'border-accent'
 
 /** A business step: name, kind, deadline, service and entry point, and the flows it is shared with. */
 export const StepView = memo(function StepView({ data }: NodeProps<StepNode>) {
-  const { step, serviceName, alsoIn, emphasis, selected, train, divergence } = data;
-  const { search } = useLocation();
+  const { step, serviceName, alsoIn, stores, emphasis, selected, train, divergence } = data;
   return (
     <div
       data-step={step.id}
@@ -81,19 +81,22 @@ export const StepView = memo(function StepView({ data }: NodeProps<StepNode>) {
         </span>
         {step.deadlineMs !== undefined && <span className="ml-auto shrink-0">≤ {formatMs(step.deadlineMs)}</span>}
       </div>
-      {alsoIn.length > 0 && (
-        <div className="truncate text-[10.5px] text-fg-3" data-also-in>
-          also in{' '}
-          {alsoIn.map((f, i) => (
-            <span key={f.id}>
-              {i > 0 && ', '}
-              <Link to={`/flows/${f.id}${stripPageParams(search)}`} className="text-accent-fg underline" onClick={(e) => e.stopPropagation()}>
-                {f.name}
-              </Link>
+      {(stores.length > 0 || alsoIn.length > 0) && (
+        <div className="flex min-w-0 items-center gap-2 text-[10.5px] text-fg-3">
+          {stores.length > 0 && (
+            <span className="flex min-w-0 items-center gap-1 truncate font-mono" data-stores title="Data stores of this step's service (topology)">
+              {stores.map((s) => (
+                <span key={s.id} className="inline-flex items-center gap-0.5" data-store={s.id}>
+                  {s.health && <StatusShape health={s.health} />}
+                  {s.name}
+                </span>
+              ))}
             </span>
-          ))}
+          )}
+          {alsoIn.length > 0 && <AlsoIn alsoIn={alsoIn} />}
         </div>
       )}
+
       {train && <span aria-hidden="true" className={cx('pointer-events-none absolute -inset-1.5 rounded-xl border-2', TRAIN_RING[train.status], !train.correlated && 'border-dashed')} />}
       {divergence && (
         <span className="absolute -top-2.5 right-2 rounded-sm bg-warn px-1 text-[10px] font-semibold text-on-accent" data-divergence-tag>
@@ -136,7 +139,7 @@ export const OutcomeView = memo(function OutcomeView({ data }: NodeProps<Outcome
 export const RoutedEdgeView = memo(function RoutedEdgeView({ id, data, markerEnd }: EdgeProps<RoutedEdge>) {
   const [hover, setHover] = useState<number | null>(null);
   if (!data) return null;
-  const { flowId, route, transition, label, undo, color, emphasis, divergence, title } = data;
+  const { flowId, route, transition, label, undo, color, emphasis, divergence, title, policyStores } = data;
   const strong = emphasis === 'focus' || emphasis === 'traversed';
   const stroke = divergence ? 'var(--color-warn)' : emphasis === 'dim' ? 'var(--transit-dim)' : color;
   const hovered = hover !== null ? transition.policies[hover] : undefined;
@@ -180,6 +183,7 @@ export const RoutedEdgeView = memo(function RoutedEdgeView({ id, data, markerEnd
               {patternLabel(hovered.type)} · {POLICY_STATE_LABEL[hovered.state ?? 'idle']}
               {hovered.stat ? ` · ${hovered.stat}` : ''}
             </div>
+            {policyStores[hover ?? -1] && <div className="text-fg-2">in {policyStores[hover ?? -1]}</div>}
             <div className="mt-1 text-fg-2">on “{title}”</div>
           </div>
         )}
@@ -210,5 +214,23 @@ export function SwimlaneLegend({ className }: { className?: string }) {
         missing policy
       </span>
     </div>
+  );
+}
+
+/** "also in Refund": the other flows that run this step, as links. */
+function AlsoIn({ alsoIn }: { alsoIn: StepNode['data']['alsoIn'] }) {
+  const { search } = useLocation();
+  return (
+    <span className="ml-auto min-w-0 truncate" data-also-in>
+      also in{' '}
+      {alsoIn.map((f, i) => (
+        <span key={f.id}>
+          {i > 0 && ', '}
+          <Link to={`/flows/${f.id}${stripPageParams(search)}`} className="text-accent-fg underline" onClick={(e) => e.stopPropagation()}>
+            {f.name}
+          </Link>
+        </span>
+      ))}
+    </span>
   );
 }

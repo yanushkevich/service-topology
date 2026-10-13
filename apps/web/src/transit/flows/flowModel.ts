@@ -96,7 +96,8 @@ export interface FlowFinding {
     | 'missing-policy'
     | 'outbox-without-relay'
     | 'at-least-once-without-dedup'
-    | 'polling-without-deadline';
+    | 'polling-without-deadline'
+    | 'store-pattern-without-store';
   severity: 'warn' | 'info';
   text: string;
   stepIds: string[];
@@ -118,7 +119,14 @@ const fmt = (ms: number) => (ms >= 60_000 ? `${Math.round(ms / 60_000)} min` : m
  */
 export function flowFindings(
   flow: BusinessFlow,
-  options: { eventName?: (eventTypeId: string) => string; serviceName?: (id: string) => string; innerAttempts?: (step: FlowStep) => { attempts: number; what: string } | null; shares?: ReadonlyMap<string, number> } = {},
+  options: {
+    eventName?: (eventTypeId: string) => string;
+    serviceName?: (id: string) => string;
+    innerAttempts?: (step: FlowStep) => { attempts: number; what: string } | null;
+    shares?: ReadonlyMap<string, number>;
+    /** Database names of a service in the environment (ADR-027); without it, store rules are skipped. */
+    databasesOf?: (serviceDefinitionId: string) => string[];
+  } = {},
 ): FlowFinding[] {
   const out: FlowFinding[] = [];
   const name = (id: string) => stepById(flow, id)?.name ?? flow.outcomes.find((o) => o.id === id)?.name ?? id;
@@ -191,6 +199,20 @@ export function flowFindings(
           severity: 'warn',
           text: `${event} (${at(t)}) can be delivered more than once, and ${name(t.to)} has neither an inbox nor an idempotent consumer: duplicates reach the step.`,
           stepIds: [t.to],
+          transitionIds: [t.id],
+        });
+      }
+    }
+    // Store patterns live in a database: the outbox and its relay on the producer's side, the inbox on the consumer's (ADR-027).
+    if (options.databasesOf) {
+      for (const [type, side] of [['outbox', t.from], ['polling-publisher', t.from], ['inbox', t.to]] as const) {
+        const step = stepById(flow, side);
+        if (!declared(t, type) || !step || options.databasesOf(step.serviceDefinitionId).length > 0) continue;
+        out.push({
+          ruleId: 'store-pattern-without-store',
+          severity: 'warn',
+          text: `${at(t)} declares the ${patternLabel(type).toLowerCase()}, but ${service(step.serviceDefinitionId)} has no database in the topology to keep it in.`,
+          stepIds: [step.id],
           transitionIds: [t.id],
         });
       }

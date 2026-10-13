@@ -1,7 +1,9 @@
 import { useId, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import type { ResolvedFlow } from '../../domain/businessFlow';
-import type { BusinessFlow, FlowStep, FlowTransition } from '../../domain/types';
+import type { BusinessFlow, FlowStep, FlowTransition, HealthStatus } from '../../domain/types';
+import { typeLabel } from '../../shared/mappings';
+import { StatusShape } from '../../shared/ui/StatusShape';
 import { formatCount, formatMs, formatRate, STEP_THRESHOLDS, windowLabel } from '../../transit/board';
 import type { FlowBoardIndex } from '../../transit/flows/flowIndex';
 import { flowBudget, stages, type FlowFinding } from '../../transit/flows/flowModel';
@@ -206,6 +208,7 @@ export function FlowCard({
   serviceName,
   onReplay,
   actions,
+  stores = [],
 }: {
   fx: FlowBoardIndex;
   flow: BusinessFlow;
@@ -218,6 +221,8 @@ export function FlowCard({
   serviceName: (id: string) => string;
   onReplay?: (() => void) | undefined;
   actions?: ReactNode;
+  /** The data stores the flow's steps use (ADR-027), with those steps. */
+  stores?: readonly { store: { id: string; name: string; type: string; health?: HealthStatus | undefined }; stepIds: string[] }[];
 }) {
   const { search } = useLocation();
   const shares = new Map(Object.entries(stats?.transitions ?? {}));
@@ -267,6 +272,7 @@ export function FlowCard({
           ))}
         </ul>
       </section>
+      {stores.length > 0 && <DataStores flow={flow} stores={stores} search={search} />}
       {gaps.length > 0 && (
         <div role="note" className="rounded-lg border border-dashed border-line-strong px-3 py-2 text-sm text-fg-2">
           <b className="text-fg">In {resolved.environmentId}:</b>{' '}
@@ -379,3 +385,37 @@ function FlowBudgetBar({ budget }: { budget: NonNullable<ReturnType<typeof flowB
 
 
 
+
+/**
+ * The data stores the flow touches (ADR-027): each store with its health and the steps whose
+ * service uses it, linking to the store on the map. The topology knows stores per service, not per
+ * operation, so this is "used by the step's service".
+ */
+function DataStores({ flow, stores, search }: { flow: BusinessFlow; stores: NonNullable<Parameters<typeof FlowCard>[0]['stores']>; search: string }) {
+  const params = new URLSearchParams(stripPageParams(search));
+  params.delete('window');
+  return (
+    <section aria-label="Data stores">
+      <Kicker className="mb-1.5">Data stores</Kicker>
+      <ul className="m-0 flex list-none flex-col gap-1.5 p-0 text-sm">
+        {stores.map(({ store, stepIds }) => {
+          const to = new URLSearchParams(params);
+          to.set('sel', `resource:${store.id}`);
+          return (
+            <li key={store.id} data-flow-store={store.id} className="flex flex-col">
+              <span className="flex items-center gap-1.5">
+                {store.health && <StatusShape health={store.health} />}
+                <Link to={{ pathname: '/map', search: `?${to.toString()}` }} className="font-mono text-accent-fg underline">
+                  {store.name}
+                </Link>
+                <span className="text-xs text-fg-3">{typeLabel(store.type).toLowerCase()}</span>
+              </span>
+              <span className="text-xs text-fg-3">used by {stepIds.map((id) => flow.steps.find((s) => s.id === id)?.name ?? id).join(', ')}</span>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="m-0 mt-1.5 text-xs text-fg-3">From the topology: stores belong to services, so each is listed for every step its service runs.</p>
+    </section>
+  );
+}

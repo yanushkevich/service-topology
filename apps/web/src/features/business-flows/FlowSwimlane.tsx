@@ -10,7 +10,7 @@ import { Icon } from '../../shared/ui/Icon';
 import { buttonClass, cx, floatClass } from '../../shared/ui/classes';
 import { usePlayback, type Playback } from '../boards/playback';
 import { flowColor } from './flowVisuals';
-import { applyView, swimlaneElements, type RoutedEdge, type SwimlaneNode, type SwimlaneView } from './swimlaneAdapter';
+import { applyView, swimlaneElements, type RoutedEdge, type StoreRef, type SwimlaneNode, type SwimlaneView } from './swimlaneAdapter';
 import { LaneCaptions, LaneView, OutcomeView, RoutedEdgeView, StepView } from './SwimlaneParts';
 
 const nodeTypes = { lane: LaneView, step: StepView, outcome: OutcomeView };
@@ -37,6 +37,8 @@ export function FlowSwimlane(props: {
   serviceName: (id: string) => string;
   eventName: (id: string) => string;
   shares: ReadonlyMap<string, number>;
+  /** Data stores of a service in the environment (ADR-027). */
+  storesOf: (serviceDefinitionId: string) => StoreRef[];
   view: Omit<SwimlaneView, 'replay'>;
   replay: SwimlaneReplay | null;
   playback: Playback;
@@ -49,8 +51,8 @@ export function FlowSwimlane(props: {
   );
 }
 
-function Canvas({ fx, flow, layout, serviceName, eventName, shares, view, replay, playback, onSelectStep }: Parameters<typeof FlowSwimlane>[0]) {
-  const base = useMemo(() => swimlaneElements(layout, flow, { fx, color: flowColor(fx, flow.id), serviceName, eventName, shares }), [layout, flow, fx, serviceName, eventName, shares]);
+function Canvas({ fx, flow, layout, serviceName, eventName, shares, storesOf, view, replay, playback, onSelectStep }: Parameters<typeof FlowSwimlane>[0]) {
+  const base = useMemo(() => swimlaneElements(layout, flow, { fx, color: flowColor(fx, flow.id), serviceName, eventName, shares, storesOf }), [layout, flow, fx, serviceName, eventName, shares, storesOf]);
   // The replay cursor, read here so the page does not re-render on every tick.
   const cursor = usePlayback(playback, (s) => (replay ? `${s.step}|${activeTxSteps(replay.tx.steps, s.t, s.step).map((x) => replay.tx.steps.indexOf(x)).join(',')}` : ''));
   const replayState = useMemo(() => replayView(replay, cursor), [replay, cursor]);

@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router';
 import { businessFlowsIn, resolveBusinessFlow } from '../../domain/businessFlow';
+import { dataStoresOf, flowDataStores } from '../../domain/dataStores';
 import type { TopologyIndex } from '../../domain/topologyIndex';
 import type { BusinessFlow, FlowStep } from '../../domain/types';
 import { useTopology } from '../../data/topologyContext';
@@ -76,6 +77,8 @@ function Board({ index, flow, environmentId }: { index: TopologyIndex; flow: Bus
 
   const serviceName = useCallback((id: string) => index.definitions.get(id)?.name ?? id, [index]);
   const eventName = useCallback((id: string) => index.eventTypes.get(id)?.name ?? id, [index]);
+  const flowStores = useMemo(() => flowDataStores(index, flow, environmentId), [index, flow, environmentId]);
+  const storesOf = useCallback((id: string) => dataStoresOf(index, id, environmentId).map((s) => ({ id: s.id, name: s.name, health: s.health })), [index, environmentId]);
   const environmentName = index.environments.get(environmentId)?.name ?? environmentId;
   const flows = useMemo(() => {
     const deployed = businessFlowsIn(index, environmentId).map((r) => r.flow);
@@ -92,8 +95,15 @@ function Board({ index, flow, environmentId }: { index: TopologyIndex; flow: Bus
   const shares = useMemo(() => new Map(Object.entries(flowStats?.transitions ?? {})), [flowStats]);
   const inner = useInnerAttempts(flow, environmentId, windowValue);
   const findings = useMemo(
-    () => flowFindings(flow, { eventName, serviceName, shares, innerAttempts: (step) => inner.get(`${step.serviceDefinitionId}\u0000${step.entryPoint ?? ''}`) ?? null }),
-    [flow, shares, inner, eventName, serviceName],
+    () =>
+      flowFindings(flow, {
+        eventName,
+        serviceName,
+        shares,
+        innerAttempts: (step) => inner.get(`${step.serviceDefinitionId}\u0000${step.entryPoint ?? ''}`) ?? null,
+        databasesOf: (id) => storesOf(id).flatMap((s) => (index.resources.get(s.id)?.type === 'database' ? [s.name] : [])),
+      }),
+    [flow, shares, inner, eventName, serviceName, storesOf, index],
   );
   const warnings = useMemo(() => new Map(fx.flows.map((f) => [f.id, f.id === flow.id ? findings.filter((x) => x.severity === 'warn').length : 0])), [fx, flow.id, findings]);
   const [query, setQuery] = useState('');
@@ -216,6 +226,7 @@ function Board({ index, flow, environmentId }: { index: TopologyIndex; flow: Bus
             serviceName={serviceName}
             eventName={eventName}
             shares={shares}
+            storesOf={storesOf}
             view={mapView}
             replay={mode === 'replay' && tx ? { tx, playback, divergence } : null}
             playback={playback}
@@ -246,6 +257,7 @@ function Board({ index, flow, environmentId }: { index: TopologyIndex; flow: Bus
               serviceName={serviceName}
               onReplay={() => setMode('replay')}
               actions={<FlowEditActions flow={flow} />}
+              stores={flowStores}
             />
           )
         }

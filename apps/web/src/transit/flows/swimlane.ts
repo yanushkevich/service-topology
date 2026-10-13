@@ -13,7 +13,7 @@ export const SWIMLANE = {
   /** Room on the left for the lane captions (the renderer keeps them in a frozen column). */
   laneLabelWidth: 112,
   stepWidth: 176,
-  stepHeight: 58,
+  stepHeight: 62,
   outcomeWidth: 176,
   outcomeHeight: 40,
   /** Each channel (the space between two columns) is as wide as its tracks and labels need. */

@@ -1,5 +1,5 @@
 import type { Edge, Node } from '@xyflow/react';
-import type { BusinessFlow, FlowOutcome, FlowStep, FlowTransition } from '../../domain/types';
+import type { BusinessFlow, FlowOutcome, FlowStep, FlowTransition, HealthStatus } from '../../domain/types';
 import type { FlowBoardIndex } from '../../transit/flows/flowIndex';
 import type { TxStep } from '../../transit/flows/observed';
 import { edgeLabelText, type SwimlaneEdge, type SwimlaneLane, type SwimlaneLayout } from '../../transit/flows/swimlane';
@@ -18,6 +18,8 @@ export interface StepData extends Record<string, unknown> {
   serviceName: string;
   /** Other flows that run this step (same service and entry point). */
   alsoIn: { id: string; name: string; code: string }[];
+  /** Data stores of the step's service in this environment (ADR-027). */
+  stores: StoreRef[];
   emphasis: Emphasis;
   selected: boolean;
   /** The replayed transaction is here now. */
@@ -37,8 +39,17 @@ export interface LaneData extends Record<string, unknown> {
   width: number;
 }
 
+/** A data store as a step or policy shows it. */
+export interface StoreRef {
+  id: string;
+  name: string;
+  health: HealthStatus | undefined;
+}
+
 export interface RoutedData extends Record<string, unknown> {
   flowId: string;
+  /** Per policy: the database it lives in (outbox and relay: the source's; inbox: the target's). */
+  policyStores: (string | null)[];
   route: SwimlaneEdge;
   transition: FlowTransition;
   /** "if declined · 2%", "OrderPlaced", or ''. */
@@ -80,7 +91,15 @@ export const NO_VIEW: SwimlaneView = { selectedStepId: null, focus: null, matche
 export function swimlaneElements(
   layout: SwimlaneLayout,
   flow: BusinessFlow,
-  options: { fx: FlowBoardIndex; color: string; serviceName: (id: string) => string; eventName: (id: string) => string; shares: ReadonlyMap<string, number> },
+  options: {
+    fx: FlowBoardIndex;
+    color: string;
+    serviceName: (id: string) => string;
+    eventName: (id: string) => string;
+    shares: ReadonlyMap<string, number>;
+    /** Data stores of a service in the environment. */
+    storesOf: (serviceDefinitionId: string) => StoreRef[];
+  },
 ): { nodes: SwimlaneNode[]; edges: RoutedEdge[] } {
   const lanes: LaneNode[] = layout.lanes.map((lane) => ({
     id: `lane:${lane.id}`,
@@ -108,7 +127,9 @@ export function swimlaneElements(
           return other ? [{ id, name: other.name, code: options.fx.codes.get(id) ?? '' }] : [];
         });
       const service = options.serviceName(step.serviceDefinitionId);
-      nodes.push({ ...common, type: 'step', ariaLabel: `${step.name}, ${step.kind} step of ${service}`, data: { step, serviceName: service, alsoIn, emphasis: 'normal', selected: false, train: null, divergence: false } });
+      const stores = options.storesOf(step.serviceDefinitionId);
+      const storeText = stores.length ? `, using ${stores.map((s) => s.name).join(', ')}` : '';
+      nodes.push({ ...common, type: 'step', ariaLabel: `${step.name}, ${step.kind} step of ${service}${storeText}`, data: { step, serviceName: service, alsoIn, stores, emphasis: 'normal', selected: false, train: null, divergence: false } });
       continue;
     }
     const outcome = outcomes.get(n.id);
@@ -129,6 +150,7 @@ export function swimlaneElements(
       selectable: false,
       data: {
         flowId: flow.id,
+        policyStores: transition.policies.map((p) => storeOfPolicy(p.type, transition, steps, options.storesOf)),
         route,
         transition,
         label: edgeLabel(transition, options.shares.get(transition.id), options.eventName),
@@ -141,6 +163,13 @@ export function swimlaneElements(
     });
   }
   return { nodes, edges };
+}
+
+/** The database a store pattern lives in: the source service's for an outbox or its relay, the target's for an inbox. */
+function storeOfPolicy(type: string, t: FlowTransition, steps: ReadonlyMap<string, FlowStep>, storesOf: (id: string) => StoreRef[]): string | null {
+  const side = type === 'inbox' ? t.to : type === 'outbox' || type === 'polling-publisher' ? t.from : null;
+  const step = side ? steps.get(side) : undefined;
+  return step ? (storesOf(step.serviceDefinitionId)[0]?.name ?? null) : null;
 }
 
 /** The layout's label text (it reserved room for it) plus the observed share. */

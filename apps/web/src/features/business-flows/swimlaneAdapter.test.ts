@@ -11,7 +11,7 @@ shared.steps[0]!.serviceDefinitionId = 'order-service';
 shared.steps[0]!.entryPoint = 'POST /v1/orders'; // Checkout's first step
 const fx = indexFlows([checkoutFlow, shared], (id) => id);
 const layout = computeSwimlanes(checkoutFlow, (id) => id);
-const base = swimlaneElements(layout, checkoutFlow, { fx, color: 'var(--transit-line-1)', serviceName: (id) => id, eventName: (id) => id, shares: new Map([['declined', 0.02]]) });
+const base = swimlaneElements(layout, checkoutFlow, { fx, color: 'var(--transit-line-1)', serviceName: (id) => id, eventName: (id) => id, shares: new Map([['declined', 0.02]]), storesOf: (id) => (id === 'payment-service' ? [{ id: 'pg-payments-prod', name: 'payments-db', health: 'healthy' }] : []) });
 const step = (nodes: typeof base.nodes, id: string) => nodes.find((n): n is StepNode => n.type === 'step' && n.id === id)!;
 
 describe('swimlane view model (ADR-023)', () => {
