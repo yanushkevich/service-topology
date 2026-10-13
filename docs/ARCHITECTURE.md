@@ -510,13 +510,13 @@ Status: implemented (ADR-022). Specification: `docs/BUSINESS_FLOWS.md`, includin
   - `validation.ts`: the flow rules;
   - `topologyIndex.ts`: `businessFlows`, `flowsByService`, `flowsByEventType`.
 - **Flows read side and layout:** `apps/web/src/transit/flows/`:
-  - `flowLayout.ts`: indexing, ranks, the placement strategy, the track graph, `computeFlowGeometry`;
+  - `flowLayout.ts`: indexing, ranks, the placement strategy, the track graph, `computeFlowGeometry` (Milestone 11: renamed `flowIndex.ts`, keeping codes, ranks, and shared steps; the geometry was replaced by `swimlane.ts`, see Revision 10);
   - `flowModel.ts`: stages, typical path, budget, findings, search;
   - `observed.ts`: stats, transactions, samples, divergence;
   - `exampleFlows.ts` and `generateFlows.ts`.
 - **UI:** `apps/web/src/features/business-flows/`:
   - catalog and board pages;
-  - `FlowMap`, `FlowPanels` (list, strip, card), `FlowReplay`;
+  - `FlowMap` (Milestone 11: replaced by `FlowSwimlane`), `FlowPanels` (list, strip, card), `FlowReplay`;
   - `FlowEditorDialog` and `flowForm.ts`; `FlowEditActions`.
 - **Backend:**
   - `backend/internal/domain/businessflow.go` and `validation.go`;
@@ -552,3 +552,22 @@ Decisions: ADR-023 and ADR-024. Spec: `docs/BUSINESS_FLOWS.md` Revision 2.
 - **Specified for later:**
   - flow impact: a pure `flowImpact` plus an optional `flows` in the impact response (ADR-025, Milestone 12 and B9);
   - the 3D drill-down (ADR-026, Milestone 13).
+
+**Code map (implemented 2026-10-12):**
+- **Pure:**
+  - `apps/web/src/domain/patterns.ts`: the pattern catalog;
+  - `apps/web/src/transit/flows/swimlane.ts`: the layout, with per-channel widths, tracks, gutters, label and policy positions, and `edgeLabelText`;
+  - `flowIndex.ts`: codes, ranks, shared steps;
+  - `flowModel.ts`: adds `lineForStep`, `flowsOnService`, and the messaging findings;
+  - `transit/board.ts`: `lineNamed`, the single step ↔ line rule.
+- **Flow board** (`apps/web/src/features/business-flows/`):
+  - `swimlaneAdapter.ts` builds the React Flow view model once per flow; `applyView` maps view state onto data only.
+  - `FlowSwimlane.tsx` is the canvas: readable initial zoom, frozen lane captions, follow-the-step, controls, and minimap.
+  - `SwimlaneParts.tsx` holds the lane, step, and outcome nodes, the routed edge, and the legend.
+  - `FlowPanels.tsx` `FlowPicker` is the index bar.
+- **Board kit** (`features/boards/`):
+  - `BoardGrid` `wideMap` (picker bar, map beside the card);
+  - `StripScroller`, the focusable scroll region of every strip.
+- **Service board:**
+  - `features/transit-board/FlowsOnService.tsx` (`FlowRows`, `UsedByFlows`);
+  - the `flow` page parameter (`state/useUrlStateSync.ts`).

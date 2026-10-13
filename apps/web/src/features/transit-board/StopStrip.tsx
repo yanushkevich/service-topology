@@ -6,6 +6,7 @@ import { lineColor, POLICY_STATE_LABEL } from './colors';
 import { KeyValueRow, Kicker } from '../../shared/ui/primitives';
 import { PolicyDiamond } from './visuals';
 import { patternLabel } from '../../domain/patterns';
+import { StripScroller } from '../boards/StripScroller';
 
 type StripItem = { station: Station } | { stop: PolicyStop };
 
@@ -36,7 +37,7 @@ export function StopStrip({ index, line, focusStations }: { index: BoardIndex; l
         </Kicker>
         <Kicker as="span" mono>stat under each stop</Kicker>
       </div>
-      <div className="overflow-x-auto pb-1">
+      <StripScroller label={`Stops of line ${line.code}`}>
         {line.route.map((branch, b) => {
           const fork = b > 0 ? index.stations.get(branch.stations[0] ?? '') : undefined;
           const label = b === 0 ? `Stops on line ${line.code}` : `Branch of line ${line.code} from ${fork?.name ?? branch.stations[0]}`;
@@ -56,7 +57,7 @@ export function StopStrip({ index, line, focusStations }: { index: BoardIndex; l
             </div>
           );
         })}
-      </div>
+      </StripScroller>
     </div>
   );
 }

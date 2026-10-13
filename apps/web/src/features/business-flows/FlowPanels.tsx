@@ -15,6 +15,7 @@ import { PolicyDiamond, SeverityMark } from '../transit-board/visuals';
 import { FlowBadge } from './FlowBadge';
 import { stripPageParams } from './flowVisuals';
 import { patternLabel } from '../../domain/patterns';
+import { StripScroller } from '../boards/StripScroller';
 
 /**
  * The flow board's index bar (ADR-023): the catalog link, a flow picker, and a step search that
@@ -105,7 +106,7 @@ export function FlowStrip({
         </Kicker>
         <Kicker as="span" mono>p99 · share · errors · retries under each step</Kicker>
       </div>
-      <div className="overflow-x-auto pb-1">
+      <StripScroller label={`Stages of ${flow.name}, scrollable`}>
         <ol aria-label={`Stages of ${flow.name}`} className="m-0 flex min-w-max list-none gap-2 p-0">
           {columns.map((column) => (
             <li key={column.rank} className="flex w-[210px] flex-none flex-col gap-1.5">
@@ -162,7 +163,7 @@ export function FlowStrip({
             </li>
           ))}
         </ol>
-      </div>
+      </StripScroller>
     </div>
   );
 }

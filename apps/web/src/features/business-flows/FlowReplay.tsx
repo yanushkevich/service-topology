@@ -10,6 +10,7 @@ import { PlaybackControls } from '../boards/PlaybackControls';
 import { usePlayback, type Playback } from '../boards/playback';
 import { FlowBadge } from './FlowBadge';
 import { stripPageParams } from './flowVisuals';
+import { StripScroller } from '../boards/StripScroller';
 
 const WORD: Record<TxStep['status'], string> = { ok: 'ok', warn: 'warning', fail: 'failed' };
 const color = (s: TxStep['status']) => (s === 'fail' ? 'var(--color-crit)' : s === 'warn' ? 'var(--color-warn)' : 'var(--color-accent)');
@@ -58,7 +59,7 @@ export function TxStrip({ flow, tx, playback, divergence, onSeek, onJump }: { fl
           step {current + 1} / {tx.steps.length}
         </span>
       </div>
-      <div className="overflow-x-auto pb-1">
+      <StripScroller label={`Steps of ${tx.key}, scrollable`}>
         <ol ref={list} aria-label={`Steps of ${tx.key}`} className="m-0 flex min-w-max list-none gap-1 p-0">
           {tx.steps.map((step, i) => {
             const isCurrent = i === current;
@@ -112,7 +113,7 @@ export function TxStrip({ flow, tx, playback, divergence, onSeek, onJump }: { fl
             );
           })}
         </ol>
-      </div>
+      </StripScroller>
     </div>
   );
 }

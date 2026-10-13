@@ -1,6 +1,6 @@
 # Milestone 11 — Flow swimlanes, flows on the service board, and the pattern catalog
 
-**Status:** in progress (2026-10-12).
+**Status:** implemented 2026-10-12 (closeout in `docs/IMPLEMENTATION_PLAN.md`).
 
 **Read first:**
 - `docs/BUSINESS_FLOWS.md` Revision 2, sections 9–11;
@@ -12,7 +12,7 @@
 - Inspect the current repository before changing code.
 - Implement only this milestone and its acceptance criteria. Milestones 12 and 13 are specified, not started.
 - Run checks and report only results actually observed.
-- Commit each completed phase with Conventional Commits, scope `m11` (`docs/AGENT_WORKFLOW.md` §6). The enumeration change in the backend uses scope `b9`.
+- Commit each completed phase with Conventional Commits, scope `m11` (`docs/AGENT_WORKFLOW.md` §6). The backend enumeration change goes in the same commit as the schema and fixtures, because the Go parity test checks them together.
 - Update the status docs when done. Stop after this milestone.
 
 ## Phases (each one is committed on its own)

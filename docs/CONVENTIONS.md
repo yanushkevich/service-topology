@@ -18,7 +18,8 @@ rule cannot drift. Everything else is a review rule.
 1. **Reuse before you write.** Search §3.3 and §4.3 for an existing component, helper, or route
    pattern first. Before you write a third copy of something, extract it.
 2. **One owner per fact.** Colours live in `tokens.css`. Enumerations live in the schema and its
-   mirrors. Validation lives in `validation.ts` and is ported to `validation.go`. URL parameters
+   mirrors. Pattern and policy names live in the pattern catalog (`domain/patterns.ts`).
+   Validation lives in `validation.ts` and is ported to `validation.go`. URL parameters
    live in `urlState.ts`. Do not keep a second copy "for convenience". Copies drift: a copied
    per-kind ID switch once returned an empty `Location` header for business flows.
 3. **Readable over clever.** Code should read from top to bottom: named stages, early returns,
@@ -112,12 +113,17 @@ in dense nested forms. Never hand-roll `<label>` + `<input>`.
 **`shared/ui/classes.ts`**:
 - `cx(...)` joins class names.
 - Class helpers: `buttonClass`, `segmentClass`, `fieldClass`, `kickerClass`, `floatClass`,
-  `cardClass`, `boardPanelClass`.
+  `cardClass`, `boardPanelClass`, `indexRowClass`.
 
 **Section pages** (`features/pages/PageShell.tsx`): `PageShell`, `Card`, `Note`.
 
+**Patterns** (`domain/patterns.ts`): `patternLabel`, `patternDescription`, and `PATTERNS`. Never print
+a raw policy or pattern ID in the UI.
+
 **Boards** (`features/boards/`):
-- `BoardFrame`, `BoardHeader`, `BoardGrid`, `BoardSkeleton`: layout, responsive at `max-md`.
+- `BoardFrame`, `BoardHeader`, `BoardGrid` (`wideMap` for a map that needs width), `BoardSkeleton`:
+  layout, responsive at `max-md`.
+- `StripScroller`: the body of every horizontally scrolling strip; a focusable, labelled region.
 - Playback store and clock: `createPlayback`, `usePlaybackClock`, `playbackActions`,
   `useReplayUrlTime`.
 - `PlaybackControls`, `WindowSelect`.
@@ -151,8 +157,12 @@ in dense nested forms. Never hand-roll `<label>` + `<input>`.
   design reference; repeated ones belong in a helper.
 - Glyph artwork, status shapes, and third-party overrides (React Flow, drei labels) go in
   `@layer components` in `styles/components.css`.
-- No CSS Modules and no inline `style={{…}}` except for computed geometry (positions, sizes,
-  transforms) *(CSS Modules enforced: `rawColors.test.ts`)*.
+- No CSS Modules. Use inline `style={{…}}` only for:
+  - computed geometry (positions, sizes, transforms);
+  - data-driven token references, such as a flow's line colour `var(--transit-line-3)` on a React
+    Flow edge.
+
+  *(CSS Modules enforced: `rawColors.test.ts`.)*
 
 ### 3.5 Components and hooks
 

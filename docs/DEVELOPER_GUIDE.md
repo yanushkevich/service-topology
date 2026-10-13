@@ -159,7 +159,17 @@ The Events page and inspector explain the new rule automatically.
 
 ## 7c. Business flows (ADR-022)
 - **Domain:** flows are canonical (`BusinessFlow` in `src/domain/types.ts`). Change the validation rules in `src/domain/validation.ts` and `backend/internal/domain/validation.go` together. Add a case to `CASES` in `src/contract/fixtures.test.ts` and run `npm run fixtures:update`; the Go conformance test then enforces parity.
-- **Layout:** the board uses `computeFlowGeometry` (`src/transit/flows/flowLayout.ts`), which shares bundling, projection, and labels with the transit board. Observed data and transactions come from `TransitRepository` (`getFlowStats`, `getTransactions`, `getTransaction`); the example implementation is `src/transit/flows/exampleFlows.ts`.
+- **Layout (ADR-023):** the board draws one flow as swimlanes.
+  - `computeSwimlanes` (`src/transit/flows/swimlane.ts`) is pure and routes every edge.
+  - `features/business-flows/swimlaneAdapter.ts` turns it into React Flow elements once per flow.
+  - Pass view state (selection, focus, search, replay) through `applyView`, never through positions.
+  - A new node or edge style goes in `SwimlaneParts.tsx` with a data attribute for tests.
+  - Observed data and transactions come from `TransitRepository` (`getFlowStats`, `getTransactions`, `getTransaction`); the example implementation is `src/transit/flows/exampleFlows.ts`.
+- **Patterns (ADR-024):** add a pattern to `src/domain/patterns.ts`.
+  - If flows can carry it, also add it to `FLOW_POLICY_TYPES`, the schema enumeration, and `backend/internal/domain/fields.go`.
+  - Add a `--transit-policy-<id>` token in both themes; the contrast test reads the list from code.
+  - Run `npm run fixtures:update`.
+- **Steps ↔ lines:** `lineForStep` is the only rule. The service board lists flows through `flowsOnService`.
 - **Editing:** `features/business-flows/FlowEditorDialog.tsx` is wired into `EntityEditorProvider` for the `business-flow` kind.
 - **Import:** `make -C backend import-flows FILE=…` (examples in `fixtures/flows/`).
 

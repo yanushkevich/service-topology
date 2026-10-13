@@ -284,6 +284,10 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - React Flow with ELK layout. Rejected: ELK's layered algorithm assigns columns but cannot pin nodes to lanes.
   - Hand-written SVG swimlanes. Rejected: they would duplicate the pan, zoom, fit, and focus handling that React Flow already provides.
   - Drawing flow topology on the service board. Rejected: it mixes the process level with the component level.
+- **Implemented (2026-10-12, Milestone 11):** see the "Revision 2 implementation notes" in `docs/BUSINESS_FLOWS.md`. Decided while building it:
+  - a readable first view: no fit-to-view below 72% zoom; frozen lane captions; the camera follows the step;
+  - the board's index as a picker bar, so the map gets the width;
+  - labels end at their target.
 - **Consequences:**
   - The flow board's SVG map, the multi-flow index highlighting, and the train overlay are replaced.
   - The service board gains a flow selection that is local to the page.
@@ -303,6 +307,7 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 - **Alternatives:**
   - A broad catalog (sagas, resilience extras, event sourcing, …). Not selected by the product owner. It can be added later through the same catalog.
   - Free-text patterns everywhere. Rejected: they cannot drive findings or pick-lists.
+- **Implemented (2026-10-12, Milestone 11):** the schema, TypeScript, and Go enumerations change in one commit, because the Go schema-parity test would fail between separate ones.
 - **Consequences:** contract v1 changes additively (three enumeration values). Imports and the entity API accept them, and both validators check them against the schema.
 
 ## ADR-025 — Flows in impact analysis and simulation (2026-10-12, Milestone 12 with B9; proposed)

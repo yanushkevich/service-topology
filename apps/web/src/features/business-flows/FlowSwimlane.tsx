@@ -58,7 +58,8 @@ function Canvas({ fx, flow, layout, serviceName, eventName, shares, view, replay
   const steps = new Set(flow.steps.map((s) => s.id));
   const box = useRef<HTMLDivElement>(null);
   const [opened, setOpened] = useState({ zoom: READABLE_ZOOM, fitsWidth: false, ready: false });
-  useFollow(layout, opened.ready ? (replayState?.active[0]?.stepId ?? null) : null, box);
+  // Keep the replay's step, else the selected step, in view.
+  useFollow(layout, opened.ready ? (replayState?.active[0]?.stepId ?? view.selectedStepId) : null, box);
   // Fit the width when that stays readable; otherwise open at a readable zoom at the flow's start.
   const openAtStart = (instance: ReactFlowInstance<SwimlaneNode, RoutedEdge>) => {
     const width = box.current?.clientWidth ?? 0;
@@ -126,8 +127,8 @@ function Captions({ layout }: { layout: SwimlaneLayout }) {
 }
 
 /**
- * During replay, brings the transaction's step into view when it leaves the visible area (an
- * effect on the step change, never per frame; instant with reduced motion).
+ * Brings a step into view when it is outside the visible area: the replay's current step, or a
+ * selected one (an effect on the step change, never per frame; instant with reduced motion).
  */
 function useFollow(layout: SwimlaneLayout, stepId: string | null, box: RefObject<HTMLDivElement | null>) {
   const reactFlow = useReactFlow();

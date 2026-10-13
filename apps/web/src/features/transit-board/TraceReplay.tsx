@@ -8,6 +8,7 @@ import { buttonClass, cx, fieldClass, kickerClass } from '../../shared/ui/classe
 import { PlaybackControls } from '../boards/PlaybackControls';
 import { usePlayback, type Playback } from '../boards/playback';
 import { LineBadge } from './visuals';
+import { StripScroller } from '../boards/StripScroller';
 
 const STATUS_WORD: Record<TraceStep['status'], string> = { ok: 'ok', warn: 'warning', fail: 'failed' };
 const TRACE_WORD: Record<TraceSummary['status'], string> = { ok: 'ok', slow: 'slow', failed: 'failed' };
@@ -126,7 +127,7 @@ export function TraceStrip({
           {formatMs(t)} / {formatMs(trace.summary.durationMs)}
         </span>
       </div>
-      <div className="overflow-x-auto pb-1">
+      <StripScroller label={`Steps of trace ${trace.summary.traceId}, scrollable`}>
         <ol ref={list} aria-label={`Steps of trace ${trace.summary.traceId}`} className="m-0 flex min-w-max list-none gap-1 p-0">
           {columns.map((column) => (
             <li key={column.indexes.join('-')} className={cx('flex flex-col gap-1', column.indexes.length > 1 && 'rounded-lg border border-dashed border-line-strong p-1')}>
@@ -170,7 +171,7 @@ export function TraceStrip({
             </li>
           ))}
         </ol>
-      </div>
+      </StripScroller>
     </div>
   );
 }

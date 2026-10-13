@@ -31,7 +31,7 @@ export const LaneView = memo(function LaneView({ data }: NodeProps<LaneNode>) {
 export function LaneCaptions({ lanes, transform }: { lanes: readonly SwimlaneLane[]; transform: readonly [number, number, number] }) {
   const [, ty, zoom] = transform;
   return (
-    <ol className="pointer-events-none absolute inset-y-0 left-0 z-5 m-0 w-[104px] list-none overflow-hidden border-r border-line bg-stage/90 p-0 max-md:w-[84px]" aria-hidden="true">
+    <ol className="pointer-events-none absolute inset-y-0 left-0 z-5 m-0 w-[104px] list-none overflow-hidden border-r border-line bg-stage p-0 max-md:w-[84px]" aria-hidden="true">
       {lanes.map((lane) => (
         <li key={lane.id} data-lane-caption={lane.id} className={cx(kickerClass, 'absolute inset-x-0 border-b border-line px-2.5 pt-2 leading-snug')} style={{ top: ty + lane.y * zoom, height: lane.height * zoom }}>
           {lane.label}
@@ -163,10 +163,11 @@ export const RoutedEdgeView = memo(function RoutedEdgeView({ id, data, markerEnd
         })}
       </g>
       <EdgeLabelRenderer>
-        {label && (
+        {/* Dimmed edges are context: their labels are dropped rather than drawn faint (contrast). */}
+        {label && emphasis !== 'dim' && (
           <div
             data-edge-label={id}
-            className={cx('pointer-events-none absolute rounded-sm bg-surface-1/90 px-1 font-mono text-[10.5px] whitespace-nowrap text-fg-2', emphasis === 'dim' && 'opacity-40')}
+            className="pointer-events-none absolute rounded-sm bg-surface-1/90 px-1 font-mono text-[10.5px] whitespace-nowrap text-fg-2"
             style={{ transform: `translate(-100%, -100%) translate(${route.label.x}px, ${route.label.y}px)` }}
           >
             {label}

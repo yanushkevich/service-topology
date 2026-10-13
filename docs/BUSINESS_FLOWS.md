@@ -320,3 +320,28 @@ Specify all three, build Milestone 11 only. Decisions: ADR-023 (sections 9–10)
   - colours from tokens through a palette module;
   - no Three.js objects in Zustand, and no per-frame global state.
 - **Performance** is measured with `npm run bench:3d` at 12 steps × 6 service boards and recorded in `BENCHMARKS.md`.
+
+## Revision 2 implementation notes (Milestone 11, 2026-10-12)
+These refine sections 9–11. Where they differ, these notes win.
+
+- **Readable first view.**
+  - The swimlane fits the panel's width only when that keeps a zoom of 72% or more.
+  - Otherwise it opens at 72% at the flow's start, with a minimap.
+  - Lane captions sit in a frozen column that follows vertical pan and zoom.
+  - During replay, and when a step is selected, the camera brings that step into view (an effect on the change; instant with reduced motion).
+  - The wheel scrolls the page; zoom with the controls or a pinch.
+- **Board arrangement.** The flow board's index is a bar (the "All flows" link, a flow picker, and a step search) across the top. The map takes the width beside the card (`BoardGrid wideMap`). The search highlights matching steps on the swimlane.
+- **Labels.**
+  - A transition's label (condition, event name, share) ends just before its target, above the entry stub.
+  - Labels into the same step stack upwards.
+  - Each channel reserves room for its longest label.
+  - Labels of dimmed edges are not drawn.
+- **Routing.**
+  - Each channel is as wide as its tracks and labels need.
+  - Back edges, and forward jumps whose straight run would cross a node, use the source lane's gutter.
+- **Patterns.**
+  - The policy and pattern labels on both boards come from the catalog.
+  - The service board's existing tags (mTLS, rate limit, transaction, cache-aside, read replica, pagination, HMAC signature, saga, scheduled job, leader lock, idempotent producer) are catalog entries, typed but unchanged.
+  - The example Checkout settlement hand-off declares `polling-publisher` (the `OutboxRelay`) and `inbox`.
+  - "At-least-once delivery without deduplication" replaces the separate missing-policy note for a missing idempotent consumer or inbox.
+- **Navigation.** A step's drill-down passes `flow`, so the service board opens with that flow highlighted. The line card's links keep the environment and window.

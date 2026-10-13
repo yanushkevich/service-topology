@@ -113,8 +113,15 @@ describe('accessibility audit (axe-core)', () => {
     renderApp('/flows/flow-checkout?v=1&env=production&step=authorize-payment');
     const card = await screen.findByLabelText('Flow card');
     await user.click(within(card).getAllByRole('button', { pressed: false })[0]!);
-    const station = document.querySelector('[data-station^="step:payment-service:Capture"]');
-    if (station) fireEvent.pointerEnter(station);
+    // Hover a policy diamond on the swimlane so its tooltip is audited too.
+    fireEvent.pointerEnter(document.querySelector('[data-stop^="flow-checkout:settled:"]')!);
+    expect(await screen.findByRole('tooltip')).toBeInTheDocument();
+    expect(await audit()).toEqual([]);
+  });
+
+  it('transit board with a business flow selected and the line card listing its flows', async () => {
+    renderApp('/services/payment-service/transit?v=1&env=production&flow=flow-checkout&line=A2');
+    await screen.findByRole('region', { name: 'Used by business flows' });
     expect(await audit()).toEqual([]);
   });
 

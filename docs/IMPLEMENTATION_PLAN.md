@@ -208,7 +208,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 7 | Implemented (2026-10-11) | See the Milestone 7 closeout below. |
 | 8 | Implemented (2026-10-12) | Editing UI (ADR-020); see the Milestone 8 closeout below. |
 | 10 | Implemented (2026-10-12) | Business flows (ADR-022): model, board, typical mode, transaction replay, and authoring, on example observed data; see the Milestone 10 closeout. |
-| 11 | In progress (2026-10-12) | Flow swimlanes, flows on the service board, pattern catalog (ADR-023, ADR-024); `docs/milestones/MILESTONE_11_FLOW_SWIMLANES_PATTERNS.md`. |
+| 11 | Implemented (2026-10-12) | Flow swimlanes, flows on the service board, pattern catalog (ADR-023, ADR-024); see the Milestone 11 closeout. |
 | 12 | Specified (2026-10-12) | Flows in impact analysis and simulation, with backend B9 (ADR-025, proposed). Not started. |
 | 13 | Specified (2026-10-12) | 3D drill-down from a flow into its services (ADR-026, proposed). Not started. |
 | 9 | Implemented (2026-10-12) | Transit board on example data (ADR-021): spec Phase 1 plus the Phase 4 replay UI, hover tooltips, windows, and per-step stats; see the Milestone 9 closeout and follow-up below. Real data sources (phases 2, 3, and 5) are not started. |
@@ -486,3 +486,54 @@ Known limitations:
 - **BPMN:** collaboration pools merge into one flow; sub-processes count as a single step.
 - **Import writes:** an import writes flows one at a time after validating them together. A concurrent write can stop it part-way (412); running it again completes it.
 - **Catalog warnings:** the catalog's warning counts leave out retry amplification, which needs the transit boards and is counted on the board.
+
+### Milestone 11 closeout (2026-10-12)
+Flow swimlanes, business flows on the service board, and one pattern catalog (ADR-023, ADR-024; `docs/BUSINESS_FLOWS.md` Revision 2 and its implementation notes). Milestones 12 and 13 are specified, not started.
+
+**Commits:**
+- `d3a15b2` specs;
+- `92f0b4d` pattern catalog;
+- `de0b935` swimlane layout;
+- `2e023c1` swimlane board;
+- `855036b` flows on the service board;
+- the close-out commit.
+
+**Checks run:**
+- **Frontend (`apps/web`):** `npx tsc -b`, `npx eslint .`, and `npx vitest run --maxWorkers=3`: 61 files, 932 passed, 1 skipped, after the close-out. `npm run build` passes.
+  - One earlier full run had a single failure, in `TraceReplay.test.tsx` ("runs parallel spans side by side"). It passed alone (32/32 in its directory) and in the next full run, so it is load-sensitive, not reproducible. It is untouched by this milestone.
+- **Real-browser audit:** `npm run audit:a11y` against `vite preview`, 20 pages × 2 themes, all pass. It includes the new pages: the swimlane, and the service board with a flow selected.
+- **Backend:**
+  - `make -C backend check` passes;
+  - `make test-integration` passes (MongoDB);
+  - `make contract-check`: 80/80.
+- **Screenshots** reviewed:
+  - flow board in light and dark at 1440, 1000, and 390 px;
+  - replay (dark);
+  - Refund (dark);
+  - the service board with Checkout selected (dark), and with a line's "Used by" (light).
+
+  No page scrolls horizontally at 390 px (checked in Chrome).
+- **Benchmarks:** `npm run bench`, recorded in `docs/BENCHMARKS.md`.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Every pattern label on either board comes from the catalog; the three new values pass both validators and the contract; fixtures regenerated | Pass | `patterns.test.ts`; integration text "(Idempotent consumer, missing)", "(Polling publisher, …)"; Go `make check` (schema parity); contract test; contract check 80/80 |
+| Each new finding has a test that triggers it and one that clears it | Pass | `messagingFindings.test.ts` |
+| One flow per board; steps in their service's lane; outcomes last; no shared vertical tracks; selection, search, and replay move nothing | Pass | `swimlane.test.ts` (lanes, tracks, no edge through a node); `FlowBoardPage.test.tsx` (positions and paths unchanged after selection); `swimlaneAdapter.test.ts` |
+| Shared steps say "also in" and link | Pass | `swimlaneAdapter.test.ts` (the example flows share no step, so this is shown with a test flow) |
+| Replay marks the current step, the traversed transitions, and the divergence; keyboard and reduced motion | Pass | `FlowBoardPage.test.tsx` (`data-train`, `traversed`); Enter selects a step; the follow is instant with reduced motion |
+| Service board lists flows; selecting Checkout on Payment Service lights exactly A1, A2, A4, W1; card links back; the round trip keeps the environment and window | Pass | `FlowsOnService.test.tsx` |
+| axe in jsdom and the real browser, both themes; no horizontal scroll at 390 px | Pass | `a11y.test.tsx`; `npm run audit:a11y`; the overflow check |
+| `npm run check`, `make check`, `make test-integration`, `make contract-check` | Pass | As listed (the frontend checks were run as separate commands, the vitest step with `--maxWorkers=3` because of the VM load) |
+
+**Fixed during close-out:**
+- The real-browser audit found two problems.
+  - Faint labels on dimmed edges (1.95:1). They are no longer drawn.
+  - A wide stop strip that scrolled without being focusable. All four board strips now use `StripScroller`, a focusable, labelled region.
+- A selected step is brought into view.
+
+**Known limitations:**
+- **Visual zoom limit.** Below a 72% zoom the swimlane pans instead of fitting. Very long flows (40 steps) need the minimap or the strip.
+- **Untested display path.** The example flows share no step, so "also in" appears only with more flows (unit-tested).
+- **Placeholders for the new patterns.** Async request-reply has no example in the topology yet. Inbox and polling-publisher stats are example placeholders.
+- **Unmeasured render cost.** React Flow render times in the browser were not measured.

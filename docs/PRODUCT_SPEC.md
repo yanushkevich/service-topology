@@ -405,13 +405,13 @@ Every navigation section is a working page built on the canonical data and share
 - The flow board, drill-down, and replay have integration tests, axe cases in jsdom and in a real browser in both themes, keyboard access, and reduced motion.
 - Example observed data is labelled as example data, never as live.
 
-# Revision 10 Addendum — Flow swimlanes, flows on the service board, patterns, impact, 3D drill-down (2026-10-12; Milestone 11 in progress, 12–13 specified)
+# Revision 10 Addendum — Flow swimlanes, flows on the service board, patterns, impact, 3D drill-down (2026-10-12; Milestone 11 implemented, 12–13 specified)
 
 Spec: `docs/BUSINESS_FLOWS.md` Revision 2. Decisions: ADR-023 to ADR-026.
 
 ## Q. Business flows, second iteration
 
-### Q.1 Milestone 11 (in progress)
+### Q.1 Milestone 11 (implemented)
 - **Swimlanes.** The flow board draws one flow as swimlanes: services are lanes, steps are columns in order, outcomes get the last lane, and edges are orthogonal. It pans, zooms, and fits. Steps shared with other flows say so and link to them.
 - **Flows on the service board.** A service's transit board lists the business flows that use it. Selecting one highlights the lines its steps enter. The line card links each step back to its flow.
 - **One pattern catalog** names every policy and pattern on both boards. It adds the inbox, polling publisher, and async request-reply patterns, with findings for:
