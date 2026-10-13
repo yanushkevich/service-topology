@@ -10,8 +10,7 @@ export interface LabelAnchor {
 }
 
 /**
- * A 3D scene's HTML labels and their declutter (labelDeclutter.ts), shared by the galaxy and the
- * flow drill-down. Labels attach their elements; `update` runs from the frame loop but re-measures
+ * The galaxy's HTML labels and their declutter (labelDeclutter.ts). Labels attach their elements; `update` runs from the frame loop but re-measures
  * only when the camera, the canvas size, the anchors, or the labels changed. Anchors must keep
  * their identity between renders (memoize them). It writes label styles, never state.
  */

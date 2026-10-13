@@ -194,20 +194,3 @@ describe('business-transaction replay', () => {
     expect(await within(panel('Flow card')).findByRole('alert')).toHaveTextContent('No transaction “order 1” for Checkout.');
   });
 });
-
-describe('flow board: the 3D drill-down without WebGL (ADR-026)', () => {
-  beforeEach(resetUiStore);
-
-  it('falls back with a message and returns to the swimlane', async () => {
-    const user = userEvent.setup();
-    const router = renderApp('/flows/flow-checkout?v=1&env=production&scene=3d&step=capture-payment');
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('3D needs WebGL');
-    await user.click(within(alert).getByRole('button', { name: 'Show the swimlane' }));
-    const search = new URLSearchParams(router.state.location.search);
-    expect(search.get('scene')).toBeNull();
-    expect(search.get('step')).toBe('capture-payment');
-    expect(await screen.findByRole('button', { name: 'Swimlane' })).toHaveAttribute('aria-pressed', 'true');
-  });
-});
-

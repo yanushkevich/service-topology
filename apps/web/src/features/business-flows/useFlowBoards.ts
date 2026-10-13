@@ -12,7 +12,7 @@ export function useFlowBoards(flow: BusinessFlow, environmentId: string, window:
   return boards.status === 'ready' ? boards.value : null;
 }
 
-/** The boards indexed by service, as the 3D drill-down needs them (ADR-026). */
+/** The boards indexed by service (which line each step uses, Milestone 13.2). */
 export function useBoardIndexes(boards: readonly (TransitBoard | null)[] | null): Map<string, BoardIndex | null> {
   return useMemo(() => new Map((boards ?? []).flatMap((b) => (b ? [[b.serviceDefinitionId, indexBoard(b)] as const] : []))), [boards]);
 }

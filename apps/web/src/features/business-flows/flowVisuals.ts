@@ -18,7 +18,7 @@ export function isUndoTransition(flow: BusinessFlow, transitionId: string): bool
 /** Keeps the shared view state, drops the flow board's own parameters. */
 export const stripPageParams = (search: string) => {
   const p = new URLSearchParams(search);
-  for (const name of ['step', 'mode', 'tx', 't', 'scene', 'drill']) p.delete(name);
+  for (const name of ['step', 'mode', 'tx', 't']) p.delete(name);
   const out = p.toString();
   return out ? `?${out}` : '';
 };

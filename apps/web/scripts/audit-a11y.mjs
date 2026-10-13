@@ -59,7 +59,6 @@ const PAGES = [
     then: `(async () => { const wait = (ms) => new Promise((r) => setTimeout(r, ms)); [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Simulate outage').click(); await wait(400); document.querySelector('a[href^="/flows"]').click(); await wait(900); document.querySelector('a[href*="flow-checkout"]').click(); })()`,
     after: '[data-flow-impact-banner]',
   },
-  { name: 'Flow board (3D drill-down, service entered)', path: '/flows/flow-checkout?v=1&env=production&scene=3d&drill=payment-service&step=capture-payment', ready: '[data-board-label]' },
   { name: 'Flow board (which line each step uses, step selected)', path: '/flows/flow-checkout?v=1&env=production&strip=lines&step=capture-payment', ready: '[aria-label="Stops on line A2"]' },
   { name: 'Flow board (transaction replay)', path: '/flows/flow-checkout?v=1&env=production&mode=replay&tx=order%204466', ready: '[aria-label^="Steps of order"]' },
 ];

@@ -190,12 +190,6 @@ describe('accessibility audit (axe-core)', { timeout: 30_000 }, () => {
     expect(await audit()).toEqual([]);
   });
 
-  it('flow board with the 3D drill-down switched on (the WebGL fallback in jsdom, ADR-026)', async () => {
-    renderApp('/flows/flow-checkout?v=1&env=production&scene=3d');
-    await screen.findByRole('alert');
-    expect(await audit()).toEqual([]);
-  });
-
   it('flow board: which line each step uses, with a step selected (Milestone 13.2)', async () => {
     renderApp('/flows/flow-checkout?v=1&env=production&strip=lines&step=capture-payment');
     await screen.findByRole('list', { name: 'Stops on line A2' });

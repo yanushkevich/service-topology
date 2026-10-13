@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router';
 import { businessFlowsIn, resolveBusinessFlow, typicalPath } from '../../domain/businessFlow';
 import { dataStoresOf, flowDataStores } from '../../domain/dataStores';
@@ -47,8 +47,6 @@ const STRIP_OPTIONS = [
 type StripView = (typeof STRIP_OPTIONS)[number]['id'];
 const stripOf = (value: string | null): StripView => STRIP_OPTIONS.find((o) => o.id === value)?.id ?? 'stages';
 
-// The 3D drill-down (ADR-026) is its own chunk: Three.js loads only when it is opened.
-const FlowDrilldown3D = lazy(() => import('./drilldown/FlowDrilldown3D').then((m) => ({ default: m.FlowDrilldown3D })));
 
 /**
  * Flow board (ADR-022, ADR-023; docs/BUSINESS_FLOWS.md §7 and Revision 2 §9): one flow as
@@ -96,9 +94,6 @@ function Board({ index, flow, environmentId, viewingHistory }: { index: Topology
   const stepId = params.get('step');
   const txKey = params.get('tx');
   const strip = stripOf(params.get('strip'));
-  // The map as swimlanes or as the 3D drill-down, and the service the 3D camera has entered.
-  const scene = params.get('scene') === '3d' ? '3d' : '2d';
-  const drill = params.get('drill');
 
   const serviceName = useCallback((id: string) => index.definitions.get(id)?.name ?? id, [index]);
   const eventName = useCallback((id: string) => index.eventTypes.get(id)?.name ?? id, [index]);
@@ -176,15 +171,6 @@ function Board({ index, flow, environmentId, viewingHistory }: { index: Topology
       else p.delete('mode');
       p.delete('t');
     });
-  const setScene = (next: '2d' | '3d') =>
-    update((p) => {
-      if (next === '3d') p.set('scene', '3d');
-      else {
-        p.delete('scene');
-        p.delete('drill');
-      }
-    });
-  const setDrill = (serviceId: string | null) => update((p) => (serviceId ? p.set('drill', serviceId) : p.delete('drill')));
   const selectStep = (id: string | null) =>
     update((p) => {
       if (id) p.set('step', id);
@@ -227,24 +213,14 @@ function Board({ index, flow, environmentId, viewingHistory }: { index: Topology
         breadcrumb={`${environmentName} / Business flows /`}
         title={flow.name}
         modes={
-          <>
-            <Segmented aria-label="View">
-              <Segment pressed={mode === 'typical'} onClick={() => setMode('typical')}>
-                Typical
-              </Segment>
-              <Segment pressed={mode === 'replay'} onClick={() => setMode('replay')}>
-                Transaction replay
-              </Segment>
-            </Segmented>
-            <Segmented aria-label="Map view">
-              <Segment pressed={scene === '2d'} onClick={() => setScene('2d')}>
-                Swimlane
-              </Segment>
-              <Segment pressed={scene === '3d'} onClick={() => setScene('3d')}>
-                3D
-              </Segment>
-            </Segmented>
-          </>
+          <Segmented aria-label="View">
+            <Segment pressed={mode === 'typical'} onClick={() => setMode('typical')}>
+              Typical
+            </Segment>
+            <Segment pressed={mode === 'replay'} onClick={() => setMode('replay')}>
+              Transaction replay
+            </Segment>
+          </Segmented>
         }
         aside={
           <>
@@ -273,39 +249,21 @@ function Board({ index, flow, environmentId, viewingHistory }: { index: Topology
         wideMap
         index={<FlowPicker fx={fx} selectedId={flow.id} query={query} onQuery={setQuery} matchCount={mapView.matches?.size ?? null} warnings={warnings} search={params.toString() ? `?${params.toString()}` : ''} />}
         map={
-          scene === '3d' ? (
-            <Suspense fallback={<p className="m-0 p-4 text-sm text-fg-2">Loading the 3D view…</p>}>
-              <FlowDrilldown3D
-                flow={flow}
-                flowColorIndex={Math.max(0, fx.flows.findIndex((f) => f.id === flow.id))}
-                layout={layout}
-                boards={boardIndexes}
-                serviceName={serviceName}
-                scope={drill}
-                onScope={setDrill}
-                selectedStepId={stepId}
-                onSelectStep={(id) => selectStep(id === stepId ? null : id)}
-                replay={mode === 'replay' && tx ? { steps: tx.steps, playback } : null}
-                onExit={() => setScene('2d')}
-              />
-            </Suspense>
-          ) : (
-            <FlowSwimlane
-              fx={fx}
-              flow={flow}
-              layout={layout}
-              serviceName={serviceName}
-              eventName={eventName}
-              shares={shares}
-              storesOf={storesOf}
-              view={mapView}
-              replay={mode === 'replay' && tx ? { tx, playback, divergence } : null}
-              playback={playback}
-              onSelectStep={(id) => selectStep(id === stepId ? null : id)}
-            />
-          )
+          <FlowSwimlane
+            fx={fx}
+            flow={flow}
+            layout={layout}
+            serviceName={serviceName}
+            eventName={eventName}
+            shares={shares}
+            storesOf={storesOf}
+            view={mapView}
+            replay={mode === 'replay' && tx ? { tx, playback, divergence } : null}
+            playback={playback}
+            onSelectStep={(id) => selectStep(id === stepId ? null : id)}
+          />
         }
-        legend={scene === '3d' ? undefined : <SwimlaneLegend className="max-md:hidden" />}
+        legend={<SwimlaneLegend className="max-md:hidden" />}
         strip={
           mode === 'replay' && tx ? (
             <TxStrip flow={flow} tx={tx} playback={playback} divergence={divergence} onSeek={actions.seek} onJump={actions.jump} />
