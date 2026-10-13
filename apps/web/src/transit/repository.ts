@@ -5,6 +5,8 @@ import { exampleFlowStats, exampleTransactions } from './flows/exampleFlows';
 import type { FlowStats, FlowTransaction } from './flows/observed';
 import type { BusinessFlow } from '../domain/types';
 import type { TraceDetail, TraceSummary, TransitBoard, TransitWindow } from './types';
+import { exampleOpenApi } from '../contracts/examples';
+import type { OpenApiDocument } from '../contracts/openapi';
 
 /**
  * Source of transit boards and traces (ADR-021). Only the example implementation exists; an HTTP
@@ -26,6 +28,8 @@ export interface TransitRepository {
   getTransactions(flow: BusinessFlow, window: TransitWindow, signal?: AbortSignal): Promise<FlowTransaction[]>;
   /** One business transaction by its business key; null when unknown. */
   getTransaction(flow: BusinessFlow, key: string, signal?: AbortSignal): Promise<FlowTransaction | null>;
+  /** The service's OpenAPI document and its file name (ADR-029); null when none is known. */
+  getOpenApi(serviceDefinitionId: string, signal?: AbortSignal): Promise<{ file: string; doc: OpenApiDocument; isExample: boolean } | null>;
 }
 
 const WINDOW_MS: Record<TransitWindow, number> = { '1h': 3_600_000, '24h': 86_400_000, '7d': 604_800_000 };
@@ -41,6 +45,11 @@ interface ExampleService {
 export function createExampleTransitRepository(services: Record<string, ExampleService> = { 'payment-service': { board: paymentServiceBoard, traces: paymentServiceTraces } }): TransitRepository {
   return {
     sourceLabel: 'Example data',
+    async getOpenApi(serviceDefinitionId, signal) {
+      signal?.throwIfAborted();
+      const found = exampleOpenApi.get(serviceDefinitionId);
+      return found ? { ...found, isExample: true } : null;
+    },
     async getBoard(serviceDefinitionId, environmentId, window, signal) {
       signal?.throwIfAborted();
       return services[serviceDefinitionId]?.board(environmentId, window) ?? null;

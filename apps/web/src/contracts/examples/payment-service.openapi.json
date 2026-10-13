@@ -1,0 +1,80 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Payment Service webhooks", "version": "4.2.0", "description": "Example specification for the topology mock (not a real service)." },
+  "paths": {
+    "/webhooks/processor": {
+      "post": {
+        "operationId": "processorWebhook",
+        "summary": "Card processor callback",
+        "description": "The card processor reports settlements and chargebacks. Callbacks are redelivered until acknowledged, so each event ID is recorded in processed_webhooks (inbox) before it is handled.",
+        "parameters": [
+          { "name": "X-Processor-Signature", "in": "header", "required": true, "description": "HMAC-SHA256 of the raw body with the shared secret.", "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProcessorEvent" } } }
+        },
+        "responses": {
+          "204": { "description": "Event accepted (or already handled)." },
+          "401": { "description": "The signature does not match.", "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/Problem" } } } },
+          "422": { "description": "Unknown payment.", "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/Problem" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ProcessorEvent": {
+        "oneOf": [{ "$ref": "#/components/schemas/SettlementEvent" }, { "$ref": "#/components/schemas/ChargebackEvent" }],
+        "discriminator": { "propertyName": "type" }
+      },
+      "EventBase": {
+        "type": "object",
+        "required": ["eventId", "type", "paymentId", "occurredAt"],
+        "properties": {
+          "eventId": { "type": "string", "description": "Unique per event; redeliveries repeat it.", "example": "evt_7a1" },
+          "type": { "type": "string" },
+          "paymentId": { "type": "string", "example": "pay_4466" },
+          "occurredAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "SettlementEvent": {
+        "allOf": [
+          { "$ref": "#/components/schemas/EventBase" },
+          {
+            "type": "object",
+            "required": ["settledAmountMinor", "currency"],
+            "properties": {
+              "type": { "type": "string", "enum": ["payment.settled"] },
+              "settledAmountMinor": { "type": "integer", "example": 4999 },
+              "currency": { "type": "string", "example": "EUR" }
+            }
+          }
+        ]
+      },
+      "ChargebackEvent": {
+        "allOf": [
+          { "$ref": "#/components/schemas/EventBase" },
+          {
+            "type": "object",
+            "required": ["reasonCode"],
+            "properties": {
+              "type": { "type": "string", "enum": ["payment.chargeback"] },
+              "reasonCode": { "type": "string", "example": "4837" }
+            }
+          }
+        ]
+      },
+      "Problem": {
+        "type": "object",
+        "required": ["type", "title", "status"],
+        "properties": {
+          "type": { "type": "string", "format": "uri" },
+          "title": { "type": "string" },
+          "status": { "type": "integer" },
+          "detail": { "type": "string" }
+        }
+      }
+    }
+  }
+}

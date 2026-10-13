@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 // shared → transit, simulation → domain. A lower layer never imports a feature, a layout, or the
 // app; shared code that two features need moves down into shared/ (or features/boards for boards).
 const sources = import.meta.glob<string>(
-  ['../{domain,transit,simulation,data,state,shared,contract,styles}/**/*.{ts,tsx}', '!../**/*.test.{ts,tsx}'],
+  ['../{domain,transit,simulation,contracts,data,state,shared,contract,styles}/**/*.{ts,tsx}', '!../**/*.test.{ts,tsx}'],
   { query: '?raw', import: 'default', eager: true },
 );
 
