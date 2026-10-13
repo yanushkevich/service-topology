@@ -125,6 +125,22 @@ export interface SourceStatus {
 /** Aggregation window of typical mode (spec: default 24h, selectable 1h, 24h, 7d). */
 export type TransitWindow = '1h' | '24h' | '7d';
 
+/**
+ * A table of a database dependency (ADR-027): where a line's conversation with the database
+ * happens, and which pattern it serves. Writers and readers must reach the table's station.
+ */
+export interface DataTable {
+  id: string;
+  /** The database dependency station that holds it. */
+  stationId: string;
+  name: string;
+  /** The pattern the table serves; absent for plain state. */
+  pattern?: Extract<PatternId, 'outbox' | 'inbox'>;
+  /** Line IDs. */
+  writes: string[];
+  reads: string[];
+}
+
 export interface TransitBoard {
   serviceDefinitionId: string;
   environmentId: string;
@@ -135,6 +151,8 @@ export interface TransitBoard {
   stations: Station[];
   policies: PolicyStop[];
   lines: Line[];
+  /** Tables of the database dependencies; absent when none are known. */
+  tables?: DataTable[];
 }
 
 export interface TraceSummary {

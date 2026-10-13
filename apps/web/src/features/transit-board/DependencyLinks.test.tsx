@@ -35,3 +35,15 @@ describe('service-board dependencies are topology entities (ADR-027)', () => {
     expect(within(card).getByRole('region', { name: 'Findings' })).toHaveTextContent('Redis is not in the topology');
   });
 });
+
+describe('the database conversation on the service board (ADR-027)', () => {
+  beforeEach(resetUiStore);
+
+  it('shows what Capture writes at payments-db, in the strip and the card', async () => {
+    renderApp('/services/payment-service/transit?v=1&env=production&line=A2');
+    const card = await waitFor(() => panel('Line card'));
+    const data = await within(card).findByRole('region', { name: 'Data' });
+    expect(data.querySelector('[data-table="payment_outbox"]')).toHaveTextContent(/writes\s*payment_outbox\s*in payments-db\s*Transactional outbox/);
+    expect(panel('Stop strip').querySelector('[data-tables]')).toHaveTextContent('writes payments · writes payment_outbox (transactional outbox)');
+  });
+});

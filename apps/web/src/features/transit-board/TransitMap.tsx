@@ -262,6 +262,14 @@ function StationTip({ index, station, lineId, link }: { index: BoardIndex; stati
         </div>
       )}
       {link && <div className="mt-1 text-fg-2">{linkSummary(link)}</div>}
+      {(index.tablesByStation.get(station.id) ?? []).map((t) => (
+        <div key={t.id} className="font-mono text-fg-2">
+          {t.name}
+          {t.pattern ? ` · ${patternLabel(t.pattern).toLowerCase()}` : ''}
+          {t.writes.length ? ` · written by ${t.writes.join(', ')}` : ''}
+          {t.reads.length ? ` · read by ${t.reads.join(', ')}` : ''}
+        </div>
+      ))}
     </>
   );
 }

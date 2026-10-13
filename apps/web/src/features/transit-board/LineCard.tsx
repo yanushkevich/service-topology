@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from 'react';
-import { budgetFor, formatCount, formatMs, formatRate, GROUP_LABELS, isUnobserved, windowLabel, type BoardIndex } from '../../transit/board';
+import { budgetFor, formatCount, formatMs, formatRate, GROUP_LABELS, isUnobserved, windowLabel, type BoardIndex, tablesOfLine } from '../../transit/board';
 import type { Finding, Line, SourceStatus } from '../../transit/types';
 import { buttonClass, cx, kickerClass } from '../../shared/ui/classes';
 import { KeyValueRow, Kicker } from '../../shared/ui/primitives';
@@ -91,6 +91,7 @@ export function LineCard({
       </Block>
       {usedBy && <Block title="Used by business flows">{usedBy}</Block>}
       {dependsOn && <Block title="Depends on">{dependsOn}</Block>}
+      <LineData index={index} line={line} />
       <Block title="Patterns on this line">
         <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">
           {line.patterns.map((p) => (
@@ -224,5 +225,32 @@ function Source({ tag, title, text }: { tag: 'declared' | 'observed' | 'inferred
         <span className="text-[11.5px] text-fg-3">{text}</span>
       </dd>
     </>
+  );
+}
+
+/**
+ * The line's conversation with its databases (ADR-027): each table it writes or reads, in route
+ * order, with the pattern the table serves.
+ */
+function LineData({ index, line }: { index: BoardIndex; line: Line }) {
+  const uses = tablesOfLine(index, line);
+  if (uses.length === 0) return null;
+  return (
+    <Block title="Data">
+      <ul className="m-0 flex list-none flex-col gap-1 p-0 text-sm">
+        {uses.map(({ table, writes, reads }) => (
+          <li key={table.id} data-table={table.id} className="flex flex-wrap items-baseline gap-x-1.5">
+            <span className="text-fg-3">{writes && reads ? 'reads and writes' : writes ? 'writes' : 'reads'}</span>
+            <span className="font-mono text-fg">{table.name}</span>
+            <span className="text-fg-3">in {index.stations.get(table.stationId)?.name ?? table.stationId}</span>
+            {table.pattern && (
+              <span className="rounded-full border border-line-strong px-2 text-[11px] text-fg-2" title={patternDescription(table.pattern)}>
+                {patternLabel(table.pattern)}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </Block>
   );
 }

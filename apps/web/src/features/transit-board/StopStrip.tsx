@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { formatCount, formatMs, formatRate, isUnobserved, stepTint, windowLabel, type BoardIndex } from '../../transit/board';
+import { formatCount, formatMs, formatRate, isUnobserved, stepTint, windowLabel, type BoardIndex, tablesOfLine } from '../../transit/board';
 import type { Line, PolicyStop, Station } from '../../transit/types';
 import { cx } from '../../shared/ui/classes';
 import { lineColor, POLICY_STATE_LABEL } from './colors';
@@ -89,6 +89,7 @@ function StripStop({ index, line, item, first, last, color, dashed, focused }: {
       </svg>
     );
     const degraded = station.status === 'degraded' || station.status === 'down';
+    const touched = tableUses(index, line, station.id);
     const stats = isUnobserved(line) ? undefined : line.stepStats?.[station.id];
     if (stats) {
       // Per-step stats (spec "Typical route mode"): tinted by the configured thresholds, always with a word.
@@ -101,12 +102,18 @@ function StripStop({ index, line, item, first, last, color, dashed, focused }: {
           {/* Health (from the topology when linked, ADR-027) is never hidden behind the line's stats. */}
           {degraded && ` · ${station.status}`}
           {extra.length > 0 && <span className="block">{extra.join(' · ')}</span>}
+          {touched && <span className="block text-fg-2" data-tables>{touched}</span>}
         </span>
       );
-      hidden = ` (${station.kind}, ${station.provenance.kind}${inferred ? ' from a code scan' : ''}${degraded ? `, ${station.status}` : ''}; visited by ${formatRate(stats.share)} of requests, p50 ${formatMs(stats.p50Ms)}, p99 ${formatMs(stats.p99Ms)}, errors ${formatRate(stats.errorRate)}, retries ${formatRate(stats.retryRate)})`;
+      hidden = ` (${station.kind}, ${station.provenance.kind}${inferred ? ' from a code scan' : ''}${degraded ? `, ${station.status}` : ''}${touched ? `; ${touched}` : ''}; visited by ${formatRate(stats.share)} of requests, p50 ${formatMs(stats.p50Ms)}, p99 ${formatMs(stats.p99Ms)}, errors ${formatRate(stats.errorRate)}, retries ${formatRate(stats.retryRate)})`;
     } else {
       const text = station.stats ? `p95 ${station.stats.p95Ms} ms${degraded ? ` · ${station.status}` : ''}` : (station.sub ?? '');
-      stat = <span className={degraded ? 'text-warn-fg' : 'text-fg-3'}>{text}</span>;
+      stat = (
+        <span className={degraded ? 'text-warn-fg' : 'text-fg-3'}>
+          {text}
+          {touched && <span className="block text-fg-2" data-tables>{touched}</span>}
+        </span>
+      );
       hidden = ` (${station.kind}, ${station.provenance.kind}${inferred ? ' from a code scan' : ''})`;
     }
   } else {
@@ -189,4 +196,11 @@ function NetworkSummary({ index }: { index: BoardIndex }) {
       </div>
     </div>
   );
+}
+
+/** What the line does with the tables at a database stop, e.g. "writes payment_outbox (outbox)". */
+function tableUses(index: BoardIndex, line: Line, stationId: string): string | null {
+  const uses = tablesOfLine(index, line).filter((u) => u.table.stationId === stationId);
+  if (uses.length === 0) return null;
+  return uses.map(({ table, writes, reads }) => `${writes && reads ? 'reads + writes' : writes ? 'writes' : 'reads'} ${table.name}${table.pattern ? ` (${patternLabel(table.pattern).toLowerCase()})` : ''}`).join(' · ');
 }

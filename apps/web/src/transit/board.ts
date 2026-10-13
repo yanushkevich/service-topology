@@ -1,4 +1,5 @@
-import type { Line, LineGroup, PolicyStop, Station, StepStats, TransitBoard, TransitWindow } from './types';
+import { patternLabel } from '../domain/patterns';
+import type { DataTable, Finding, Line, LineGroup, PolicyStop, Station, StepStats, TransitBoard, TransitWindow } from './types';
 
 /** Lookups derived once per board load. */
 export interface BoardIndex {
@@ -13,6 +14,8 @@ export interface BoardIndex {
   linesByStation: Map<string, string[]>;
   /** Precomputed lowercase search text per line (spec "Search"). */
   searchText: Map<string, string>;
+  /** Tables per database station (ADR-027). */
+  tablesByStation: Map<string, DataTable[]>;
 }
 
 export const GROUP_ORDER: readonly LineGroup[] = ['grpc', 'http', 'webhook', 'event', 'scheduled', 'background'];
@@ -59,7 +62,52 @@ export function indexBoard(board: TransitBoard): BoardIndex {
     const names = ids.map((id) => stations.get(id)?.name ?? id).join(' ');
     searchText.set(line.id, `${line.code} ${line.name} ${line.signature} ${line.caller} ${TRANSPORT[line.group]} ${names}`.toLowerCase());
   }
-  return { board, stations, policiesByClient, lines, lineById: new Map(lines.map((l) => [l.id, l])), linesByStation, searchText };
+  const tablesByStation = new Map<string, DataTable[]>();
+  for (const t of board.tables ?? []) tablesByStation.set(t.stationId, [...(tablesByStation.get(t.stationId) ?? []), t]);
+  return { board, stations, policiesByClient, lines, lineById: new Map(lines.map((l) => [l.id, l])), linesByStation, searchText, tablesByStation };
+}
+
+/** What a line does with each table it touches, in route order: "writes", "reads", or both. */
+export function tablesOfLine(index: BoardIndex, line: Line): { table: DataTable; writes: boolean; reads: boolean }[] {
+  return lineStations(line).flatMap((id) =>
+    (index.tablesByStation.get(id) ?? []).flatMap((table) => {
+      const writes = table.writes.includes(line.id);
+      const reads = table.reads.includes(line.id);
+      return writes || reads ? [{ table, writes, reads }] : [];
+    }),
+  );
+}
+
+/**
+ * Lines that declare a pattern living in a database table (outbox, inbox, polling publisher) but
+ * touch no such table on their route get a finding (rule `store-pattern-without-table`, ADR-027).
+ */
+export function withTableFindings(board: TransitBoard): TransitBoard {
+  // The outbox pattern covers both its writers and its relay; the relay polls; the inbox is written.
+  const needs: Record<string, { pattern: 'outbox' | 'inbox'; as: 'writes' | 'reads' | 'uses' }> = {
+    outbox: { pattern: 'outbox', as: 'uses' },
+    inbox: { pattern: 'inbox', as: 'writes' },
+    'polling-publisher': { pattern: 'outbox', as: 'reads' },
+  };
+  const tables = board.tables ?? [];
+  const uses = (t: DataTable, lineId: string, as: 'writes' | 'reads' | 'uses') => (as === 'uses' ? t.writes.includes(lineId) || t.reads.includes(lineId) : t[as].includes(lineId));
+  const lines = board.lines.map((line) => {
+    const route = new Set(lineStations(line));
+    const missing = line.patterns.filter((p) => {
+      const need = needs[p];
+      return need && !tables.some((t) => t.pattern === need.pattern && route.has(t.stationId) && uses(t, line.id, need.as));
+    });
+    if (missing.length === 0) return line;
+    const findings: Finding[] = missing.map((p) => ({
+      severity: 'warn',
+      ruleId: 'store-pattern-without-table',
+      text: `${line.name} declares the ${patternLabel(p).toLowerCase()} pattern, but no ${needs[p]?.pattern} table on its route is ${{ reads: 'polled', writes: 'written', uses: 'used' }[needs[p]?.as ?? 'uses']} by it.`,
+      stationIds: [],
+      fix: 'Declare the table on the database dependency it lives in, or remove the pattern.',
+    }));
+    return { ...line, findings: [...line.findings, ...findings] };
+  });
+  return { ...board, lines };
 }
 
 /** Lines matching a search query (case-insensitive substring; empty query matches all). */

@@ -1,4 +1,4 @@
-import type { Line, PolicyStop, Station, TransitBoard, TransitWindow } from '../types';
+import type { DataTable, Line, PolicyStop, Station, TransitBoard, TransitWindow } from '../types';
 
 /**
  * Example data from the Payment Service Transit Board prototype
@@ -154,7 +154,7 @@ const lines: Line[] = [
     id: 'W1', code: 'W1', name: 'POST /webhooks/processor', group: 'webhook', signature: 'POST /webhooks/processor', caller: 'Card Processor', deadlineMs: 10_000,
     stats: stats(38, 60, 0.001, 190_000, 44_020),
     route: [seq('caller:card-processor', 'gate:webhook', 'mod:saga', 'cli:ledger', 'dep:ledger'), seq('mod:saga', 'cli:pg', 'dep:pg')],
-    patterns: ['hmac-signature', 'saga', 'retry'],
+    patterns: ['hmac-signature', 'inbox', 'saga', 'outbox', 'retry'],
     findings: [
       { severity: 'warn', text: 'Ledger calls are retried without an idempotency key', stationIds: ['cli:ledger'], ruleId: 'retry-without-idempotency' },
       { severity: 'info', text: 'PaymentSaga is inferred from a code scan, not from spans', stationIds: ['mod:saga'] },
@@ -234,6 +234,18 @@ function stepStats(line: Line): NonNullable<Line['stepStats']> {
   return out;
 }
 
+/**
+ * Tables of the example's databases (ADR-027): where Capture and the processor webhook write the
+ * outbox in their transaction, OutboxRelay polls it, and the webhook keeps an inbox because the
+ * processor redelivers callbacks. Writers and readers reach the table's station (tested).
+ */
+const tables: DataTable[] = [
+  { id: 'payments', stationId: 'dep:pg', name: 'payments', writes: ['A2', 'W1', 'J1'], reads: ['W1', 'J1'] },
+  { id: 'payment_outbox', stationId: 'dep:pg', name: 'payment_outbox', pattern: 'outbox', writes: ['A2', 'W1'], reads: ['O1'] },
+  { id: 'processed_webhooks', stationId: 'dep:pg', name: 'processed_webhooks', pattern: 'inbox', writes: ['W1'], reads: ['W1'] },
+  { id: 'payments-replica', stationId: 'dep:replica', name: 'payments (read replica)', writes: [], reads: ['A5', 'A6'] },
+];
+
 /** Trace counts in the example are for 7 days; shorter windows see proportionally fewer. */
 const WINDOW_FRACTION: Record<TransitWindow, number> = { '7d': 1, '24h': 1 / 7, '1h': 1 / 168 };
 
@@ -258,5 +270,6 @@ export function paymentServiceBoard(environmentId: string, window: TransitWindow
       stats: { ...line.stats, traces: Math.round(line.stats.traces * WINDOW_FRACTION[window]) },
       stepStats: stepStats(line),
     })),
+    tables: structuredClone(tables),
   };
 }

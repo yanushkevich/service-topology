@@ -5,7 +5,7 @@ import { businessFlowsIn } from '../../domain/businessFlow';
 import type { ServiceDefinition } from '../../domain/types';
 import { indexFlows, type FlowBoardIndex } from '../../transit/flows/flowIndex';
 import { flowsOnService, type FlowOnService } from '../../transit/flows/flowModel';
-import { DEFAULT_WINDOW, findLine, indexBoard, isUnobserved, isWindow, matchingLines, windowLabel } from '../../transit/board';
+import { DEFAULT_WINDOW, findLine, indexBoard, isUnobserved, isWindow, matchingLines, windowLabel, withTableFindings } from '../../transit/board';
 import { computeMapGeometry } from '../../transit/layout';
 import { TransitRepositoryContext } from '../../transit/repository';
 import { applyLinks, linkDependencies, linksKey, type DependencyLink } from '../../transit/links';
@@ -388,8 +388,9 @@ function useLinkedBoard(loaded: TransitBoard): { board: TransitBoard; links: Rea
   const topology = useTopology();
   const environmentId = useUiStore((s) => s.environmentId);
   const index = topology.status === 'ready' ? topology.index : null;
-  const fresh = useMemo(() => (index ? linkDependencies(loaded, index, environmentId) : new Map<string, DependencyLink>()), [loaded, index, environmentId]);
+  const checked = useMemo(() => withTableFindings(loaded), [loaded]);
+  const fresh = useMemo(() => (index ? linkDependencies(checked, index, environmentId) : new Map<string, DependencyLink>()), [checked, index, environmentId]);
   const links = useKeyed(fresh, linksKey(fresh));
-  const board = useMemo(() => applyLinks(loaded, links), [loaded, links]);
+  const board = useMemo(() => applyLinks(checked, links), [checked, links]);
   return { board, links };
 }
