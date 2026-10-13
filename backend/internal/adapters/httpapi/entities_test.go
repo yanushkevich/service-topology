@@ -138,6 +138,9 @@ func TestBusinessFlowWrites(t *testing.T) {
 	if res.code != 201 {
 		t.Fatalf("create flow: %d %s", res.code, res.body)
 	}
+	if loc := res.hdr.Get("Location"); loc != "/api/v1/entities/business-flow/flow-reorder" {
+		t.Fatalf("Location = %q", loc)
+	}
 	var created domain.BusinessFlow
 	res.json(t, &created)
 	if created.Transitions[0].Policies == nil {

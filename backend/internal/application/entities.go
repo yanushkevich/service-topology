@@ -34,8 +34,9 @@ var ErrImportedFlow = errors.New("imported business flows are read-only; change 
 // ErrReadOnly reports a repository that cannot write (HTTP 405).
 var ErrReadOnly = errors.New("this deployment's topology is read-only")
 
-// WriteResult is the stored entity (with server-set fields) and the new topology revision.
+// WriteResult is the stored entity (with server-set fields), its ID, and the new topology revision.
 type WriteResult struct {
+	ID       string
 	Entity   any
 	Revision string
 }
@@ -170,7 +171,7 @@ func (s *Service) write(ctx context.Context, op, kind, pathID string, entity any
 	if err != nil {
 		return nil, err
 	}
-	return &WriteResult{Entity: entity, Revision: newRev}, nil
+	return &WriteResult{ID: id, Entity: entity, Revision: newRev}, nil
 }
 
 func cloneTopology(d *domain.TopologyData) *domain.TopologyData {

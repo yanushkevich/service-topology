@@ -161,56 +161,94 @@ func (BPMN) Decode(content []byte, mapping ports.FlowMapping) ([]domain.Business
 }
 
 func decodeProcess(p bpmnProcess, mapping ports.FlowMapping, serviceOf map[string]string) (domain.BusinessFlow, []ports.ImportProblem) {
-	var problems []ports.ImportProblem
 	id := p.ID
 	if !strings.HasPrefix(id, "flow-") {
 		id = "flow-" + id
 	}
-	name := p.Name
-	if name == "" {
-		name = p.ID
+	pr := newProcessReader(p, mapping, serviceOf)
+	pr.flow = domain.BusinessFlow{ID: id, Name: firstNonEmpty(p.Name, p.ID), Trigger: domain.FlowTrigger{Kind: "manual"}, Steps: []domain.FlowStep{}, Transitions: []domain.FlowTransition{}, Outcomes: []domain.FlowOutcome{}}
+	pr.readBoundaries()
+	pr.readSteps()
+	pr.readOutcomes()
+	pr.readTransitions()
+	pr.readStart()
+	if pr.flow.StartStepID == "" {
+		pr.problem(p.ID, "has no start event leading to a task")
 	}
-	flow := domain.BusinessFlow{ID: id, Name: name, Trigger: domain.FlowTrigger{Kind: "manual"}, Steps: []domain.FlowStep{}, Transitions: []domain.FlowTransition{}, Outcomes: []domain.FlowOutcome{}}
+	if len(pr.flow.Outcomes) == 0 {
+		pr.problem(p.ID, "has no end event")
+	}
+	return pr.flow, pr.problems
+}
 
-	kindOf := map[string]string{} // element ID → local name
-	byID := map[string]bpmnElement{}
-	var sequence []bpmnElement
+// processReader turns one BPMN process into a business flow, stage by stage. The lookups are
+// built once from the process elements; serviceOf (task ID → service) is shared across processes.
+type processReader struct {
+	process   bpmnProcess
+	mapping   ports.FlowMapping
+	serviceOf map[string]string
+	flow      domain.BusinessFlow
+	problems  []ports.ImportProblem
+
+	kindOf        map[string]string // element ID → local name
+	byID          map[string]bpmnElement
+	outgoing      map[string][]bpmnElement // element ID → sequence flows leaving it
+	deadline      map[string]float64       // task ID → timer boundary duration
+	compensatedBy map[string]string        // task ID → its compensation task
+}
+
+func newProcessReader(p bpmnProcess, mapping ports.FlowMapping, serviceOf map[string]string) *processReader {
+	pr := &processReader{process: p, mapping: mapping, serviceOf: serviceOf, kindOf: map[string]string{}, byID: map[string]bpmnElement{},
+		outgoing: map[string][]bpmnElement{}, deadline: map[string]float64{}, compensatedBy: map[string]string{}}
 	for _, e := range p.Elements {
-		kindOf[e.ID] = e.XMLName.Local
-		byID[e.ID] = e
+		pr.kindOf[e.ID] = e.XMLName.Local
+		pr.byID[e.ID] = e
 		if e.XMLName.Local == "sequenceFlow" {
-			sequence = append(sequence, e)
+			pr.outgoing[e.SourceRef] = append(pr.outgoing[e.SourceRef], e)
 		}
 	}
-	deadline := map[string]float64{}
+	return pr
+}
+
+func (pr *processReader) problem(element, message string) {
+	pr.problems = append(pr.problems, ports.ImportProblem{Element: element, Message: message})
+}
+
+func (pr *processReader) isStep(id string) bool    { _, ok := taskKinds[pr.kindOf[id]]; return ok }
+func (pr *processReader) isOutcome(id string) bool { return pr.kindOf[id] == "endEvent" }
+
+// readBoundaries reads timer boundaries (step deadlines) and compensation boundaries, whose
+// associations name the task that compensates the one they are attached to.
+func (pr *processReader) readBoundaries() {
 	compensationBoundary := map[string]string{} // boundary event ID → task it is attached to
-	for _, e := range p.Elements {
+	for _, e := range pr.process.Elements {
 		if e.XMLName.Local != "boundaryEvent" || e.AttachedTo == "" {
 			continue
 		}
 		if e.TimerDefinition != nil && e.TimerDefinition.TimeDuration != "" {
 			duration := strings.TrimSpace(e.TimerDefinition.TimeDuration)
 			if ms, ok := isoDurationMs(duration); ok {
-				deadline[e.AttachedTo] = ms
+				pr.deadline[e.AttachedTo] = ms
 			} else {
-				problems = append(problems, ports.ImportProblem{Element: e.ID, Message: fmt.Sprintf("timer duration %q is not an ISO 8601 duration such as PT10M", duration)})
+				pr.problem(e.ID, fmt.Sprintf("timer duration %q is not an ISO 8601 duration such as PT10M", duration))
 			}
 		}
 		if e.Compensate != nil {
 			compensationBoundary[e.ID] = e.AttachedTo
 		}
 	}
-	compensatedBy := map[string]string{}
-	for _, e := range p.Elements {
+	for _, e := range pr.process.Elements {
 		if e.XMLName.Local == "association" {
 			if task, ok := compensationBoundary[e.SourceRef]; ok {
-				compensatedBy[task] = e.TargetRef
+				pr.compensatedBy[task] = e.TargetRef
 			}
 		}
 	}
+}
 
-	// Steps.
-	for _, e := range p.Elements {
+// readSteps makes a step of every task; its service comes from st:service or the mapping.
+func (pr *processReader) readSteps() {
+	for _, e := range pr.process.Elements {
 		kind, isTask := taskKinds[e.XMLName.Local]
 		if !isTask {
 			continue
@@ -218,30 +256,28 @@ func decodeProcess(p bpmnProcess, mapping ports.FlowMapping, serviceOf map[strin
 		if e.ForCompensation == "true" {
 			kind = "compensation"
 		}
-		service := e.attr("service")
+		service := firstNonEmpty(e.attr("service"), pr.mapping.Tasks[e.ID])
 		if service == "" {
-			service = mapping.Tasks[e.ID]
+			pr.problem(e.ID, fmt.Sprintf("task %q has no service: set st:service or map it in the mapping's tasks", firstNonEmpty(e.Name, e.ID)))
 		}
-		if service == "" {
-			problems = append(problems, ports.ImportProblem{Element: e.ID, Message: fmt.Sprintf("task %q has no service: set st:service or map it in the mapping's tasks", firstNonEmpty(e.Name, e.ID))})
-		}
-		serviceOf[e.ID] = service
+		pr.serviceOf[e.ID] = service
 		step := domain.FlowStep{ID: e.ID, Name: firstNonEmpty(e.Name, e.ID), ServiceDefinitionID: service, Kind: kind}
-		if entry := firstNonEmpty(e.attr("entryPoint"), mapping.EntryPoints[e.ID]); entry != "" {
+		if entry := firstNonEmpty(e.attr("entryPoint"), pr.mapping.EntryPoints[e.ID]); entry != "" {
 			step.EntryPoint = &entry
 		}
-		if ms, ok := deadline[e.ID]; ok {
+		if ms, ok := pr.deadline[e.ID]; ok {
 			step.DeadlineMs = &ms
 		}
-		if c, ok := compensatedBy[e.ID]; ok {
+		if c, ok := pr.compensatedBy[e.ID]; ok {
 			step.CompensatedBy = &c
 		}
-		flow.Steps = append(flow.Steps, step)
+		pr.flow.Steps = append(pr.flow.Steps, step)
 	}
-	isStep := func(id string) bool { _, ok := taskKinds[kindOf[id]]; return ok }
+}
 
-	// Outcomes.
-	for _, e := range p.Elements {
+// readOutcomes makes an outcome of every end event; its definition sets the kind.
+func (pr *processReader) readOutcomes() {
+	for _, e := range pr.process.Elements {
 		if e.XMLName.Local != "endEvent" {
 			continue
 		}
@@ -254,97 +290,100 @@ func decodeProcess(p bpmnProcess, mapping ports.FlowMapping, serviceOf map[strin
 		case e.Compensate != nil:
 			kind = "compensated"
 		}
-		flow.Outcomes = append(flow.Outcomes, domain.FlowOutcome{ID: e.ID, Name: firstNonEmpty(e.Name, e.ID), Kind: kind})
+		pr.flow.Outcomes = append(pr.flow.Outcomes, domain.FlowOutcome{ID: e.ID, Name: firstNonEmpty(e.Name, e.ID), Kind: kind})
 	}
-	isOutcome := func(id string) bool { return kindOf[id] == "endEvent" }
+}
 
-	// Transitions: follow sequence flows through gateways to the next step or outcome.
-	outgoing := map[string][]bpmnElement{}
-	for _, f := range sequence {
-		outgoing[f.SourceRef] = append(outgoing[f.SourceRef], f)
+// reachTarget is a step or outcome reached through a sequence flow (and any gateways after it).
+type reachTarget struct {
+	id, flowID, condition string
+}
+
+// reach follows sequence flows through gateways to the next steps or outcomes. A branch of a
+// non-parallel gateway carries its condition (or, failing that, its name).
+func (pr *processReader) reach(node, flowID, condition string, seen map[string]bool) []reachTarget {
+	if pr.isStep(node) || pr.isOutcome(node) {
+		return []reachTarget{{node, flowID, condition}}
 	}
-	type target struct {
-		id, flowID, condition string
+	if seen[node] {
+		return nil
 	}
-	var reach func(from string, flowID, condition string, seen map[string]bool) []target
-	reach = func(node string, flowID, condition string, seen map[string]bool) []target {
-		if isStep(node) || isOutcome(node) {
-			return []target{{node, flowID, condition}}
+	seen[node] = true
+	var out []reachTarget
+	for _, f := range pr.outgoing[node] {
+		c := condition
+		if fc := firstNonEmpty(strings.TrimSpace(f.Condition), f.Name); fc != "" && isGateway(pr.kindOf[node]) && pr.kindOf[node] != "parallelGateway" {
+			c = fc
 		}
-		if seen[node] {
-			return nil
-		}
-		seen[node] = true
-		var out []target
-		for _, f := range outgoing[node] {
-			c := condition
-			if fc := firstNonEmpty(strings.TrimSpace(f.Condition), f.Name); fc != "" && isGateway(kindOf[node]) && kindOf[node] != "parallelGateway" {
-				c = fc
-			}
-			out = append(out, reach(f.TargetRef, f.ID, c, seen)...)
-		}
-		return out
+		out = append(out, pr.reach(f.TargetRef, f.ID, c, seen)...)
 	}
-	for _, s := range flow.Steps {
-		for _, f := range outgoing[s.ID] {
+	return out
+}
+
+// readTransitions makes a transition from every step to each step or outcome it reaches. A step
+// that leads into an exclusive or inclusive gateway becomes a decision.
+func (pr *processReader) readTransitions() {
+	for si := range pr.flow.Steps {
+		s := &pr.flow.Steps[si]
+		for _, f := range pr.outgoing[s.ID] {
 			cond := ""
-			if isGateway(kindOf[f.TargetRef]) && (kindOf[f.TargetRef] == "exclusiveGateway" || kindOf[f.TargetRef] == "inclusiveGateway") {
-				for i := range flow.Steps {
-					if flow.Steps[i].ID == s.ID && flow.Steps[i].Kind == "task" {
-						flow.Steps[i].Kind = "decision"
-					}
+			if gw := pr.kindOf[f.TargetRef]; gw == "exclusiveGateway" || gw == "inclusiveGateway" {
+				if s.Kind == "task" {
+					s.Kind = "decision"
 				}
 			} else if c := strings.TrimSpace(f.Condition); c != "" {
 				cond = c
 			}
 			// Through a gateway, each target keeps the ID of the sequence flow that reaches it.
-			for _, t := range reach(f.TargetRef, f.ID, cond, map[string]bool{}) {
-				tr := domain.FlowTransition{ID: t.flowID, From: s.ID, To: t.id, Policies: []domain.FlowPolicy{}}
-				if t.condition != "" {
-					c := t.condition
-					tr.Condition = &c
-				}
-				switch {
-				case isOutcome(t.id) || serviceOf[t.id] == s.ServiceDefinitionID:
-					tr.Via = domain.FlowTransitionVia{Kind: "local"}
-				case firstNonEmpty(byID[t.flowID].attr("eventType"), mapping.Events[t.flowID]) != "":
-					ev := firstNonEmpty(byID[t.flowID].attr("eventType"), mapping.Events[t.flowID])
-					tr.Via = domain.FlowTransitionVia{Kind: "event", EventTypeID: &ev}
-				default:
-					tr.Via = domain.FlowTransitionVia{Kind: "call"}
-				}
-				flow.Transitions = append(flow.Transitions, tr)
+			for _, t := range pr.reach(f.TargetRef, f.ID, cond, map[string]bool{}) {
+				pr.flow.Transitions = append(pr.flow.Transitions, pr.transition(s, t))
 			}
 		}
 	}
+}
 
-	// Start: the first step reached from a start event; its definition sets the trigger.
-	for _, e := range p.Elements {
+// transition is local within one service (or into an outcome), an event when the sequence flow
+// names an event type, and a call otherwise.
+func (pr *processReader) transition(from *domain.FlowStep, t reachTarget) domain.FlowTransition {
+	tr := domain.FlowTransition{ID: t.flowID, From: from.ID, To: t.id, Policies: []domain.FlowPolicy{}}
+	if t.condition != "" {
+		c := t.condition
+		tr.Condition = &c
+	}
+	event := firstNonEmpty(pr.byID[t.flowID].attr("eventType"), pr.mapping.Events[t.flowID])
+	switch {
+	case pr.isOutcome(t.id) || pr.serviceOf[t.id] == from.ServiceDefinitionID:
+		tr.Via = domain.FlowTransitionVia{Kind: "local"}
+	case event != "":
+		tr.Via = domain.FlowTransitionVia{Kind: "event", EventTypeID: &event}
+	default:
+		tr.Via = domain.FlowTransitionVia{Kind: "call"}
+	}
+	return tr
+}
+
+// readStart sets the start step (the first step reached from a start event) and the trigger,
+// from the start event's definition.
+func (pr *processReader) readStart() {
+	for _, e := range pr.process.Elements {
 		if e.XMLName.Local != "startEvent" {
 			continue
 		}
-		for _, f := range outgoing[e.ID] {
-			if targets := reach(f.TargetRef, f.ID, "", map[string]bool{}); len(targets) > 0 && flow.StartStepID == "" {
-				flow.StartStepID = targets[0].id
+		for _, f := range pr.outgoing[e.ID] {
+			if targets := pr.reach(f.TargetRef, f.ID, "", map[string]bool{}); len(targets) > 0 && pr.flow.StartStepID == "" {
+				pr.flow.StartStepID = targets[0].id
 			}
 		}
 		switch {
 		case e.MessageDefinition != nil:
-			flow.Trigger = domain.FlowTrigger{Kind: "event"}
-			if ev := firstNonEmpty(e.attr("eventType"), mapping.Events["message:"+e.MessageDefinition.MessageRef], mapping.Events[e.ID]); ev != "" {
-				flow.Trigger.Ref = &ev
+			pr.flow.Trigger = domain.FlowTrigger{Kind: "event"}
+			if ev := firstNonEmpty(e.attr("eventType"), pr.mapping.Events["message:"+e.MessageDefinition.MessageRef], pr.mapping.Events[e.ID]); ev != "" {
+				pr.flow.Trigger.Ref = &ev
 			}
 		case e.TimerDefinition != nil:
-			flow.Trigger = domain.FlowTrigger{Kind: "schedule"}
+			pr.flow.Trigger = domain.FlowTrigger{Kind: "schedule"}
 		}
 	}
-	if flow.StartStepID == "" {
-		problems = append(problems, ports.ImportProblem{Element: p.ID, Message: "has no start event leading to a task"})
-	}
-	if len(flow.Outcomes) == 0 {
-		problems = append(problems, ports.ImportProblem{Element: p.ID, Message: "has no end event"})
-	}
-	return flow, problems
 }
 
 var isoDuration = regexp.MustCompile(`^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$`)

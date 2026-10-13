@@ -91,7 +91,7 @@ Evidence: `make check` exit 0; `make test-integration` passes (incl. snapshot an
 
 | Criterion | Result | Evidence |
 |---|---|---|
-| Contract v1 endpoints | Pass | `internal/adapters/httpapi/api.go`: environments, topology (with environment projection), registry, entities, snapshots (list, get, capture), layouts (list, create, replace, delete) |
+| Contract v1 endpoints | Pass | `internal/adapters/httpapi/api.go` (route table) and `routes_*.go`: environments, topology (with environment projection), registry, entities, snapshots (list, get, capture), layouts (list, create, replace, delete) |
 | Responses validate against `openapi.json` | Pass | `make contract-check` (`apps/web/scripts/check-api-contract.mjs`) |
 | Registry equals the client's filter/sort | Pass | `TestRegistryConformance`: 104 TypeScript-generated cases (mock and a collation-stress topology, all 14 sort orders, 7 filter sets), exact rows and order; CLDR collation via `golang.org/x/text` v0.42.0 |
 | Pagination and filter tests | Pass | `TestRegistryPaginationAndParameters`: paged rows equal one page, cursor bound to query, 400s for every bad parameter |

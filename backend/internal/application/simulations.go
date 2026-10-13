@@ -51,178 +51,228 @@ func invalidAction(i int, reason string) error {
 // captures the final state as a "simulation" snapshot, and applies retention. The canonical
 // topology is never modified.
 func (s *Service) RunSimulation(ctx context.Context, req *domain.SimulationRequest) (*domain.SimulationRun, error) {
-	if len(req.Actions) == 0 || len(req.Actions) > MaxSimulationActions {
-		return nil, &ErrInvalid{"actions", fmt.Sprintf("between 1 and %d actions", MaxSimulationActions)}
-	}
-	if len(req.Watch) > MaxWatchedEntities {
-		return nil, &ErrInvalid{"watch", fmt.Sprintf("at most %d entities", MaxWatchedEntities)}
-	}
-	if req.StartAt != "" && !validTime(req.StartAt) {
-		return nil, &ErrInvalid{"startAt", "must be an RFC 3339 date-time"}
-	}
-	if len(req.Label) > 200 {
-		return nil, &ErrInvalid{"label", "at most 200 characters"}
+	if err := checkSimulationBounds(req); err != nil {
+		return nil, err
 	}
 	ix, err := s.index(ctx)
 	if err != nil {
 		return nil, err
 	}
+	if err := checkSimulationActions(req, ix); err != nil {
+		return nil, err
+	}
+	seed := uint32(1)
+	if req.Seed != nil {
+		seed = *req.Seed
+	}
+	rec := &runRecorder{runID: s.newID(), recordedAt: s.now().UTC().Format(time.RFC3339), watch: req.Watch, seenSeq: 1}
+	state := simulation.Create(ix.Data, seed, req.StartAt)
+	startAt := state.Clock
+	if state, err = rec.replay(state, req); err != nil {
+		return nil, err
+	}
+	run := rec.run(req, seed, startAt, state)
+	if req.CaptureSnapshot {
+		if run.SnapshotID, err = s.saveSimulatedSnapshot(ctx, run, state); err != nil {
+			return nil, err
+		}
+	}
+	if err := s.SimRepo.Save(ctx, run, rec.events, rec.telemetry); err != nil {
+		return nil, err
+	}
+	s.pruneSimulations(ctx)
+	return run, nil
+}
+
+// checkSimulationBounds checks the request's sizes and formats before anything is read.
+func checkSimulationBounds(req *domain.SimulationRequest) error {
+	if len(req.Actions) == 0 || len(req.Actions) > MaxSimulationActions {
+		return &ErrInvalid{"actions", fmt.Sprintf("between 1 and %d actions", MaxSimulationActions)}
+	}
+	if len(req.Watch) > MaxWatchedEntities {
+		return &ErrInvalid{"watch", fmt.Sprintf("at most %d entities", MaxWatchedEntities)}
+	}
+	if req.StartAt != "" && !validTime(req.StartAt) {
+		return &ErrInvalid{"startAt", "must be an RFC 3339 date-time"}
+	}
+	if len(req.Label) > 200 {
+		return &ErrInvalid{"label", "at most 200 characters"}
+	}
+	return nil
+}
+
+// checkSimulationActions checks every action and watched entity against the topology, and the
+// total number of ticks.
+func checkSimulationActions(req *domain.SimulationRequest, ix *domain.Index) error {
 	exists := func(id string) bool { return ix.Instances[id] != nil || ix.Resources[id] != nil }
 	ticks := 0
 	for i, a := range req.Actions {
 		switch a.Type {
 		case "inject":
 			if !exists(a.EntityID) {
-				return nil, invalidAction(i, fmt.Sprintf("unknown service instance or resource %q", a.EntityID))
+				return invalidAction(i, fmt.Sprintf("unknown service instance or resource %q", a.EntityID))
 			}
 			if a.Mode != domain.FailureUnavailable && a.Mode != domain.FailureDegraded {
-				return nil, invalidAction(i, "mode must be unavailable or degraded")
+				return invalidAction(i, "mode must be unavailable or degraded")
 			}
 			if a.DurationTicks < 0 {
-				return nil, invalidAction(i, "durationTicks must not be negative")
+				return invalidAction(i, "durationTicks must not be negative")
 			}
 		case "recover":
 			if !exists(a.EntityID) {
-				return nil, invalidAction(i, fmt.Sprintf("unknown service instance or resource %q", a.EntityID))
+				return invalidAction(i, fmt.Sprintf("unknown service instance or resource %q", a.EntityID))
 			}
 		case "recoverAll", "reset":
 		case "step":
 			if a.Ticks < 1 {
-				return nil, invalidAction(i, "ticks must be at least 1")
+				return invalidAction(i, "ticks must be at least 1")
 			}
 			ticks += a.Ticks
 		default:
-			return nil, invalidAction(i, "type must be inject, recover, recoverAll, step, or reset")
+			return invalidAction(i, "type must be inject, recover, recoverAll, step, or reset")
 		}
 	}
 	if ticks > MaxSimulationTicks {
-		return nil, &ErrInvalid{"actions", fmt.Sprintf("at most %d ticks in total", MaxSimulationTicks)}
+		return &ErrInvalid{"actions", fmt.Sprintf("at most %d ticks in total", MaxSimulationTicks)}
 	}
 	for _, id := range req.Watch {
 		if !exists(id) && ix.Relationships[id] == nil {
-			return nil, &ErrInvalid{"watch", fmt.Sprintf("unknown entity %q", id)}
+			return &ErrInvalid{"watch", fmt.Sprintf("unknown entity %q", id)}
 		}
 	}
+	return nil
+}
 
-	seed := uint32(1)
-	if req.Seed != nil {
-		seed = *req.Seed
-	}
-	runID := s.newID()
-	recordedAt := s.now().UTC().Format(time.RFC3339)
-	state := simulation.Create(ix.Data, seed, req.StartAt)
-	startAt := state.Clock
+// runRecorder collects a run's events and the watched entities' telemetry as the actions replay.
+type runRecorder struct {
+	runID, recordedAt string
+	watch             []domain.EntityID
+	events            []domain.StoredEvent
+	telemetry         []domain.TelemetryObservation
+	eventsTruncated   bool
+	seenSeq           int // the engine's next unseen event number
+}
 
-	var events []domain.StoredEvent
-	var telemetry []domain.TelemetryObservation
-	eventsTruncated := false
-	seenSeq := 1
-	collect := func() {
-		// Events added since the last collection; the engine keeps only its last MaxEvents.
-		for _, e := range state.Events {
-			n, _ := strconv.Atoi(strings.TrimPrefix(e.ID, "sim-"))
-			if n < seenSeq {
-				continue
-			}
-			if len(events) >= MaxStoredEvents {
-				eventsTruncated = true
-				continue
-			}
-			b, _ := json.Marshal(e)
-			var m map[string]any
-			_ = json.Unmarshal(b, &m)
-			// Seq numbers the whole run; the engine's own ID (which restarts after reset) stays in Event.
-			events = append(events, domain.StoredEvent{SimulationID: runID, Seq: len(events) + 1, Provenance: domain.ProvenanceSimulated, RecordedAt: recordedAt, Event: m})
-		}
-		if state.EventSeq-seenSeq > countFrom(state.Events, seenSeq) {
-			eventsTruncated = true
-		}
-		seenSeq = state.EventSeq
-		for _, id := range req.Watch {
-			m := metricsOf(state.Data, id)
-			if m == nil {
-				continue
-			}
-			values := []*float64{m.LatencyMs, m.ThroughputPerSecond, m.ErrorRatePercent}
-			for k, mu := range metricUnits {
-				if values[k] == nil {
-					continue
-				}
-				telemetry = append(telemetry, domain.TelemetryObservation{SimulationID: runID, Seq: len(telemetry) + 1, SubjectID: id, MetricName: mu.name,
-					Value: *values[k], Unit: mu.unit, ObservedAt: state.Clock, RecordedAt: recordedAt, Provenance: domain.ProvenanceSimulated, IsSimulated: true})
-			}
-		}
-	}
-	collect()
+// replay applies the actions in order, collecting after each one (and after every tick of a step,
+// so telemetry has one sample per tick).
+func (rec *runRecorder) replay(state *simulation.State, req *domain.SimulationRequest) (*simulation.State, error) {
+	var err error
+	rec.collect(state)
 	for _, a := range req.Actions {
 		switch a.Type {
 		case "inject":
 			if state, err = state.Inject(a.EntityID, a.Mode, a.DurationTicks); err != nil {
 				return nil, err
 			}
-			collect()
+			rec.collect(state)
 		case "recover":
 			state = state.Recover(a.EntityID)
-			collect()
+			rec.collect(state)
 		case "recoverAll":
 			state = state.RecoverAll()
-			collect()
+			rec.collect(state)
 		case "reset":
 			state = state.Reset(req.StartAt)
-			seenSeq = 1
-			collect()
+			rec.seenSeq = 1
+			rec.collect(state)
 		case "step":
-			for t := 0; t < a.Ticks; t++ { // per tick, so telemetry has one sample per tick
+			for t := 0; t < a.Ticks; t++ {
 				state = state.Step(1)
-				collect()
+				rec.collect(state)
 			}
 		}
 	}
+	return state, nil
+}
 
+// collect records the events added since the last collection (the engine keeps only its last
+// MaxEvents) and one sample per metric of every watched entity.
+func (rec *runRecorder) collect(state *simulation.State) {
+	for _, e := range state.Events {
+		n, _ := strconv.Atoi(strings.TrimPrefix(e.ID, "sim-"))
+		if n < rec.seenSeq {
+			continue
+		}
+		if len(rec.events) >= MaxStoredEvents {
+			rec.eventsTruncated = true
+			continue
+		}
+		// Seq numbers the whole run; the engine's own ID (which restarts after reset) stays in Event.
+		rec.events = append(rec.events, domain.StoredEvent{SimulationID: rec.runID, Seq: len(rec.events) + 1, Provenance: domain.ProvenanceSimulated, RecordedAt: rec.recordedAt, Event: asMap(e)})
+	}
+	if state.EventSeq-rec.seenSeq > countFrom(state.Events, rec.seenSeq) {
+		rec.eventsTruncated = true
+	}
+	rec.seenSeq = state.EventSeq
+	for _, id := range rec.watch {
+		m := metricsOf(state.Data, id)
+		if m == nil {
+			continue
+		}
+		values := []*float64{m.LatencyMs, m.ThroughputPerSecond, m.ErrorRatePercent}
+		for k, mu := range metricUnits {
+			if values[k] == nil {
+				continue
+			}
+			rec.telemetry = append(rec.telemetry, domain.TelemetryObservation{SimulationID: rec.runID, Seq: len(rec.telemetry) + 1, SubjectID: id, MetricName: mu.name,
+				Value: *values[k], Unit: mu.unit, ObservedAt: state.Clock, RecordedAt: rec.recordedAt, Provenance: domain.ProvenanceSimulated, IsSimulated: true})
+		}
+	}
+}
+
+// run summarizes the finished run; it is always marked simulated.
+func (rec *runRecorder) run(req *domain.SimulationRequest, seed uint32, startAt string, state *simulation.State) *domain.SimulationRun {
 	failures := []map[string]any{}
 	for _, f := range state.Failures {
-		b, _ := json.Marshal(f)
-		var m map[string]any
-		_ = json.Unmarshal(b, &m)
-		failures = append(failures, m)
+		failures = append(failures, asMap(f))
 	}
 	watch := req.Watch
 	if watch == nil {
 		watch = []domain.EntityID{}
 	}
 	actions := append([]domain.SimulationAction{}, req.Actions...)
-	run := &domain.SimulationRun{ID: runID, CreatedAt: recordedAt, Label: req.Label, Seed: seed, StartAt: startAt,
+	return &domain.SimulationRun{ID: rec.runID, CreatedAt: rec.recordedAt, Label: req.Label, Seed: seed, StartAt: startAt,
 		Actions: actions, Watch: watch, Tick: state.Tick, Clock: state.Clock, Failures: failures, Impacts: state.Impacts,
-		EventCount: len(events), EventsTruncated: eventsTruncated, TelemetryCount: len(telemetry), Provenance: domain.ProvenanceSimulated, IsSimulated: true}
+		EventCount: len(rec.events), EventsTruncated: rec.eventsTruncated, TelemetryCount: len(rec.telemetry), Provenance: domain.ProvenanceSimulated, IsSimulated: true}
+}
 
-	if req.CaptureSnapshot {
-		label := req.Label
-		if label == "" {
-			label = "Simulation " + runID
-		}
-		snap := &domain.Snapshot{SchemaVersion: domain.SnapshotSchemaVersion,
-			SnapshotSummary: domain.SnapshotSummary{ID: runID, Label: label, TakenAt: state.Clock, Source: domain.SnapshotSourceSimulation, IsSimulated: true}, Data: *state.Data}
-		if issues := domain.ValidateSnapshot(snap); len(issues) > 0 {
-			return nil, fmt.Errorf("simulated state failed validation: %s %s", issues[0].Code, issues[0].Message)
-		}
-		if err := s.SnapshotRepo.Save(ctx, snap); err != nil {
-			return nil, err
-		}
-		run.SnapshotID = &snap.ID
+// saveSimulatedSnapshot stores the final simulated state as a snapshot with the run's ID.
+func (s *Service) saveSimulatedSnapshot(ctx context.Context, run *domain.SimulationRun, state *simulation.State) (*string, error) {
+	label := run.Label
+	if label == "" {
+		label = "Simulation " + run.ID
 	}
-	if err := s.SimRepo.Save(ctx, run, events, telemetry); err != nil {
+	snap := &domain.Snapshot{SchemaVersion: domain.SnapshotSchemaVersion,
+		SnapshotSummary: domain.SnapshotSummary{ID: run.ID, Label: label, TakenAt: state.Clock, Source: domain.SnapshotSourceSimulation, IsSimulated: true}, Data: *state.Data}
+	if issues := domain.ValidateSnapshot(snap); len(issues) > 0 {
+		return nil, fmt.Errorf("simulated state failed validation: %s %s", issues[0].Code, issues[0].Message)
+	}
+	if err := s.SnapshotRepo.Save(ctx, snap); err != nil {
 		return nil, err
 	}
-	if s.SimulationRetention > 0 || s.SimulationMaxRuns > 0 {
-		olderThan := ""
-		if s.SimulationRetention > 0 {
-			olderThan = s.now().Add(-s.SimulationRetention).UTC().Format(time.RFC3339)
-		}
-		if _, err := s.SimRepo.Prune(ctx, olderThan, s.SimulationMaxRuns); err != nil && s.Logger != nil {
-			s.Logger.WarnContext(ctx, "simulation retention pruning failed", "error", err.Error())
-		}
+	return &snap.ID, nil
+}
+
+// pruneSimulations applies the retention settings. Failure is logged, not returned: the run is saved.
+func (s *Service) pruneSimulations(ctx context.Context) {
+	if s.SimulationRetention <= 0 && s.SimulationMaxRuns <= 0 {
+		return
 	}
-	return run, nil
+	olderThan := ""
+	if s.SimulationRetention > 0 {
+		olderThan = s.now().Add(-s.SimulationRetention).UTC().Format(time.RFC3339)
+	}
+	if _, err := s.SimRepo.Prune(ctx, olderThan, s.SimulationMaxRuns); err != nil && s.Logger != nil {
+		s.Logger.WarnContext(ctx, "simulation retention pruning failed", "error", err.Error())
+	}
+}
+
+// asMap converts an engine value to the JSON object stored with the run.
+func asMap(v any) map[string]any {
+	b, _ := json.Marshal(v)
+	var m map[string]any
+	_ = json.Unmarshal(b, &m)
+	return m
 }
 
 func countFrom(events []simulation.Event, from int) int {

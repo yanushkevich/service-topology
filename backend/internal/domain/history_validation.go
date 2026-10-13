@@ -14,9 +14,7 @@ const (
 )
 
 var (
-	providers    = []string{"aws", "azure", "gcp", "on-prem", "saas", "internal", "unknown"}
-	healthValues = []string{"healthy", "degraded", "unavailable", "unknown"}
-	layoutModes  = []string{"topology", "infrastructure"}
+	layoutModes = []string{"topology", "infrastructure"}
 )
 
 func isTimestamp(s string) bool {
@@ -85,8 +83,8 @@ func ValidateSavedLayout(l *SavedLayout) []Issue {
 			seen[v] = true
 		}
 	}
-	list("providers", l.View.Filters.Providers, providers)
-	list("health", l.View.Filters.Health, healthValues)
+	list("providers", l.View.Filters.Providers, ProviderValues)
+	list("health", l.View.Filters.Health, HealthValues)
 	list("groups", l.View.Filters.Groups, EntityGroups)
 	return issues
 }

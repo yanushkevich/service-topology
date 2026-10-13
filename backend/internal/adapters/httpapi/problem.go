@@ -47,3 +47,13 @@ func WriteProblem(w http.ResponseWriter, r *http.Request, p Problem) {
 func notFound(w http.ResponseWriter, r *http.Request) {
 	WriteProblem(w, r, Problem{Type: problemBase + "not-found", Title: "Not found", Status: http.StatusNotFound, Detail: "No resource at this path."})
 }
+
+// problem builds a problem whose type URI ends in slug. A non-empty code also lists the error
+// under `errors`, so clients can switch on it as on validation codes.
+func problem(slug, title string, status int, detail, code string) Problem {
+	p := Problem{Type: problemBase + slug, Title: title, Status: status, Detail: detail}
+	if code != "" {
+		p.Errors = []ProblemError{{Code: code, Message: detail}}
+	}
+	return p
+}
