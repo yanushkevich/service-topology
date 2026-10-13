@@ -66,6 +66,7 @@ func Run(ctx context.Context, cfg config.Config, logger *slog.Logger, onListen f
 			TopologyRepo: topo,
 			SnapshotRepo: mongodb.NewSnapshotRepository(store),
 			LayoutRepo:   mongodb.NewLayoutRepository(store),
+			BoardRepo:    mongodb.NewBoardRepository(store),
 			GraphRepo:    mongodb.NewGraphRepository(store),
 			// ADR-DB-003 amendment: in-memory traversal on the cached topology unless configured.
 			TraversalInDatabase: cfg.TraversalSource == "database",

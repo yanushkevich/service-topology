@@ -68,6 +68,20 @@ type ExpectedIssue struct {
 	EntityID domain.EntityID `json:"entityId"`
 }
 
+// BoardCase is one file in fixtures/conformance/boards (ADR-031).
+type BoardCase struct {
+	Description string                 `json:"description"`
+	Topology    string                 `json:"topology"`
+	Definition  domain.BoardDefinition `json:"definition"`
+	Expected    []BoardIssue           `json:"expected"`
+}
+
+// BoardIssue is an expected board issue: code and field path.
+type BoardIssue struct {
+	Code string `json:"code"`
+	Path string `json:"path"`
+}
+
 // ValidationCase is one file in fixtures/conformance/validation.
 type ValidationCase struct {
 	Description string              `json:"description"`

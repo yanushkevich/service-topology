@@ -17,8 +17,9 @@ type handlerFunc func(http.ResponseWriter, *http.Request) error
 
 // apiRoutes registers the contract v1 operations from docs/api/openapi.json under /api/v1. The
 // handlers live by area: routes_read.go (topology, registry, traversal, event types),
-// routes_entities.go (writes and imports), routes_history.go (snapshots and layouts), and
-// routes_simulations.go (runs, events, telemetry). Request parsing is in request.go.
+// routes_entities.go (writes and imports), routes_history.go (snapshots and layouts),
+// routes_simulations.go (runs, events, telemetry), and routes_boards.go (transit board
+// definitions). Request parsing is in request.go.
 func (d Deps) apiRoutes(mux *http.ServeMux) {
 	h := func(pattern string, fn handlerFunc) {
 		mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
@@ -58,6 +59,13 @@ func (d Deps) apiRoutes(mux *http.ServeMux) {
 	h("POST /api/v1/layouts", d.createLayout)
 	h("PUT /api/v1/layouts/{id}", d.replaceLayout)
 	h("DELETE /api/v1/layouts/{id}", d.deleteLayout)
+
+	// Authored transit board definitions (ADR-031).
+	h("GET /api/v1/transit-boards", d.listBoards)
+	h("POST /api/v1/transit-boards", d.createBoard)
+	h("GET /api/v1/transit-boards/{serviceId}", d.getBoard)
+	h("PUT /api/v1/transit-boards/{serviceId}", d.replaceBoard)
+	h("DELETE /api/v1/transit-boards/{serviceId}", d.deleteBoard)
 
 	h("POST /api/v1/simulations", d.runSimulation)
 	h("GET /api/v1/simulations", d.listSimulations)

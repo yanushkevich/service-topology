@@ -27,7 +27,7 @@ func (d Deps) problemFor(r *http.Request, err error) Problem {
 	case errors.As(err, &validation):
 		p := problem("validation-failed", "Validation failed", http.StatusUnprocessableEntity, fmt.Sprintf("%d validation issue(s).", len(validation.Issues)), "")
 		for _, i := range validation.Issues {
-			p.Errors = append(p.Errors, ProblemError{Code: i.Code, EntityID: i.EntityID, Message: i.Message})
+			p.Errors = append(p.Errors, ProblemError{Code: i.Code, EntityID: i.EntityID, Path: i.Path, Message: i.Message})
 		}
 		return p
 	case errors.As(err, &notFound):
@@ -42,6 +42,8 @@ func (d Deps) problemFor(r *http.Request, err error) Problem {
 		return problem("import-overwrites-authored", "Conflict", http.StatusConflict, err.Error(), "import-overwrites-authored")
 	case errors.Is(err, application.ErrImportedFlow):
 		return problem("imported-read-only", "Conflict", http.StatusConflict, err.Error(), "imported-read-only")
+	case errors.Is(err, application.ErrNoBoardStore):
+		return problem("unavailable", "Service unavailable", http.StatusServiceUnavailable, "This deployment does not store transit boards.", "")
 	case errors.Is(err, ports.ErrConflict):
 		return problem("conflict", "Conflict", http.StatusConflict, "An item with this ID already exists.", "")
 	case errors.As(err, &tooLarge):

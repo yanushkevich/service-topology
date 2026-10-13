@@ -49,6 +49,8 @@ type Issue struct {
 	Code     string   `json:"code"`
 	EntityID EntityID `json:"entityId"`
 	Message  string   `json:"message"`
+	// Path names the field of a board definition (ADR-031); empty for topology issues.
+	Path string `json:"path,omitempty"`
 }
 
 const environmentIndependent = "(environment-independent)"

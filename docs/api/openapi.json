@@ -25,6 +25,10 @@
     },
     {
       "name": "layouts"
+    },
+    {
+      "name": "transit-boards",
+      "description": "Authored transit board definitions (ADR-031): the declared structure of a service's board. Observed data is never part of a definition."
     }
   ],
   "paths": {
@@ -1768,6 +1772,272 @@
         },
         "x-repository": "Backend only (ADR-022): workflow definitions are imported through the API or make import-flows; the client reads the result through TopologyRepository.getTopology"
       }
+    },
+    "/transit-boards": {
+      "get": {
+        "operationId": "listTransitBoards",
+        "tags": [
+          "transit-boards"
+        ],
+        "summary": "List stored transit board definitions.",
+        "x-repository": "BoardRepository.list()",
+        "responses": {
+          "200": {
+            "description": "Stored boards, by service ID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "serviceDefinitionId",
+                          "revision",
+                          "updatedAt",
+                          "lines"
+                        ],
+                        "properties": {
+                          "serviceDefinitionId": {
+                            "type": "string"
+                          },
+                          "revision": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "lines": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createTransitBoard",
+        "tags": [
+          "transit-boards"
+        ],
+        "summary": "Store a new board definition for a service (one per service).",
+        "description": "Validated against the current topology with the rules of validateBoardDefinition (codes board-service-not-found, invalid-board-station, board-entity-not-found, invalid-board-line, invalid-board-policy, invalid-board-table; each error names the field in `path`). Requires the editor role when AUTH_MODE=token.",
+        "x-repository": "BoardRepository.create(definition)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../schemas/transit-board-definition.v1.schema.json"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Stored at revision 1.",
+            "headers": {
+              "ETag": {
+                "description": "The board revision; send it as If-Match to guard the next write.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/transit-board-definition.v1.schema.json"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/transit-boards/{serviceId}": {
+      "parameters": [
+        {
+          "name": "serviceId",
+          "in": "path",
+          "required": true,
+          "description": "Service definition ID.",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getTransitBoard",
+        "tags": [
+          "transit-boards"
+        ],
+        "summary": "Read a service's board definition.",
+        "x-repository": "BoardRepository.get(serviceId)",
+        "responses": {
+          "200": {
+            "description": "The definition.",
+            "headers": {
+              "ETag": {
+                "description": "The board revision; send it as If-Match to guard the next write.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/transit-board-definition.v1.schema.json"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "put": {
+        "operationId": "replaceTransitBoard",
+        "tags": [
+          "transit-boards"
+        ],
+        "summary": "Store a new revision of a service's board definition.",
+        "description": "The body's serviceDefinitionId must equal the path. Validation as for create.",
+        "x-repository": "BoardRepository.replace(definition, ifRevision)",
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "description": "The revision this write is based on (ETag of the last read); a stale value fails with 412.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../schemas/transit-board-definition.v1.schema.json"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stored; the ETag is the new revision.",
+            "headers": {
+              "ETag": {
+                "description": "The board revision; send it as If-Match to guard the next write.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "../schemas/transit-board-definition.v1.schema.json"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "412": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteTransitBoard",
+        "tags": [
+          "transit-boards"
+        ],
+        "summary": "Delete a service's board definition.",
+        "x-repository": "BoardRepository.remove(serviceId, ifRevision)",
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "description": "The revision this write is based on (ETag of the last read); a stale value fails with 412.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted."
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "412": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1974,6 +2244,10 @@
                 },
                 "message": {
                   "type": "string"
+                },
+                "path": {
+                  "type": "string",
+                  "description": "The field of a board definition the issue is about (ADR-031)."
                 }
               }
             }

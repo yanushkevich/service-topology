@@ -21,7 +21,7 @@ const OPENAPI_ID = 'https://example.test/api/openapi.json';
 const openapi = load('api/openapi.json');
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 addFormats(ajv);
-for (const s of ['schemas/topology.v1.schema.json', 'schemas/topology-snapshot.v1.schema.json', 'schemas/saved-layout.v1.schema.json']) ajv.addSchema(load(s));
+for (const s of ['schemas/topology.v1.schema.json', 'schemas/topology-snapshot.v1.schema.json', 'schemas/saved-layout.v1.schema.json', 'schemas/transit-board-definition.v1.schema.json']) ajv.addSchema(load(s));
 ajv.addSchema({ ...openapi, $id: OPENAPI_ID });
 const pointer = (...parts) => `${OPENAPI_ID}#/${parts.map((p) => String(p).replace(/~/g, '~0').replace(/\//g, '~1')).join('/')}`;
 
@@ -223,6 +223,34 @@ await check('replace missing layout', 'put', '/layouts/{id}', '/layouts/contract
 await check('invalid layout', 'post', '/layouts', '/layouts', { status: 422, body: { ...mine, id: `contract-bad-${stamp}`, view: { ...mine.view, layoutMode: '3d' } } });
 await check('delete layout', 'delete', '/layouts/{id}', `/layouts/${mine.id}`, { status: 204 });
 await check('delete missing layout', 'delete', '/layouts/{id}', `/layouts/${mine.id}`, { status: 404 });
+
+// Transit board definitions (ADR-031): one per service, guarded by a per-board revision.
+const boardService = 'email-dispatcher';
+const board = {
+  serviceDefinitionId: boardService,
+  stations: [
+    { id: 'caller:queue', name: 'notifications.email', kind: 'caller' },
+    { id: 'gate:consumer', name: 'Consumer', kind: 'gate' },
+    { id: 'mod:send', name: 'Send', kind: 'module' },
+    { id: 'cli:smtp', name: 'mail client', kind: 'client' },
+    { id: 'dep:mail', name: 'Email Delivery API', kind: 'dependency', entityId: 'ext-email-delivery' },
+  ],
+  lines: [{ id: 'E1', code: 'E1', name: 'SendEmail', group: 'event', signature: 'consume notifications.email', caller: 'Notification Service', route: [{ stations: ['caller:queue', 'gate:consumer', 'mod:send', 'cli:smtp', 'dep:mail'], kind: 'sequential' }], patterns: ['retry'] }],
+  policies: [{ id: 'p-timeout', clientId: 'cli:smtp', order: 0, type: 'timeout', label: '5 s', config: { timeoutMs: '5000' } }],
+  tables: [],
+};
+await check('delete transit board, leftover', 'delete', '/transit-boards/{serviceId}', `/transit-boards/${boardService}`, { status: undefined });
+await check('list transit boards', 'get', '/transit-boards', '/transit-boards', { status: 200 });
+await check('create transit board', 'post', '/transit-boards', '/transit-boards', { status: 201, body: board });
+const boardRev = lastHeaders.get('etag');
+await check('create transit board, duplicate', 'post', '/transit-boards', '/transit-boards', { status: 409, body: board });
+await check('create transit board, invalid', 'post', '/transit-boards', '/transit-boards', { status: 422, body: { ...board, serviceDefinitionId: 'order-service', policies: [{ ...board.policies[0], clientId: 'mod:send' }] } });
+await check('get transit board', 'get', '/transit-boards/{serviceId}', `/transit-boards/${boardService}`, { status: 200 });
+await check('get transit board, missing', 'get', '/transit-boards/{serviceId}', '/transit-boards/no-such-service', { status: 404 });
+await check('replace transit board', 'put', '/transit-boards/{serviceId}', `/transit-boards/${boardService}`, { status: 200, body: { ...board, lines: [{ ...board.lines[0], name: 'Send an email' }] }, headers: { 'If-Match': boardRev } });
+await check('replace transit board, stale If-Match', 'put', '/transit-boards/{serviceId}', `/transit-boards/${boardService}`, { status: 412, body: board, headers: { 'If-Match': boardRev } });
+await check('delete transit board', 'delete', '/transit-boards/{serviceId}', `/transit-boards/${boardService}`, { status: 204 });
+await check('delete transit board, missing', 'delete', '/transit-boards/{serviceId}', `/transit-boards/${boardService}`, { status: 404 });
 
 console.log(`\n${checks - failures}/${checks} checks passed against ${BASE}`);
 process.exit(failures ? 1 : 0);

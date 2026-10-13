@@ -23,7 +23,9 @@ type Problem struct {
 type ProblemError struct {
 	Code     string `json:"code"`
 	EntityID string `json:"entityId,omitempty"`
-	Message  string `json:"message"`
+	// Path names the field of a board definition (ADR-031).
+	Path    string `json:"path,omitempty"`
+	Message string `json:"message"`
 }
 
 // Problem type URIs follow the examples in docs/API_CONTRACT.md.

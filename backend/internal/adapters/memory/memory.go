@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"sync"
 
 	"servicetopology/backend/internal/domain"
@@ -19,6 +20,7 @@ type Store struct {
 	Data      *domain.TopologyData
 	snapshots map[string]domain.Snapshot
 	layouts   map[string]domain.SavedLayout
+	boards    map[domain.EntityID]domain.StoredBoard
 	// Err, if set, is returned by every call (simulates an unavailable database).
 	Err error
 	// writes counts applied changes; the revision is derived from it.
@@ -27,7 +29,7 @@ type Store struct {
 
 // New returns a store holding data.
 func New(data *domain.TopologyData) *Store {
-	return &Store{Data: data, snapshots: map[string]domain.Snapshot{}, layouts: map[string]domain.SavedLayout{}}
+	return &Store{Data: data, snapshots: map[string]domain.Snapshot{}, layouts: map[string]domain.SavedLayout{}, boards: map[domain.EntityID]domain.StoredBoard{}}
 }
 
 func clone[T any](v T) T {
@@ -376,4 +378,100 @@ func (s *Store) ApplyChange(_ context.Context, change ports.EntityChange, expect
 	s.Data = d
 	s.writes++
 	return s.revisionLocked(), nil
+}
+
+// Boards adapts the store to ports.BoardRepository (ADR-031), with the same revision rules as MongoDB.
+func (s *Store) Boards() ports.BoardRepository { return boards{s} }
+
+type boards struct{ s *Store }
+
+func (b boards) lock() (func(), error) {
+	b.s.mu.Lock()
+	if b.s.Err != nil {
+		b.s.mu.Unlock()
+		return nil, b.s.Err
+	}
+	return b.s.mu.Unlock, nil
+}
+
+func (b boards) List(context.Context) ([]domain.StoredBoard, error) {
+	unlock, err := b.lock()
+	if err != nil {
+		return nil, err
+	}
+	defer unlock()
+	out := []domain.StoredBoard{}
+	for _, v := range b.s.boards {
+		out = append(out, clone(v))
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].Definition.ServiceDefinitionID < out[j].Definition.ServiceDefinitionID
+	})
+	return out, nil
+}
+
+func (b boards) Get(_ context.Context, id domain.EntityID) (*domain.StoredBoard, error) {
+	unlock, err := b.lock()
+	if err != nil {
+		return nil, err
+	}
+	defer unlock()
+	v, ok := b.s.boards[id]
+	if !ok {
+		return nil, ports.ErrNotFound
+	}
+	c := clone(v)
+	return &c, nil
+}
+
+func (b boards) Create(_ context.Context, def *domain.BoardDefinition, updatedAt string) (*domain.StoredBoard, error) {
+	unlock, err := b.lock()
+	if err != nil {
+		return nil, err
+	}
+	defer unlock()
+	if _, ok := b.s.boards[def.ServiceDefinitionID]; ok {
+		return nil, ports.ErrConflict
+	}
+	stored := domain.StoredBoard{Definition: clone(*def), Revision: "1", UpdatedAt: updatedAt}
+	b.s.boards[def.ServiceDefinitionID] = stored
+	c := clone(stored)
+	return &c, nil
+}
+
+func (b boards) Replace(_ context.Context, def *domain.BoardDefinition, ifRevision, updatedAt string) (*domain.StoredBoard, error) {
+	unlock, err := b.lock()
+	if err != nil {
+		return nil, err
+	}
+	defer unlock()
+	current, ok := b.s.boards[def.ServiceDefinitionID]
+	if !ok {
+		return nil, ports.ErrNotFound
+	}
+	if ifRevision != "" && ifRevision != current.Revision {
+		return nil, ports.ErrPreconditionFailed
+	}
+	n, _ := strconv.Atoi(current.Revision)
+	stored := domain.StoredBoard{Definition: clone(*def), Revision: strconv.Itoa(n + 1), UpdatedAt: updatedAt}
+	b.s.boards[def.ServiceDefinitionID] = stored
+	c := clone(stored)
+	return &c, nil
+}
+
+func (b boards) Remove(_ context.Context, id domain.EntityID, ifRevision string) error {
+	unlock, err := b.lock()
+	if err != nil {
+		return err
+	}
+	defer unlock()
+	current, ok := b.s.boards[id]
+	if !ok {
+		return ports.ErrNotFound
+	}
+	if ifRevision != "" && ifRevision != current.Revision {
+		return ports.ErrPreconditionFailed
+	}
+	delete(b.s.boards, id)
+	return nil
 }

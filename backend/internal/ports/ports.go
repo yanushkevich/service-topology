@@ -183,3 +183,18 @@ type ReadinessCheck interface {
 	Name() string
 	Check(ctx context.Context) error
 }
+
+// BoardRepository stores transit board definitions, one per service (ADR-031). Revisions guard
+// writes: an ifRevision that is not current fails with ErrPreconditionFailed (empty skips the check).
+type BoardRepository interface {
+	// List returns every stored board, by service ID.
+	List(ctx context.Context) ([]domain.StoredBoard, error)
+	// Get returns the board of a service; ErrNotFound if none is stored.
+	Get(ctx context.Context, serviceID domain.EntityID) (*domain.StoredBoard, error)
+	// Create stores a new definition at revision "1"; ErrConflict if the service has one.
+	Create(ctx context.Context, def *domain.BoardDefinition, updatedAt string) (*domain.StoredBoard, error)
+	// Replace stores a new revision; ErrNotFound, or ErrPreconditionFailed when ifRevision is stale.
+	Replace(ctx context.Context, def *domain.BoardDefinition, ifRevision, updatedAt string) (*domain.StoredBoard, error)
+	// Remove deletes the board; ErrNotFound, or ErrPreconditionFailed when ifRevision is stale.
+	Remove(ctx context.Context, serviceID domain.EntityID, ifRevision string) error
+}

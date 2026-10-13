@@ -38,7 +38,9 @@ type Service struct {
 	TopologyRepo ports.TopologyRepository
 	SnapshotRepo ports.SnapshotRepository
 	LayoutRepo   ports.SavedLayoutRepository
-	GraphRepo    ports.GraphRepository
+	// BoardRepo stores transit board definitions (ADR-031); nil disables the /transit-boards writes.
+	BoardRepo ports.BoardRepository
+	GraphRepo ports.GraphRepository
 	// TraversalInDatabase runs dependency/neighbourhood traversals in the database ($graphLookup)
 	// instead of the cached in-memory index (ADR-DB-004: memory is the default, measured faster).
 	TraversalInDatabase bool
