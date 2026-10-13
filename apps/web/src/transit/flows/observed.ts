@@ -72,14 +72,6 @@ export const COMPRESSED_MS = 1500;
 
 export const isCompressed = (step: Pick<TxStep, 'durationMs' | 'displayDurationMs'>) => step.displayDurationMs < step.durationMs;
 
-/** Index of the step the clock is on (last started; ties resolved by the playback cursor). */
-export function txStepAt(steps: readonly TxStep[], t: number): number {
-  let at = 0;
-  steps.forEach((s, i) => {
-    if (s.displayStartMs <= t) at = i;
-  });
-  return at;
-}
 
 export type TxSampleReason = 'slowest' | 'failed' | 'compensated' | 'with retries' | 'typical';
 

@@ -39,3 +39,10 @@ export const fieldClass =
 
 /** Small uppercase label (mock .k / .h4). */
 export const kickerClass = 'text-[10px] tracking-[0.07em] text-fg-3 uppercase';
+
+/** A content card on a page (mock .card). */
+export const cardClass = 'rounded-xl border border-line bg-surface-1';
+
+/** A panel of the transit and flow boards (index, map, strip, card). */
+export const boardPanelClass = 'min-w-0 rounded-2xl border border-line bg-surface-1';
+

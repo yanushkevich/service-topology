@@ -1,12 +1,13 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { formatMs, formatRate, isUnobserved, lineStations, type BoardIndex } from '../../transit/board';
 import type { MapGeometry } from '../../transit/layout';
 import type { PolicyStop, Station } from '../../transit/types';
-import { cx, floatClass } from '../../shared/ui/classes';
+import { cx } from '../../shared/ui/classes';
+import { GlowFilter, MapChooser, MapGround, MapTooltip, RibbonLine, SelectedLine, StationLabel, type LineState } from '../boards/MapParts';
+import { overlayPosition } from '../boards/overlay';
 import { lineColor, policySummary, POLICY_STATE_LABEL } from './colors';
 import { LineBadge, PolicyDiamond, ProvenanceTag } from './visuals';
 
-type LineState = 'normal' | 'dim' | 'hidden';
 type Hover = { kind: 'station' | 'stop'; id: string; x: number; y: number };
 
 /**
@@ -61,7 +62,7 @@ export function TransitMap({
 
   const lineCount = index.lines.length;
   const label = `Transit map of ${serviceName}: ${lineCount} line${lineCount === 1 ? '' : 's'} through ${index.board.stations.length} stations.${selected ? ` Line ${selected.code}, ${selected.name}, is highlighted.` : ''} Use the line list and the stop strip for details.`;
-  const at = (x: number, y: number) => ({ left: `${(x / geometry.width) * 100}%`, top: `${(y / geometry.height) * 100}%` });
+  const at = (x: number, y: number) => overlayPosition(x, y, geometry);
 
   return (
     <div className="relative">
@@ -78,26 +79,10 @@ export function TransitMap({
           }
         }}
       >
-        <defs>
-          <filter id={blurId}>
-            <feGaussianBlur stdDeviation="7" />
-          </filter>
-        </defs>
+        <GlowFilter id={blurId} />
         <g aria-hidden="true">
           <rect data-ground x={0} y={0} width={geometry.width} height={geometry.height} fill="transparent" />
-          {geometry.grid.map((d, i) => (
-            <path key={i} d={d} stroke="var(--color-line)" strokeOpacity={0.5} fill="none" pointerEvents="none" />
-          ))}
-          {geometry.bands.map((band) => (
-            <g key={band.label} pointerEvents="none">
-              <path d={band.d} fill="var(--color-text-3)" fillOpacity={0.03} stroke="var(--color-line)" />
-              {!geometry.flat && (
-                <text x={band.x} y={band.y} fontFamily="var(--font-mono)" fontSize={10} letterSpacing={4} fill="var(--color-text-3)">
-                  {band.label}
-                </text>
-              )}
-            </g>
-          ))}
+          <MapGround grid={geometry.grid} bands={geometry.bands} captions={!geometry.flat} />
         </g>
 
         {/* Static layer: every line, styled by state; paths never change after the data loads. */}
@@ -121,22 +106,7 @@ export function TransitMap({
               >
                 {lineGeometry.branches.map((branch, b) => (
                   <g key={b}>
-                    <path d={branch.top} fill="none" stroke="transparent" strokeWidth={16} />
-                    <path d={branch.shadow} fill="none" stroke="var(--transit-shadow)" strokeWidth={10} filter={`url(#${blurId})`} opacity={state === 'normal' ? 1 : 0} />
-                    {branch.ribbons.map((d, r) => (
-                      <path key={r} d={d} fill="none" stroke={color} strokeOpacity={state === 'normal' ? 0.2 : 0} strokeWidth={5} strokeLinejoin="round" strokeDasharray={dash} />
-                    ))}
-                    <path
-                      d={branch.top}
-                      data-top
-                      fill="none"
-                      stroke={state === 'normal' ? color : 'var(--transit-dim)'}
-                      strokeOpacity={state === 'normal' ? 1 : state === 'dim' ? 0.22 : 0}
-                      strokeWidth={state === 'normal' ? 5 : 3}
-                      strokeLinejoin="round"
-                      strokeLinecap="round"
-                      strokeDasharray={dash}
-                    />
+                    <RibbonLine top={branch.top} shadow={branch.shadow} ribbons={branch.ribbons} color={color} state={state} dash={dash} blurId={blurId} />
                   </g>
                 ))}
               </g>
@@ -170,19 +140,7 @@ export function TransitMap({
               .filter((l) => l.lineId === selected.id)
               .flatMap((l) => l.branches)
               .map((branch, i) => (
-                <g key={i}>
-                  <path d={branch.top} fill="none" stroke={lineColor(index, selected.id)} strokeOpacity={0.35} strokeWidth={17} filter={`url(#${blurId})`} />
-                  <path
-                    d={branch.top}
-                    data-selected-line={selected.id}
-                    fill="none"
-                    stroke={lineColor(index, selected.id)}
-                    strokeWidth={7}
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
-                    strokeDasharray={isUnobserved(selected) ? '10 7' : undefined}
-                  />
-                </g>
+                <SelectedLine key={i} d={branch.top} color={lineColor(index, selected.id)} dash={isUnobserved(selected) ? '10 7' : undefined} blurId={blurId} data={{ 'data-selected-line': selected.id }} />
               ))}
         </g>
 
@@ -223,33 +181,13 @@ export function TransitMap({
                 )}
                 {focusStations.has(g.id) && <circle cx={g.x} cy={g.y} r={(g.capsule ?? 2 * g.radius) / 2 + 9} fill="none" stroke="var(--color-warn)" strokeWidth={2} />}
                 {showLabel && (
-                  <text
-                    data-label
-                    x={g.label.x}
-                    y={g.label.y}
-                    textAnchor={g.label.anchor}
-                    fontFamily="var(--font-sans)"
-                    fontWeight={600}
-                    fontSize={geometry.flat ? 13 : 15}
-                    fill="var(--color-text)"
-                    stroke="var(--color-stage)"
-                    strokeWidth={4}
-                    paintOrder="stroke"
-                  >
-                    {station.name}
-                    {g.label.withSub && station.sub && (
-                      <tspan
-                        x={g.label.x}
-                        dy={14}
-                        fontFamily="var(--font-mono)"
-                        fontWeight={400}
-                        fontSize={11.5}
-                        fill={station.status === 'degraded' || station.status === 'down' ? 'var(--color-warn-text)' : 'var(--color-text-3)'}
-                      >
-                        {station.sub}
-                      </tspan>
-                    )}
-                  </text>
+                  <StationLabel
+                    label={g.label}
+                    name={station.name}
+                    sub={station.sub}
+                    subFill={station.status === 'degraded' || station.status === 'down' ? 'var(--color-warn-text)' : undefined}
+                    flat={geometry.flat}
+                  />
                 )}
               </g>
             );
@@ -264,16 +202,35 @@ export function TransitMap({
       </svg>
 
       {hover && !chooser && (
-        <div role="tooltip" className={cx(floatClass, 'pointer-events-none z-20 w-max max-w-[260px] -translate-x-1/2 -translate-y-[calc(100%+14px)] px-3 py-2 text-xs')} style={at(hover.x, hover.y)}>
+        <MapTooltip position={at(hover.x, hover.y)}>
           {hover.kind === 'station' ? (
             <StationTip index={index} station={index.stations.get(hover.id)} lineId={showStepStats ? (selected?.id ?? null) : null} />
           ) : (
             <StopTip stop={index.board.policies.find((p) => p.id === hover.id)} />
           )}
-        </div>
+        </MapTooltip>
       )}
 
-      {chooser && <StationChooser index={index} chooser={chooser} style={at(chooser.x, chooser.y)} onPick={(id) => (setChooser(null), onSelect(id))} onClose={() => setChooser(null)} />}
+      {chooser && (
+        <MapChooser
+          label={`Lines through ${index.stations.get(chooser.stationId)?.name ?? chooser.stationId}`}
+          heading={
+            <>
+              {(index.linesByStation.get(chooser.stationId) ?? []).length} lines through <b className="font-medium text-fg">{index.stations.get(chooser.stationId)?.name}</b>
+            </>
+          }
+          items={(index.linesByStation.get(chooser.stationId) ?? []).flatMap((id) => {
+            const line = index.lineById.get(id);
+            return line ? [{ id, badge: <LineBadge index={index} lineId={id} code={line.code} />, text: line.name, mono: true }] : [];
+          })}
+          position={at(chooser.x, chooser.y)}
+          onPick={(id) => {
+            setChooser(null);
+            onSelect(id);
+          }}
+          onClose={() => setChooser(null)}
+        />
+      )}
     </div>
   );
 }
@@ -314,54 +271,6 @@ function StopTip({ stop }: { stop: PolicyStop | undefined }) {
       </div>
       {stop.source && <div className="mt-1 font-mono text-fg-2">{stop.source}</div>}
     </>
-  );
-}
-
-/** A shared station is served by several lines: ask instead of guessing (spec "Selection"). */
-function StationChooser({
-  index,
-  chooser,
-  style,
-  onPick,
-  onClose,
-}: {
-  index: BoardIndex;
-  chooser: { stationId: string };
-  style: { left: string; top: string };
-  onPick: (lineId: string) => void;
-  onClose: () => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const station = index.stations.get(chooser.stationId);
-  const lines = (index.linesByStation.get(chooser.stationId) ?? []).flatMap((id) => index.lineById.get(id) ?? []);
-  useEffect(() => {
-    ref.current?.querySelector('button')?.focus();
-  }, [chooser.stationId]);
-  if (!station) return null;
-  return (
-    <div
-      ref={ref}
-      role="group"
-      aria-label={`Lines through ${station.name}`}
-      className={cx(floatClass, 'z-20 w-[220px] p-1.5')}
-      style={{ left: `min(calc(${style.left} + 12px), calc(100% - 228px))`, top: style.top }}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') {
-          e.stopPropagation();
-          onClose();
-        }
-      }}
-    >
-      <p className="m-0 px-2 py-1 text-xs text-fg-3">
-        {lines.length} lines through <b className="font-medium text-fg">{station.name}</b>
-      </p>
-      {lines.map((line) => (
-        <button key={line.id} type="button" className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-surface-3" onClick={() => onPick(line.id)}>
-          <LineBadge index={index} lineId={line.id} code={line.code} />
-          <span className="truncate font-mono text-xs">{line.name}</span>
-        </button>
-      ))}
-    </div>
   );
 }
 

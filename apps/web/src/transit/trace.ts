@@ -1,5 +1,5 @@
 import { lineStations, type BoardIndex } from './board';
-import type { Line, TraceDetail, TraceStep, TraceSummary } from './types';
+import type { Line, TraceStep, TraceSummary } from './types';
 
 /**
  * Trace replay helpers (docs/TRANSIT_BOARD.md "Trace replay mode"): pure functions over a trace
@@ -22,15 +22,6 @@ export function activeSteps(steps: readonly TraceStep[], t: number, cursor = ste
   return current && !running.includes(current) ? [current, ...running] : running.length ? running : current ? [current] : [];
 }
 
-/** Start time of the next / previous distinct step from t (for Left / Right and Next / Back). */
-export function nextStepStart(steps: readonly TraceStep[], t: number, duration: number): number {
-  return steps.find((s) => s.startMs > t)?.startMs ?? duration;
-}
-
-export function previousStepStart(steps: readonly TraceStep[], t: number): number {
-  const earlier = steps.filter((s) => s.startMs < t);
-  return earlier.at(-1)?.startMs ?? 0;
-}
 
 /** The station a step happened at: a station id, the client lane of a policy stop, or null (off-map). */
 export function stationOfStep(index: BoardIndex, step: TraceStep): string | null {
@@ -92,10 +83,3 @@ export function sampleTraces(traces: readonly TraceSummary[], line: Line): { tra
   }
   return out;
 }
-
-/** Playback speed: the whole trace plays in about 6 s at 1×, whatever its real duration. */
-export const PLAYBACK_SECONDS = 6;
-export const SPEEDS = [0.25, 1, 4] as const;
-export type Speed = (typeof SPEEDS)[number];
-
-export const traceMsPerFrameMs = (detail: TraceDetail, speed: number) => (Math.max(1, detail.summary.durationMs) / (PLAYBACK_SECONDS * 1000)) * speed;

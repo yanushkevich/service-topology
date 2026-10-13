@@ -3,7 +3,7 @@ import { indexBoard } from './board';
 import { paymentServiceBoard } from './mock/paymentServiceBoard';
 import { paymentServiceTraces } from './mock/paymentServiceTraces';
 import { createExampleTransitRepository } from './repository';
-import { activeSteps, divergence, nextStepStart, previousStepStart, sampleTraces, stationOfStep, stepIndexAt } from './trace';
+import { activeSteps, divergence, sampleTraces, stationOfStep, stepIndexAt } from './trace';
 import type { TraceDetail } from './types';
 
 const index = indexBoard(paymentServiceBoard('production'));
@@ -50,14 +50,11 @@ describe('example traces', () => {
 describe('trace replay helpers', () => {
   const trace: TraceDetail = of('J2')[0]!;
 
-  it('finds the current step, the steps in flight, and the neighbours', () => {
+  it('finds the current step and the steps in flight', () => {
     expect(stepIndexAt(trace.steps, -1)).toBe(0);
     const fork = trace.steps.find((s) => s.parallel)!;
     const running = activeSteps(trace.steps, fork.startMs + 1).map((s) => stationOfStep(index, s));
     expect(running).toEqual(expect.arrayContaining(['cli:card', 'cli:ledger'].filter((id) => running.includes(id))));
-    expect(nextStepStart(trace.steps, 0, trace.summary.durationMs)).toBeGreaterThan(0);
-    expect(previousStepStart(trace.steps, trace.summary.durationMs)).toBeLessThan(trace.summary.durationMs);
-    expect(previousStepStart(trace.steps, 0)).toBe(0);
   });
 
   it('explains how a trace departs from the typical route', () => {

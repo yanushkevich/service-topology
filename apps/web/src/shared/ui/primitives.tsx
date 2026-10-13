@@ -1,5 +1,6 @@
-import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
+import { useId, type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode } from 'react';
 import { buttonClass, cx, floatClass, kickerClass, segmentClass, type ButtonVariant } from './classes';
+import { Icon } from './Icon';
 
 /**
  * Shared Tailwind primitives (ADR-013). One definition per repeated pattern so the accessibility
@@ -53,3 +54,34 @@ export function Kicker({ children, count, as: Tag = 'h3', className }: { childre
     </Tag>
   );
 }
+
+/** One label/value row of a `<dl>`: label left, value right in monospace (stats, settings). */
+export function KeyValueRow({ label, children, className }: { label: ReactNode; children: ReactNode; className?: string }) {
+  return (
+    <div className={cx('flex justify-between gap-3 border-t border-line py-[5px] text-sm', className)}>
+      <dt className="text-fg-3">{label}</dt>
+      <dd className="m-0 text-right font-mono tabular-nums">{children}</dd>
+    </div>
+  );
+}
+
+/** Search box with a magnifier and a visually hidden label (lists and indexes). */
+export function SearchField({ label, value, onChange, placeholder, className }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; className?: string }) {
+  const id = useId();
+  return (
+    <label htmlFor={id} className={cx('flex h-9 items-center gap-2 rounded-md border border-control bg-surface-0 px-2.5 text-fg-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent', className)}>
+      <Icon name="search" />
+      <span className="sr-only">{label}</span>
+      <input
+        id={id}
+        type="search"
+        className="min-w-0 flex-1 border-0 bg-transparent text-[12.5px] text-fg placeholder:text-fg-3 focus-visible:outline-none"
+        placeholder={placeholder}
+        autoComplete="off"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </label>
+  );
+}
+

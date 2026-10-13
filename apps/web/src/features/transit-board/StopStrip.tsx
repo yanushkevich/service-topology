@@ -3,6 +3,7 @@ import { formatCount, formatMs, formatRate, isUnobserved, stepTint, windowLabel,
 import type { Line, PolicyStop, Station } from '../../transit/types';
 import { cx, kickerClass } from '../../shared/ui/classes';
 import { lineColor, POLICY_STATE_LABEL } from './colors';
+import { KeyValueRow } from '../../shared/ui/primitives';
 import { PolicyDiamond } from './visuals';
 
 type StripItem = { station: Station } | { stop: PolicyStop };
@@ -147,10 +148,9 @@ function NetworkSummary({ index }: { index: BoardIndex }) {
   const missing = board.policies.filter((p) => p.state === 'missing').length;
   const unknown = board.policies.filter((p) => p.state === 'unknown').length;
   const kv = (k: string, v: ReactNode) => (
-    <div key={k} className="flex justify-between gap-3 border-t border-line py-1.5 text-sm">
-      <dt className="text-fg-3">{k}</dt>
-      <dd className="m-0 text-right font-mono tabular-nums">{v}</dd>
-    </div>
+    <KeyValueRow key={k} label={k} className="py-1.5">
+      {v}
+    </KeyValueRow>
   );
   return (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-5">

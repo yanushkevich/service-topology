@@ -2,6 +2,7 @@ import { useId, type ReactNode } from 'react';
 import { budgetFor, formatCount, formatMs, formatRate, GROUP_LABELS, isUnobserved, windowLabel, type BoardIndex } from '../../transit/board';
 import type { Finding, Line, SourceStatus } from '../../transit/types';
 import { buttonClass, cx, kickerClass } from '../../shared/ui/classes';
+import { KeyValueRow } from '../../shared/ui/primitives';
 import { LineBadge, ProvenanceTag, SeverityMark } from './visuals';
 
 /**
@@ -67,12 +68,12 @@ export function LineCard({
       )}
       <BudgetBar index={index} line={line} />
       <dl className="m-0">
-        <Kv k="Caller" v={line.caller} />
-        <Kv k="Deadline" v={line.deadlineMs ? formatMs(line.deadlineMs) : '—'} />
-        <Kv k="p50 / p95" v={`${formatMs(line.stats.p50Ms)} / ${formatMs(line.stats.p95Ms)}`} />
-        <Kv k="Errors" v={formatRate(line.stats.errorRate)} />
-        <Kv k="Calls per day" v={line.stats.callsPerDay ? formatCount(line.stats.callsPerDay) : '—'} />
-        <Kv k={`Traces, ${windowLabel(index.board.window)}`} v={formatCount(line.stats.traces)} />
+        <KeyValueRow label="Caller">{line.caller}</KeyValueRow>
+        <KeyValueRow label="Deadline">{line.deadlineMs ? formatMs(line.deadlineMs) : '—'}</KeyValueRow>
+        <KeyValueRow label="p50 / p95">{`${formatMs(line.stats.p50Ms)} / ${formatMs(line.stats.p95Ms)}`}</KeyValueRow>
+        <KeyValueRow label="Errors">{formatRate(line.stats.errorRate)}</KeyValueRow>
+        <KeyValueRow label="Calls per day">{line.stats.callsPerDay ? formatCount(line.stats.callsPerDay) : '—'}</KeyValueRow>
+        <KeyValueRow label={`Traces, ${windowLabel(index.board.window)}`}>{formatCount(line.stats.traces)}</KeyValueRow>
       </dl>
       <Block title="Where this line comes from">
         <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-2.5 gap-y-2 text-sm">
@@ -202,14 +203,6 @@ function Block({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function Kv({ k, v }: { k: string; v: ReactNode }) {
-  return (
-    <div className="flex justify-between gap-3 border-t border-line py-[5px] text-sm">
-      <dt className="text-fg-3">{k}</dt>
-      <dd className="m-0 text-right font-mono tabular-nums">{v}</dd>
-    </div>
-  );
-}
 
 function Source({ tag, title, text }: { tag: 'declared' | 'observed' | 'inferred'; title?: string; text: string }) {
   return (

@@ -4,9 +4,9 @@ import type { BusinessFlow } from '../../domain/types';
 import { formatMs } from '../../transit/board';
 import type { FlowBoardIndex, FlowGeometry } from '../../transit/flows/flowLayout';
 import { activeTxSteps, isCompressed, type FlowTransaction, type TxSampleReason, type TxStep } from '../../transit/flows/observed';
-import { SPEEDS } from '../../transit/trace';
 import { buttonClass, cx, fieldClass, kickerClass } from '../../shared/ui/classes';
-import { usePlayback, type Playback } from '../transit-board/playback';
+import { PlaybackControls } from '../boards/PlaybackControls';
+import { usePlayback, type Playback } from '../boards/playback';
 import { FlowBadge } from './FlowBadge';
 import { stripPageParams } from './flowVisuals';
 
@@ -158,7 +158,6 @@ export function TxCard({
   onPick,
   onPlay,
   onStep,
-  onSpeed,
 }: {
   fx: FlowBoardIndex;
   flow: BusinessFlow;
@@ -171,13 +170,9 @@ export function TxCard({
   onPick: (key: string) => void;
   onPlay: () => void;
   onStep: (direction: -1 | 1) => void;
-  onSpeed: (speed: number) => void;
 }) {
   const [typed, setTyped] = useState('');
   const keyId = useId();
-  const speedId = useId();
-  const playing = usePlayback(playback, (s) => s.playing);
-  const speed = usePlayback(playback, (s) => s.speed);
   const current = usePlayback(playback, (s) => s.step);
   const ended = usePlayback(playback, (s) => (tx ? s.step >= tx.steps.length - 1 && !s.playing && s.t > 0 : false));
   const step = tx?.steps[current];
@@ -249,27 +244,7 @@ export function TxCard({
                 {outcome?.name} · {formatMs(tx.durationMs)}
               </span>
             </div>
-            <div className="mt-2.5 flex flex-wrap items-center gap-2">
-              <button type="button" className={buttonClass('primary', 'h-7.5')} onClick={onPlay}>
-                {playing ? 'Pause' : ended ? 'Replay' : 'Play'}
-              </button>
-              <button type="button" className={buttonClass('secondary', 'h-7.5')} onClick={() => onStep(-1)}>
-                Back
-              </button>
-              <button type="button" className={buttonClass('secondary', 'h-7.5')} onClick={() => onStep(1)}>
-                Next
-              </button>
-              <label htmlFor={speedId} className="sr-only">
-                Speed
-              </label>
-              <select id={speedId} className={cx(fieldClass, 'h-7.5 w-auto px-1.5 text-xs')} value={speed} onChange={(e) => onSpeed(Number(e.target.value))}>
-                {SPEEDS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}×
-                  </option>
-                ))}
-              </select>
-            </div>
+            <PlaybackControls playback={playback} ended={ended} onPlay={onPlay} onStep={onStep} />
           </div>
           {step && (
             <section aria-label="Active step" aria-live="polite">

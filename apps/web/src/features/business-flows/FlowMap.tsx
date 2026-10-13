@@ -1,7 +1,9 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import type { BusinessFlow, FlowPolicy } from '../../domain/types';
 import type { FlowBoardIndex, FlowGeometry } from '../../transit/flows/flowLayout';
-import { cx, floatClass } from '../../shared/ui/classes';
+import { cx } from '../../shared/ui/classes';
+import { GlowFilter, MapChooser, MapGround, MapTooltip, RibbonLine, SelectedLine, StationLabel } from '../boards/MapParts';
+import { overlayPosition } from '../boards/overlay';
 import { policySummary, POLICY_STATE_LABEL } from '../transit-board/colors';
 import { PolicyDiamond } from '../transit-board/visuals';
 import { flowColor, isUndoTransition } from './flowVisuals';
@@ -31,7 +33,8 @@ export function FlowMap({
   selectedStation: string | null;
   /** Flows matching the search, or null without a query. */
   matches: Set<string> | null;
-  onSelectFlow: (flowId: string) => void;
+  /** Clicking a line; the flow board stays on its flow, so it may ignore this. */
+  onSelectFlow?: (flowId: string) => void;
   onSelectStation: (stationKey: string, flowId: string) => void;
   overlay?: ReactNode;
 }) {
@@ -42,7 +45,7 @@ export function FlowMap({
   const onSelected = new Set(selected ? [...fx.stations.values()].filter((s) => s.refs.some((r) => r.flowId === selected.id)).map((s) => s.key) : []);
   const stateOf = (flowId: string) => (selected ? (flowId === selected.id ? 'hidden' : 'dim') : matches && !matches.has(flowId) ? 'dim' : 'normal');
   const lit = (key: string) => (selected ? onSelected.has(key) : !matches || (fx.flowsByStation.get(key) ?? []).some((f) => matches.has(f)));
-  const at = (x: number, y: number) => ({ left: `${(x / geometry.width) * 100}%`, top: `${(y / geometry.height) * 100}%` });
+  const at = (x: number, y: number) => overlayPosition(x, y, geometry);
   const clickStation = (key: string, x: number, y: number) => {
     const flows = fx.flowsByStation.get(key) ?? [];
     if (selected && flows.includes(selected.id)) onSelectStation(key, selected.id);
@@ -62,24 +65,10 @@ export function FlowMap({
           if (e.target === e.currentTarget || (e.target as Element).hasAttribute('data-ground')) setChooser(null);
         }}
       >
-        <defs>
-          <filter id={blurId}>
-            <feGaussianBlur stdDeviation="7" />
-          </filter>
-        </defs>
+        <GlowFilter id={blurId} />
         <g aria-hidden="true">
           <rect data-ground x={0} y={0} width={geometry.width} height={geometry.height} fill="transparent" />
-          {geometry.grid.map((d, i) => (
-            <path key={i} d={d} stroke="var(--color-line)" strokeOpacity={0.5} fill="none" pointerEvents="none" />
-          ))}
-          {geometry.bands.map((band) => (
-            <g key={band.label} pointerEvents="none">
-              <path d={band.d} fill="var(--color-text-3)" fillOpacity={0.035} stroke="var(--color-line)" />
-              <text x={band.x} y={band.y} fontFamily="var(--font-mono)" fontSize={geometry.flat ? 9 : 10} letterSpacing={geometry.flat ? 1 : 3} fill="var(--color-text-3)">
-                {band.label}
-              </text>
-            </g>
-          ))}
+          <MapGround grid={geometry.grid} bands={geometry.bands} captionSize={geometry.flat ? 9 : 10} captionSpacing={geometry.flat ? 1 : 3} />
         </g>
 
         <g data-layer="static">
@@ -89,28 +78,13 @@ export function FlowMap({
             const state = stateOf(flow.id);
             const color = flowColor(fx, flow.id);
             return (
-              <g key={flow.id} data-flow={flow.id} data-state={state} className="cursor-pointer" onClick={() => onSelectFlow(flow.id)}>
+              <g key={flow.id} data-flow={flow.id} data-state={state} className="cursor-pointer" onClick={() => onSelectFlow?.(flow.id)}>
                 {line.transitions.map((t) => {
                   const undo = isUndoTransition(flow, t.transitionId);
                   const dash = undo ? '9 6' : undefined;
                   return (
                     <g key={t.transitionId} data-transition={t.transitionId}>
-                      <path d={t.top} fill="none" stroke="transparent" strokeWidth={16} />
-                      <path d={t.shadow} fill="none" stroke="var(--transit-shadow)" strokeWidth={10} filter={`url(#${blurId})`} opacity={state === 'normal' ? 1 : 0} />
-                      {t.ribbons.map((d, r) => (
-                        <path key={r} d={d} fill="none" stroke={color} strokeOpacity={state === 'normal' ? 0.2 : 0} strokeWidth={5} strokeDasharray={dash} />
-                      ))}
-                      <path
-                        d={t.top}
-                        data-top
-                        fill="none"
-                        stroke={state === 'normal' ? color : 'var(--transit-dim)'}
-                        strokeOpacity={state === 'normal' ? 1 : state === 'dim' ? 0.22 : 0}
-                        strokeWidth={state === 'normal' ? 5 : 3}
-                        strokeLinejoin="round"
-                        strokeLinecap="round"
-                        strokeDasharray={dash}
-                      />
+                      <RibbonLine top={t.top} shadow={t.shadow} ribbons={t.ribbons} color={color} state={state} dash={dash} blurId={blurId} />
                     </g>
                   );
                 })}
@@ -139,19 +113,7 @@ export function FlowMap({
               .filter((l) => l.flowId === selected.id)
               .flatMap((l) => l.transitions)
               .map((t) => (
-                <g key={t.transitionId}>
-                  <path d={t.top} fill="none" stroke={flowColor(fx, selected.id)} strokeOpacity={0.35} strokeWidth={17} filter={`url(#${blurId})`} />
-                  <path
-                    d={t.top}
-                    data-selected-flow={selected.id}
-                    fill="none"
-                    stroke={flowColor(fx, selected.id)}
-                    strokeWidth={7}
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
-                    strokeDasharray={isUndoTransition(selected, t.transitionId) ? '9 6' : undefined}
-                  />
-                </g>
+                <SelectedLine key={t.transitionId} d={t.top} color={flowColor(fx, selected.id)} dash={isUndoTransition(selected, t.transitionId) ? '9 6' : undefined} blurId={blurId} data={{ 'data-selected-flow': selected.id }} />
               ))}
         </g>
 
@@ -196,28 +158,7 @@ export function FlowMap({
                   />
                 )}
                 {isSelected && <circle cx={g.x} cy={g.y} r={(g.capsule ?? 2 * g.radius) / 2 + 9} fill="none" stroke="var(--color-accent)" strokeWidth={2} />}
-                {showLabel && (
-                  <text
-                    data-label
-                    x={g.label.x}
-                    y={g.label.y}
-                    textAnchor={g.label.anchor}
-                    fontFamily="var(--font-sans)"
-                    fontWeight={600}
-                    fontSize={geometry.flat ? 13 : 15}
-                    fill="var(--color-text)"
-                    stroke="var(--color-stage)"
-                    strokeWidth={4}
-                    paintOrder="stroke"
-                  >
-                    {station.name}
-                    {g.label.withSub && (
-                      <tspan x={g.label.x} dy={14} fontFamily="var(--font-mono)" fontWeight={400} fontSize={11.5} fill="var(--color-text-3)">
-                        {station.sub}
-                      </tspan>
-                    )}
-                  </text>
-                )}
+                {showLabel && <StationLabel label={g.label} name={station.name} sub={station.sub} flat={geometry.flat} />}
               </g>
             );
           })}
@@ -231,16 +172,22 @@ export function FlowMap({
       </svg>
 
       {hover && !chooser && (
-        <div role="tooltip" className={cx(floatClass, 'pointer-events-none z-20 w-max max-w-[260px] -translate-x-1/2 -translate-y-[calc(100%+14px)] px-3 py-2 text-xs')} style={at(hover.x, hover.y)}>
-          {hover.kind === 'station' ? <StationTip fx={fx} stationKey={hover.id} /> : <StopTip fx={fx} stopId={hover.id} />}
-        </div>
+        <MapTooltip position={at(hover.x, hover.y)}>{hover.kind === 'station' ? <StationTip fx={fx} stationKey={hover.id} /> : <StopTip fx={fx} stopId={hover.id} />}</MapTooltip>
       )}
 
       {chooser && (
-        <FlowChooser
-          fx={fx}
-          station={chooser.station}
-          style={at(chooser.x, chooser.y)}
+        <MapChooser
+          label={`Flows through ${fx.stations.get(chooser.station)?.name ?? chooser.station}`}
+          heading={
+            <>
+              {(fx.flowsByStation.get(chooser.station) ?? []).length} flows through <b className="font-medium text-fg">{fx.stations.get(chooser.station)?.name}</b>
+            </>
+          }
+          items={(fx.flowsByStation.get(chooser.station) ?? []).flatMap((id) => {
+            const flow = fx.flowById.get(id);
+            return flow ? [{ id, badge: <FlowBadge fx={fx} flowId={id} />, text: flow.name }] : [];
+          })}
+          position={at(chooser.x, chooser.y)}
           onPick={(flowId) => {
             setChooser(null);
             onSelectStation(chooser.station, flowId);
@@ -298,40 +245,6 @@ function transitionLabel(flow: BusinessFlow | undefined, id: string): string {
   if (!flow || !t) return id;
   const name = (sid: string) => flow.steps.find((s) => s.id === sid)?.name ?? flow.outcomes.find((o) => o.id === sid)?.name ?? sid;
   return `${name(t.from)} → ${name(t.to)}`;
-}
-
-function FlowChooser({ fx, station, style, onPick, onClose }: { fx: FlowBoardIndex; station: string; style: { left: string; top: string }; onPick: (flowId: string) => void; onClose: () => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const name = fx.stations.get(station)?.name ?? station;
-  const flows = (fx.flowsByStation.get(station) ?? []).flatMap((id) => fx.flowById.get(id) ?? []);
-  useEffect(() => {
-    ref.current?.querySelector('button')?.focus();
-  }, [station]);
-  return (
-    <div
-      ref={ref}
-      role="group"
-      aria-label={`Flows through ${name}`}
-      className={cx(floatClass, 'z-20 w-[220px] p-1.5')}
-      style={{ left: `min(calc(${style.left} + 12px), calc(100% - 228px))`, top: style.top }}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') {
-          e.stopPropagation();
-          onClose();
-        }
-      }}
-    >
-      <p className="m-0 px-2 py-1 text-xs text-fg-3">
-        {flows.length} flows through <b className="font-medium text-fg">{name}</b>
-      </p>
-      {flows.map((flow) => (
-        <button key={flow.id} type="button" className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-surface-3" onClick={() => onPick(flow.id)}>
-          <FlowBadge fx={fx} flowId={flow.id} />
-          <span className="truncate text-xs">{flow.name}</span>
-        </button>
-      ))}
-    </div>
-  );
 }
 
 /** Legend of the flow map's styles. */

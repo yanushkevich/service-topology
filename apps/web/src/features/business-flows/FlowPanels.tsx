@@ -7,8 +7,9 @@ import type { FlowBoardIndex } from '../../transit/flows/flowLayout';
 import { flowBudget, stages, type FlowFinding } from '../../transit/flows/flowModel';
 import type { FlowStats } from '../../transit/flows/observed';
 import type { StepStats } from '../../transit/types';
-import { buttonClass, cx, fieldClass, kickerClass } from '../../shared/ui/classes';
+import { buttonClass, cx, kickerClass } from '../../shared/ui/classes';
 import { Icon } from '../../shared/ui/Icon';
+import { KeyValueRow, SearchField } from '../../shared/ui/primitives';
 import { POLICY_STATE_LABEL } from '../transit-board/colors';
 import { PolicyDiamond, SeverityMark } from '../transit-board/visuals';
 import { FlowBadge } from './FlowBadge';
@@ -35,23 +36,10 @@ export function FlowList({
   warnings: Map<string, number>;
   search: string;
 }) {
-  const searchId = useId();
   const listed = fx.flows.filter((f) => matches.has(f.id));
   return (
     <div className="flex flex-col gap-3">
-      <label htmlFor={searchId} className="flex h-9 items-center gap-2 rounded-md border border-control bg-surface-0 px-2.5 text-fg-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
-        <Icon name="search" />
-        <span className="sr-only">Find a flow</span>
-        <input
-          id={searchId}
-          type="search"
-          className="min-w-0 flex-1 border-0 bg-transparent text-[12.5px] text-fg placeholder:text-fg-3 focus-visible:outline-none"
-          placeholder="Find a flow, step, service, or event"
-          autoComplete="off"
-          value={query}
-          onChange={(e) => onQuery(e.target.value)}
-        />
-      </label>
+      <SearchField label="Find a flow" placeholder="Find a flow, step, service, or event" value={query} onChange={onQuery} />
       <Link to={{ pathname: '/flows', search: stripPageParams(search) }} className={rowClass}>
         <Icon name="flows" />
         <span className="min-w-0 flex-1">All flows</span>
@@ -264,12 +252,12 @@ export function FlowCard({
       {selectedStep && <StepDetail flow={flow} step={selectedStep} stats={stats?.steps[selectedStep.id]} serviceName={serviceName} search={search} />}
       {budget && <FlowBudgetBar budget={budget} />}
       <dl className="m-0">
-        <Kv k="Owner" v={[flow.owner, flow.team].filter(Boolean).join(' / ') || '—'} />
-        <Kv k="Trigger" v={trigger} />
-        <Kv k="Target p95" v={flow.target?.p95Ms ? formatMs(flow.target.p95Ms) : '—'} />
-        <Kv k="Completion target" v={flow.target?.completionMs ? formatMs(flow.target.completionMs) : '—'} />
-        {stats && <Kv k={`Transactions, ${windowLabel(stats.window)}`} v={formatCount(stats.transactions)} />}
-        {stats && <Kv k="Completion p50 / p95" v={`${formatMs(stats.completion.p50Ms)} / ${formatMs(stats.completion.p95Ms)}`} />}
+        <KeyValueRow label="Owner">{[flow.owner, flow.team].filter(Boolean).join(' / ') || '—'}</KeyValueRow>
+        <KeyValueRow label="Trigger">{trigger}</KeyValueRow>
+        <KeyValueRow label="Target p95">{flow.target?.p95Ms ? formatMs(flow.target.p95Ms) : '—'}</KeyValueRow>
+        <KeyValueRow label="Completion target">{flow.target?.completionMs ? formatMs(flow.target.completionMs) : '—'}</KeyValueRow>
+        {stats && <KeyValueRow label={`Transactions, ${windowLabel(stats.window)}`}>{formatCount(stats.transactions)}</KeyValueRow>}
+        {stats && <KeyValueRow label="Completion p50 / p95">{`${formatMs(stats.completion.p50Ms)} / ${formatMs(stats.completion.p95Ms)}`}</KeyValueRow>}
       </dl>
       <section aria-label="Outcomes">
         <h3 className={cx(kickerClass, 'm-0 mb-1.5 font-normal')}>Outcomes</h3>
@@ -393,31 +381,5 @@ function FlowBudgetBar({ budget }: { budget: NonNullable<ReturnType<typeof flowB
   );
 }
 
-function Kv({ k, v }: { k: string; v: ReactNode }) {
-  return (
-    <div className="flex justify-between gap-3 border-t border-line py-[5px] text-sm">
-      <dt className="text-fg-3">{k}</dt>
-      <dd className="m-0 text-right font-mono tabular-nums">{v}</dd>
-    </div>
-  );
-}
 
-/** The window selector of the flow board header. */
-export function WindowSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const id = useId();
-  return (
-    <>
-      <label htmlFor={id} className="text-xs text-fg-3">
-        Window
-      </label>
-      <select id={id} className={cx(fieldClass, 'h-7.5 w-auto text-sm')} value={value} onChange={(e) => onChange(e.target.value)}>
-        {['1h', '24h', '7d'].map((w) => (
-          <option key={w} value={w}>
-            {w}
-          </option>
-        ))}
-      </select>
-    </>
-  );
-}
 

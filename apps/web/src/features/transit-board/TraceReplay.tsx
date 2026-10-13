@@ -1,10 +1,11 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { formatMs, type BoardIndex } from '../../transit/board';
 import type { MapGeometry } from '../../transit/layout';
-import { activeSteps, SPEEDS, type Divergence, type SampleReason } from '../../transit/trace';
+import { activeSteps, type Divergence, type SampleReason } from '../../transit/trace';
 import type { Line, TraceDetail, TraceStep, TraceSummary } from '../../transit/types';
 import { buttonClass, cx, fieldClass, kickerClass } from '../../shared/ui/classes';
-import { usePlayback, type Playback } from './playback';
+import { PlaybackControls } from '../boards/PlaybackControls';
+import { usePlayback, type Playback } from '../boards/playback';
 import { LineBadge } from './visuals';
 
 const STATUS_WORD: Record<TraceStep['status'], string> = { ok: 'ok', warn: 'warning', fail: 'failed' };
@@ -193,7 +194,6 @@ export function TraceCard({
   onOpenId,
   onPlay,
   onStep,
-  onSpeed,
 }: {
   index: BoardIndex;
   line: Line;
@@ -207,13 +207,9 @@ export function TraceCard({
   onOpenId: (traceId: string) => void;
   onPlay: () => void;
   onStep: (direction: -1 | 1) => void;
-  onSpeed: (speed: number) => void;
 }) {
   const [pasted, setPasted] = useState('');
   const pasteId = useId();
-  const speedId = useId();
-  const playing = usePlayback(playback, (s) => s.playing);
-  const speed = usePlayback(playback, (s) => s.speed);
   const ended = usePlayback(playback, (s) => (trace ? s.t >= trace.summary.durationMs : false));
   const progress = usePlayback(playback, (s) => (trace ? Math.min(100, Math.round((s.t / Math.max(1, trace.summary.durationMs)) * 1000) / 10) : 0));
   const current = usePlayback(playback, (s) => s.step);
@@ -294,30 +290,11 @@ export function TraceCard({
                 {line.deadlineMs ? ` / ${formatMs(line.deadlineMs)} deadline` : ''}
               </span>
             </div>
-            <div className="mt-2.5 flex flex-wrap items-center gap-2">
-              <button type="button" className={buttonClass('primary', 'h-7.5')} onClick={onPlay}>
-                {playing ? 'Pause' : ended ? 'Replay' : 'Play'}
-              </button>
-              <button type="button" className={buttonClass('secondary', 'h-7.5')} onClick={() => onStep(-1)}>
-                Back
-              </button>
-              <button type="button" className={buttonClass('secondary', 'h-7.5')} onClick={() => onStep(1)}>
-                Next
-              </button>
-              <label htmlFor={speedId} className="sr-only">
-                Speed
-              </label>
-              <select id={speedId} className={cx(fieldClass, 'h-7.5 w-auto px-1.5 text-xs')} value={speed} onChange={(e) => onSpeed(Number(e.target.value))}>
-                {SPEEDS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}×
-                  </option>
-                ))}
-              </select>
+            <PlaybackControls playback={playback} ended={ended} onPlay={onPlay} onStep={onStep}>
               <div className="h-1 min-w-[60px] flex-1 overflow-hidden rounded-sm bg-line-strong" aria-hidden="true">
                 <div className="h-full bg-accent" style={{ width: `${progress}%` }} />
               </div>
-            </div>
+            </PlaybackControls>
           </div>
 
           {step && (

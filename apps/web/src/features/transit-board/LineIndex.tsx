@@ -1,7 +1,7 @@
 import { useId, useRef } from 'react';
 import { dependenciesOf, GROUP_LABELS, GROUP_ORDER, hasWarnings, isUnobserved, type BoardIndex } from '../../transit/board';
 import { cx, fieldClass, kickerClass } from '../../shared/ui/classes';
-import { Icon } from '../../shared/ui/Icon';
+import { SearchField } from '../../shared/ui/primitives';
 import { LineBadge } from './visuals';
 
 const rowClass =
@@ -26,7 +26,6 @@ export function LineIndex({
   selectedId: string | null;
   onSelect: (lineId: string | null) => void;
 }) {
-  const searchId = useId();
   const list = useRef<HTMLDivElement>(null);
   const onKeyDown = (event: React.KeyboardEvent) => {
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
@@ -41,19 +40,7 @@ export function LineIndex({
 
   return (
     <div className="flex flex-col gap-3" onKeyDown={onKeyDown}>
-      <label htmlFor={searchId} className="flex h-9 items-center gap-2 rounded-md border border-control bg-surface-0 px-2.5 text-fg-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent">
-        <Icon name="search" />
-        <span className="sr-only">Find a line</span>
-        <input
-          id={searchId}
-          type="search"
-          className="min-w-0 flex-1 border-0 bg-transparent text-[12.5px] text-fg placeholder:text-fg-3 focus-visible:outline-none"
-          placeholder="Find an endpoint, job, or station"
-          autoComplete="off"
-          value={query}
-          onChange={(e) => onQuery(e.target.value)}
-        />
-      </label>
+      <SearchField label="Find a line" placeholder="Find an endpoint, job, or station" value={query} onChange={onQuery} />
       <div ref={list} className="flex flex-col gap-1">
         <button type="button" data-row className={rowClass} aria-current={selectedId === null} onClick={() => onSelect(null)}>
           <span className="h-5 w-7 flex-none rounded-[5px]" style={{ background: 'linear-gradient(90deg, var(--transit-line-1), var(--transit-line-2), var(--transit-line-3), var(--transit-line-7))' }} aria-hidden="true" />

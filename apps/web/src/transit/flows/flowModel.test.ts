@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { checkoutFlow, refundFlow } from '../../data/mock/businessFlows';
 import { exampleFlowStats, exampleTransactions } from './exampleFlows';
 import { flowBudget, flowFindings, flowSearchText, stages, typicalPath } from './flowModel';
-import { activeTxSteps, sampleTransactions, txDivergence, txStepAt } from './observed';
+import { activeTxSteps, sampleTransactions, txDivergence } from './observed';
 
 const shares = new Map(Object.entries(exampleFlowStats('flow-checkout', '24h')!.transitions));
 
@@ -101,7 +101,6 @@ describe('example business transactions', () => {
     const timeout = txs.find((t) => t.key === 'order 4466')!;
     expect(txDivergence(checkoutFlow, timeout, typical)?.text).toMatch(/^Left the typical path to Cancel order after “No settlement webhook within 10 min”/);
     expect(txDivergence(checkoutFlow, txs.find((t) => t.key === 'order 4437')!, typical)).toBeNull();
-    expect(txStepAt(timeout.steps, 0)).toBe(0);
   });
 
   it('scale statistics by window', () => {
