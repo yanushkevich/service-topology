@@ -13,7 +13,8 @@ import {
   type FlowTransition,
 } from '../../domain/types';
 import { Button } from '../../shared/ui/primitives';
-import { cx, fieldClass, kickerClass } from '../../shared/ui/classes';
+import { kickerClass } from '../../shared/ui/classes';
+import { NumberInput, SelectInput, TextInput } from '../../shared/ui/form';
 import { Modal } from '../../shared/ui/Modal';
 import { applyChange, idTaken, newIssues, type FormContext } from '../editing/entityForms';
 import { IssueList } from '../editing/issues';
@@ -153,8 +154,9 @@ export function FlowEditorDialog({
         <IssueList issues={issues} title="This flow would break the topology:" ctx={ctx} />
 
         <Group legend="Basics">
-          <TextField label="Name" path="name" required value={draft.name} error={error('name')} autoFocus onChange={(v) => update((d) => void (d.name = v))} />
-          <TextField
+          <TextInput compact label="Name" path="name" required value={draft.name} error={error('name')} autoFocus onChange={(v) => update((d) => void (d.name = v))} />
+          <TextInput
+            compact
             label="ID"
             path="id"
             required
@@ -168,13 +170,14 @@ export function FlowEditorDialog({
               update((d) => void (d.id = v));
             }}
           />
-          <TextField label="Description" path="description" value={draft.description ?? ''} onChange={(v) => update((d) => void (d.description = v))} />
+          <TextInput compact label="Description" path="description" value={draft.description ?? ''} onChange={(v) => update((d) => void (d.description = v))} />
           <div className="grid grid-cols-2 gap-2">
-            <TextField label="Owner" path="owner" value={draft.owner ?? ''} onChange={(v) => update((d) => void (d.owner = v))} />
-            <TextField label="Team" path="team" value={draft.team ?? ''} onChange={(v) => update((d) => void (d.team = v))} />
+            <TextInput compact label="Owner" path="owner" value={draft.owner ?? ''} onChange={(v) => update((d) => void (d.owner = v))} />
+            <TextInput compact label="Team" path="team" value={draft.team ?? ''} onChange={(v) => update((d) => void (d.team = v))} />
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <SelectField
+            <SelectInput
+            compact
               label="Trigger"
               path="trigger.kind"
               value={draft.trigger.kind}
@@ -182,16 +185,16 @@ export function FlowEditorDialog({
               onChange={(v) => update((d) => void (d.trigger = { kind: v as BusinessFlow['trigger']['kind'] }))}
             />
             {draft.trigger.kind === 'call' && (
-              <SelectField label="Called by" path="trigger.ref" value={draft.trigger.ref ?? ''} empty="A client" options={services.map((s) => ({ value: s.id, label: s.name }))} onChange={(v) => update((d) => void (d.trigger = v ? { kind: 'call', ref: v } : { kind: 'call' }))} />
+              <SelectInput compact label="Called by" path="trigger.ref" value={draft.trigger.ref ?? ''} empty="A client" options={services.map((s) => ({ value: s.id, label: s.name }))} onChange={(v) => update((d) => void (d.trigger = v ? { kind: 'call', ref: v } : { kind: 'call' }))} />
             )}
             {draft.trigger.kind === 'event' && (
-              <SelectField label="Started by event" path="trigger.ref" value={draft.trigger.ref ?? ''} empty="Choose" error={error('trigger.ref')} options={events.map((e) => ({ value: e.id, label: e.name }))} onChange={(v) => update((d) => void (d.trigger = v ? { kind: 'event', ref: v } : { kind: 'event' }))} />
+              <SelectInput compact label="Started by event" path="trigger.ref" value={draft.trigger.ref ?? ''} empty="Choose" error={error('trigger.ref')} options={events.map((e) => ({ value: e.id, label: e.name }))} onChange={(v) => update((d) => void (d.trigger = v ? { kind: 'event', ref: v } : { kind: 'event' }))} />
             )}
           </div>
-          <SelectField label="First step" path="startStepId" required value={draft.startStepId} error={error('startStepId')} empty="Choose" options={stepOptions} onChange={(v) => update((d) => void (d.startStepId = v))} />
+          <SelectInput compact label="First step" path="startStepId" required value={draft.startStepId} error={error('startStepId')} empty="Choose" options={stepOptions} onChange={(v) => update((d) => void (d.startStepId = v))} />
           <div className="grid grid-cols-2 gap-2">
-            <NumberField label="Target p95 (ms)" path="target.p95Ms" value={draft.target?.p95Ms} onChange={(v) => update((d) => void (d.target = withTarget(d.target, 'p95Ms', v)))} />
-            <NumberField label="Completion target (ms)" path="target.completionMs" value={draft.target?.completionMs} onChange={(v) => update((d) => void (d.target = withTarget(d.target, 'completionMs', v)))} />
+            <NumberInput compact label="Target p95 (ms)" path="target.p95Ms" value={draft.target?.p95Ms} onChange={(v) => update((d) => void (d.target = withTarget(d.target, 'p95Ms', v)))} />
+            <NumberInput compact label="Completion target (ms)" path="target.completionMs" value={draft.target?.completionMs} onChange={(v) => update((d) => void (d.target = withTarget(d.target, 'completionMs', v)))} />
           </div>
         </Group>
 
@@ -215,9 +218,10 @@ export function FlowEditorDialog({
           {draft.outcomes.map((o, i) => (
             <fieldset key={i} className="m-0 grid grid-cols-[1fr_1fr_auto] items-end gap-2 rounded-lg border border-line p-2">
               <legend className={kickerClass}>Outcome {i + 1}</legend>
-              <TextField label={`Outcome ${i + 1} ID`} path={`outcomes.${i}.id`} mono required value={o.id} error={error(`outcomes.${i}.id`)} onChange={(v) => update((d) => void ((d.outcomes[i] as (typeof d.outcomes)[number]).id = v))} />
-              <TextField label={`Outcome ${i + 1} name`} path={`outcomes.${i}.name`} required value={o.name} error={error(`outcomes.${i}.name`)} onChange={(v) => update((d) => void ((d.outcomes[i] as (typeof d.outcomes)[number]).name = v))} />
-              <SelectField
+              <TextInput compact label={`Outcome ${i + 1} ID`} path={`outcomes.${i}.id`} mono required value={o.id} error={error(`outcomes.${i}.id`)} onChange={(v) => update((d) => void ((d.outcomes[i] as (typeof d.outcomes)[number]).id = v))} />
+              <TextInput compact label={`Outcome ${i + 1} name`} path={`outcomes.${i}.name`} required value={o.name} error={error(`outcomes.${i}.name`)} onChange={(v) => update((d) => void ((d.outcomes[i] as (typeof d.outcomes)[number]).name = v))} />
+              <SelectInput
+            compact
                 label={`Outcome ${i + 1} kind`}
                 path={`outcomes.${i}.kind`}
                 value={o.kind}
@@ -298,13 +302,14 @@ function StepFields({
   return (
     <fieldset className="m-0 grid grid-cols-2 gap-2 rounded-lg border border-line p-2">
       <legend className={kickerClass}>Step {n}</legend>
-      <TextField label={`Step ${n} name`} path={p('name')} required value={step.name} error={error('name')} onChange={(v) => onChange((s) => void (s.name = v))} />
-      <TextField label={`Step ${n} ID`} path={p('id')} required mono value={step.id} error={error('id')} onChange={(v) => onChange((s) => void (s.id = v))} />
-      <SelectField label={`Step ${n} service`} path={p('serviceDefinitionId')} required value={step.serviceDefinitionId} error={error('serviceDefinitionId')} empty="Choose" options={services.map((s) => ({ value: s.id, label: s.name }))} onChange={(v) => onChange((s) => void (s.serviceDefinitionId = v))} />
-      <SelectField label={`Step ${n} kind`} path={p('kind')} value={step.kind} options={FLOW_STEP_KINDS.map((k) => ({ value: k, label: k }))} onChange={(v) => onChange((s) => void (s.kind = v as FlowStep['kind']))} />
-      <TextField label={`Step ${n} entry point`} path={p('entryPoint')} mono value={step.entryPoint ?? ''} hint="Operation that implements it, e.g. Authorize." onChange={(v) => onChange((s) => void (s.entryPoint = v))} />
-      <NumberField label={`Step ${n} deadline (ms)`} path={p('deadlineMs')} value={step.deadlineMs} error={error('deadlineMs')} onChange={(v) => onChange((s) => void (v === undefined ? delete s.deadlineMs : (s.deadlineMs = v)))} />
-      <SelectField
+      <TextInput compact label={`Step ${n} name`} path={p('name')} required value={step.name} error={error('name')} onChange={(v) => onChange((s) => void (s.name = v))} />
+      <TextInput compact label={`Step ${n} ID`} path={p('id')} required mono value={step.id} error={error('id')} onChange={(v) => onChange((s) => void (s.id = v))} />
+      <SelectInput compact label={`Step ${n} service`} path={p('serviceDefinitionId')} required value={step.serviceDefinitionId} error={error('serviceDefinitionId')} empty="Choose" options={services.map((s) => ({ value: s.id, label: s.name }))} onChange={(v) => onChange((s) => void (s.serviceDefinitionId = v))} />
+      <SelectInput compact label={`Step ${n} kind`} path={p('kind')} value={step.kind} options={FLOW_STEP_KINDS.map((k) => ({ value: k, label: k }))} onChange={(v) => onChange((s) => void (s.kind = v as FlowStep['kind']))} />
+      <TextInput compact label={`Step ${n} entry point`} path={p('entryPoint')} mono value={step.entryPoint ?? ''} hint="Operation that implements it, e.g. Authorize." onChange={(v) => onChange((s) => void (s.entryPoint = v))} />
+      <NumberInput compact label={`Step ${n} deadline (ms)`} path={p('deadlineMs')} value={step.deadlineMs} error={error('deadlineMs')} onChange={(v) => onChange((s) => void (v === undefined ? delete s.deadlineMs : (s.deadlineMs = v)))} />
+      <SelectInput
+            compact
         label={`Step ${n} undone by`}
         path={p('compensatedBy')}
         value={step.compensatedBy ?? ''}
@@ -346,9 +351,10 @@ function TransitionFields({
   return (
     <fieldset className="m-0 grid grid-cols-2 gap-2 rounded-lg border border-line p-2">
       <legend className={kickerClass}>Transition {n}</legend>
-      <SelectField label={`Transition ${n} from`} path={p('from')} required value={t.from} error={error('from')} empty="Choose" options={stepOptions} onChange={(v) => onChange((x) => void (x.from = v))} />
-      <SelectField label={`Transition ${n} to`} path={p('to')} required value={t.to} error={error('to')} empty="Choose" options={targetOptions} onChange={(v) => onChange((x) => void (x.to = v))} />
-      <SelectField
+      <SelectInput compact label={`Transition ${n} from`} path={p('from')} required value={t.from} error={error('from')} empty="Choose" options={stepOptions} onChange={(v) => onChange((x) => void (x.from = v))} />
+      <SelectInput compact label={`Transition ${n} to`} path={p('to')} required value={t.to} error={error('to')} empty="Choose" options={targetOptions} onChange={(v) => onChange((x) => void (x.to = v))} />
+      <SelectInput
+            compact
         label={`Transition ${n} via`}
         path={p('via')}
         value={t.via.kind}
@@ -360,7 +366,8 @@ function TransitionFields({
         onChange={(v) => onChange((x) => void (x.via = v === 'event' ? { kind: 'event', eventTypeId: '' } : v === 'call' ? { kind: 'call' } : { kind: 'local' }))}
       />
       {t.via.kind === 'call' && (
-        <SelectField
+        <SelectInput
+            compact
           label={`Transition ${n} caller`}
           path={p('callerServiceId')}
           value={t.via.callerServiceId ?? ''}
@@ -370,10 +377,10 @@ function TransitionFields({
         />
       )}
       {t.via.kind === 'event' && (
-        <SelectField label={`Transition ${n} event`} path={p('eventTypeId')} required value={t.via.eventTypeId} error={error('eventTypeId')} empty="Choose" options={events.map((e) => ({ value: e.id, label: e.name }))} onChange={(v) => onChange((x) => void (x.via = { kind: 'event', eventTypeId: v }))} />
+        <SelectInput compact label={`Transition ${n} event`} path={p('eventTypeId')} required value={t.via.eventTypeId} error={error('eventTypeId')} empty="Choose" options={events.map((e) => ({ value: e.id, label: e.name }))} onChange={(v) => onChange((x) => void (x.via = { kind: 'event', eventTypeId: v }))} />
       )}
-      <TextField label={`Transition ${n} ID`} path={p('id')} required mono value={t.id} error={error('id')} onChange={(v) => onChange((x) => void (x.id = v))} />
-      <TextField label={`Transition ${n} condition`} path={p('condition')} value={t.condition ?? ''} hint="Leave empty when it always runs." onChange={(v) => onChange((x) => void (v ? (x.condition = v) : delete x.condition))} />
+      <TextInput compact label={`Transition ${n} ID`} path={p('id')} required mono value={t.id} error={error('id')} onChange={(v) => onChange((x) => void (x.id = v))} />
+      <TextInput compact label={`Transition ${n} condition`} path={p('condition')} value={t.condition ?? ''} hint="Leave empty when it always runs." onChange={(v) => onChange((x) => void (v ? (x.condition = v) : delete x.condition))} />
       <div className="col-span-2 flex flex-col gap-1.5">
         <span className={kickerClass}>Policies</span>
         {t.policies.map((policy, j) => (
@@ -393,151 +400,12 @@ function TransitionFields({
 function PolicyFields({ label, path, policy, error, onChange, onRemove }: { label: string; path: string; policy: FlowPolicy; error: string | undefined; onChange: (change: (p: FlowPolicy) => void) => void; onRemove: () => void }) {
   return (
     <div className="grid grid-cols-[1fr_1fr_1fr_auto] items-end gap-1.5">
-      <SelectField label={`${label} type`} path={`${path}.type`} value={policy.type} options={FLOW_POLICY_TYPES.map((t) => ({ value: t, label: t }))} onChange={(v) => onChange((p) => void (p.type = v as FlowPolicy['type']))} />
-      <TextField label={`${label} label`} path={`${path}.label`} required value={policy.label} error={error} onChange={(v) => onChange((p) => void (p.label = v))} />
-      <SelectField label={`${label} state`} path={`${path}.state`} value={policy.state ?? 'exercised'} options={FLOW_POLICY_STATES.map((s) => ({ value: s, label: s }))} onChange={(v) => onChange((p) => void (p.state = v as NonNullable<FlowPolicy['state']>))} />
+      <SelectInput compact label={`${label} type`} path={`${path}.type`} value={policy.type} options={FLOW_POLICY_TYPES.map((t) => ({ value: t, label: t }))} onChange={(v) => onChange((p) => void (p.type = v as FlowPolicy['type']))} />
+      <TextInput compact label={`${label} label`} path={`${path}.label`} required value={policy.label} error={error} onChange={(v) => onChange((p) => void (p.label = v))} />
+      <SelectInput compact label={`${label} state`} path={`${path}.state`} value={policy.state ?? 'exercised'} options={FLOW_POLICY_STATES.map((s) => ({ value: s, label: s }))} onChange={(v) => onChange((p) => void (p.state = v as NonNullable<FlowPolicy['state']>))} />
       <Button aria-label={`Remove ${label.toLowerCase()}`} onClick={onRemove}>
         Remove
       </Button>
-    </div>
-  );
-}
-
-function Label({ id, label, required }: { id: string; label: string; required?: boolean | undefined }) {
-  return (
-    <label htmlFor={id} className="text-xs font-medium">
-      {label}
-      {required && <span className="text-fg-3"> (required)</span>}
-    </label>
-  );
-}
-
-function Described({ id, hint, error }: { id: string; hint?: string | undefined; error?: string | undefined }) {
-  return (
-    <>
-      {hint && (
-        <p id={`${id}-hint`} className="m-0 text-xs text-fg-3">
-          {hint}
-        </p>
-      )}
-      {error && (
-        <p id={`${id}-error`} className="m-0 text-xs text-crit-fg">
-          {error}
-        </p>
-      )}
-    </>
-  );
-}
-
-const describedBy = (id: string, hint?: string, error?: string) => [hint ? `${id}-hint` : '', error ? `${id}-error` : ''].filter(Boolean).join(' ') || undefined;
-
-function TextField({
-  label,
-  path,
-  value,
-  onChange,
-  required,
-  mono,
-  error,
-  hint,
-  readOnly,
-  autoFocus,
-}: {
-  label: string;
-  path: string;
-  value: string;
-  onChange: (v: string) => void;
-  required?: boolean;
-  mono?: boolean;
-  error?: string | undefined;
-  hint?: string | undefined;
-  readOnly?: boolean;
-  autoFocus?: boolean;
-}) {
-  const id = useId();
-  return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <Label id={id} label={label} required={required} />
-      <input
-        id={id}
-        data-path={path}
-        data-autofocus={autoFocus || undefined}
-        className={cx(fieldClass, mono && 'font-mono text-xs', readOnly && 'opacity-70')}
-        value={value}
-        readOnly={readOnly}
-        aria-invalid={error ? true : undefined}
-        aria-required={required || undefined}
-        aria-describedby={describedBy(id, hint, error)}
-        onChange={(e) => onChange(e.target.value)}
-      />
-      <Described id={id} hint={hint} error={error} />
-    </div>
-  );
-}
-
-function NumberField({ label, path, value, onChange, error }: { label: string; path: string; value: number | undefined; onChange: (v: number | undefined) => void; error?: string | undefined }) {
-  const id = useId();
-  return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <Label id={id} label={label} />
-      <input
-        id={id}
-        data-path={path}
-        type="number"
-        min={0}
-        inputMode="numeric"
-        className={cx(fieldClass, 'font-mono text-xs')}
-        value={value ?? ''}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy(id, undefined, error)}
-        onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
-      />
-      <Described id={id} error={error} />
-    </div>
-  );
-}
-
-function SelectField({
-  label,
-  path,
-  value,
-  options,
-  onChange,
-  required,
-  error,
-  empty,
-}: {
-  label: string;
-  path: string;
-  value: string;
-  options: { value: string; label: string }[];
-  onChange: (v: string) => void;
-  required?: boolean;
-  error?: string | undefined;
-  empty?: string;
-}) {
-  const id = useId();
-  return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <Label id={id} label={label} required={required} />
-      <select
-        id={id}
-        data-path={path}
-        className={fieldClass}
-        value={value}
-        aria-invalid={error ? true : undefined}
-        aria-required={required || undefined}
-        aria-describedby={describedBy(id, undefined, error)}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        {empty !== undefined && <option value="">{empty}</option>}
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <Described id={id} error={error} />
     </div>
   );
 }
