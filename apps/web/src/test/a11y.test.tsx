@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axe from 'axe-core';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -111,6 +111,16 @@ describe('accessibility audit (axe-core)', () => {
   it('process view of a flow', async () => {
     renderApp('/flows/flow-checkout?v=1&env=production&strip=process');
     await screen.findByRole('list', { name: 'Process of Checkout' });
+    expect(await audit()).toEqual([]);
+  });
+
+  it('endpoint contract in a step detail and under a process arrow (ADR-029)', async () => {
+    const user = userEvent.setup();
+    renderApp('/flows/flow-checkout?v=1&env=production&step=place-order&strip=process');
+    await screen.findByRole('region', { name: 'Contract of Place order' });
+    await waitFor(() => expect(document.querySelector('[data-contract-toggle="POST /v1/orders"]')).not.toBeNull());
+    await user.click(document.querySelector<HTMLButtonElement>('[data-contract-toggle="POST /v1/orders"]')!);
+    await waitFor(() => expect(document.querySelectorAll('[data-contract="POST /v1/orders"]').length).toBe(2));
     expect(await audit()).toEqual([]);
   });
 

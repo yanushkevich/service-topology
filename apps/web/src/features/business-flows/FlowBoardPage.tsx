@@ -27,6 +27,7 @@ import { SwimlaneLegend } from './SwimlaneParts';
 import { FlowCard, FlowPicker, FlowStrip } from './FlowPanels';
 import { TxCard, TxStrip } from './FlowReplay';
 import { ProcessDiagram } from '../boards/ProcessDiagram';
+import { EndpointContractPanel } from '../contracts/EndpointContractPanel';
 import { StripSwitch } from '../boards/StripSwitch';
 import { flowProcess } from '../../transit/process';
 
@@ -254,7 +255,7 @@ function Board({ index, flow, environmentId }: { index: TopologyIndex; flow: Bus
                 onChange={(v) => update((p) => (v === 'process' ? p.set('strip', 'process') : p.delete('strip')))}
               />
               {strip === 'process' ? (
-                <ProcessDiagram process={process} label={`Process of ${flow.name}`} />
+                <ProcessDiagram process={process} label={`Process of ${flow.name}`} endpointPanel={EndpointContractPanel} />
               ) : (
                 <FlowStrip flow={flow} stats={flowStats} selectedStep={stepId} focusSteps={focusSteps} onSelectStep={(id) => selectStep(id === stepId ? null : id)} serviceName={serviceName} eventName={eventName} />
               )}

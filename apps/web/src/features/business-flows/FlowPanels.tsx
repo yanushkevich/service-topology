@@ -17,6 +17,8 @@ import { PolicyDiamond, SeverityMark } from '../transit-board/visuals';
 import { FlowBadge } from './FlowBadge';
 import { stripPageParams } from './flowVisuals';
 import { patternLabel } from '../../domain/patterns';
+import { ContractView } from '../contracts/ContractView';
+import { useEndpointContract } from '../contracts/useEndpointContract';
 import { StripScroller } from '../boards/StripScroller';
 
 /**
@@ -249,7 +251,7 @@ export function FlowCard({
         )}
       </p>
       {actions}
-      {selectedStep && <StepDetail flow={flow} step={selectedStep} stats={stats?.steps[selectedStep.id]} serviceName={serviceName} search={search} />}
+      {selectedStep && <StepDetail flow={flow} step={selectedStep} stats={stats?.steps[selectedStep.id]} serviceName={serviceName} search={search} environmentId={resolved.environmentId} />}
       {budget && <FlowBudgetBar budget={budget} />}
       <dl className="m-0">
         <KeyValueRow label="Owner">{[flow.owner, flow.team].filter(Boolean).join(' / ') || '—'}</KeyValueRow>
@@ -314,7 +316,7 @@ export function FlowCard({
   );
 }
 
-function StepDetail({ flow, step, stats, serviceName, search }: { flow: BusinessFlow; step: FlowStep; stats: StepStats | undefined; serviceName: (id: string) => string; search: string }) {
+function StepDetail({ flow, step, stats, serviceName, search, environmentId }: { flow: BusinessFlow; step: FlowStep; stats: StepStats | undefined; serviceName: (id: string) => string; search: string; environmentId: string }) {
   const id = useId();
   const compensation = step.compensatedBy ? flow.steps.find((s) => s.id === step.compensatedBy)?.name : undefined;
   const board = new URLSearchParams(stripPageParams(search));
@@ -339,6 +341,7 @@ function StepDetail({ flow, step, stats, serviceName, search }: { flow: Business
       <Link to={{ pathname: `/services/${encodeURIComponent(step.serviceDefinitionId)}/transit`, search: `?${board.toString()}` }} className="mt-1.5 inline-block text-xs text-accent-fg underline">
         Open the {serviceName(step.serviceDefinitionId)} transit board
       </Link>
+      <StepContract step={step} environmentId={environmentId} />
     </section>
   );
 }
@@ -416,6 +419,17 @@ function DataStores({ flow, stores, search }: { flow: BusinessFlow; stores: NonN
         })}
       </ul>
       <p className="m-0 mt-1.5 text-xs text-fg-3">From the topology: stores belong to services, so each is listed for every step its service runs.</p>
+    </section>
+  );
+}
+
+/** The step's entry point as an endpoint contract (ADR-029): OpenAPI for HTTP, a note otherwise. */
+function StepContract({ step, environmentId }: { step: FlowStep; environmentId: string }) {
+  const state = useEndpointContract(step.serviceDefinitionId, step.entryPoint, environmentId);
+  return (
+    <section aria-label={`Contract of ${step.name}`} className="mt-2.5 border-t border-accent-ring pt-2">
+      <Kicker className="mb-1.5">Contract</Kicker>
+      <ContractView state={state} compact />
     </section>
   );
 }

@@ -31,6 +31,7 @@ import { MapLegend, TransitMap } from './TransitMap';
 import { FlowRows, FlowsWithoutBoard, UsedByChips, UsedByFlows } from './FlowsOnService';
 import { DependencyList } from './DependencyList';
 import { ProcessDiagram } from '../boards/ProcessDiagram';
+import { EndpointContractPanel } from '../contracts/EndpointContractPanel';
 import { StripSwitch } from '../boards/StripSwitch';
 import { lineProcess } from '../../transit/process';
 import { useTraceDetail, useTraceList, useTransitBoard } from './useTransitBoard';
@@ -340,7 +341,7 @@ function BoardView({ board: loaded, definition, mode, onMode, url }: { board: Tr
                 value={url.strip}
                 onChange={(v) => url.update((p) => (v === 'process' ? p.set('strip', 'process') : p.delete('strip')))}
               />
-              {url.strip === 'process' ? <ProcessDiagram process={lineProcess(index, line)} label={`Process of line ${line.code}`} /> : <StopStrip index={index} line={line} focusStations={focusStations} />}
+              {url.strip === 'process' ? <ProcessDiagram process={lineProcess(index, line)} label={`Process of line ${line.code}`} endpointPanel={EndpointContractPanel} /> : <StopStrip index={index} line={line} focusStations={focusStations} />}
             </>
           ) : (
             <StopStrip index={index} line={null} focusStations={focusStations} />

@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
-import type { FragmentType, Lifeline, MessageStyle, Process, ProcessItem, Section } from '../../transit/process';
+import { useId, useState, type ComponentType, type ReactNode } from 'react';
+import { parseHttpEndpoint } from '../../contracts/openapi';
+import type { EndpointRef, FragmentType, Lifeline, MessageStyle, Process, ProcessItem, Section } from '../../transit/process';
 import { cx } from '../../shared/ui/classes';
 import { StripScroller } from './StripScroller';
 
@@ -8,7 +9,16 @@ import { StripScroller } from './StripScroller';
  * an ordered list laid out on a CSS subgrid, so it reads in order without the drawing; each item
  * also says in words who talks to whom.
  */
-export function ProcessDiagram({ process, label }: { process: Process; label: string }) {
+export function ProcessDiagram({
+  process,
+  label,
+  endpointPanel,
+}: {
+  process: Process;
+  label: string;
+  /** Renders an HTTP endpoint's contract under its arrow (ADR-029); without it, arrows have no contract toggle. */
+  endpointPanel?: ComponentType<{ endpoint: EndpointRef }> | undefined;
+}) {
   const columns = process.lifelines.length;
   const at = new Map(process.lifelines.map((l, i) => [l.id, i + 1]));
   const name = (id: string) => process.lifelines.find((l) => l.id === id)?.name ?? id;
@@ -26,7 +36,7 @@ export function ProcessDiagram({ process, label }: { process: Process; label: st
         ))}
         <ol aria-label={label} className="relative col-span-full m-0 grid list-none grid-cols-subgrid gap-y-1.5 p-0">
           {process.items.map((item) => (
-            <Item key={item.id} item={item} at={at} name={name} />
+            <Item key={item.id} item={item} at={at} name={name} panel={endpointPanel} />
           ))}
         </ol>
       </div>
@@ -43,12 +53,12 @@ function LifelineHead({ lifeline }: { lifeline: Lifeline }) {
   );
 }
 
-type Lookup = { at: ReadonlyMap<string, number>; name: (id: string) => string };
+type Lookup = { at: ReadonlyMap<string, number>; name: (id: string) => string; panel: ComponentType<{ endpoint: EndpointRef }> | undefined };
 
-function Item({ item, at, name }: { item: ProcessItem } & Lookup) {
+function Item({ item, at, name, panel }: { item: ProcessItem } & Lookup) {
   switch (item.kind) {
     case 'message':
-      return <Message item={item} at={at} name={name} />;
+      return <Message item={item} at={at} name={name} panel={panel} />;
     case 'note':
       return (
         <li className="col-span-full grid grid-cols-subgrid" data-note>
@@ -56,10 +66,11 @@ function Item({ item, at, name }: { item: ProcessItem } & Lookup) {
             <span className="sr-only">Note at {name(item.at)}: </span>
             {item.text}
           </span>
+          <ContractToggle endpoint={item.endpoint} column={`${at.get(item.at) ?? 1}`} panel={panel} />
         </li>
       );
     case 'fragment':
-      return <Fragment item={item} at={at} name={name} />;
+      return <Fragment item={item} at={at} name={name} panel={panel} />;
   }
 }
 
@@ -73,7 +84,7 @@ const STROKE: Record<MessageStyle, string> = {
 };
 const VERB: Record<MessageStyle, string> = { call: 'calls', async: 'sends to', reply: 'replies to', write: 'writes to', read: 'reads from', local: 'continues in' };
 
-function Message({ item, at, name }: { item: Extract<ProcessItem, { kind: 'message' }> } & Lookup) {
+function Message({ item, at, name, panel }: { item: Extract<ProcessItem, { kind: 'message' }> } & Lookup) {
   const a = at.get(item.from) ?? 1;
   const b = at.get(item.to) ?? a;
   const self = a === b;
@@ -97,7 +108,33 @@ function Message({ item, at, name }: { item: Extract<ProcessItem, { kind: 'messa
           </span>
         )}
       </span>
+      <ContractToggle endpoint={item.endpoint} column={`${left} / ${right + 1}`} panel={panel} />
     </li>
+  );
+}
+
+/**
+ * Under an arrow into an HTTP endpoint: a button that opens the endpoint's contract across the
+ * whole diagram width (ADR-029). Other endpoints get no button.
+ */
+function ContractToggle({ endpoint, column, panel: Panel }: { endpoint: EndpointRef | undefined; column: string; panel: ComponentType<{ endpoint: EndpointRef }> | undefined }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  if (!endpoint || !Panel || !parseHttpEndpoint(endpoint.endpoint)) return null;
+  return (
+    <>
+      <span className="relative z-1 flex justify-center" style={{ gridColumn: column }}>
+        <button type="button" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)} className="rounded-sm px-1 text-[11px] text-accent-fg underline" data-contract-toggle={endpoint.endpoint}>
+          {open ? 'Hide' : 'Show'} the API contract{' '}
+          <span className="sr-only">of {endpoint.endpoint}</span>
+        </button>
+      </span>
+      {open && (
+        <div id={id} className="relative z-2 col-span-full mx-1 rounded-md border border-line-strong bg-surface-1 p-3">
+          <Panel endpoint={endpoint} />
+        </div>
+      )}
+    </>
   );
 }
 
@@ -111,7 +148,7 @@ const FRAME: Record<FragmentType, string> = {
 };
 const TITLE: Record<FragmentType, string> = { alt: 'alt', opt: 'opt', loop: 'loop', par: 'par', transaction: 'transaction', compensation: 'compensate' };
 
-function Fragment({ item, at, name }: { item: Extract<ProcessItem, { kind: 'fragment' }> } & Lookup) {
+function Fragment({ item, at, name, panel }: { item: Extract<ProcessItem, { kind: 'fragment' }> } & Lookup) {
   return (
     <li className={cx('relative z-1 col-span-full mx-1 grid grid-cols-subgrid rounded-md border py-1', FRAME[item.type])} data-fragment={item.type}>
       <span className="col-span-full flex items-center gap-1.5 px-2">
@@ -124,13 +161,13 @@ function Fragment({ item, at, name }: { item: Extract<ProcessItem, { kind: 'frag
         )}
       </span>
       {item.sections.map((section, i) => (
-        <SectionView key={i} section={section} first={i === 0} type={item.type} at={at} name={name} />
+        <SectionView key={i} section={section} first={i === 0} type={item.type} at={at} name={name} panel={panel} />
       ))}
     </li>
   );
 }
 
-function SectionView({ section, first, type, at, name }: { section: Section; first: boolean; type: FragmentType } & Lookup) {
+function SectionView({ section, first, type, at, name, panel }: { section: Section; first: boolean; type: FragmentType } & Lookup) {
   // An alt names each section's condition; a loop or opt already shows it in its title.
   const guard = type === 'alt' || (type === 'par' && !first) ? section.guard : undefined;
   const heading: ReactNode =
@@ -145,7 +182,7 @@ function SectionView({ section, first, type, at, name }: { section: Section; fir
       {heading}
       <ol className="col-span-full m-0 grid list-none grid-cols-subgrid gap-y-1.5 p-0" aria-label={section.guard ? `When ${section.guard}` : undefined}>
         {section.items.map((child) => (
-          <Item key={child.id} item={child} at={at} name={name} />
+          <Item key={child.id} item={child} at={at} name={name} panel={panel} />
         ))}
       </ol>
     </div>

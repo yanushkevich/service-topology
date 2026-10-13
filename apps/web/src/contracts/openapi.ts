@@ -241,3 +241,10 @@ function constraintsOf(s: Json): string[] {
 const asJson = (v: unknown): Json | undefined => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Json) : undefined);
 const asArray = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : undefined);
+
+/** A schema's type in one phrase: "Order", "OrderItem[]", "string", "SettlementEvent | ChargebackEvent". */
+export function schemaTypeName(node: SchemaNode): string {
+  if (node.type === 'array') return `${node.items ? schemaTypeName(node.items) : 'any'}[]`;
+  if (node.type === 'oneOf') return (node.variants ?? []).map(schemaTypeName).join(' | ');
+  return node.ref ?? node.type;
+}

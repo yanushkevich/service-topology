@@ -28,9 +28,15 @@ export interface Section {
   items: ProcessItem[];
 }
 
+/** The endpoint a message calls (ADR-029): its service and "METHOD /path", gRPC method, … */
+export interface EndpointRef {
+  serviceDefinitionId: string;
+  endpoint: string;
+}
+
 export type ProcessItem =
-  | { kind: 'message'; id: string; from: string; to: string; label: string; style: MessageStyle; guards: string[] }
-  | { kind: 'note'; id: string; at: string; text: string }
+  | { kind: 'message'; id: string; from: string; to: string; label: string; style: MessageStyle; guards: string[]; endpoint?: EndpointRef | undefined }
+  | { kind: 'note'; id: string; at: string; text: string; endpoint?: EndpointRef | undefined }
   | { kind: 'fragment'; id: string; type: FragmentType; guard?: string | undefined; sections: Section[] };
 
 export interface Process {
@@ -94,7 +100,7 @@ export function lineProcess(index: BoardIndex, line: Line): Process {
 function hopItems(index: BoardIndex, line: Line, from: string, to: string, id: string): ProcessItem[] {
   const a = index.stations.get(from);
   const b = index.stations.get(to);
-  if (a?.kind === 'caller') return [{ kind: 'message', id, from, to, label: line.signature, style: line.group === 'event' ? 'async' : 'call', guards: [] }];
+  if (a?.kind === 'caller') return [{ kind: 'message', id, from, to, label: line.signature, style: line.group === 'event' ? 'async' : 'call', guards: [], endpoint: { serviceDefinitionId: index.board.serviceDefinitionId, endpoint: line.signature } }];
   if (b?.kind !== 'dependency') return [{ kind: 'message', id, from, to, label: b?.kind === 'client' ? `call through ${b.name}` : `to ${b?.name ?? to}`, style: 'call', guards: [] }];
 
   // A dependency call: the client lane's policies, then what it does there.
@@ -173,7 +179,16 @@ export function flowProcess(flow: BusinessFlow, options: { serviceName: (id: str
     const repeat = t.policies.find((p) => (p.type === 'retry' || p.type === 'redelivery') && p.state !== 'missing');
     const guards = t.policies.filter((p) => p !== repeat).map(flowGuard);
     const via = t.via.kind === 'event' ? options.eventName(t.via.eventTypeId) : t.via.kind;
-    const message: ProcessItem = { kind: 'message', id: `t:${t.id}`, from: from.serviceDefinitionId, to: to.serviceDefinitionId, label: `${to.name} (${via})`, style: t.via.kind === 'event' ? 'async' : t.via.kind === 'local' ? 'local' : 'call', guards };
+    const message: ProcessItem = {
+      kind: 'message',
+      id: `t:${t.id}`,
+      from: from.serviceDefinitionId,
+      to: to.serviceDefinitionId,
+      label: `${to.name} (${via})`,
+      style: t.via.kind === 'event' ? 'async' : t.via.kind === 'local' ? 'local' : 'call',
+      guards,
+      endpoint: to.entryPoint ? { serviceDefinitionId: to.serviceDefinitionId, endpoint: to.entryPoint } : undefined,
+    };
     const sent: ProcessItem = repeat ? { kind: 'fragment', id: `loop:${t.id}`, type: 'loop', guard: repeat.label, sections: [{ guard: repeat.label, items: [message] }] } : message;
     const body = [sent, ...stepItems(to)];
     return to.kind === 'compensation' ? [{ kind: 'fragment', id: `undo:${t.id}`, type: 'compensation', guard: `undo with ${to.name}`, sections: [{ items: body }] }] : body;
@@ -181,7 +196,10 @@ export function flowProcess(flow: BusinessFlow, options: { serviceName: (id: str
 
   const start = stepOf.get(flow.startStepId);
   const trigger = flow.trigger.kind === 'event' ? `on event ${flow.trigger.ref ?? ''}`.trim() : flow.trigger.kind === 'call' ? `on call${flow.trigger.ref ? ` from ${options.serviceName(flow.trigger.ref)}` : ''}` : `on ${flow.trigger.kind}`;
-  const items: ProcessItem[] = start ? [{ kind: 'note', id: 'start', at: start.serviceDefinitionId, text: `${start.name} (${trigger})` }, ...stepItems(start)] : [];
+  const startNote: ProcessItem | null = start
+    ? { kind: 'note', id: 'start', at: start.serviceDefinitionId, text: `${start.name} (${trigger})`, endpoint: start.entryPoint ? { serviceDefinitionId: start.serviceDefinitionId, endpoint: start.entryPoint } : undefined }
+    : null;
+  const items: ProcessItem[] = start && startNote ? [startNote, ...stepItems(start)] : [];
   return { lifelines, items };
 }
 
