@@ -219,6 +219,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 12 | Implemented (2026-10-13) | Flows in impact analysis and simulation, with backend B9 (ADR-025); see the Milestone 12 closeout. `make test-integration` and `make contract-check` not yet run. |
 | 13 | Implemented (2026-10-13) | 3D drill-down from a flow into its services (ADR-026); see the Milestone 13 closeout. |
 | 13.1 | Implemented (2026-10-13) | 3D drill-down refinement: the flow's lines only, planes under their steps, pads for services without a board, the 2D board's visual language; `docs/milestones/MILESTONE_13_1_DRILLDOWN_REFINEMENT.md`. |
+| 13.2 | Specified (2026-10-13) | Which lines each step uses: a Lines strip on the flow board and an Inside-the-service block in the step card (the 2D step-to-service drill-down); `docs/milestones/MILESTONE_13_2_FLOW_LINES.md`. |
 | 9 | Implemented (2026-10-12) | Transit board on example data (ADR-021): spec Phase 1 plus the Phase 4 replay UI, hover tooltips, windows, and per-step stats; see the Milestone 9 closeout and follow-up below. Real data sources (phases 2, 3, and 5) are not started. |
 | B1 (backend) | Implemented (2026-10-11) | Go foundation in `backend/`; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B2 (backend) | Implemented (2026-10-11) | ArcadeDB adapter, schema, idempotent seed, integration tests; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. The database was replaced by MongoDB afterwards (ADR-019). |
