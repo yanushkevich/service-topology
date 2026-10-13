@@ -657,3 +657,8 @@ Decision: ADR-026. Spec: `docs/BUSINESS_FLOWS.md` §13 and its implementation no
 - **State:** `scene` and `drill` are page URL parameters of `/flows/` (`PAGE_PARAMS`); the selected step is `step`, shared with the swimlane. Camera poses live in CameraControls; replay particles read the board's local playback store. Nothing is written to Zustand per frame (frame-loop guard).
 - **Shared 3D modules:** `galaxy/webgl.ts`, `galaxy/palette.ts` (fallback colours), and `galaxy/labelLayer.ts` (now generic anchors).
 - **Dependencies (pinned):** `@react-three/postprocessing` 3.1.3 and `postprocessing` 6.39.5 (selective Bloom), `maath` 0.10.8 (frame-local easing).
+
+## Revision 19 — Which line each step uses (2026-10-13, Milestone 13.2)
+- **Read model:** `transit/flows/flowLines.ts` (pure): flow + service boards + typical path → one row per step with its line (stops, dependencies, policies, stats) or the reason it has none. `lineStops` (a line's ordered stations and policy stops) moves to `transit/board.ts`, shared by the service board and the flow board.
+- **UI:** the flow board's strip gains `lines` (`FlowLinesView`, reusing the service board's `StopStrip` for the selected step's line); the step card's `StepInside`. The service boards are read once per flow board (`useFlowBoards`) for the findings, the 3D view, and these rows.
+- **3D role:** the drill-down (Revision 18) is an optional explain view; the 2D views carry the same facts.

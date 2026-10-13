@@ -72,7 +72,7 @@ domain/                            canonical types, validation, traversal (pure 
 | You are adding… | Put it in |
 |---|---|
 | A canonical type, rule, or graph query | `domain/` (port the rule to `backend/internal/domain` too, §4.5) |
-| A read model or layout for a board | `transit/` (pure, with tests next to it) |
+| A read model or layout for a board | `transit/` (pure, with tests next to it); which line a flow step uses: `transit/flows/flowLines.ts` |
 | A data source or adapter | `data/` behind the repository interfaces (`data/repositories`) |
 | A change to stored topology data (shared by the sandbox and the forms) | `domain/topologyChanges.ts` |
 | A write path for mock data | the local sandbox (`data/sandbox/`): it validates like the server and returns the same `ApiError` shapes |

@@ -305,6 +305,12 @@ Specify all three, build Milestone 11 only. Decisions: ADR-023 (sections 9–10)
   - The example scenario (the card processor unavailable) marks Checkout's Authorize payment and Refund's Refund payment as affected, with Cancelled and Rejected as the likely outcomes.
   - Nothing simulated is called live.
 
+## 12.1 Which line each step uses (Milestone 13.2, implemented 2026-10-13)
+
+The 2D way to see how a flow lands on its services' code paths; the 3D drill-down (§13) is an optional explain view of the same facts.
+- **Lines strip** (`strip=lines` on the flow board): every step, the typical path first, with the line it enters on its service's board (badge, name, signature), where the line goes (its dependencies), its policies (missing ones flagged), and its p95 and error rate — or why it has none: *no board*, *no matching line* (the entry point matches no line's name or signature), or *no entry point*. A summary says how many steps enter a known line, on how many boards. Selecting a row selects the step and shows its line as the service board's stop strip.
+- **Inside the service** (the step card): the line, its route stop by stop with the policies on each client, and a link that opens that line on the service board with the flow highlighted; for an unmapped step, why and what would fix it.
+
 ## 13. The 3D drill-down: the process over its services (Milestone 13; implemented 2026-10-13)
 
 - **What it shows.** An optional "3D" view of the flow board, lazy-loaded like the galaxy:

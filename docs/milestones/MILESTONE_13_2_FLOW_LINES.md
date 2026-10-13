@@ -1,6 +1,6 @@
 # Milestone 13.2 — Which lines each step uses: the step-to-service drill-down in 2D
 
-**Status:** specified 2026-10-13.
+**Status:** implemented 2026-10-13 (closeout in `docs/IMPLEMENTATION_PLAN.md`).
 
 **Source:** the product owner agreed that the 3D drill-down stays an optional "explain the flow end to end" view, and asked for the 2D alternative: "a clearer step-to-service-board drill-down and a flow overview of which lines each step uses … implement it".
 

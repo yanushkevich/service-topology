@@ -213,7 +213,11 @@ The Events page and inspector explain the new rule automatically.
 - **UI** reads `useFlowImpacts(index, environmentId)`; pass a null index while viewing history. Text comes from `describeFlowImpact`, and every surface carries the Simulated tag or sits in a simulated section.
 - **Screenshots of simulated states** need the failure injected in the page and in-app navigation (the simulation is in memory); see the "Flow board (simulated impact)" entry in `scripts/audit-a11y.mjs`.
 
-## 7e. 3D drill-down (ADR-026, Milestone 13)
+## 7d.1 Which line each step uses (Milestone 13.2)
+- **Read model:** `transit/flows/flowLines.ts` (`flowLineRows`, `flowLinesSummary`) from the flow, the service boards (`useFlowBoards` → `useBoardIndexes`), and the typical path. Matching is `lineForStep` (entry point = a line's name or signature).
+- **UI:** the flow board's Lines strip (`strip=lines`, `FlowLinesView`) and the step card's Inside block (`StepInside`), both in `features/business-flows/FlowLines.tsx`; wording and links in `flowLinesText.ts`. A line's ordered stops are `lineStops` in `transit/board.ts`, shared with the service board's stop strip.
+
+## 7e. 3D drill-down (ADR-026, Milestone 13; an optional explain view)
 - **Layers:** `drilldownModel.ts` (pure, jsdom tests) → `DrilldownScene.tsx` (R3F test renderer) → `FlowDrilldown3D.tsx` (lazy boundary; the flow board imports it with `lazy`). Keep Three.js out of the main bundle: import 3D modules only from the lazy chunk.
 - **Shared with the galaxy:** `galaxy/webgl.ts` (detection, context loss) and `galaxy/labelLayer.ts` (HTML label declutter with memoized `LabelAnchor`s).
 - **Testing the overlay in jsdom:** mock `galaxy/webgl` to report WebGL and `@react-three/fiber`'s `Canvas` to render nothing (see `FlowDrilldown3D.test.tsx`). CameraControls applies a pose on its next update: advance frames in the test renderer before reading the camera.

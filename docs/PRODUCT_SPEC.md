@@ -473,3 +473,9 @@ Those of `docs/milestones/MILESTONE_11_FLOW_SWIMLANES_PATTERNS.md`, `MILESTONE_1
 - Clicking a plane, or a service in the list, flies down to it; Escape or the breadcrumb climbs back. The selected step is the same as in the swimlane, and the view is in the URL.
 - During transaction replay, a particle travels down the active step's shaft and back up.
 - Without WebGL the board says so and offers the swimlane. The lists, strip, and card remain the accessible path.
+
+## Revision W — Which line each step uses (2026-10-13, Milestone 13.2)
+**Source:** product owner, after discussing what the 3D view adds: keep 3D as an optional "explain the flow end to end" view and give the 2D flow board "a clearer step-to-service-board drill-down and a flow overview of which lines each step uses". Spec: `docs/milestones/MILESTONE_13_2_FLOW_LINES.md`.
+
+- The flow board's strip has a **Lines** view: every step with the line it enters on its service's board, where that line goes, its policies and latency — or why there is no line. Selecting a step shows its line stop by stop.
+- A selected step's card shows **what the step does inside its service** and opens that line on the service board.
