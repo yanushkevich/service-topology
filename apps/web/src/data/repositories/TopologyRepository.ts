@@ -11,6 +11,7 @@ import type {
   TopologyData,
 } from '../../domain/types';
 
+import type { BundleImporter } from '../bundle/bundle';
 import type { SandboxControls } from '../sandbox/sandbox';
 
 /**
@@ -28,6 +29,8 @@ export interface TopologyRepository {
    * so the UI offers editing only against the backend.
    */
   readonly writer?: TopologyWriter;
+  /** Present when all data can be replaced with a data bundle (ADR-032): the sandbox and the backend. */
+  readonly importer?: BundleImporter;
   /** Present for the local sandbox (ADR-031): its storage state and reset. */
   readonly sandbox?: SandboxControls;
 }

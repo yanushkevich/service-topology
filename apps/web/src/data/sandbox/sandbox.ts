@@ -5,6 +5,7 @@ import { validateTopology } from '../../domain/validation';
 import type { BoardStore, StoredDefinition } from '../../transit/boardStore';
 import { validateBoardDefinition, type BoardDefinition } from '../../transit/definition';
 import { ApiError } from '../http/apiClient';
+import { countsOf, topologyOf, validateBundle, type BundleImporter } from '../bundle/bundle';
 import { mockTopology } from '../mock/topology';
 import type { TopologyRepository, TopologyWriter } from '../repositories/TopologyRepository';
 import { createSandboxStorage, fingerprint, type SandboxStorage } from './storage';
@@ -93,10 +94,22 @@ export function createSandbox(base: TopologyData = mockTopology, storage: Sandbo
     },
   };
 
+  const importer: BundleImporter = {
+    async importBundle(bundle) {
+      const issues = validateBundle(bundle);
+      if (issues.length) throw issuesError(issues.map(({ code, path, entityId, message }) => (entityId ? { code, path, entityId, message } : { code, path, message })));
+      const boards = Object.fromEntries(bundle.transitBoards.map((definition) => [definition.serviceDefinitionId, { definition: structuredClone(definition), revision: '1' }]));
+      state = { base: baseKey, topology: structuredClone(topologyOf(bundle)), boards };
+      save();
+      return { counts: countsOf(bundle) };
+    },
+  };
+
   const topology: TopologyRepository = {
     sourceLabel: 'Mock inventory · local sandbox',
     isMock: true,
     writer,
+    importer,
     sandbox: controls,
     async getTopology(signal) {
       signal?.throwIfAborted();
@@ -116,6 +129,12 @@ export function createSandbox(base: TopologyData = mockTopology, storage: Sandbo
   };
   const boards: BoardStore = {
     kind: 'sandbox',
+    async list(signal) {
+      signal?.throwIfAborted();
+      return Object.keys(state.boards)
+        .sort()
+        .flatMap((id) => (state.boards[id] ? [structuredClone(state.boards[id])] : []));
+    },
     async get(id, signal) {
       signal?.throwIfAborted();
       const found = state.boards[id];

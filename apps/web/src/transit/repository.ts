@@ -8,6 +8,7 @@ import type { TraceDetail, TraceSummary, TransitBoard, TransitWindow } from './t
 import { exampleOpenApi } from '../contracts/examples';
 import type { OpenApiDocument } from '../contracts/openapi';
 import type { BoardStore } from './boardStore';
+import { definitionOf, type BoardDefinition } from './definition';
 
 /**
  * Source of transit boards and traces (ADR-021). Only the example implementation exists; an HTTP
@@ -29,6 +30,11 @@ export interface TransitRepository {
   getTransactions(flow: BusinessFlow, window: TransitWindow, signal?: AbortSignal): Promise<FlowTransaction[]>;
   /** One business transaction by its business key; null when unknown. */
   getTransaction(flow: BusinessFlow, key: string, signal?: AbortSignal): Promise<FlowTransaction | null>;
+  /**
+   * The declared structure of every board the app shows, by service ID: stored definitions, and
+   * example boards for services without one (the data bundle export, ADR-032).
+   */
+  boardDefinitions(signal?: AbortSignal): Promise<BoardDefinition[]>;
   /** Where authored board definitions are stored (ADR-031); absent when boards cannot be edited. */
   readonly boards?: BoardStore;
   /** The service's OpenAPI document and its file name (ADR-029); null when none is known. */
@@ -48,6 +54,16 @@ interface ExampleService {
 export function createExampleTransitRepository(services: Record<string, ExampleService> = { 'payment-service': { board: paymentServiceBoard, traces: paymentServiceTraces } }): TransitRepository {
   return {
     sourceLabel: 'Example data',
+    async boardDefinitions(signal) {
+      signal?.throwIfAborted();
+      // A definition does not depend on the environment or window; any one gives the same structure.
+      return Object.keys(services)
+        .sort()
+        .flatMap((id) => {
+          const board = services[id]?.board('production', '24h');
+          return board ? [definitionOf(board)] : [];
+        });
+    },
     async getOpenApi(serviceDefinitionId, signal) {
       signal?.throwIfAborted();
       const found = exampleOpenApi.get(serviceDefinitionId);

@@ -1,6 +1,7 @@
 import type { TopologyData } from '../../domain/types';
 import { parseSnapshot, type SnapshotSummary, type TopologySnapshot } from '../../domain/snapshot';
 import type { TopologyRepository, TopologyWriter, WritableKind } from '../repositories/TopologyRepository';
+import { countsOf, type BundleImporter, type ModuleCounts } from '../bundle/bundle';
 import type { SnapshotRepository } from '../snapshots/SnapshotRepository';
 import { parseSavedLayout, type SavedLayout } from '../savedLayouts/savedLayout';
 import type { SavedLayoutRepository } from '../savedLayouts/SavedLayoutRepository';
@@ -42,8 +43,16 @@ export function createHttpTopologyRepository(api: ApiClient = createApiClient())
       revision = res.etag ?? revision;
     },
   };
+  const importer: BundleImporter = {
+    async importBundle(bundle) {
+      const res = await api.sendTagged<{ documents: Partial<ModuleCounts>; boards: number }>('POST', '/imports/bundle', bundle, revision);
+      revision = res.etag ?? revision;
+      return { counts: { ...countsOf({}), ...res.data?.documents, transitBoards: res.data?.boards ?? 0 } };
+    },
+  };
   return {
     writer,
+    importer,
     get sourceLabel() {
       return sourceLabel;
     },

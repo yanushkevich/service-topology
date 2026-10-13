@@ -56,6 +56,12 @@ export function countsOf(data: Partial<Record<BundleModule, readonly unknown[] |
   return Object.fromEntries(BUNDLE_MODULES.map(({ key }) => [key, data[key]?.length ?? 0])) as ModuleCounts;
 }
 
+/** Replaces all data with a validated bundle: the sandbox, or the backend (POST /imports/bundle). */
+export interface BundleImporter {
+  /** Rejects like the API: ApiError 422 (issues with codes and paths), 412 (stale revision). */
+  importBundle(bundle: DataBundle): Promise<{ counts: ModuleCounts }>;
+}
+
 // ---------------------------------------------------------------------------------------------
 // Validation (docs/DATA_BUNDLE.md §4)
 // ---------------------------------------------------------------------------------------------

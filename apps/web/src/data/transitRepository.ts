@@ -13,6 +13,11 @@ export function createTransitRepository(store: BoardStore | null, observed: Tran
   return {
     ...observed,
     boards: store,
+    async boardDefinitions(signal) {
+      const [stored, examples] = await Promise.all([store.list(signal), observed.boardDefinitions(signal)]);
+      const storedIds = new Set(stored.map((s) => s.definition.serviceDefinitionId));
+      return [...stored.map((s) => s.definition), ...examples.filter((d) => !storedIds.has(d.serviceDefinitionId))].sort((a, b) => a.serviceDefinitionId.localeCompare(b.serviceDefinitionId));
+    },
     async getBoard(serviceDefinitionId, environmentId, window, signal) {
       const [stored, seen] = await Promise.all([store.get(serviceDefinitionId, signal), observed.getBoard(serviceDefinitionId, environmentId, window, signal)]);
       return stored ? boardFromDefinition(stored.definition, { environmentId, window, observed: seen }) : seen;
