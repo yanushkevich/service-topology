@@ -150,8 +150,7 @@ a raw policy or pattern ID in the UI.
   default palette is disabled, so those classes render nothing *(enforced:
   `src/styles/rawColors.test.ts`)*.
 - The one exception is `features/service-map/galaxy/palette.ts`, because WebGL materials cannot
-  read CSS variables. Other 3D views read the tokens at runtime and fall back to that palette
-  (`business-flows/drilldown/drilldownPalette.ts`), so they add no literals.
+  read CSS variables.
 - Gradients and other compound values become tokens too (`--stage-glow`, used as
   `bg-(image:--stage-glow)`).
 - **Contrast.** Status and accent *text* uses the `*-fg` tokens. The raw light-theme status

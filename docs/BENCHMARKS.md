@@ -11,7 +11,9 @@ Recorded measurements for ADR-005 (250 visible nodes / 750 edges; 1,000 entities
   ```
 - Fixtures: `?dataset=scale-250` (exactly 250 nodes / 750 edges in production) and `?dataset=inventory-1000` (1,007 service instances and resources over three environments; 321 registry rows in production). Generator: `apps/web/src/data/mock/generateTopology.ts` (deterministic).
 
-## 2026-10-13 — Milestone 13 (3D drill-down from a flow)
+## 2026-10-13 — Milestone 13 (3D drill-down from a flow; removed)
+
+> The drill-down, its dataset, and its benchmark section were removed in Milestone 13.3. The numbers stay as the record.
 
 Run: `npm run bench:3d -- --url <preview-url> --only drilldown` (the section added to `apps/web/scripts/bench-3d.mjs`). Data: `?dataset=flow-12x6`, a generated 12-step flow over 6 services, each with a generated board of 12 lines and 24 stations (`data/mock/generateFlowDataset.ts`).
 

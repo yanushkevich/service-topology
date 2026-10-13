@@ -660,5 +660,11 @@ Decision: ADR-026. Spec: `docs/BUSINESS_FLOWS.md` §13 and its implementation no
 
 ## Revision 19 — Which line each step uses (2026-10-13, Milestone 13.2)
 - **Read model:** `transit/flows/flowLines.ts` (pure): flow + service boards + typical path → one row per step with its line (stops, dependencies, policies, stats) or the reason it has none. `lineStops` (a line's ordered stations and policy stops) moves to `transit/board.ts`, shared by the service board and the flow board.
-- **UI:** the flow board's strip gains `lines` (`FlowLinesView`, reusing the service board's `StopStrip` for the selected step's line); the step card's `StepInside`. The service boards are read once per flow board (`useFlowBoards`) for the findings, the 3D view, and these rows.
+- **UI:** the flow board's strip gains `lines` (`FlowLinesView`, reusing the service board's `StopStrip` for the selected step's line); the step card's `StepInside`. The service boards are read once per flow board (`useFlowBoards`) for the findings and these rows.
 - **3D role:** the drill-down (Revision 18) is an optional explain view; the 2D views carry the same facts.
+
+## Revision 20 — The 3D drill-down removed (2026-10-13, Milestone 13.3)
+The product owner does not need 3D in business flows. Revision 18 (and Revision 19's "3D role") no longer apply:
+- `features/business-flows/drilldown/`, the flow board's Swimlane | 3D switch, and the `scene` / `drill` page parameters are gone.
+- The pinned `@react-three/postprocessing`, `postprocessing`, and `maath` dependencies are removed. Three.js is again only in the galaxy's lazy chunk.
+- The galaxy keeps the generic `LabelLayer` (anchors) introduced for the drill-down.

@@ -318,8 +318,8 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - The backend impact response gains an optional `flows` array, ported to Go with shared conformance fixtures.
 - **Alternatives:** compute flow impact only in the browser. Rejected: API clients of `/topology/impact` would miss it, and parity is the rule (ADR-016).
 
-## ADR-026 — 3D drill-down from a flow into its services (2026-10-12, Milestone 13)
-- **Status:** Accepted and implemented 2026-10-13 (product owner: "lets start implementing", after Milestone 13 was named as the next specified milestone). Spec: `docs/BUSINESS_FLOWS.md` Revision 2, section 13. Follows `docs/3D_GALAXY_EXPERIENCE.md` and ADR-011.
+## ADR-026 — 3D drill-down from a flow into its services (2026-10-12, Milestone 13; withdrawn)
+- **Status:** **Withdrawn**, removed 2026-10-13 (Milestone 13.3; product owner: "i dont need 3d in business flows"). The code is in git history: `2dd01f4`, `c85f26a`, `b193f4a` (Milestone 13) and `cdd6f8b`, `a5b7288` (13.1); removed in `c43ea3c`. The 2D flow board shows the same facts: the Lines strip and the step card's Inside block (Milestone 13.2). Earlier status: accepted and implemented 2026-10-13 (product owner: "lets start implementing", after Milestone 13 was named as the next specified milestone). Spec: `docs/BUSINESS_FLOWS.md` Revision 2, section 13. Follows `docs/3D_GALAXY_EXPERIENCE.md` and ADR-011.
 - **Role (product owner, 2026-10-13):** an optional "explain the flow end to end" view, for demos and architecture walkthroughs of how a business process lands on code paths; not a daily operations view. The 2D flow board carries the same facts (Milestone 13.2 adds the step-to-line overview there).
 - **Refinements at acceptance:**
   - **Labels are drei `Html`, not `Text`/`Billboard`:** ADR-011 rejected troika SDF text because it fetches a font at runtime; HTML labels are crisp and use the app's font.

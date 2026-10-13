@@ -1,6 +1,6 @@
 # Milestone 13 — 3D drill-down from a flow into its services
 
-**Status:** implemented 2026-10-13 (closeout in `docs/IMPLEMENTATION_PLAN.md`).
+**Status:** implemented 2026-10-13, then removed 2026-10-13 (Milestone 13.3; product owner: "i dont need 3d in business flows"). The code is in git history: `2dd01f4`, `c85f26a`, `b193f4a` (Milestone 13) and `cdd6f8b`, `a5b7288` (13.1); removed in `c43ea3c`.
 
 **Read first:**
 - `docs/BUSINESS_FLOWS.md` Revision 2, section 13;

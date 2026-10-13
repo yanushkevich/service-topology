@@ -479,3 +479,6 @@ Those of `docs/milestones/MILESTONE_11_FLOW_SWIMLANES_PATTERNS.md`, `MILESTONE_1
 
 - The flow board's strip has a **Lines** view: every step with the line it enters on its service's board, where that line goes, its policies and latency — or why there is no line. Selecting a step shows its line stop by stop.
 - A selected step's card shows **what the step does inside its service** and opens that line on the service board.
+
+## Revision X — No 3D in business flows (2026-10-13, Milestone 13.3)
+**Source:** product owner: "i dont need 3d in business flows". Revision V no longer applies: the flow board has no 3D view. How a flow lands on its services is shown in 2D (Revision W): the Lines strip and the step card's Inside block. The map's 3D galaxy is unaffected.

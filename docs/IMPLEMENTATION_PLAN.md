@@ -217,9 +217,10 @@ Track both milestones and original phases. A milestone is not complete until its
 | 11.6 | Implemented (2026-10-13) | UI polish: defects from a real-browser review, quick search across everything (ADR-033), inspector only when useful, map opens at the selection, phone header, flows on the Overview, clearer flow targets; `docs/milestones/MILESTONE_11_6_UI_POLISH.md`. |
 | 14 | **On hold** (2026-10-12) | Real data instead of example data: sources, contract freeze, backend observability module, HTTP repository (ADR-030, proposed). Waits for the answers in `docs/REAL_DATA_INTEGRATION.md` §6; `docs/milestones/MILESTONE_14_REAL_DATA.md`. |
 | 12 | Implemented (2026-10-13) | Flows in impact analysis and simulation, with backend B9 (ADR-025); see the Milestone 12 closeout. `make test-integration` and `make contract-check` not yet run. |
-| 13 | Implemented (2026-10-13) | 3D drill-down from a flow into its services (ADR-026); see the Milestone 13 closeout. |
-| 13.1 | Implemented (2026-10-13) | 3D drill-down refinement: the flow's lines only, planes under their steps, pads for services without a board, the 2D board's visual language; `docs/milestones/MILESTONE_13_1_DRILLDOWN_REFINEMENT.md`. |
+| 13 | Removed (2026-10-13) | 3D drill-down from a flow into its services (ADR-026); see the Milestone 13 closeout. |
+| 13.1 | Removed (2026-10-13) | 3D drill-down refinement: the flow's lines only, planes under their steps, pads for services without a board, the 2D board's visual language; `docs/milestones/MILESTONE_13_1_DRILLDOWN_REFINEMENT.md`. |
 | 13.2 | Implemented (2026-10-13) | Which lines each step uses: a Lines strip on the flow board and an Inside-the-service block in the step card (the 2D step-to-service drill-down); `docs/milestones/MILESTONE_13_2_FLOW_LINES.md`. |
+| 13.3 | Implemented (2026-10-13) | The 3D drill-down removed from business flows (product owner: "i dont need 3d in business flows"); the 2D Lines strip and step card replace it. ADR-026 withdrawn. |
 | 9 | Implemented (2026-10-12) | Transit board on example data (ADR-021): spec Phase 1 plus the Phase 4 replay UI, hover tooltips, windows, and per-step stats; see the Milestone 9 closeout and follow-up below. Real data sources (phases 2, 3, and 5) are not started. |
 | B1 (backend) | Implemented (2026-10-11) | Go foundation in `backend/`; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B2 (backend) | Implemented (2026-10-11) | ArcadeDB adapter, schema, idempotent seed, integration tests; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. The database was replaced by MongoDB afterwards (ADR-019). |
@@ -875,3 +876,16 @@ Which lines each step uses: the 2D step-to-service drill-down (`docs/milestones/
 | axe in jsdom and the real browser, both themes; `npm run check` | Pass | `a11y.test.tsx`; audit |
 
 **Known limitations:** a step maps to a line only where its service has a board (only Payment Service in the example data), and only by entry-point name or signature.
+
+### Milestone 13.3 closeout (2026-10-13): the 3D drill-down removed
+Product owner: "i dont need 3d in business flows". ADR-026 is withdrawn; Milestones 13 and 13.1 are marked removed. The 2D flow board's Lines strip and the step card's Inside block (Milestone 13.2) carry the same facts.
+
+**Commit:** `c43ea3c` (code), and the docs commit.
+
+**Removed:** `features/business-flows/drilldown/` (model, scene, overlay, tests), the Swimlane | 3D switch and the `scene` / `drill` URL parameters, the `flow-12x6` dataset, the drill-down section of `bench:3d` (the script is back to its pre-Milestone-13 version), the audit page, and the `@react-three/postprocessing`, `postprocessing`, and `maath` dependencies. Kept: the galaxy's generic `LabelLayer`.
+
+**Checks run:**
+- `npm run check`: 89 files, 1,180 passed, 1 skipped; build passes. The build has no drill-down chunk; Three.js is only in the galaxy's lazy chunk (`Network3DView`).
+- Real-browser audit: 30 pages × 2 themes, all pass.
+- Screenshot: the flow board without the 3D switch.
+- `git grep` finds no reference to the drill-down in `apps/web/src` or the scripts.
