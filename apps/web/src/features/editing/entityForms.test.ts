@@ -28,7 +28,8 @@ describe('entity form model (ADR-020)', () => {
       relationship: mockTopology.relationships.find((r) => r.metadata)!,
       'event-type': mockTopology.eventTypes![0]!,
     };
-    for (const kind of WRITABLE_KINDS) {
+    // Business flows are edited in their own structured form (flowForm.test.ts).
+    for (const kind of WRITABLE_KINDS.filter((k): k is Exclude<typeof k, 'business-flow'> => k !== 'business-flow')) {
       const entity = samples[kind];
       const c = ctx(entity.id);
       const result = entityFromValues(kind, valuesFromEntity(kind, entity as never, c), c, entity as never);

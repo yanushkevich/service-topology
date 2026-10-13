@@ -124,6 +124,17 @@ describe('accessibility audit (axe-core)', () => {
     expect(await audit()).toEqual([]);
   });
 
+  it('business-flow editor with field errors', async () => {
+    const user = userEvent.setup();
+    const { repository } = createWritableRepository();
+    renderApp('/flows', repository);
+    await user.click(await screen.findByRole('button', { name: 'New business flow' }));
+    await user.click(screen.getByRole('button', { name: 'Add transition' }));
+    await user.click(screen.getByRole('button', { name: 'Create' }));
+    await screen.findAllByText('Required.');
+    expect(await audit()).toEqual([]);
+  });
+
   it('history mode banner', async () => {
     renderApp('/registry?v=1&env=production&asof=fixture-0600');
     await screen.findByText(/Viewing history:/);

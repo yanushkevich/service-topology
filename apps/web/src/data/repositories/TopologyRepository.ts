@@ -1,4 +1,5 @@
 import type {
+  BusinessFlow,
   CommunicationRelationship,
   EntityId,
   EntityKind,
@@ -27,8 +28,8 @@ export interface TopologyRepository {
   readonly writer?: TopologyWriter;
 }
 
-/** Entity kinds that can be created, updated, and deleted (ADR-020): the selection kinds plus event types. */
-export type WritableKind = EntityKind | 'event-type';
+/** Entity kinds that can be created, updated, and deleted (ADR-020): the selection kinds plus event types and business flows (ADR-022). */
+export type WritableKind = EntityKind | 'event-type' | 'business-flow';
 
 export const WRITABLE_KINDS: readonly WritableKind[] = [
   'environment',
@@ -37,6 +38,7 @@ export const WRITABLE_KINDS: readonly WritableKind[] = [
   'resource',
   'relationship',
   'event-type',
+  'business-flow',
 ];
 
 export interface EntityOfKind {
@@ -46,6 +48,7 @@ export interface EntityOfKind {
   resource: InfrastructureResource;
   relationship: CommunicationRelationship;
   'event-type': EventType;
+  'business-flow': BusinessFlow;
 }
 
 /**

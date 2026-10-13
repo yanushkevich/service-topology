@@ -3,14 +3,16 @@ import { useLocation, useNavigate } from 'react-router';
 import { useTopology, useTopologyEditing } from '../../data/topologyContext';
 import type { WritableKind } from '../../data/repositories/TopologyRepository';
 import { buildTopologyIndex } from '../../domain/topologyIndex';
-import type { EntityId } from '../../domain/types';
+import type { BusinessFlow, EntityId } from '../../domain/types';
+import { FlowEditorDialog } from '../business-flows/FlowEditorDialog';
+import { newFlowTemplate } from '../business-flows/flowForm';
 import { useUiStore } from '../../state/uiStore';
 import { DeleteEntityDialog } from './DeleteEntityDialog';
 import { EntityEditorDialog } from './EntityEditorDialog';
 import { selectionFor, type FormContext } from './entityForms';
 import { EntityEditingContext, findEntity, type EntityEditing } from './editingContext';
 
-type Request = { mode: 'create'; kind: WritableKind } | { mode: 'edit' | 'delete'; kind: WritableKind; id: EntityId };
+type Request = { mode: 'create'; kind: WritableKind; template?: BusinessFlow } | { mode: 'edit' | 'delete'; kind: WritableKind; id: EntityId };
 
 /**
  * Create, edit, and delete canonical entities (ADR-020). Offered only when the data source can be
@@ -40,7 +42,7 @@ export function EntityEditorProvider({ children }: { children: ReactNode }) {
   );
   const available = unavailable === null;
 
-  const openCreate = useCallback((kind: WritableKind) => available && setRequest({ mode: 'create', kind }), [available]);
+  const openCreate = useCallback((kind: WritableKind, template?: BusinessFlow) => available && setRequest(template ? { mode: 'create', kind, template } : { mode: 'create', kind }), [available]);
   const openEdit = useCallback((kind: WritableKind, id: EntityId) => available && setRequest({ mode: 'edit', kind, id }), [available]);
   const openDelete = useCallback((kind: WritableKind, id: EntityId) => available && setRequest({ mode: 'delete', kind, id }), [available]);
   const value = useMemo(() => ({ unavailable, openCreate, openEdit, openDelete }), [unavailable, openCreate, openEdit, openDelete]);
@@ -55,7 +57,7 @@ export function EntityEditorProvider({ children }: { children: ReactNode }) {
     setRequest(null);
     const ref = selectionFor(kind, id);
     if (ref) useUiStore.getState().select(ref);
-    else navigate({ pathname: `/events/${encodeURIComponent(id)}`, search });
+    else navigate({ pathname: `/${kind === 'business-flow' ? 'flows' : 'events'}/${encodeURIComponent(id)}`, search });
   };
   const afterDelete = (kind: WritableKind, id: EntityId) => {
     setRequest(null);
@@ -65,6 +67,7 @@ export function EntityEditorProvider({ children }: { children: ReactNode }) {
       if (ui.eventHighlight === id) ui.setEventHighlight(null);
       navigate({ pathname: '/events', search });
     }
+    if (kind === 'business-flow') navigate({ pathname: '/flows', search });
   };
 
   let dialog: ReactNode = null;
@@ -74,6 +77,24 @@ export function EntityEditorProvider({ children }: { children: ReactNode }) {
       dialog = entity ? (
         <DeleteEntityDialog kind={request.kind} entity={entity} ctx={ctx} writer={writer} reload={reload} onClose={close} onDeleted={() => afterDelete(request.kind, request.id)} />
       ) : null;
+    } else if (request.kind === 'business-flow') {
+      // Business flows have their own structured editor (ADR-022).
+      const existing = request.mode === 'edit' ? (findEntity(ctx.data, 'business-flow', request.id) ?? null) : null;
+      const initial = request.mode === 'create' ? (request.template ?? newFlowTemplate(ctx.data)) : existing;
+      if (initial) {
+        dialog = (
+          <FlowEditorDialog
+            key={`${request.mode}:${request.mode === 'create' ? (request.template?.id ?? '') : request.id}`}
+            initial={initial}
+            creating={request.mode === 'create'}
+            ctx={ctx}
+            writer={writer}
+            reload={reload}
+            onClose={close}
+            onSaved={(id) => afterSave('business-flow', id)}
+          />
+        );
+      }
     } else {
       const existing = request.mode === 'edit' ? (findEntity(ctx.data, request.kind, request.id) ?? null) : null;
       if (request.mode === 'create' || existing) {

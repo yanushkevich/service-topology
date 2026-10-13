@@ -31,6 +31,7 @@ export const KIND_LABELS: Record<WritableKind, string> = {
   resource: 'Resource',
   relationship: 'Connection',
   'event-type': 'Event type',
+  'business-flow': 'Business flow',
 };
 
 export const KIND_HINTS: Record<WritableKind, string> = {
@@ -40,6 +41,7 @@ export const KIND_HINTS: Record<WritableKind, string> = {
   resource: 'Infrastructure, a containment level, or a topic, queue, or exchange.',
   relationship: 'Runtime communication from one instance or resource to another.',
   'event-type': 'A message contract carried on a topic, queue, or exchange.',
+  'business-flow': 'A business process across services: steps, decisions, outcomes, and the policies on every hand-off.',
 };
 
 export type FieldControl = 'text' | 'select' | 'multi' | 'textarea' | 'json';
@@ -220,6 +222,9 @@ export function fieldsFor(kind: WritableKind, ctx: FormContext): FieldSpec[] {
         { name: 'consumerServiceIds', label: 'Consumers', control: 'multi', options: definitionOptions(ctx) },
         metadataField,
       ];
+    case 'business-flow':
+      // Edited in its own structured form (features/business-flows/FlowEditorDialog.tsx).
+      return [idField, nameField];
   }
 }
 
@@ -279,6 +284,8 @@ export function suggestId(kind: WritableKind, values: FormValues): string {
       return str(values.sourceEntityId) && str(values.targetEntityId) ? `rel:${str(values.sourceEntityId)}->${str(values.targetEntityId)}` : '';
     case 'event-type':
       return str(values.name) ? `event-${slug(str(values.name))}` : '';
+    case 'business-flow':
+      return str(values.name) ? `flow-${slug(str(values.name))}` : '';
     default:
       return slug(str(values.name));
   }
@@ -350,6 +357,7 @@ const COLLECTION: Record<WritableKind, keyof TopologyData> = {
   resource: 'resources',
   relationship: 'relationships',
   'event-type': 'eventTypes',
+  'business-flow': 'businessFlows',
 };
 
 /** The topology after a create, replace (same ID), or delete. Does not modify data. */
@@ -383,7 +391,7 @@ export function newIssues(before: TopologyData, after: TopologyData): Validation
 
 /** Where to go after saving: the selection for map/registry kinds; event types open in the catalog. */
 export function selectionFor(kind: WritableKind, id: EntityId): EntityRef | null {
-  return kind === 'event-type' ? null : { kind, id };
+  return kind === 'event-type' || kind === 'business-flow' ? null : { kind, id };
 }
 
 /** The environment a new instance or relationship would belong to, for display. */

@@ -1,11 +1,12 @@
 import { createContext, useContext } from 'react';
 import type { EntityOfKind, WritableKind } from '../../data/repositories/TopologyRepository';
-import type { EntityId, TopologyData } from '../../domain/types';
+import type { BusinessFlow, EntityId, TopologyData } from '../../domain/types';
 
 export interface EntityEditing {
   /** Null when editing is possible; otherwise why not (shown next to disabled actions). */
   unavailable: null | { reason: string; hint: 'backend' | 'history' | 'loading' };
-  openCreate(kind: WritableKind): void;
+  /** `template` pre-fills a business flow (e.g. a duplicate of an imported one). */
+  openCreate(kind: WritableKind, template?: BusinessFlow): void;
   openEdit(kind: WritableKind, id: EntityId): void;
   openDelete(kind: WritableKind, id: EntityId): void;
 }
@@ -30,6 +31,7 @@ export function findEntity<K extends WritableKind>(data: TopologyData, kind: K, 
     resource: data.resources,
     relationship: data.relationships,
     'event-type': data.eventTypes,
+    'business-flow': data.businessFlows,
   };
   return collections[kind]?.find((e) => e.id === id) as EntityOfKind[K] | undefined;
 }
