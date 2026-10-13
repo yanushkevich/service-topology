@@ -38,7 +38,7 @@ export function Header() {
           <ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(42 12 12)" stroke="var(--color-indigo)" />
           <circle cx="12" cy="12" r="2.2" fill="var(--color-accent)" stroke="var(--color-accent)" />
         </svg>
-        <span className="text-lg font-semibold tracking-[-0.01em]">Orrery</span>
+        <span className="text-lg font-semibold tracking-[-0.01em]">Service Topology</span>
       </div>
       <div className={`mx-1 h-5 w-px bg-line-strong max-md:hidden`} aria-hidden="true" />
 

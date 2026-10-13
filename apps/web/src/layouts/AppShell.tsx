@@ -51,12 +51,12 @@ export function AppShell() {
   );
 }
 
-/** Page title per section (WCAG 2.4.2), e.g. "Service Registry · Orrery". */
+/** Page title per section (WCAG 2.4.2), e.g. "Service Registry · Service Topology". */
 function useDocumentTitle() {
   const { pathname } = useLocation();
   useEffect(() => {
     const section = NAV_ITEMS.find((item) => pathname === item.path || pathname.startsWith(`${item.path}/`));
-    document.title = `${section?.label ?? 'Page not found'} · Orrery`;
+    document.title = `${section?.label ?? 'Page not found'} · Service Topology`;
   }, [pathname]);
 }
 

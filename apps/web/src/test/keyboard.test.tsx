@@ -80,6 +80,6 @@ describe('keyboard access', () => {
 
   it('titles each page by section', async () => {
     renderApp('/simulation');
-    await waitFor(() => expect(document.title).toBe('Simulation · Orrery'));
+    await waitFor(() => expect(document.title).toBe('Simulation · Service Topology'));
   });
 });
