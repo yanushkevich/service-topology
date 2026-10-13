@@ -7,6 +7,7 @@ import type { EntityRef } from '../../../domain/types';
 import { healthLabel } from '../../../shared/mappings';
 import { approachPose, CameraMemory, fitPose, focusPose, type CameraPose } from './cameraMath';
 import { ringPoint, type RingLayout, type Vec3 } from './layout3d';
+import { CONTAINMENT_COLOR, NODE_COLOR, ORBIT_RING_COLOR, PARTICLE_TINT, SERVICE_COLOR, STARFIELD_COLOR, type GalaxyColors } from './palette';
 import { NEAR_LABEL_DISTANCE, type MotionPolicy, type SceneEdge, type SceneModel, type SceneNode } from './sceneModel';
 
 /**
@@ -15,16 +16,6 @@ import { NEAR_LABEL_DISTANCE, type MotionPolicy, type SceneEdge, type SceneModel
  * Three.js objects imperatively. Geometries/materials declared in JSX are disposed by R3F on
  * unmount; buffers built here are disposed explicitly.
  */
-
-export interface GalaxyColors {
-  background: string;
-  accent: string;
-  ok: string;
-  warn: string;
-  crit: string;
-  text3: string;
-  edge: Record<'http' | 'grpc' | 'data' | 'event' | 'other', string>;
-}
 
 export interface GalaxyHandle {
   fit: () => void;
@@ -46,25 +37,6 @@ interface GalaxySceneProps {
   memory: CameraMemory;
 }
 
-const NODE_COLOR: Record<string, string> = {
-  gateway: '#5fe1ff',
-  database: '#a78bfa',
-  'search-index': '#a78bfa',
-  cache: '#b79cff',
-  topic: '#aab3ff',
-  queue: '#8fa2ff',
-  exchange: '#8fa2ff',
-  broker: '#8fa2ff',
-  'external-resource': '#9aa6c4',
-  account: '#8fa2ff',
-  subscription: '#8fa2ff',
-  project: '#8fa2ff',
-  region: '#8fa2ff',
-  datacenter: '#8fa2ff',
-  cluster: '#8fa2ff',
-  namespace: '#8fa2ff',
-};
-const SERVICE_COLOR = '#7f9df0';
 const LABEL_STATUS: Record<string, string> = { degraded: 'text-warn-fg', unavailable: 'text-crit-fg', unknown: 'text-fg-3' };
 const CONTAINER_TYPES = new Set(['account', 'subscription', 'project', 'region', 'datacenter', 'cluster', 'namespace', 'broker']);
 const DASH: Record<string, [number, number]> = { http: [1, 0], grpc: [9, 4], data: [1.5, 5], event: [9, 4], other: [2, 3] };
@@ -119,7 +91,7 @@ const Stars = memo(function Stars() {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <pointsMaterial size={2} sizeAttenuation={false} color="#9fb0e6" transparent opacity={0.35} depthWrite={false} />
+      <pointsMaterial size={2} sizeAttenuation={false} color={STARFIELD_COLOR} transparent opacity={0.35} depthWrite={false} />
     </points>
   );
 });
@@ -129,13 +101,13 @@ function Containment({ scene, colors }: { scene: SceneModel; colors: GalaxyColor
   return (
     <group name="containment">
       {scene.rings.map((ring) => (
-        <Ring key={ring.id} ring={ring} color={ring.kind === 'scope-shell' ? colors.text3 : '#7d8bff'} />
+        <Ring key={ring.id} ring={ring} color={ring.kind === 'scope-shell' ? colors.text3 : ORBIT_RING_COLOR} />
       ))}
       {scene.containment.map((link) => (
         <Line
           key={link.id}
           points={[link.from as unknown as THREE.Vector3Tuple, link.to as unknown as THREE.Vector3Tuple]}
-          color="#8fa2ff"
+          color={CONTAINMENT_COLOR}
           lineWidth={1}
           dashed
           dashSize={4}
@@ -308,7 +280,7 @@ function TrafficParticles({ edges, highlightActive, colors }: { edges: SceneEdge
   useLayoutEffect(() => {
     const mesh = ref.current;
     if (!mesh) return;
-    particles.forEach((p, i) => mesh.setColorAt(i, new THREE.Color(colors.edge[p.edge.kind] ?? colors.accent).lerp(new THREE.Color('#ffffff'), 0.35)));
+    particles.forEach((p, i) => mesh.setColorAt(i, new THREE.Color(colors.edge[p.edge.kind] ?? colors.accent).lerp(new THREE.Color(PARTICLE_TINT), 0.35)));
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   }, [particles, colors]);
   useFrame(({ clock }) => {

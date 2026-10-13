@@ -14,8 +14,9 @@ import { useUiStore } from '../../../state/uiStore';
 import { useMotionReduced } from '../../../state/motion';
 import { usePreferencesStore } from '../../../state/preferencesStore';
 import { CameraMemory, fitPose } from './cameraMath';
-import { GalaxyScene, type GalaxyColors, type GalaxyHandle } from './GalaxyScene';
+import { GalaxyScene, type GalaxyHandle } from './GalaxyScene';
 import { layoutGalaxy } from './layout3d';
+import { readGalaxyColors, type GalaxyColors } from './palette';
 import { buildScene, motionPolicy, type LabelMode, type SceneModel, type SceneNode } from './sceneModel';
 import { canExplore, effectivePath, resolveGalaxyScope } from './scope';
 import { detectWebGL, watchContextLoss } from './webgl';
@@ -82,27 +83,11 @@ class GalaxyErrorBoundary extends Component<{ children: ReactNode }, { error: st
   }
 }
 
-/** Theme colors from CSS tokens so the scene follows light/dark like the rest of the UI. */
+/** Theme colours from the tokens, re-read when the theme changes. */
 function useGalaxyColors(theme: string): GalaxyColors {
   return useMemo(() => {
-    const css = getComputedStyle(document.documentElement);
-    const v = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
-    void theme;
-    return {
-      background: v('--color-stage', '#070a13'),
-      accent: v('--color-accent', '#5fe1ff'),
-      ok: v('--color-ok', '#3dd6b0'),
-      warn: v('--color-warn', '#f5b454'),
-      crit: v('--color-crit', '#ff7b7b'),
-      text3: v('--color-text-3', '#7f8cab'),
-      edge: {
-        http: v('--edge-http', '#a9c8ff'),
-        grpc: v('--edge-grpc', '#5fe1ff'),
-        data: v('--edge-data', '#b79cff'),
-        event: v('--edge-event', '#8ef0c0'),
-        other: v('--color-text-3', '#7f8cab'),
-      },
-    };
+    void theme; // the tokens change with the theme attribute
+    return readGalaxyColors();
   }, [theme]);
 }
 

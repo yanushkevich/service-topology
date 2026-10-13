@@ -14,6 +14,9 @@
   --color-bg-selected: #1c2540;
   --color-stage: #070a13;
   --color-stage-dot: rgba(125, 139, 255, 0.13);
+  /* Nebula glow behind the 3D galaxy (both themes) */
+  --stage-glow: radial-gradient(ellipse 60% 50% at 42% 46%, rgba(70, 84, 190, 0.2), transparent 70%),
+    radial-gradient(ellipse 40% 34% at 68% 62%, rgba(40, 150, 190, 0.11), transparent 70%);
   --color-float: rgba(13, 18, 32, 0.9);
   --color-tooltip: #1b2238;
   /* Behind modal dialogs (mock command palette backdrop) */

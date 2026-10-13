@@ -14,7 +14,7 @@ export function ServiceMapPage() {
         <section
           className={
             activeView === '3d'
-              ? 'relative min-w-0 flex-1 overflow-hidden bg-stage bg-[radial-gradient(ellipse_60%_50%_at_42%_46%,rgba(70,84,190,0.2),transparent_70%),radial-gradient(ellipse_40%_34%_at_68%_62%,rgba(40,150,190,0.11),transparent_70%)]'
+              ? 'relative min-w-0 flex-1 overflow-hidden bg-stage bg-(image:--stage-glow)'
               : 'relative min-w-0 flex-1 overflow-hidden bg-stage bg-[radial-gradient(circle,var(--color-stage-dot)_1px,transparent_1.4px)] bg-size-[28px_28px]'
           }
           aria-label="Topology canvas"
