@@ -9,7 +9,7 @@ import type { FlowStats } from '../../transit/flows/observed';
 import type { StepStats } from '../../transit/types';
 import { buttonClass, cx, kickerClass } from '../../shared/ui/classes';
 import { Icon } from '../../shared/ui/Icon';
-import { KeyValueRow, SearchField } from '../../shared/ui/primitives';
+import { KeyValueRow, SearchField, Kicker } from '../../shared/ui/primitives';
 import { POLICY_STATE_LABEL } from '../transit-board/colors';
 import { PolicyDiamond, SeverityMark } from '../transit-board/visuals';
 import { FlowBadge } from './FlowBadge';
@@ -106,16 +106,16 @@ export function FlowStrip({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className={cx(kickerClass, 'm-0 font-mono font-normal')}>
+        <Kicker as="h2" mono>
           {flow.name} · {stats ? `typical, ${windowLabel(stats.window)}` : 'declared'}
-        </h2>
-        <span className={cx(kickerClass, 'font-mono')}>p99 · share · errors · retries under each step</span>
+        </Kicker>
+        <Kicker as="span" mono>p99 · share · errors · retries under each step</Kicker>
       </div>
       <div className="overflow-x-auto pb-1">
         <ol aria-label={`Stages of ${flow.name}`} className="m-0 flex min-w-max list-none gap-2 p-0">
           {columns.map((column) => (
             <li key={column.rank} className="flex w-[210px] flex-none flex-col gap-1.5">
-              <span className={cx(kickerClass, 'font-mono')}>Stage {column.rank + 1}</span>
+              <Kicker as="span" mono>Stage {column.rank + 1}</Kicker>
               {column.steps.map((step) => {
                 const s = stats?.steps[step.id];
                 const tint = stepTintOf(step, s);
@@ -260,7 +260,7 @@ export function FlowCard({
         {stats && <KeyValueRow label="Completion p50 / p95">{`${formatMs(stats.completion.p50Ms)} / ${formatMs(stats.completion.p95Ms)}`}</KeyValueRow>}
       </dl>
       <section aria-label="Outcomes">
-        <h3 className={cx(kickerClass, 'm-0 mb-1.5 font-normal')}>Outcomes</h3>
+        <Kicker className="mb-1.5">Outcomes</Kicker>
         <ul className="m-0 flex list-none flex-col gap-1 p-0 text-sm">
           {flow.outcomes.map((o) => (
             <li key={o.id} className="flex justify-between gap-2">
@@ -283,7 +283,7 @@ export function FlowCard({
         </div>
       )}
       <section aria-label="Findings">
-        <h3 className={cx(kickerClass, 'm-0 mb-1.5 font-normal')}>Findings</h3>
+        <Kicker className="mb-1.5">Findings</Kicker>
         {findings.length === 0 ? (
           <p className="m-0 text-sm text-fg-3">Nothing to review on this flow.</p>
         ) : (
@@ -349,9 +349,9 @@ function FlowBudgetBar({ budget }: { budget: NonNullable<ReturnType<typeof flowB
   const starts = budget.segments.map((_, i) => budget.segments.slice(0, i).reduce((n, x) => n + x.ms, 0));
   return (
     <section aria-labelledby={id} className="flex flex-col gap-1.5">
-      <h3 id={id} className={cx(kickerClass, 'm-0 font-normal')}>
+      <Kicker id={id}>
         Flow budget
-      </h3>
+      </Kicker>
       <div className="relative h-3 overflow-hidden rounded-sm bg-surface-3" aria-hidden="true">
         <div className="absolute inset-y-0 left-0 border-r-2 border-fg" style={{ width: pct(budget.targetMs) }} />
         {budget.segments.map((s, i) => {

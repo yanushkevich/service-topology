@@ -2,7 +2,7 @@ import { useId, type ReactNode } from 'react';
 import { budgetFor, formatCount, formatMs, formatRate, GROUP_LABELS, isUnobserved, windowLabel, type BoardIndex } from '../../transit/board';
 import type { Finding, Line, SourceStatus } from '../../transit/types';
 import { buttonClass, cx, kickerClass } from '../../shared/ui/classes';
-import { KeyValueRow } from '../../shared/ui/primitives';
+import { KeyValueRow, Kicker } from '../../shared/ui/primitives';
 import { LineBadge, ProvenanceTag, SeverityMark } from './visuals';
 
 /**
@@ -140,9 +140,9 @@ function BudgetBar({ index, line }: { index: BoardIndex; line: Line }) {
   const over = budget.overflowMs > 0;
   return (
     <section aria-labelledby={titleId} className="flex flex-col gap-1.5">
-      <h3 id={titleId} className={cx(kickerClass, 'm-0 font-normal')}>
+      <Kicker id={titleId}>
         Timeout budget
-      </h3>
+      </Kicker>
       <div className="relative h-3 overflow-hidden rounded-sm bg-surface-3" aria-hidden="true">
         <div className="absolute inset-y-0 left-0 border-r-2 border-fg" style={{ width: pct(budget.deadlineMs) }} />
         {budget.segments.reduce<{ left: number; nodes: ReactNode[] }>(
@@ -195,9 +195,9 @@ function Block({ title, children }: { title: string; children: ReactNode }) {
   const id = useId();
   return (
     <section aria-labelledby={id}>
-      <h3 id={id} className={cx(kickerClass, 'm-0 mb-2 font-normal')}>
+      <Kicker id={id} className="mb-2">
         {title}
-      </h3>
+      </Kicker>
       {children}
     </section>
   );

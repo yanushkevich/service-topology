@@ -45,10 +45,21 @@ export function Panel({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return <div className={cx(floatClass, className)} {...props} />;
 }
 
-/** Section heading row with an optional count (mock .h4). */
-export function Kicker({ children, count, as: Tag = 'h3', className }: { children: ReactNode; count?: ReactNode; as?: 'h2' | 'h3' | 'span'; className?: string }) {
+/**
+ * Small uppercase section heading (mock .h4 / .k), with an optional count on the right. Use it for
+ * every kicker-style heading instead of hand-written `kickerClass` headings.
+ */
+export function Kicker({
+  children,
+  count,
+  as: Tag = 'h3',
+  id,
+  mono,
+  className,
+  ...rest
+}: { children: ReactNode; count?: ReactNode; as?: 'h2' | 'h3' | 'span'; id?: string; mono?: boolean; className?: string } & Pick<HTMLAttributes<HTMLElement>, 'aria-hidden'>) {
   return (
-    <Tag className={cx('m-0 mb-1.5 flex items-center justify-between gap-2 font-normal', kickerClass, className)}>
+    <Tag id={id} className={cx('m-0 flex items-center justify-between gap-2 font-normal', kickerClass, mono && 'font-mono', className)} {...rest}>
       <span>{children}</span>
       {count !== undefined && <span>{count}</span>}
     </Tag>

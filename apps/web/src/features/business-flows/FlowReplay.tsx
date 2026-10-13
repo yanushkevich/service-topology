@@ -1,3 +1,4 @@
+import { Kicker } from '../../shared/ui/primitives';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'react-router';
 import type { BusinessFlow } from '../../domain/types';
@@ -60,10 +61,10 @@ export function TxStrip({ flow, tx, playback, divergence, onSeek, onJump }: { fl
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className={cx(kickerClass, 'm-0 font-mono font-normal')}>
+        <Kicker as="h2" mono>
           {flow.name} · {tx.key} · {formatMs(tx.durationMs)} end to end
-        </h2>
-        <span className={cx(kickerClass, 'font-mono')}>waits compressed, real time labelled</span>
+        </Kicker>
+        <Kicker as="span" mono>waits compressed, real time labelled</Kicker>
       </div>
       <div className="flex items-center gap-3">
         <label htmlFor={sliderId} className="text-xs whitespace-nowrap text-fg-3">
@@ -191,7 +192,7 @@ export function TxCard({
         </div>
       </div>
       <section aria-label="Sample transactions">
-        <h3 className={cx(kickerClass, 'm-0 mb-1.5 font-normal')}>Sample transactions</h3>
+        <Kicker className="mb-1.5">Sample transactions</Kicker>
         {loading ? (
           <p className="m-0 text-sm text-fg-3" role="status">
             Loading transactions…
@@ -248,7 +249,7 @@ export function TxCard({
           </div>
           {step && (
             <section aria-label="Active step" aria-live="polite">
-              <h3 className={cx(kickerClass, 'm-0 mb-1.5 font-normal')}>Active step</h3>
+              <Kicker className="mb-1.5">Active step</Kicker>
               <p className="m-0 text-sm text-fg">{step.label}</p>
               <p className="m-0 mt-1 font-mono text-xs text-fg-2">
                 {WORD[step.status]} · +{formatMs(step.startMs)} · {formatMs(step.durationMs)}
@@ -260,7 +261,7 @@ export function TxCard({
             </section>
           )}
           <section aria-label="Compared with typical">
-            <h3 className={cx(kickerClass, 'm-0 mb-1.5 font-normal')}>Compared with typical</h3>
+            <Kicker className="mb-1.5">Compared with typical</Kicker>
             <p className={cx('m-0 text-sm', divergence ? 'text-fg' : 'text-fg-2')}>{divergence ? divergence.text : 'This transaction followed the typical path without retries or failures.'}</p>
             {tx.steps.some((s) => !s.correlated) && <p className="m-0 mt-1.5 text-xs text-warn-fg">Some steps are not correlated: no trace carries the business key there, so the gap is shown, not bridged.</p>}
             {tx.compensated && <p className="m-0 mt-1.5 text-xs text-fg-2">Compensation ran along the undo track (dashed on the map).</p>}

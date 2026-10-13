@@ -1,7 +1,7 @@
 import { useId, useRef } from 'react';
 import { dependenciesOf, GROUP_LABELS, GROUP_ORDER, hasWarnings, isUnobserved, type BoardIndex } from '../../transit/board';
-import { cx, fieldClass, kickerClass } from '../../shared/ui/classes';
-import { SearchField } from '../../shared/ui/primitives';
+import { fieldClass, kickerClass } from '../../shared/ui/classes';
+import { SearchField, Kicker } from '../../shared/ui/primitives';
 import { LineBadge } from './visuals';
 
 const rowClass =
@@ -52,9 +52,9 @@ export function LineIndex({
           if (lines.length === 0) return null;
           return (
             <section key={group} aria-label={`${GROUP_LABELS[group]}, ${lines.length}`}>
-              <h3 className={cx(kickerClass, 'm-0 px-2 pt-1.5 pb-1 font-mono font-normal')} aria-hidden="true">
+              <Kicker mono className="px-2 pt-1.5 pb-1" aria-hidden="true">
                 {GROUP_LABELS[group]} · {lines.length}
-              </h3>
+              </Kicker>
               <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
                 {lines.map((line) => {
                   const deps = dependenciesOf(index, line).length;

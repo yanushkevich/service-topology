@@ -1,3 +1,4 @@
+import { Kicker } from '../../shared/ui/primitives';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { formatMs, type BoardIndex } from '../../transit/board';
 import type { MapGeometry } from '../../transit/layout';
@@ -100,11 +101,11 @@ export function TraceStrip({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className={cx(kickerClass, 'm-0 font-mono font-normal')}>
+        <Kicker as="h2" mono>
           Line {line.code} · trace {trace.summary.traceId}
           {trace.summary.businessKey ? ` · ${trace.summary.businessKey}` : ''}
-        </h2>
-        <span className={cx(kickerClass, 'font-mono')}>timings from this request</span>
+        </Kicker>
+        <Kicker as="span" mono>timings from this request</Kicker>
       </div>
       <div className="flex items-center gap-3">
         <label htmlFor={sliderId} className="text-xs whitespace-nowrap text-fg-3">
@@ -232,7 +233,7 @@ export function TraceCard({
       </div>
 
       <section aria-label="Sample requests">
-        <h3 className={cx(kickerClass, 'm-0 mb-1.5 font-normal')}>Sample requests</h3>
+        <Kicker className="mb-1.5">Sample requests</Kicker>
         {tracesStatus === 'loading' ? (
           <p className="m-0 text-sm text-fg-3" role="status">
             Loading traces…
@@ -299,7 +300,7 @@ export function TraceCard({
 
           {step && (
             <section aria-label="Active step" aria-live="polite">
-              <h3 className={cx(kickerClass, 'm-0 mb-1.5 font-normal')}>Active step</h3>
+              <Kicker className="mb-1.5">Active step</Kicker>
               <p className="m-0 text-sm text-fg">{step.label}</p>
               <dl className="m-0 mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 font-mono text-xs">
                 {[
@@ -320,7 +321,7 @@ export function TraceCard({
           )}
 
           <section aria-label="Compared with typical">
-            <h3 className={cx(kickerClass, 'm-0 mb-1.5 font-normal')}>Compared with typical</h3>
+            <Kicker className="mb-1.5">Compared with typical</Kicker>
             <p className={cx('m-0 text-sm', divergence ? 'text-fg' : 'text-fg-2')}>{divergence ? divergence.text : 'This request followed the typical route without retries or fallbacks.'}</p>
             {trace.steps.some((s) => s.offMap) && <p className="m-0 mt-1.5 text-xs text-fg-2">Some spans are on no station of the map; they are flagged “off-map” so the station catalogue can be extended.</p>}
             {trace.steps.some((s) => s.contextLost) && <p className="m-0 mt-1.5 text-xs text-warn-fg">Trace context was lost on the way: the gap is shown as dashed, not bridged.</p>}

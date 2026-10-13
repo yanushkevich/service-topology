@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import { formatCount, formatMs, formatRate, isUnobserved, stepTint, windowLabel, type BoardIndex } from '../../transit/board';
 import type { Line, PolicyStop, Station } from '../../transit/types';
-import { cx, kickerClass } from '../../shared/ui/classes';
+import { cx } from '../../shared/ui/classes';
 import { lineColor, POLICY_STATE_LABEL } from './colors';
-import { KeyValueRow } from '../../shared/ui/primitives';
+import { KeyValueRow, Kicker } from '../../shared/ui/primitives';
 import { PolicyDiamond } from './visuals';
 
 type StripItem = { station: Station } | { stop: PolicyStop };
@@ -30,10 +30,10 @@ export function StopStrip({ index, line, focusStations }: { index: BoardIndex; l
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className={cx(kickerClass, 'm-0 font-mono font-normal')}>
+        <Kicker as="h2" mono>
           Line {line.code} · {dashed ? 'declared route (no traces in this window)' : `typical route, ${windowLabel(index.board.window)}`}
-        </h2>
-        <span className={cx(kickerClass, 'font-mono')}>stat under each stop</span>
+        </Kicker>
+        <Kicker as="span" mono>stat under each stop</Kicker>
       </div>
       <div className="overflow-x-auto pb-1">
         {line.route.map((branch, b) => {
@@ -155,18 +155,18 @@ function NetworkSummary({ index }: { index: BoardIndex }) {
   return (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-5">
       <div className="min-w-0">
-        <h2 className={cx(kickerClass, 'm-0 font-normal')}>Network</h2>
+        <Kicker as="h2">Network</Kicker>
         <p className="m-0 mt-1.5 text-lg font-semibold">
           {lines.length} line{lines.length === 1 ? '' : 's'} through this service
         </p>
         <p className="m-0 mt-1 text-[12.5px] text-fg-2">Bundles are code paths shared by several entry points. Pick a line to follow it stop by stop.</p>
       </div>
       <div>
-        <h2 className={cx(kickerClass, 'm-0 font-normal')}>Busiest stations</h2>
+        <Kicker as="h2">Busiest stations</Kicker>
         <dl className="m-0 mt-1.5">{busiest.map((b) => kv(b.station.name, `${b.count} lines`))}</dl>
       </div>
       <div>
-        <h2 className={cx(kickerClass, 'm-0 font-normal')}>Route coverage</h2>
+        <Kicker as="h2">Route coverage</Kicker>
         <dl className="m-0 mt-1.5">
           {kv('observed in traces', `${observed} of ${lines.length}`)}
           {kv('inferred stations', inferred)}
@@ -174,7 +174,7 @@ function NetworkSummary({ index }: { index: BoardIndex }) {
         </dl>
       </div>
       <div>
-        <h2 className={cx(kickerClass, 'm-0 font-normal')}>Needs review</h2>
+        <Kicker as="h2">Needs review</Kicker>
         <ul className="m-0 mt-1.5 flex list-none flex-col gap-1.5 p-0 text-sm">
           <li>{warned.length ? `Warnings on ${warned.map((l) => l.code).join(', ')}` : 'No warnings'}</li>
           <li>
