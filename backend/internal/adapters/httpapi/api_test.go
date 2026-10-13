@@ -314,6 +314,17 @@ func TestTraversalEndpoints(t *testing.T) {
 	if mustJSON(imp.Impacts) != mustJSON(full.AnalyzeImpact([]domain.FailureRoot{{EntityID: "payment-service.production", Mode: "unavailable"}})) || len(imp.Impacts) == 0 {
 		t.Fatalf("impact %+v", imp)
 	}
+	// Flows in the impact response (ADR-025, B9): the example scenario.
+	call(h, "GET", "/api/v1/topology/impact?entityId=ext-card-processor", "").json(t, &imp)
+	stops := map[string]string{}
+	for _, f := range imp.Flows {
+		if f.EnvironmentID == "production" && f.FirstAffectedStepID != nil && f.LikelyOutcome != nil {
+			stops[string(f.FlowID)] = *f.FirstAffectedStepID + " → " + f.LikelyOutcome.OutcomeID
+		}
+	}
+	if stops["flow-checkout"] != "authorize-payment → order-cancelled" || stops["flow-refund"] != "refund-payment → refund-rejected" {
+		t.Fatalf("impact flows %v", stops)
+	}
 
 	var rules struct{ Items []domain.PropagationRule }
 	call(h, "GET", "/api/v1/propagation-rules", "").json(t, &rules)

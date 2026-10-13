@@ -310,9 +310,9 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 - **Implemented (2026-10-12, Milestone 11):** the schema, TypeScript, and Go enumerations change in one commit, because the Go schema-parity test would fail between separate ones.
 - **Consequences:** contract v1 changes additively (three enumeration values). Imports and the entity API accept them, and both validators check them against the schema.
 
-## ADR-025 — Flows in impact analysis and simulation (2026-10-12, Milestone 12 with B9; proposed)
-- **Status:** Proposed. Approved for specification only (product owner: "3 — yes"; "spec all, build M11 only"). Spec: `docs/BUSINESS_FLOWS.md` Revision 2, section 12.
-- **Decision (proposed):**
+## ADR-025 — Flows in impact analysis and simulation (2026-10-12, Milestone 12 with B9)
+- **Status:** Accepted and implemented 2026-10-13 (product owner: "implement these recommendations", which named Milestone 12 after the UI polish). Spec: `docs/BUSINESS_FLOWS.md` section 12, with the implementation rules (hand-off attribution, unavailable channels only, likely-outcome order) in its notes.
+- **Decision:**
   - A pure `flowImpact` maps the existing explained propagation result onto flows: affected steps, the first affected step on the typical path, and the likely outcome (compensated, failed or cancelled, or delayed).
   - It is shown, labelled *simulated*, in four places: the inspector, the simulation page, a flow board banner, and the catalog.
   - The backend impact response gains an optional `flows` array, ported to Go with shared conformance fixtures.

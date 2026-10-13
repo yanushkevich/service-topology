@@ -229,3 +229,14 @@ Delivered with frontend Milestone 11.5 (closeout in `docs/IMPLEMENTATION_PLAN.md
 | Parity with the TypeScript checks | Pass | `TestBundleValidationConformance` (11 cases) |
 | Atomic replace and revision guard on the database | Pass | `TestReplaceAllOnTheDatabase` |
 | API behaviour and contract | Pass | `bundle_test.go`; `make contract-check` 96/96 |
+
+## Milestone B9 closeout — flows in impact analysis (2026-10-13, ADR-025)
+Delivered with frontend Milestone 12 (closeout in `docs/IMPLEMENTATION_PLAN.md`):
+- **Domain:** `internal/domain/flowimpact.go` ports `flowImpact.ts` (same sections and names); `BusinessFlow.TypicalPath` and `Outcome` in `businessflow.go`.
+- **Application/API:** `GET /api/v1/topology/impact` returns `flows`. Documented in `docs/api/openapi.json` (`FlowImpact`, `AffectedFlowStep`, `LikelyFlowOutcome`).
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Parity with TypeScript on shared fixtures | Pass | `TestFlowImpactConformance` (126 cases) |
+| Example scenario over HTTP | Pass | `api_test.go` |
+| Contract check against a running API | Not run | MongoDB VM stopped; `make contract-check` asserts the scenario when run |

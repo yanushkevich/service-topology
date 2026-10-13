@@ -643,3 +643,9 @@ Decision: ADR-033. Spec: `docs/milestones/MILESTONE_11_6_UI_POLISH.md`.
 - **Transit map:** `placeLabels` keeps labels inside the map; the flat projection compresses the policy lanes.
 - **Shell:** `useTruncationTitles` gives truncated text a tooltip app-wide.
 
+## Revision 17 — Flows in impact analysis (2026-10-13, Milestone 12 and B9)
+Decision: ADR-025. Spec: `docs/BUSINESS_FLOWS.md` §12.
+
+- **Domain:** `flowImpacts(index, roots, impacts)` in `domain/flowImpact.ts` (pure; Go port `internal/domain/flowimpact.go`; fixtures `conformance/impact/flows.json`). `typicalPath` moved to `domain/businessFlow.ts` so both stacks share it.
+- **API:** `GET /topology/impact` returns `flows` (FlowImpact, AffectedFlowStep, LikelyFlowOutcome in OpenAPI).
+- **UI:** `state/useFlowImpacts.ts` derives flow impact from the simulation store, memoized on failures and impacts (never per frame). Surfaces: the inspector's simulated section, the simulation page, the flow board banner and swimlane marks (`SwimlaneView.simulated`), and the catalog.

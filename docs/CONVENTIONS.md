@@ -326,8 +326,8 @@ internal/domain                 canonical types, validation, traversal, propagat
   commit, then regenerate fixtures (`npm run fixtures:update`). Both suites check them.
 - Enumerations are the schema's `$defs`, and `fields.go` is checked against the schema. Use those
   lists (`ProviderValues`, `HealthValues`, …); never write the values out again.
-- Traversal, registry sorting, propagation, and the simulation engine have conformance tests
-  against the shared fixtures.
+- Traversal, registry sorting, propagation, flow impact, and the simulation engine have
+  conformance tests against the shared fixtures.
 
 ### 4.6 Persistence and security
 

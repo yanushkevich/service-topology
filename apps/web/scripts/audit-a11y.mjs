@@ -51,6 +51,14 @@ const PAGES = [
   { name: 'Flow board (step selected)', path: '/flows/flow-checkout?v=1&env=production&step=capture-payment', ready: '[aria-label="Flow card"] h2' },
   // `then` runs in the page once it is ready (opening a dialog); `ready` is awaited again after it.
   { name: 'Quick search (results)', path: '/overview?v=1&env=production', ready: '[aria-keyshortcuts]', then: `document.querySelector('[aria-keyshortcuts]').click()`, after: '[role="listbox"] [role="option"]' },
+  {
+    name: 'Flow board (simulated impact)',
+    path: '/registry?v=1&env=production&sel=resource:ext-card-processor',
+    ready: 'tbody tr',
+    // Simulation state is in memory: inject from the inspector, then navigate inside the app.
+    then: `(async () => { const wait = (ms) => new Promise((r) => setTimeout(r, ms)); [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Simulate outage').click(); await wait(400); document.querySelector('a[href^="/flows"]').click(); await wait(900); document.querySelector('a[href*="flow-checkout"]').click(); })()`,
+    after: '[data-flow-impact-banner]',
+  },
   { name: 'Flow board (transaction replay)', path: '/flows/flow-checkout?v=1&env=production&mode=replay&tx=order%204466', ready: '[aria-label^="Steps of order"]' },
 ];
 

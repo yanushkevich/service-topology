@@ -419,7 +419,7 @@ Spec: `docs/BUSINESS_FLOWS.md` Revision 2. Decisions: ADR-023 to ADR-026.
   - at-least-once delivery without deduplication;
   - polling without a deadline.
 
-### Q.2 Milestones 12 and 13 (specified, not started)
+### Q.2 Milestones 12 (implemented 2026-10-13) and 13 (specified, not started)
 - **Flow impact:** simulated failures show which flows break, at which step, and the likely outcome. This appears in the inspector, the simulation page, the flow board, and the catalog, and is always labelled simulated.
 - **3D drill-down:** an optional 3D view with the flow above its services' boards. The user flies down into a service and climbs back. The 2D views stay primary.
 
@@ -459,3 +459,9 @@ Those of `docs/milestones/MILESTONE_11_FLOW_SWIMLANES_PATTERNS.md`, `MILESTONE_1
 - **Overview.** Business flows and their warnings are listed.
 - **Fixes.** Badges wrap, the flow board's controls no longer cover steps, crowded 3D labels give way, and truncated names show their full text on hover.
 
+## Revision U — Flows in impact analysis (2026-10-13, Milestone 12 and B9)
+**Source:** product owner: "implement these recommendations" (after the UI polish, Milestone 12 was the next recommendation). Decision: ADR-025. Spec: `docs/BUSINESS_FLOWS.md` §12.
+
+- A simulated failure now shows which business flows it reaches, at which step they stop, and how they likely end (an outcome, with or without compensation; delayed; or unknown). Example: the card processor unavailable → Checkout stops at Authorize payment, likely Cancelled, with compensation; Refund stops at Refund payment, likely Rejected.
+- It appears in the inspector, on the simulation page, as a banner and step marks on the flow board, and in the catalog, always labelled simulated.
+- The backend's impact preview returns the same result.

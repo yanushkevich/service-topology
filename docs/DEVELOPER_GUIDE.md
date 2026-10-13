@@ -208,6 +208,11 @@ The Events page and inspector explain the new rule automatically.
 - **Editing:** `features/business-flows/FlowEditorDialog.tsx` is wired into `EntityEditorProvider` for the `business-flow` kind.
 - **Import:** `make -C backend import-flows FILE=…` (examples in `fixtures/flows/`).
 
+## 7d. Flow impact (ADR-025, Milestone 12)
+- **Rules** live in `domain/flowImpact.ts`, ported to `backend/internal/domain/flowimpact.go`. Change both, then run `npm run fixtures:update`; `TestFlowImpactConformance` and the TypeScript suite check `fixtures/conformance/impact/flows.json`.
+- **UI** reads `useFlowImpacts(index, environmentId)`; pass a null index while viewing history. Text comes from `describeFlowImpact`, and every surface carries the Simulated tag or sits in a simulated section.
+- **Screenshots of simulated states** need the failure injected in the page and in-app navigation (the simulation is in memory); see the "Flow board (simulated impact)" entry in `scripts/audit-a11y.mjs`.
+
 ## 8. Known limitations (current)
 - No real integrations, authentication, or tenancy. All data is mock; all telemetry is simulated.
 - Sandbox edits stay in one browser. To move them to the backend, export a data bundle from Settings → Data source and import it with `?source=api` (ADR-032).
@@ -216,6 +221,7 @@ The Events page and inspector explain the new rule automatically.
 - 3D: dense 250-node overviews need zooming for member labels; explore deeper than grandchildren by entering further.
 - History: captured snapshots last for the session; generated datasets have no history fixtures.
 - Propagation is rule-based (no probabilities, retries, or circuit breakers); simulated traffic is metric drift, not request-level traffic.
+- Flow impact attributes failures per service, not per operation: a step is affected when its service is, unless the failure arrives over the flow's own hand-off. Per-operation dependencies need real traces (Milestone 14).
 - Preferences are per browser (localStorage); there is no user account to sync them.
 - Generated datasets (`?dataset=…`) have no event types, so the Events catalog is empty there. Event types are not part of the snapshot diff.
 - The Infrastructure tree renders every expanded row (no virtualization); at 1,000 entities use search/filters or collapse levels.

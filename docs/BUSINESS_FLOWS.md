@@ -278,7 +278,7 @@ Specify all three, build Milestone 11 only. Decisions: ADR-023 (sections 9–10)
   - **Polling without a deadline** (warn): `async-request-reply` has no `timeoutMs`, and the target step has no deadline.
 - **Out of scope** (not selected): saga semantics (pivot, compensatable, and retriable steps), resilience extras (backoff with jitter, retry budget, rate limiting, load shedding, hedging), retry topics and parking lots, ordering keys, consumer lag, event sourcing, CQRS, anti-corruption layer, strangler fig, BFF, claim check, and scatter-gather.
 
-## 12. Flows in impact analysis and simulation (Milestone 12; specified, not built)
+## 12. Flows in impact analysis and simulation (Milestone 12; implemented 2026-10-13)
 
 - **Pure function** `flowImpact(flow, resolved, impacts)` in `domain/`. It takes the existing propagation result (`AnalyzeImpact`, which explains every effect) and returns, for each flow:
   - the affected steps, each unavailable or degraded, with its cause chain;
@@ -293,6 +293,13 @@ Specify all three, build Milestone 11 only. Decisions: ADR-023 (sections 9–10)
   - a banner on the flow board, e.g. "Simulated: Payment Service unavailable → Checkout stops at Authorize payment, likely Cancelled", with the affected steps marked in the swimlane;
   - a column in the catalog.
 - **Backend (B9):** the impact response gains an optional `flows` array (additive to contract v1), ported to Go with conformance fixtures shared with TypeScript.
+- **Implementation notes (2026-10-13):**
+  - **Code:** `apps/web/src/domain/flowImpact.ts` and `backend/internal/domain/flowimpact.go`; fixtures `fixtures/conformance/impact/flows.json` (126 cases). `flowImpacts(index, roots, impacts)` covers every environment, environments and flows by ID.
+  - **Attribution.** A step is affected when its service instance fails, unless the instance only fails over a relationship that backs one of the flow's own transitions. The flow models that call or event as a hand-off, so the failure shows at the step it enters. Example: with the card processor down, Order Service is degraded only because it calls Payment Service (the `authorize` transition), so Checkout stops at Authorize payment, not at Place order.
+  - **Channels.** An *unavailable* channel affects the step its event enters (`reason: input-channel`). A degraded channel (backlog) does not, as in the propagation rules.
+  - **Typical path** without observed shares (the backend has none): a step with only conditional exits takes the first declared one. `typicalPath` moved to `domain/businessFlow.ts`.
+  - **Likely outcome**, checked in this order: *delayed* when the step is entered on the typical path by an event with declared redelivery or a dead-letter queue and the channel is not unavailable; else the first non-success outcome reached from the step's non-typical exits, with `compensated` when a compensation step is reachable; else *unknown*.
+  - **UI:** `state/useFlowImpacts.ts`; `features/business-flows/FlowImpactPanels.tsx` and `flowImpactText.ts`; `features/simulation/AffectedFlowsPanel.tsx`. Nothing is shown while viewing history.
 - **Acceptance:**
   - Parity on the shared fixtures.
   - The example scenario (the card processor unavailable) marks Checkout's Authorize payment and Refund's Refund payment as affected, with Cancelled and Rejected as the likely outcomes.

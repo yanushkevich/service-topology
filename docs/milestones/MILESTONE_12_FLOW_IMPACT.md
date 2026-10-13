@@ -1,6 +1,6 @@
 # Milestone 12 — Flows in impact analysis and simulation (with backend B9)
 
-**Status:** specified, not started (2026-10-12). Do not start without the product owner's go-ahead.
+**Status:** implemented 2026-10-13 (closeout in `docs/IMPLEMENTATION_PLAN.md`), except that `make test-integration` and `make contract-check` were not run (the local MongoDB VM was stopped; the product owner chose to run them later).
 
 **Read first:**
 - `docs/BUSINESS_FLOWS.md` Revision 2, section 12;

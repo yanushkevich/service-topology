@@ -216,7 +216,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 11.5 | Implemented (2026-10-13) | Export and import all data as one JSON or YAML bundle from Settings; backend B11 import endpoint (ADR-032); `docs/milestones/MILESTONE_11_5_DATA_BUNDLE.md`. |
 | 11.6 | Implemented (2026-10-13) | UI polish: defects from a real-browser review, quick search across everything (ADR-033), inspector only when useful, map opens at the selection, phone header, flows on the Overview, clearer flow targets; `docs/milestones/MILESTONE_11_6_UI_POLISH.md`. |
 | 14 | **On hold** (2026-10-12) | Real data instead of example data: sources, contract freeze, backend observability module, HTTP repository (ADR-030, proposed). Waits for the answers in `docs/REAL_DATA_INTEGRATION.md` §6; `docs/milestones/MILESTONE_14_REAL_DATA.md`. |
-| 12 | Specified (2026-10-12) | Flows in impact analysis and simulation, with backend B9 (ADR-025, proposed). Not started. |
+| 12 | Implemented (2026-10-13) | Flows in impact analysis and simulation, with backend B9 (ADR-025); see the Milestone 12 closeout. `make test-integration` and `make contract-check` not yet run. |
 | 13 | Specified (2026-10-12) | 3D drill-down from a flow into its services (ADR-026, proposed). Not started. |
 | 9 | Implemented (2026-10-12) | Transit board on example data (ADR-021): spec Phase 1 plus the Phase 4 replay UI, hover tooltips, windows, and per-step stats; see the Milestone 9 closeout and follow-up below. Real data sources (phases 2, 3, and 5) are not started. |
 | B1 (backend) | Implemented (2026-10-11) | Go foundation in `backend/`; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
@@ -781,3 +781,31 @@ UI polish from a real-browser review of every page, and a quick search across ev
 - **Tooltips on hover only.** Truncated text gets a native tooltip on pointer hover; keyboard users rely on the full text being in the accessible name.
 - **`THREE.Clock` warning.** From React Three Fiber 9.8.1; not fixable until an upgrade.
 
+### Milestone 12 closeout (2026-10-13)
+Flows in impact analysis and simulation, with backend B9 (ADR-025; `docs/BUSINESS_FLOWS.md` §12 and its implementation notes).
+
+**Commits:**
+- `f9b0521` flowImpact in TypeScript, shared fixtures, typicalPath in the domain;
+- `1889853` backend B9 (Go port, impact response, OpenAPI, contract check);
+- `095eb40` surfaces (simulation page, flow board, catalog, inspector);
+- the close-out commit (also an HTTP test of the impact response and the real-browser audit page).
+
+**Checks run:**
+- **Frontend (`apps/web`):** `npm run check`: typecheck and lint clean; 87 files, 1,161 passed, 1 skipped; build passes.
+- **Backend (`backend`):** `make check` passes (gofmt, vet, tests). `TestFlowImpactConformance` checks all 126 cases; a deliberately mutated fixture made 18 cases fail, so the comparison is real.
+- **Real-browser audit:** `npm run audit:a11y`, 29 pages × 2 themes, all pass, including the flow board with a simulated card-processor failure.
+- **Screenshots** with the failure injected, at 1440 px (light and dark) and 390 px: the flow board banner and marked steps, the simulation page, the catalog, and the inspector. No horizontal scroll, no console errors.
+- **Not run:** `make test-integration` and `make contract-check`. The Rancher Desktop VM was stopped; the product owner chose to run them later. The contract check now asserts the example scenario on `GET /topology/impact`.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| TypeScript and Go give identical `flows` on the shared fixtures | Pass | `fixtures.test.ts` (generation); `TestFlowImpactConformance` (126 cases) |
+| Card processor unavailable: Checkout at Authorize payment → Cancelled; Refund at Refund payment → Rejected | Pass | `flowImpact.test.ts`; `api_test.go` (HTTP); `flowImpactSurfaces.test.tsx` (UI) |
+| Every surface labels the result as simulated; nothing is called live | Pass | `flowImpactSurfaces.test.tsx`; `a11y.test.tsx`; screenshots |
+| `npm run check`, `make check` | Pass | As listed |
+| `make test-integration`, `make contract-check` | Not run | Local MongoDB VM stopped; to run later |
+
+**Known limitations:**
+- **Per service, not per operation.** A step is affected when its service is, unless the failure arrives over the flow's own hand-off. A degraded service may not affect every one of its steps in reality.
+- **No observed shares in the typical path** for flow impact (the backend has none): decisions take their first declared exit.
+- **One likely outcome.** The first affected step decides it; later steps' outcomes are not combined.

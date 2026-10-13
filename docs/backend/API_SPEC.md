@@ -42,7 +42,7 @@ Each operation names its frontend interface in `x-repository`. The frontend swit
 ### Traversal (implemented in B4; bounded; identical to `apps/web/src/domain/traversal.ts`)
 - `GET /topology/neighborhood?entityId=&depth=1..3&environmentId=`: undirected neighborhood, as the URL `nh` parameter (depth 1–3).
 - `GET /topology/dependencies?entityId=&direction=upstream|downstream&maxDepth=&limit=`: transitive dependencies with hop count, path, and relationship per hop (as `dependencyTree`). `maxDepth` default 10, `limit` default 500; responses state `truncated`.
-- `GET /topology/impact?entityId=a,b&mode=unavailable|degraded`: read-only propagation preview using the rules in `apps/web/src/domain/propagation.ts` (same rule IDs, identical results).
+- `GET /topology/impact?entityId=a,b&mode=unavailable|degraded`: read-only propagation preview using the rules in `apps/web/src/domain/propagation.ts` (same rule IDs, identical results). Since B9 it also returns `flows`: per environment and business flow, the affected steps with cause chains, the first affected step on the typical path, and the likely outcome (`apps/web/src/domain/flowImpact.ts`, ADR-025).
 - `GET /propagation-rules`: the rule table with rationale.
 
 ### Event catalog (ADR-014; implemented in B4)
