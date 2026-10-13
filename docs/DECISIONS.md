@@ -318,9 +318,12 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - The backend impact response gains an optional `flows` array, ported to Go with shared conformance fixtures.
 - **Alternatives:** compute flow impact only in the browser. Rejected: API clients of `/topology/impact` would miss it, and parity is the rule (ADR-016).
 
-## ADR-026 — 3D drill-down from a flow into its services (2026-10-12, Milestone 13; proposed)
-- **Status:** Proposed. Approved for specification only (product owner: "4 — yes"). Spec: `docs/BUSINESS_FLOWS.md` Revision 2, section 13. Follows `docs/3D_GALAXY_EXPERIENCE.md` and ADR-011.
-- **Decision (proposed):**
+## ADR-026 — 3D drill-down from a flow into its services (2026-10-12, Milestone 13)
+- **Status:** Accepted 2026-10-13 (product owner: "lets start implementing", after Milestone 13 was named as the next specified milestone). Spec: `docs/BUSINESS_FLOWS.md` Revision 2, section 13. Follows `docs/3D_GALAXY_EXPERIENCE.md` and ADR-011.
+- **Refinements at acceptance:**
+  - **Labels are drei `Html`, not `Text`/`Billboard`:** ADR-011 rejected troika SDF text because it fetches a font at runtime; HTML labels are crisp and use the app's font.
+  - **Shared with the galaxy:** WebGL detection and context loss (`galaxy/webgl.ts`) and theme colours read from the tokens (`galaxy/palette.ts`). Line colours are read from the `--transit-line-*` tokens, so no new literal colours.
+- **Decision:**
   - An optional, lazy-loaded 3D view: the swimlane plane above the service boards' planes, light shafts from steps to their lines, replay particles, and camera fly-down with Escape to climb back.
   - Built with React Three Fiber and drei (`CameraControls`, `Text`, `Line`, `Instances`, `Bvh`), plus two new pinned dependencies: `@react-three/postprocessing` (selective Bloom) and `maath` (easing).
   - The 2D views and lists stay primary and accessible.

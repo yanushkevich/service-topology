@@ -1,6 +1,6 @@
 # Milestone 13 — 3D drill-down from a flow into its services
 
-**Status:** specified, not started (2026-10-12). Do not start without the product owner's go-ahead.
+**Status:** in progress (started 2026-10-13; ADR-026 accepted).
 
 **Read first:**
 - `docs/BUSINESS_FLOWS.md` Revision 2, section 13;
