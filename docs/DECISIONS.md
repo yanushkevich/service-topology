@@ -361,3 +361,16 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - Inferring loops and conditions from traces. Deferred until real trace ingestion: example traces cannot support it honestly.
 - **Consequences:** additive optional fields on the transit read model, and a `strip` page parameter on both boards.
 - **Implemented (2026-10-12, Milestone 11.2):** see the closeout in `docs/IMPLEMENTATION_PLAN.md`. The flow builder uses `opt` for conditional exits beside unconditional ones, because the flow model has no `else`.
+
+## ADR-029 — Endpoint contracts from OpenAPI on flow steps and process arrows (2026-10-12, Milestone 11.3)
+- **Status:** Accepted (product owner, 2026-10-12: "only OpenAPI (Swagger)", shown "on flow steps and process arrows"). Spec: `docs/BUSINESS_FLOWS.md` Revision 5.
+- **Decision:**
+  - **Parser.** A pure OpenAPI 3.x reader (`src/contracts/openapi.ts`): operation lookup by "METHOD /path", schema trees with `$ref` resolution, `allOf` merge, `oneOf`/`anyOf` variants, and example generation.
+  - **Source.** Documents per service through `TransitRepository.getOpenApi`; example JSON documents until backend import exists.
+  - **Display.** Contracts show in the flow step detail, and behind a disclosure on process-view arrows into HTTP endpoints. Other endpoint kinds say where their contract would come from.
+- **Alternatives:**
+  - A Swagger UI or Redoc embed. Rejected: a heavy dependency with its own styling, and it is not keyed to our steps.
+  - Contracts for every protocol now. Not selected by the product owner.
+- **Consequences:**
+  - A `contracts` layer (pure, guarded like `transit`).
+  - Example specs ship in the bundle, and must be replaced by ingested ones before real use.

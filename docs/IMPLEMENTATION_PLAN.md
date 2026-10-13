@@ -211,6 +211,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 11 | Implemented (2026-10-12) | Flow swimlanes, flows on the service board, pattern catalog (ADR-023, ADR-024); see the Milestone 11 closeout. |
 | 11.1 | Implemented (2026-10-12) | Data stores on both boards (linked dependencies, tables, store chips) and findable flows (ADR-027); `docs/milestones/MILESTONE_11_1_DATA_STORES.md`. |
 | 11.2 | Implemented (2026-10-12) | Process view (sequence diagram with alt/opt/loop/par/transaction/compensation) for lines and flows, and visible endpoints (ADR-028); `docs/milestones/MILESTONE_11_2_PROCESS_VIEW.md`. |
+| 11.3 | In progress (2026-10-12) | Endpoint contracts from OpenAPI on flow steps and process arrows (ADR-029); `docs/milestones/MILESTONE_11_3_ENDPOINT_CONTRACTS.md`. |
 | 12 | Specified (2026-10-12) | Flows in impact analysis and simulation, with backend B9 (ADR-025, proposed). Not started. |
 | 13 | Specified (2026-10-12) | 3D drill-down from a flow into its services (ADR-026, proposed). Not started. |
 | 9 | Implemented (2026-10-12) | Transit board on example data (ADR-021): spec Phase 1 plus the Phase 4 replay UI, hover tooltips, windows, and per-step stats; see the Milestone 9 closeout and follow-up below. Real data sources (phases 2, 3, and 5) are not started. |

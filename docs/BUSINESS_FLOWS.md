@@ -442,3 +442,31 @@ The service board drew databases only as anonymous endpoints (`payments-pg`), no
 - **The index** heads its line groups "Endpoints".
 - **The map** labels the selected line's start with its code and signature ("A2 · rpc Capture(CaptureRequest) returns (Payment)").
 - **The process view's first message** is the endpoint call.
+
+---
+
+# Revision 5 — Endpoint contracts from OpenAPI (2026-10-12, Milestone 11.3)
+
+**Source:** product owner: "I need info on the endpoint like from swagger, that I could see what it returns, payload and response models". Answers:
+- the source is **OpenAPI (Swagger) only**: HTTP endpoints, from OpenAPI documents;
+- it is shown **on flow steps and on process arrows**.
+
+Decision: ADR-029.
+
+## 19. Contracts on flow steps and process arrows
+
+- **Source.** One OpenAPI 3.x document per service, through `TransitRepository.getOpenApi(serviceDefinitionId)`.
+  - The example documents (`apps/web/src/contracts/examples/*.openapi.json`, JSON because the frontend has no YAML parser) cover Order Service (`POST /v1/orders`, `POST /v1/orders/{id}/refunds`, `GET /v1/orders/{id}`) and Payment Service (`POST /webhooks/processor`).
+  - They are labelled example specifications.
+- **Matching.** An endpoint "METHOD /path" (a flow step's entry point, or a line's signature) matches the operation with that method and path template. gRPC methods, consumed events, and schedules have no OpenAPI operation; a step names its kind ("gRPC: contract in payments.proto, not shown") instead of showing nothing.
+- **What a contract shows** (a pure parser, `apps/web/src/contracts/openapi.ts`, resolves `$ref`s with a cycle guard, merges `allOf`, and lists `oneOf`/`anyOf` variants):
+  - the operation ID, summary, and source file;
+  - parameters (path, query, header) with type, required, and description;
+  - the request body: content type, and a schema tree of fields with type, format, required, enum values, constraints, and description;
+  - each response by status code (`201`, `202`, `400`, `409`, …) with its description and schema tree;
+  - a generated JSON example of the request and of each response (from `example`, then `default`, `enum[0]`, and type defaults).
+- **Where it shows.**
+  - **Flow board:** a selected step whose entry point is an HTTP operation gets a **Contract** section in its step detail.
+  - **Process view:** a message into an HTTP endpoint (a line's endpoint call, or a flow transition into such a step) has a disclosure button on its label. Opening it shows the contract under the arrow. The flow's start note offers the same for its first step.
+- **Accessibility.** The schema is a nested list; the examples are `<pre>` blocks with a label; the disclosure is a button with `aria-expanded` and `aria-controls`.
+- **Later.** Backend import of real OpenAPI files (JSON and YAML) behind the same `getOpenApi`, then AsyncAPI and proto in the same contract view.
