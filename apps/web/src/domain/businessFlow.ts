@@ -110,3 +110,33 @@ export function reachableFrom(flow: BusinessFlow, startId = flow.startStepId): S
   }
   return seen;
 }
+
+/**
+ * The typical path: from the start, every unconditional transition (they run in parallel); where a
+ * step has only conditional exits, the one with the highest observed share (else the first declared; the backend has no shares).
+ * Compensation steps are never typical.
+ */
+export function typicalPath(flow: BusinessFlow, shares: ReadonlyMap<string, number> = new Map()): { steps: string[]; transitions: string[] } {
+  const steps: string[] = [];
+  const transitions: string[] = [];
+  const queue = [flow.startStepId];
+  const seen = new Set<string>();
+  while (queue.length) {
+    const id = queue.shift() ?? '';
+    if (seen.has(id) || !stepById(flow, id)) continue;
+    seen.add(id);
+    steps.push(id);
+    const out = flow.transitions.filter((t) => t.from === id && stepById(flow, t.to)?.kind !== 'compensation');
+    const unconditional = out.filter((t) => t.condition === undefined);
+    const conditional = out.filter((t) => t.condition !== undefined).sort((a, b) => (shares.get(b.id) ?? 0) - (shares.get(a.id) ?? 0));
+    // Unconditional exits always run; conditional ones are then exceptions. A decision with only
+    // conditional exits takes its most frequent one.
+    const taken = unconditional.length ? unconditional : conditional.slice(0, 1);
+    for (const t of taken) {
+      transitions.push(t.id);
+      queue.push(t.to);
+    }
+  }
+  return { steps, transitions };
+}
+

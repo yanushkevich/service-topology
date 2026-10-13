@@ -6,7 +6,8 @@ import { mockSnapshots } from '../data/mock/snapshots';
 import { mockTopology } from '../data/mock/topology';
 import { buildRegistryRows, filterRegistryRows, REGISTRY_SORT_KEYS, sortRegistryRows, type EntityFilters, type RegistryRow } from '../domain/registry';
 import { eventFlowsIn } from '../domain/eventFlow';
-import { analyzeImpact, type FailureMode } from '../domain/propagation';
+import { analyzeImpact, type FailureMode, type FailureRoot } from '../domain/propagation';
+import { flowImpacts } from '../domain/flowImpact';
 import { buildTopologyIndex } from '../domain/topologyIndex';
 import { dependencyTree, HIGHLIGHT_MODES, neighborhood, reachFrom } from '../domain/traversal';
 import { generateTopology, INVENTORY_1000, SCALE_250 } from '../data/mock/generateTopology';
@@ -373,6 +374,17 @@ function traversalCases(): Record<string, unknown> {
           [{ entityId: 'rds-inventory-prod', mode: 'degraded' as const }, { entityId: 'inventory-service.production', mode: 'unavailable' as const }],
         ].map((roots) => ({ roots, expected: analyzeImpact(index, roots) })),
       ],
+    },
+    // Flows in impact analysis (ADR-025): the same roots as impacts.json, plus the example scenario.
+    'conformance/impact/flows.json': {
+      topology,
+      cases: (
+        [
+          ...entities.flatMap((id) => modes.map((mode) => [{ entityId: id, mode }])),
+          [{ entityId: 'payment-service.production', mode: 'unavailable' }, { entityId: 'topic-orders-events-prod', mode: 'unavailable' }],
+          [{ entityId: 'notification-service.production', mode: 'unavailable' }, { entityId: 'pg-ledger-prod', mode: 'degraded' }],
+        ] satisfies FailureRoot[][]
+      ).map((roots) => ({ roots, expected: flowImpacts(index, roots, analyzeImpact(index, roots)) })),
     },
     'conformance/history/diffs.json': {
       cases: (() => {

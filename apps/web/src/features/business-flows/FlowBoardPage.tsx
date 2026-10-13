@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router';
-import { businessFlowsIn, resolveBusinessFlow } from '../../domain/businessFlow';
+import { businessFlowsIn, resolveBusinessFlow, typicalPath } from '../../domain/businessFlow';
 import { dataStoresOf, flowDataStores } from '../../domain/dataStores';
 import type { TopologyIndex } from '../../domain/topologyIndex';
 import type { BusinessFlow, FlowStep } from '../../domain/types';
@@ -8,7 +8,7 @@ import { useTopology } from '../../data/topologyContext';
 import { DEFAULT_WINDOW, isWindow, windowLabel } from '../../transit/board';
 import { indexFlows, type FlowBoardIndex } from '../../transit/flows/flowIndex';
 import { computeSwimlanes } from '../../transit/flows/swimlane';
-import { flowFindings, lineForStep, typicalPath } from '../../transit/flows/flowModel';
+import { flowFindings, lineForStep } from '../../transit/flows/flowModel';
 import { sampleTransactions, txDivergence } from '../../transit/flows/observed';
 import type { TransitWindow } from '../../transit/types';
 import { ignoreShortcut } from '../../shared/keyboard';

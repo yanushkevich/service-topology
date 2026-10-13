@@ -1,0 +1,5891 @@
+{
+  "topology": "topology/mock.v1.json",
+  "cases": [
+    {
+      "roots": [
+        {
+          "entityId": "api-gateway.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "api-gateway.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "web-bff.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "web-bff.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "auth-service.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "auth-service.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "cart-service.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "cart-service.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "catalog-service.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "catalog-service.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "order-service.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "order-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "order-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "order-service.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "order-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "order-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "inventory-service.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.production",
+              "path": [
+                "inventory-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.production",
+              "path": [
+                "inventory-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "inventory-service.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "reserve-stock",
+              "effect": "degraded",
+              "entityId": "inventory-service.production",
+              "path": [
+                "inventory-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "degraded",
+              "entityId": "inventory-service.production",
+              "path": [
+                "inventory-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "notification-service.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "notify-customer",
+              "effect": "unavailable",
+              "entityId": "notification-service.production",
+              "path": [
+                "notification-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "notify-customer",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "shipped"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "notification-service.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "notify-customer",
+              "effect": "degraded",
+              "entityId": "notification-service.production",
+              "path": [
+                "notification-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "notify-customer",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "shipped"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "email-dispatcher.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "send-email",
+              "effect": "unavailable",
+              "entityId": "email-dispatcher.production",
+              "path": [
+                "email-dispatcher.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "send-email",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "notify"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "email-dispatcher.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "send-email",
+              "effect": "degraded",
+              "entityId": "email-dispatcher.production",
+              "path": [
+                "email-dispatcher.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "send-email",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "notify"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "legacy-report-cron.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "legacy-report-cron.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "payment-service.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "payment-service.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "fraud-scoring.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "fraud-scoring.production",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "fraud-scoring.production",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "fraud-scoring.production",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "fraud-scoring.production",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "fraud-scoring.production",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "fraud-scoring.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "fraud-scoring.production",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "fraud-scoring.production",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "fraud-scoring.production",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "fraud-scoring.production",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "fraud-scoring.production",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ledger-service.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "post-to-ledger",
+              "effect": "unavailable",
+              "entityId": "ledger-service.production",
+              "path": [
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "post-to-ledger",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "settled"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "post-refund",
+              "effect": "unavailable",
+              "entityId": "ledger-service.production",
+              "path": [
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "post-refund",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "issued"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ledger-service.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "post-to-ledger",
+              "effect": "degraded",
+              "entityId": "ledger-service.production",
+              "path": [
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "post-to-ledger",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "settled"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "post-refund",
+              "effect": "degraded",
+              "entityId": "ledger-service.production",
+              "path": [
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "post-refund",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "issued"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "payout-worker.production",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "payout-worker.production",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "api-gateway.staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "api-gateway.staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "catalog-service.staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "catalog-service.staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "order-service.staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "order-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "order-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "order-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "order-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "order-service.staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "degraded",
+              "entityId": "order-service.staging",
+              "path": [
+                "order-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "degraded",
+              "entityId": "order-service.staging",
+              "path": [
+                "order-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "degraded",
+              "entityId": "order-service.staging",
+              "path": [
+                "order-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.staging",
+              "path": [
+                "order-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "inventory-service.staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.staging",
+              "path": [
+                "inventory-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.staging",
+              "path": [
+                "inventory-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "reserve-stock",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "placed"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "inventory-service.staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "reserve-stock",
+              "effect": "degraded",
+              "entityId": "inventory-service.staging",
+              "path": [
+                "inventory-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "degraded",
+              "entityId": "inventory-service.staging",
+              "path": [
+                "inventory-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "reserve-stock",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "placed"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "payment-service.staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "payment-service.staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.staging",
+              "path": [
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.staging",
+              "path": [
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "degraded",
+              "entityId": "payment-service.staging",
+              "path": [
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "degraded",
+              "entityId": "payment-service.staging",
+              "path": [
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.staging",
+              "path": [
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "catalog-service.development",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "development",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "degraded",
+              "entityId": "order-service.development",
+              "path": [
+                "catalog-service.development",
+                "order-service.development"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "degraded",
+              "entityId": "order-service.development",
+              "path": [
+                "catalog-service.development",
+                "order-service.development"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "degraded",
+              "entityId": "order-service.development",
+              "path": [
+                "catalog-service.development",
+                "order-service.development"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "development",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.development",
+              "path": [
+                "catalog-service.development",
+                "order-service.development"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "catalog-service.development",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "development",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "degraded",
+              "entityId": "order-service.development",
+              "path": [
+                "catalog-service.development",
+                "order-service.development"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "degraded",
+              "entityId": "order-service.development",
+              "path": [
+                "catalog-service.development",
+                "order-service.development"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "degraded",
+              "entityId": "order-service.development",
+              "path": [
+                "catalog-service.development",
+                "order-service.development"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "development",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.development",
+              "path": [
+                "catalog-service.development",
+                "order-service.development"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "order-service.development",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "development",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "order-service.development"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "order-service.development"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "order-service.development"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "development",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "order-service.development"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "order-service.development",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "development",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "degraded",
+              "entityId": "order-service.development",
+              "path": [
+                "order-service.development"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "degraded",
+              "entityId": "order-service.development",
+              "path": [
+                "order-service.development"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "degraded",
+              "entityId": "order-service.development",
+              "path": [
+                "order-service.development"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "development",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.development",
+              "path": [
+                "order-service.development"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aws-acct-commerce-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "aws-acct-commerce-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.production",
+              "path": [
+                "aws-acct-commerce-prod",
+                "inventory-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "aws-acct-commerce-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "aws-acct-commerce-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.production",
+              "path": [
+                "aws-acct-commerce-prod",
+                "inventory-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "aws-acct-commerce-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aws-acct-commerce-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aws-use1-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "aws-use1-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.production",
+              "path": [
+                "aws-use1-prod",
+                "inventory-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "aws-use1-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "aws-use1-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.production",
+              "path": [
+                "aws-use1-prod",
+                "inventory-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "aws-use1-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aws-use1-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "eks-commerce-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "eks-commerce-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.production",
+              "path": [
+                "eks-commerce-prod",
+                "inventory-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "eks-commerce-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "eks-commerce-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.production",
+              "path": [
+                "eks-commerce-prod",
+                "inventory-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "eks-commerce-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "eks-commerce-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-edge-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-edge-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-commerce-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "ns-commerce-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.production",
+              "path": [
+                "ns-commerce-prod",
+                "inventory-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "ns-commerce-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "ns-commerce-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.production",
+              "path": [
+                "ns-commerce-prod",
+                "inventory-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "unavailable",
+              "entityId": "order-service.production",
+              "path": [
+                "ns-commerce-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-commerce-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "rds-orders-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "rds-orders-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "rds-orders-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "rds-orders-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "rds-orders-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "rds-orders-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "rds-orders-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "rds-orders-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "rds-orders-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "rds-orders-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "rds-inventory-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "rds-inventory-prod",
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "reserve-stock",
+              "effect": "degraded",
+              "entityId": "inventory-service.production",
+              "path": [
+                "rds-inventory-prod",
+                "inventory-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "rds-inventory-prod",
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "rds-inventory-prod",
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "degraded",
+              "entityId": "inventory-service.production",
+              "path": [
+                "rds-inventory-prod",
+                "inventory-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "rds-inventory-prod",
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "rds-inventory-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "rds-inventory-prod",
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "reserve-stock",
+              "effect": "degraded",
+              "entityId": "inventory-service.production",
+              "path": [
+                "rds-inventory-prod",
+                "inventory-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "rds-inventory-prod",
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "rds-inventory-prod",
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "degraded",
+              "entityId": "inventory-service.production",
+              "path": [
+                "rds-inventory-prod",
+                "inventory-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "rds-inventory-prod",
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "redis-sessions-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "redis-sessions-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aws-acct-commerce-nonprod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "development",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "aws-acct-commerce-nonprod",
+                "order-service.development"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "aws-acct-commerce-nonprod",
+                "order-service.development"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "aws-acct-commerce-nonprod",
+                "order-service.development"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "development",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "aws-acct-commerce-nonprod",
+                "order-service.development"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "aws-acct-commerce-nonprod",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.staging",
+              "path": [
+                "aws-acct-commerce-nonprod",
+                "inventory-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "aws-acct-commerce-nonprod",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "aws-acct-commerce-nonprod",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.staging",
+              "path": [
+                "aws-acct-commerce-nonprod",
+                "inventory-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "aws-acct-commerce-nonprod",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aws-acct-commerce-nonprod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aws-use1-nonprod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "development",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "aws-use1-nonprod",
+                "order-service.development"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "aws-use1-nonprod",
+                "order-service.development"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "aws-use1-nonprod",
+                "order-service.development"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "development",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "aws-use1-nonprod",
+                "order-service.development"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "aws-use1-nonprod",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.staging",
+              "path": [
+                "aws-use1-nonprod",
+                "inventory-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "aws-use1-nonprod",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "aws-use1-nonprod",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.staging",
+              "path": [
+                "aws-use1-nonprod",
+                "inventory-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "aws-use1-nonprod",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aws-use1-nonprod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "eks-commerce-staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "eks-commerce-staging",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.staging",
+              "path": [
+                "eks-commerce-staging",
+                "inventory-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "eks-commerce-staging",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "eks-commerce-staging",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.staging",
+              "path": [
+                "eks-commerce-staging",
+                "inventory-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "eks-commerce-staging",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "eks-commerce-staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-commerce-staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "ns-commerce-staging",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.staging",
+              "path": [
+                "ns-commerce-staging",
+                "inventory-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "ns-commerce-staging",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "ns-commerce-staging",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "inventory-service.staging",
+              "path": [
+                "ns-commerce-staging",
+                "inventory-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "unavailable",
+              "entityId": "order-service.staging",
+              "path": [
+                "ns-commerce-staging",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-commerce-staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "eks-commerce-dev",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "development",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "eks-commerce-dev",
+                "order-service.development"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "eks-commerce-dev",
+                "order-service.development"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "eks-commerce-dev",
+                "order-service.development"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "development",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "eks-commerce-dev",
+                "order-service.development"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "eks-commerce-dev",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-commerce-dev",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "development",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "ns-commerce-dev",
+                "order-service.development"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "ns-commerce-dev",
+                "order-service.development"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "ns-commerce-dev",
+                "order-service.development"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "development",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "unavailable",
+              "entityId": "order-service.development",
+              "path": [
+                "ns-commerce-dev",
+                "order-service.development"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-commerce-dev",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "az-sub-payments",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "az-sub-payments",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "az-sub-payments",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "az-sub-payments",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "post-to-ledger",
+              "effect": "unavailable",
+              "entityId": "ledger-service.production",
+              "path": [
+                "az-sub-payments",
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "az-sub-payments",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "az-sub-payments",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "post-refund",
+              "effect": "unavailable",
+              "entityId": "ledger-service.production",
+              "path": [
+                "az-sub-payments",
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        },
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "az-sub-payments",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "az-sub-payments",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "az-sub-payments",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "az-sub-payments",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "az-sub-payments",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "az-sub-payments",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "az-weu",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "az-weu",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "az-weu",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "az-weu",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "post-to-ledger",
+              "effect": "unavailable",
+              "entityId": "ledger-service.production",
+              "path": [
+                "az-weu",
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "az-weu",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "az-weu",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "post-refund",
+              "effect": "unavailable",
+              "entityId": "ledger-service.production",
+              "path": [
+                "az-weu",
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        },
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "az-weu",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "az-weu",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "az-weu",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "az-weu",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "az-weu",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "az-weu",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aks-payments-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "aks-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "aks-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "aks-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "post-to-ledger",
+              "effect": "unavailable",
+              "entityId": "ledger-service.production",
+              "path": [
+                "aks-payments-prod",
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "aks-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "aks-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "post-refund",
+              "effect": "unavailable",
+              "entityId": "ledger-service.production",
+              "path": [
+                "aks-payments-prod",
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aks-payments-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-payments-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "ns-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "ns-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "ns-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "post-to-ledger",
+              "effect": "unavailable",
+              "entityId": "ledger-service.production",
+              "path": [
+                "ns-payments-prod",
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "ns-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "ns-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "post-refund",
+              "effect": "unavailable",
+              "entityId": "ledger-service.production",
+              "path": [
+                "ns-payments-prod",
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-payments-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-risk-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "ns-risk-prod",
+                "fraud-scoring.production",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "ns-risk-prod",
+                "fraud-scoring.production",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "ns-risk-prod",
+                "fraud-scoring.production",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "ns-risk-prod",
+                "fraud-scoring.production",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "ns-risk-prod",
+                "fraud-scoring.production",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-risk-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "pg-payments-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "pg-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "pg-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "pg-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "pg-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "pg-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "pg-payments-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "pg-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "pg-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "pg-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "pg-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "pg-payments-prod",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aks-payments-staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "aks-payments-staging",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "aks-payments-staging",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "aks-payments-staging",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "aks-payments-staging",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "aks-payments-staging",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "aks-payments-staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-payments-staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "ns-payments-staging",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "ns-payments-staging",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "ns-payments-staging",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "ns-payments-staging",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.staging",
+              "path": [
+                "ns-payments-staging",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-payments-staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "gcp-proj-data",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-prod",
+              "path": [
+                "gcp-proj-data",
+                "topic-orders-events-prod"
+              ],
+              "reason": "input-channel"
+            },
+            {
+              "stepId": "post-to-ledger",
+              "effect": "unavailable",
+              "entityId": "topic-payments-events-prod",
+              "path": [
+                "gcp-proj-data",
+                "topic-payments-events-prod"
+              ],
+              "reason": "input-channel"
+            },
+            {
+              "stepId": "notify-customer",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-prod",
+              "path": [
+                "gcp-proj-data",
+                "topic-orders-events-prod"
+              ],
+              "reason": "input-channel"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-prod",
+              "path": [
+                "gcp-proj-data",
+                "topic-orders-events-prod"
+              ],
+              "reason": "input-channel"
+            }
+          ],
+          "firstAffectedStepId": "reserve-stock",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "gcp-proj-data",
+                "topic-orders-events-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "post-refund",
+              "effect": "unavailable",
+              "entityId": "topic-payments-events-prod",
+              "path": [
+                "gcp-proj-data",
+                "topic-payments-events-prod"
+              ],
+              "reason": "input-channel"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-staging",
+              "path": [
+                "gcp-proj-data",
+                "topic-orders-events-staging"
+              ],
+              "reason": "input-channel"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-staging",
+              "path": [
+                "gcp-proj-data",
+                "topic-orders-events-staging"
+              ],
+              "reason": "input-channel"
+            }
+          ],
+          "firstAffectedStepId": "reserve-stock",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.staging",
+              "path": [
+                "gcp-proj-data",
+                "topic-orders-events-staging",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "gcp-proj-data",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "gcp-usc1",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-prod",
+              "path": [
+                "gcp-usc1",
+                "topic-orders-events-prod"
+              ],
+              "reason": "input-channel"
+            },
+            {
+              "stepId": "post-to-ledger",
+              "effect": "unavailable",
+              "entityId": "topic-payments-events-prod",
+              "path": [
+                "gcp-usc1",
+                "topic-payments-events-prod"
+              ],
+              "reason": "input-channel"
+            },
+            {
+              "stepId": "notify-customer",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-prod",
+              "path": [
+                "gcp-usc1",
+                "topic-orders-events-prod"
+              ],
+              "reason": "input-channel"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-prod",
+              "path": [
+                "gcp-usc1",
+                "topic-orders-events-prod"
+              ],
+              "reason": "input-channel"
+            }
+          ],
+          "firstAffectedStepId": "reserve-stock",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "gcp-usc1",
+                "topic-orders-events-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "post-refund",
+              "effect": "unavailable",
+              "entityId": "topic-payments-events-prod",
+              "path": [
+                "gcp-usc1",
+                "topic-payments-events-prod"
+              ],
+              "reason": "input-channel"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-staging",
+              "path": [
+                "gcp-usc1",
+                "topic-orders-events-staging"
+              ],
+              "reason": "input-channel"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-staging",
+              "path": [
+                "gcp-usc1",
+                "topic-orders-events-staging"
+              ],
+              "reason": "input-channel"
+            }
+          ],
+          "firstAffectedStepId": "reserve-stock",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.staging",
+              "path": [
+                "gcp-usc1",
+                "topic-orders-events-staging",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "gcp-usc1",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "kafka-events-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-prod",
+              "path": [
+                "kafka-events-prod",
+                "topic-orders-events-prod"
+              ],
+              "reason": "input-channel"
+            },
+            {
+              "stepId": "post-to-ledger",
+              "effect": "unavailable",
+              "entityId": "topic-payments-events-prod",
+              "path": [
+                "kafka-events-prod",
+                "topic-payments-events-prod"
+              ],
+              "reason": "input-channel"
+            },
+            {
+              "stepId": "notify-customer",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-prod",
+              "path": [
+                "kafka-events-prod",
+                "topic-orders-events-prod"
+              ],
+              "reason": "input-channel"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-prod",
+              "path": [
+                "kafka-events-prod",
+                "topic-orders-events-prod"
+              ],
+              "reason": "input-channel"
+            }
+          ],
+          "firstAffectedStepId": "reserve-stock",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "kafka-events-prod",
+                "topic-orders-events-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "post-refund",
+              "effect": "unavailable",
+              "entityId": "topic-payments-events-prod",
+              "path": [
+                "kafka-events-prod",
+                "topic-payments-events-prod"
+              ],
+              "reason": "input-channel"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "kafka-events-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "topic-orders-events-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-prod",
+              "path": [
+                "topic-orders-events-prod"
+              ],
+              "reason": "input-channel"
+            },
+            {
+              "stepId": "notify-customer",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-prod",
+              "path": [
+                "topic-orders-events-prod"
+              ],
+              "reason": "input-channel"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-prod",
+              "path": [
+                "topic-orders-events-prod"
+              ],
+              "reason": "input-channel"
+            }
+          ],
+          "firstAffectedStepId": "reserve-stock",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "topic-orders-events-prod",
+                "order-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "topic-orders-events-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "place-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "topic-inventory-updates-prod",
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "reserve-stock",
+              "effect": "degraded",
+              "entityId": "inventory-service.production",
+              "path": [
+                "topic-inventory-updates-prod",
+                "inventory-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "ship-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "topic-inventory-updates-prod",
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "cancel-order",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "topic-inventory-updates-prod",
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "degraded",
+              "entityId": "inventory-service.production",
+              "path": [
+                "topic-inventory-updates-prod",
+                "inventory-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "place-order",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.production",
+              "path": [
+                "topic-inventory-updates-prod",
+                "inventory-service.production",
+                "order-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "topic-inventory-updates-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "topic-payments-events-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "post-to-ledger",
+              "effect": "unavailable",
+              "entityId": "topic-payments-events-prod",
+              "path": [
+                "topic-payments-events-prod"
+              ],
+              "reason": "input-channel"
+            }
+          ],
+          "firstAffectedStepId": "post-to-ledger",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "post-refund",
+              "effect": "unavailable",
+              "entityId": "topic-payments-events-prod",
+              "path": [
+                "topic-payments-events-prod"
+              ],
+              "reason": "input-channel"
+            }
+          ],
+          "firstAffectedStepId": "post-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "topic-payments-events-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "search-catalog-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "search-catalog-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "kafka-events-staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-staging",
+              "path": [
+                "kafka-events-staging",
+                "topic-orders-events-staging"
+              ],
+              "reason": "input-channel"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-staging",
+              "path": [
+                "kafka-events-staging",
+                "topic-orders-events-staging"
+              ],
+              "reason": "input-channel"
+            }
+          ],
+          "firstAffectedStepId": "reserve-stock",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.staging",
+              "path": [
+                "kafka-events-staging",
+                "topic-orders-events-staging",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "kafka-events-staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "topic-orders-events-staging",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-staging",
+              "path": [
+                "topic-orders-events-staging"
+              ],
+              "reason": "input-channel"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-staging",
+              "path": [
+                "topic-orders-events-staging"
+              ],
+              "reason": "input-channel"
+            }
+          ],
+          "firstAffectedStepId": "reserve-stock",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "request-refund",
+              "effect": "degraded",
+              "entityId": "order-service.staging",
+              "path": [
+                "topic-orders-events-staging",
+                "order-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "request-refund",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "topic-orders-events-staging",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "dc-fra",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "post-to-ledger",
+              "effect": "degraded",
+              "entityId": "ledger-service.production",
+              "path": [
+                "dc-fra",
+                "pg-ledger-prod",
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "notify-customer",
+              "effect": "unavailable",
+              "entityId": "notification-service.production",
+              "path": [
+                "dc-fra",
+                "notification-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "send-email",
+              "effect": "unavailable",
+              "entityId": "email-dispatcher.production",
+              "path": [
+                "dc-fra",
+                "email-dispatcher.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "notify-customer",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "shipped"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "post-refund",
+              "effect": "degraded",
+              "entityId": "ledger-service.production",
+              "path": [
+                "dc-fra",
+                "pg-ledger-prod",
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "post-refund",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "issued"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "dc-fra",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "k8s-fra-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "notify-customer",
+              "effect": "unavailable",
+              "entityId": "notification-service.production",
+              "path": [
+                "k8s-fra-prod",
+                "notification-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "send-email",
+              "effect": "unavailable",
+              "entityId": "email-dispatcher.production",
+              "path": [
+                "k8s-fra-prod",
+                "email-dispatcher.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "notify-customer",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "shipped"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "k8s-fra-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-batch-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-batch-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-messaging-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "notify-customer",
+              "effect": "unavailable",
+              "entityId": "notification-service.production",
+              "path": [
+                "ns-messaging-prod",
+                "notification-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "send-email",
+              "effect": "unavailable",
+              "entityId": "email-dispatcher.production",
+              "path": [
+                "ns-messaging-prod",
+                "email-dispatcher.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "notify-customer",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "shipped"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ns-messaging-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "rabbitmq-fra-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "send-email",
+              "effect": "unavailable",
+              "entityId": "exchange-notifications-prod",
+              "path": [
+                "rabbitmq-fra-prod",
+                "exchange-notifications-prod"
+              ],
+              "reason": "input-channel"
+            }
+          ],
+          "firstAffectedStepId": "send-email",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "rabbitmq-fra-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "exchange-notifications-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "send-email",
+              "effect": "unavailable",
+              "entityId": "exchange-notifications-prod",
+              "path": [
+                "exchange-notifications-prod"
+              ],
+              "reason": "input-channel"
+            }
+          ],
+          "firstAffectedStepId": "send-email",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "exchange-notifications-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "queue-notifications-email-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "queue-notifications-email-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": []
+    },
+    {
+      "roots": [
+        {
+          "entityId": "pg-ledger-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "post-to-ledger",
+              "effect": "degraded",
+              "entityId": "ledger-service.production",
+              "path": [
+                "pg-ledger-prod",
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "post-to-ledger",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "settled"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "post-refund",
+              "effect": "degraded",
+              "entityId": "ledger-service.production",
+              "path": [
+                "pg-ledger-prod",
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "post-refund",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "issued"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "pg-ledger-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "post-to-ledger",
+              "effect": "degraded",
+              "entityId": "ledger-service.production",
+              "path": [
+                "pg-ledger-prod",
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "post-to-ledger",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "settled"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "post-refund",
+              "effect": "degraded",
+              "entityId": "ledger-service.production",
+              "path": [
+                "pg-ledger-prod",
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "post-refund",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "issued"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ext-card-processor",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "ext-card-processor",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "ext-card-processor",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "ext-card-processor",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "ext-card-processor",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "ext-card-processor",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        },
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.staging",
+              "path": [
+                "ext-card-processor",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.staging",
+              "path": [
+                "ext-card-processor",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "degraded",
+              "entityId": "payment-service.staging",
+              "path": [
+                "ext-card-processor",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "degraded",
+              "entityId": "payment-service.staging",
+              "path": [
+                "ext-card-processor",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.staging",
+              "path": [
+                "ext-card-processor",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ext-card-processor",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "ext-card-processor",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "ext-card-processor",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "ext-card-processor",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "ext-card-processor",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.production",
+              "path": [
+                "ext-card-processor",
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        },
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "authorize-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.staging",
+              "path": [
+                "ext-card-processor",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.staging",
+              "path": [
+                "ext-card-processor",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "degraded",
+              "entityId": "payment-service.staging",
+              "path": [
+                "ext-card-processor",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "degraded",
+              "entityId": "payment-service.staging",
+              "path": [
+                "ext-card-processor",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "authorize-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "order-cancelled",
+            "compensated": true
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "staging",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "degraded",
+              "entityId": "payment-service.staging",
+              "path": [
+                "ext-card-processor",
+                "payment-service.staging"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ext-email-delivery",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "send-email",
+              "effect": "degraded",
+              "entityId": "email-dispatcher.production",
+              "path": [
+                "ext-email-delivery",
+                "email-dispatcher.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "send-email",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "notify"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "ext-email-delivery",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "send-email",
+              "effect": "degraded",
+              "entityId": "email-dispatcher.production",
+              "path": [
+                "ext-email-delivery",
+                "email-dispatcher.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "send-email",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "notify"
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "payment-service.production",
+          "mode": "unavailable"
+        },
+        {
+          "entityId": "topic-orders-events-prod",
+          "mode": "unavailable"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "reserve-stock",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-prod",
+              "path": [
+                "topic-orders-events-prod"
+              ],
+              "reason": "input-channel"
+            },
+            {
+              "stepId": "authorize-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "capture-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "await-settlement",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "payment-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "notify-customer",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-prod",
+              "path": [
+                "topic-orders-events-prod"
+              ],
+              "reason": "input-channel"
+            },
+            {
+              "stepId": "release-stock",
+              "effect": "unavailable",
+              "entityId": "topic-orders-events-prod",
+              "path": [
+                "topic-orders-events-prod"
+              ],
+              "reason": "input-channel"
+            },
+            {
+              "stepId": "void-authorization",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "reserve-stock",
+          "likelyOutcome": {
+            "kind": "unknown"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "refund-payment",
+              "effect": "unavailable",
+              "entityId": "payment-service.production",
+              "path": [
+                "payment-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "refund-payment",
+          "likelyOutcome": {
+            "kind": "outcome",
+            "outcomeId": "refund-rejected",
+            "compensated": false
+          }
+        }
+      ]
+    },
+    {
+      "roots": [
+        {
+          "entityId": "notification-service.production",
+          "mode": "unavailable"
+        },
+        {
+          "entityId": "pg-ledger-prod",
+          "mode": "degraded"
+        }
+      ],
+      "expected": [
+        {
+          "flowId": "flow-checkout",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "post-to-ledger",
+              "effect": "degraded",
+              "entityId": "ledger-service.production",
+              "path": [
+                "pg-ledger-prod",
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            },
+            {
+              "stepId": "notify-customer",
+              "effect": "unavailable",
+              "entityId": "notification-service.production",
+              "path": [
+                "notification-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "notify-customer",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "shipped"
+          }
+        },
+        {
+          "flowId": "flow-refund",
+          "environmentId": "production",
+          "steps": [
+            {
+              "stepId": "post-refund",
+              "effect": "degraded",
+              "entityId": "ledger-service.production",
+              "path": [
+                "pg-ledger-prod",
+                "ledger-service.production"
+              ],
+              "reason": "service"
+            }
+          ],
+          "firstAffectedStepId": "post-refund",
+          "likelyOutcome": {
+            "kind": "delayed",
+            "transitionId": "issued"
+          }
+        }
+      ]
+    }
+  ]
+}

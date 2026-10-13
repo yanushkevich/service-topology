@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { checkoutFlow, refundFlow } from '../../data/mock/businessFlows';
 import { exampleFlowStats, exampleTransactions } from './exampleFlows';
-import { flowBudget, flowFindings, flowSearchText, stages, typicalPath } from './flowModel';
+import { typicalPath } from '../../domain/businessFlow';
+import { flowBudget, flowFindings, flowSearchText, stages } from './flowModel';
 import { activeTxSteps, sampleTransactions, txDivergence } from './observed';
 
 const shares = new Map(Object.entries(exampleFlowStats('flow-checkout', '24h')!.transitions));
