@@ -1,11 +1,13 @@
 import { Html, Line } from '@react-three/drei';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { easing } from 'maath';
-import { memo, useLayoutEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { activeTxSteps, type TxStep } from '../../../transit/flows/observed';
 import type { Playback } from '../../boards/playback';
+import type { LabelLayer } from '../../service-map/galaxy/labelLayer';
 import { particleOnShaft } from './drilldownCamera';
+import { boardLabelAnchor, stationLabelAnchor, stepLabelAnchor } from './drilldownLabels';
 import type { DrilldownBoard, DrilldownShaft, DrilldownStep, Vec3 } from './drilldownModel';
 import { lineColorOf, type DrilldownColors } from './drilldownPalette';
 
@@ -18,7 +20,8 @@ import { lineColorOf, type DrilldownColors } from './drilldownPalette';
 const LABEL = 'pointer-events-none select-none whitespace-nowrap rounded-md border border-line bg-float/85 px-1.5 py-px text-xs font-medium text-fg';
 
 /** A service's transit plane: a translucent slab with its outline and name; clicking it enters the service. */
-export const BoardPlane = memo(function BoardPlane({ board, colors, entered, onEnter }: { board: DrilldownBoard; colors: DrilldownColors; entered: boolean; onEnter: (serviceId: string) => void }) {
+export const BoardPlane = memo(function BoardPlane({ board, colors, entered, onEnter, labels }: { board: DrilldownBoard; colors: DrilldownColors; entered: boolean; onEnter: (serviceId: string) => void; labels: LabelLayer }) {
+  const attach = useLabel(labels, `board:${board.serviceDefinitionId}`);
   const [x, y, z] = board.center;
   const hw = board.width / 2;
   const hd = board.depth / 2;
@@ -41,13 +44,13 @@ export const BoardPlane = memo(function BoardPlane({ board, colors, entered, onE
         }}
       >
         <planeGeometry args={[board.width, board.depth]} />
-        <meshBasicMaterial color={colors.plane} transparent opacity={entered ? 0.55 : 0.32} side={THREE.DoubleSide} depthWrite={false} />
+        <meshBasicMaterial color={colors.plane} transparent opacity={entered ? Math.min(1, colors.planeOpacity + 0.2) : colors.planeOpacity} side={THREE.DoubleSide} depthWrite={false} />
       </mesh>
       <Line points={outline as [number, number, number][]} color={entered ? colors.accent : colors.planeLine} lineWidth={entered ? 2 : 1} transparent opacity={0.9} />
-      <Html position={[x - hw, y, z - hd]} zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
-        <div className={`${LABEL} -translate-y-full font-semibold`} data-board-label={board.serviceDefinitionId}>
+      <Html position={boardLabelAnchor(board) as [number, number, number]} center zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
+        <div ref={attach} className={`${LABEL} font-semibold`} data-board-label={board.serviceDefinitionId}>
           {board.name}
-          {!board.hasBoard && <span className="ml-1.5 font-normal text-fg-3">no transit board yet</span>}
+          {!board.hasBoard && <span className="ml-1.5 font-normal text-fg-3">no board yet</span>}
         </div>
       </Html>
     </group>
@@ -57,7 +60,7 @@ export const BoardPlane = memo(function BoardPlane({ board, colors, entered, onE
 const STATION_COLOR: Record<string, keyof DrilldownColors> = { caller: 'text3', gate: 'accent', module: 'text', client: 'text3', dependency: 'ok' };
 
 /** A board's stations as one instanced mesh; labelled only when the camera has entered the service. */
-export const Stations = memo(function Stations({ board, colors, labelled }: { board: DrilldownBoard; colors: DrilldownColors; labelled: boolean }) {
+export const Stations = memo(function Stations({ board, colors, labelled, labels }: { board: DrilldownBoard; colors: DrilldownColors; labelled: boolean; labels: LabelLayer }) {
   const mesh = useRef<THREE.InstancedMesh>(null);
   useLayoutEffect(() => {
     const m = mesh.current;
@@ -82,8 +85,8 @@ export const Stations = memo(function Stations({ board, colors, labelled }: { bo
       </instancedMesh>
       {labelled &&
         board.stations.map((s) => (
-          <Html key={s.id} position={[s.position[0], s.position[1] + 12, s.position[2]]} center zIndexRange={[18, 0]} style={{ pointerEvents: 'none' }}>
-            <div className={LABEL} data-station-label={s.id}>
+          <Html key={s.id} position={stationLabelAnchor(s) as [number, number, number]} center zIndexRange={[18, 0]} style={{ pointerEvents: 'none' }}>
+            <div ref={(el) => labels.attach(`station:${s.id}`, el)} className={LABEL} data-station-label={s.id}>
               {s.name}
             </div>
           </Html>
@@ -132,8 +135,9 @@ export const Shafts = memo(function Shafts({ shafts, colors, selectedStepId }: {
 });
 
 /** A step on the flow plane: a tile with its label; the selected one lifts and glows (maath easing, frame-local). */
-export const StepMarker = memo(function StepMarker({ step, colors, selected, reduced, onSelect }: { step: DrilldownStep; colors: DrilldownColors; selected: boolean; reduced: boolean; onSelect: (stepId: string) => void }) {
+export const StepMarker = memo(function StepMarker({ step, colors, selected, reduced, onSelect, labels }: { step: DrilldownStep; colors: DrilldownColors; selected: boolean; reduced: boolean; onSelect: (stepId: string) => void; labels: LabelLayer }) {
   const ref = useRef<THREE.Mesh>(null);
+  const attach = useLabel(labels, `step:${step.id}`);
   const target = useMemo(() => new THREE.Vector3(1, selected ? 2.4 : 1, 1), [selected]);
   useFrame((state, delta) => {
     const mesh = ref.current;
@@ -157,8 +161,8 @@ export const StepMarker = memo(function StepMarker({ step, colors, selected, red
         <boxGeometry args={[46, 10, 26]} />
         <meshStandardMaterial color={selected ? colors.accent : colors.plane} emissive={selected ? colors.accent : colors.text3} emissiveIntensity={selected ? 0.6 : 0.15} roughness={0.4} />
       </mesh>
-      <Html position={[0, 24, 0]} center zIndexRange={[25, 0]} style={{ pointerEvents: 'none' }}>
-        <div className={`${LABEL} ${selected ? 'border-accent' : ''}`} data-step-label={step.id}>
+      <Html position={[0, stepLabelAnchor(step)[1] - step.position[1], 0]} center zIndexRange={[25, 0]} style={{ pointerEvents: 'none' }}>
+        <div ref={attach} className={`${LABEL} ${selected ? 'border-accent' : ''}`} data-step-label={step.id}>
           {step.name}
         </div>
       </Html>
@@ -200,11 +204,16 @@ export function ReplayParticles({ steps, playback, shafts, colors, reduced }: { 
             pool.current[i] = m;
           }}
         >
-          <sphereGeometry args={[7, 16, 12]} />
+          <sphereGeometry args={[16, 16, 12]} />
           <meshBasicMaterial color={glow} toneMapped={false} />
         </mesh>
       ))}
     </group>
   );
+}
+
+/** A stable callback ref that registers a label with the scene's declutter. */
+function useLabel(labels: LabelLayer, id: string) {
+  return useCallback((el: HTMLElement | null) => labels.attach(id, el), [labels, id]);
 }
 

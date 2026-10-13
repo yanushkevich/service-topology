@@ -1,9 +1,12 @@
 import { CameraControls, Html, Line, type CameraControlsImpl } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
 import { Bloom, EffectComposer } from '@react-three/postprocessing';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import type { TxStep } from '../../../transit/flows/observed';
 import type { Playback } from '../../boards/playback';
+import { LabelLayer, type LabelAnchor } from '../../service-map/galaxy/labelLayer';
+import { labelAnchors } from './drilldownLabels';
 import { poseFor } from './drilldownCamera';
 import { scopeBounds, type DrilldownModel, type Vec3 } from './drilldownModel';
 import type { DrilldownColors } from './drilldownPalette';
@@ -29,24 +32,27 @@ export interface DrilldownSceneProps {
 }
 
 export function DrilldownScene({ model, colors, scope, selectedStepId, onSelectStep, onEnterService, replay, reduced, bloom }: DrilldownSceneProps) {
+  const [labels] = useState(() => new LabelLayer());
+  const anchors = useMemo(() => labelAnchors(model, selectedStepId, scope), [model, selectedStepId, scope]);
   return (
     <>
       <ambientLight intensity={0.7} />
       <directionalLight position={[300, 900, 600]} intensity={1.1} />
       <FlowPlane model={model} colors={colors} />
       {model.steps.map((step) => (
-        <StepMarker key={step.id} step={step} colors={colors} selected={step.id === selectedStepId} reduced={reduced} onSelect={onSelectStep} />
+        <StepMarker key={step.id} step={step} colors={colors} selected={step.id === selectedStepId} reduced={reduced} onSelect={onSelectStep} labels={labels} />
       ))}
       {model.boards.map((board) => (
         <group key={board.serviceDefinitionId}>
-          <BoardPlane board={board} colors={colors} entered={scope === board.serviceDefinitionId} onEnter={onEnterService} />
+          <BoardPlane board={board} colors={colors} entered={scope === board.serviceDefinitionId} onEnter={onEnterService} labels={labels} />
           <BoardLines board={board} colors={colors} />
-          <Stations board={board} colors={colors} labelled={scope === board.serviceDefinitionId} />
+          <Stations board={board} colors={colors} labelled={scope === board.serviceDefinitionId} labels={labels} />
         </group>
       ))}
       <Shafts shafts={model.shafts} colors={colors} selectedStepId={selectedStepId} />
       {replay && <ReplayParticles steps={replay.steps} playback={replay.playback} shafts={model.shafts} colors={colors} reduced={reduced} />}
       <CameraRig model={model} scope={scope} reduced={reduced} />
+      <LabelDeclutter labels={labels} anchors={anchors} />
       {bloom && (
         <EffectComposer>
           {/* Selective: only colours pushed above 1 (shafts, particles; toneMapped off) pass the threshold. */}
@@ -76,10 +82,10 @@ function FlowPlane({ model, colors }: { model: DrilldownModel; colors: Drilldown
         <group key={lane.serviceDefinitionId}>
           <mesh position={[(x0 + x1) / 2, -0.5, (lane.z0 + lane.z1) / 2]} rotation={[-Math.PI / 2, 0, 0]} userData={{ lane: lane.serviceDefinitionId }}>
             <planeGeometry args={[x1 - x0, lane.z1 - lane.z0]} />
-            <meshBasicMaterial color={colors.plane} transparent opacity={i % 2 ? 0.35 : 0.5} side={THREE.DoubleSide} depthWrite={false} />
+            <meshBasicMaterial color={colors.plane} transparent opacity={i % 2 ? colors.planeOpacity : Math.min(1, colors.planeOpacity + 0.15)} side={THREE.DoubleSide} depthWrite={false} />
           </mesh>
           <Html position={[x0, 0, lane.z0 + 14]} zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
-            <div className="pointer-events-none -translate-x-full pr-2 text-[10px] tracking-[0.07em] whitespace-nowrap text-fg-3 uppercase select-none" data-lane-label={lane.serviceDefinitionId}>
+            <div className="pointer-events-none pl-2 text-[10px] tracking-[0.07em] whitespace-nowrap text-fg-3 uppercase select-none" data-lane-label={lane.serviceDefinitionId}>
               {lane.label}
             </div>
           </Html>
@@ -116,3 +122,10 @@ function CameraRig({ model, scope, reduced }: { model: DrilldownModel; scope: st
   }, [model, scope, reduced]);
   return <CameraControls ref={controls} makeDefault minDistance={60} maxDistance={8000} />;
 }
+
+/** Hides labels that overlap a more important one, re-measured only when the camera or the labels change. */
+function LabelDeclutter({ labels, anchors }: { labels: LabelLayer; anchors: readonly LabelAnchor[] }) {
+  useFrame(({ camera, size }) => labels.update(camera, size, anchors));
+  return null;
+}
+

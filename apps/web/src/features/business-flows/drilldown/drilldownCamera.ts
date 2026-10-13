@@ -11,14 +11,21 @@ export interface Pose {
   target: Vec3;
 }
 
-/** Look at a box from above and in front (+z is "down the page", as in 2D), far enough to see all of it. */
+/**
+ * Look at a box from in front (+z is "down the page", as in 2D), far enough to see all of it: from
+ * about 45° for one plane (readable, like the 2D board), lower and a little to the side for the
+ * stacked flow so the floors read as layers.
+ */
 export function poseFor(bounds: DrilldownModel['bounds']): Pose {
   const [x0, y0, z0] = bounds.min;
   const [x1, y1, z1] = bounds.max;
   const target: Vec3 = [(x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2];
-  const span = Math.max(x1 - x0, z1 - z0, y1 - y0, 200);
-  const distance = span * 0.95 + 120;
-  return { target, position: [target[0], target[1] + distance * 0.72, target[2] + distance * 0.7] };
+  const span = Math.max(x1 - x0, z1 - z0, 200);
+  const stacked = y1 - y0 > 1;
+  const distance = span * (stacked ? 0.72 : 0.95) + (y1 - y0) * 0.5 + 120;
+  return stacked
+    ? { target, position: [target[0] + span * 0.18, target[1] + distance * 0.42, target[2] + distance * 0.9] }
+    : { target, position: [target[0], target[1] + distance * 0.72, target[2] + distance * 0.7] };
 }
 
 /**

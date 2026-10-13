@@ -8,7 +8,8 @@ import { healthLabel } from '../../../shared/mappings';
 import { approachPose, CameraMemory, fitPose, focusPose, type CameraPose } from './cameraMath';
 import { ringPoint, type RingLayout, type Vec3 } from './layout3d';
 import { CONTAINMENT_COLOR, NODE_COLOR, ORBIT_RING_COLOR, PARTICLE_TINT, SERVICE_COLOR, STARFIELD_COLOR, type GalaxyColors } from './palette';
-import { LabelLayer } from './labelLayer';
+import { labelPriority } from './labelDeclutter';
+import { LabelLayer, type LabelAnchor } from './labelLayer';
 import { CONTAINER_TYPES, NEAR_LABEL_DISTANCE, type MotionPolicy, type SceneEdge, type SceneModel, type SceneNode } from './sceneModel';
 
 /**
@@ -45,6 +46,11 @@ export function GalaxyScene(props: GalaxySceneProps) {
   const { scene, policy, showContainment, colors, onSelect, onEnter } = props;
   const [hovered, setHovered] = useState<string | null>(null);
   const [labels] = useState(() => new LabelLayer());
+  // Label anchors above each node, ranked for the declutter; rebuilt only when the nodes or the hover change.
+  const anchors = useMemo<LabelAnchor[]>(
+    () => scene.nodes.map((n) => ({ id: n.id, position: [n.position[0], n.position[1] + n.radius + 8, n.position[2]], priority: labelPriority(n, hovered) })),
+    [scene.nodes, hovered],
+  );
   return (
     <>
       <ambientLight intensity={0.55} />
@@ -67,7 +73,7 @@ export function GalaxyScene(props: GalaxySceneProps) {
           labels={labels}
         />
       ))}
-      <LabelDeclutter nodes={scene.nodes} labels={labels} hovered={hovered} />
+      <LabelDeclutter anchors={anchors} labels={labels} />
       <CameraRig {...props} />
     </>
   );
@@ -463,8 +469,8 @@ const GalaxyNode = memo(function GalaxyNode({
 
 
 /** Hides labels that overlap a more important one, when the camera or the labels change (LabelLayer). */
-function LabelDeclutter({ nodes, labels, hovered }: { nodes: SceneNode[]; labels: LabelLayer; hovered: string | null }) {
-  useFrame(({ camera, size }) => labels.update(camera, size, nodes, hovered));
+function LabelDeclutter({ anchors, labels }: { anchors: readonly LabelAnchor[]; labels: LabelLayer }) {
+  useFrame(({ camera, size }) => labels.update(camera, size, anchors));
   return null;
 }
 

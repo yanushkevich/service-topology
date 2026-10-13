@@ -118,7 +118,7 @@ function rank(item: SearchItem, q: string): number {
 }
 
 /** The page parameters of the boards (urlState PAGE_PARAMS), dropped when the search opens another page. */
-const PAGE_PARAM_NAMES = ['line', 'mode', 'trace', 't', 'flow', 'strip', 'step', 'tx'];
+const PAGE_PARAM_NAMES = ['line', 'mode', 'trace', 't', 'flow', 'strip', 'step', 'tx', 'scene', 'drill'];
 
 /** Where a target opens: a path and the search to use, keeping the shared view state. */
 export function locationOf(target: SearchTarget, currentSearch: string, currentPath: string): { pathname: string; search: string } {

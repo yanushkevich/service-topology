@@ -17,7 +17,8 @@ describe('3D drill-down scene model (ADR-026)', () => {
   it('hangs one plane per service lane below the flow plane, in lane order, without overlap', () => {
     const lanes = layout.lanes.filter((l) => l.id !== '__outcomes__').map((l) => l.id);
     expect(model.boards.map((b) => b.serviceDefinitionId)).toEqual(lanes);
-    expect(model.boards.every((b) => b.center[1] === -BOARD_DROP && b.width === BOARD_WIDTH)).toBe(true);
+    expect(model.drop).toBeGreaterThanOrEqual(BOARD_DROP);
+    expect(model.boards.every((b) => b.center[1] === -model.drop && b.width === BOARD_WIDTH)).toBe(true);
     for (let i = 1; i < model.boards.length; i++) {
       const [a, b] = [model.boards[i - 1], model.boards[i]];
       if (!a || !b) continue;
@@ -35,7 +36,7 @@ describe('3D drill-down scene model (ADR-026)', () => {
     // Every point of the board lies on its plane.
     const half = (board?.width ?? 0) / 2 + 1;
     for (const s of board?.stations ?? []) {
-      expect(s.position[1]).toBe(-BOARD_DROP);
+      expect(s.position[1]).toBe(-model.drop);
       expect(Math.abs(s.position[0] - (board?.center[0] ?? 0))).toBeLessThanOrEqual(half);
       expect(Math.abs(s.position[2] - (board?.center[2] ?? 0))).toBeLessThanOrEqual((board?.depth ?? 0) / 2 + 1);
     }
@@ -67,7 +68,7 @@ describe('3D drill-down scene model (ADR-026)', () => {
   it('is deterministic, and scopes the camera to a service plane', () => {
     expect(buildDrilldown({ flow: checkoutFlow, layout, boards: new Map([['payment-service', payments]]), serviceName })).toEqual(model);
     const scoped = scopeBounds(model, 'payment-service');
-    expect(scoped.min[1]).toBe(-BOARD_DROP);
+    expect(scoped.min[1]).toBe(-model.drop);
     expect(scoped.max[0] - scoped.min[0]).toBe(BOARD_WIDTH);
     expect(scopeBounds(model, null)).toEqual(model.bounds);
     expect(scopeBounds(model, 'ghost')).toEqual(model.bounds);

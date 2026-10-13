@@ -27,7 +27,8 @@ async function audit(): Promise<string[]> {
   );
 }
 
-describe('accessibility audit (axe-core)', () => {
+// Each case runs axe over the whole app, some twice: slow under full-suite load.
+describe('accessibility audit (axe-core)', { timeout: 30_000 }, () => {
   beforeEach(resetUiStore);
 
   it('service map (2D) with a selection', async () => {
@@ -186,6 +187,12 @@ describe('accessibility audit (axe-core)', () => {
     expect(await audit()).toEqual([]);
     await act(() => router.navigate('/flows?v=1&env=production'));
     await screen.findAllByText('Simulated impact');
+    expect(await audit()).toEqual([]);
+  });
+
+  it('flow board with the 3D drill-down switched on (the WebGL fallback in jsdom, ADR-026)', async () => {
+    renderApp('/flows/flow-checkout?v=1&env=production&scene=3d');
+    await screen.findByRole('alert');
     expect(await audit()).toEqual([]);
   });
 

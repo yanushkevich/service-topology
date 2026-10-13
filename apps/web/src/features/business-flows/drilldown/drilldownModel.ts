@@ -15,8 +15,9 @@ import type { StationKind } from '../../../transit/types';
 
 export type Vec3 = readonly [number, number, number];
 
-/** How far the service planes hang below the flow plane. */
+/** How far the service planes hang below the flow plane: at least this, more for a big flow (DROP_RATIO of its extent), so the floors read as stacked. */
 export const BOARD_DROP = 420;
+const DROP_RATIO = 0.35;
 /** Width of every service plane: the transit plane's u range scaled to this. */
 export const BOARD_WIDTH = 640;
 /** Depth of a service without a board, and the gap between service planes. */
@@ -91,6 +92,8 @@ export interface DrilldownShaft {
 
 export interface DrilldownModel {
   flowId: string;
+  /** How far below the flow plane the service planes hang. */
+  drop: number;
   /** The flow plane's extent: x0..x1 across, z0..z1 deep, at y = 0. */
   flowPlane: { x0: number; x1: number; z0: number; z1: number };
   lanes: DrilldownLane[];
@@ -115,7 +118,13 @@ export interface DrilldownInput {
 export function buildDrilldown(input: DrilldownInput): DrilldownModel {
   const { flow, layout } = input;
   const serviceLanes = layout.lanes.filter((l) => l.id !== OUTCOMES_LANE);
-  const planes = placeBoardPlanes(input, serviceLanes.map((l) => l.id));
+  const sized = serviceLanes.map((l) => {
+    const index = input.boards.get(l.id) ?? null;
+    return { serviceId: l.id, index, plane: index ? planeOf(index) : null };
+  });
+  const depth = sized.reduce((sum, s) => sum + (s.plane?.depth ?? EMPTY_BOARD_DEPTH) + BOARD_GAP, OUTCOMES_DEPTH);
+  const drop = Math.max(BOARD_DROP, round(DROP_RATIO * Math.max(layout.width, depth)));
+  const planes = placeBoardPlanes(input, sized, drop);
   const bands = laneBands(layout, planes);
   const toWorld = flowPlaneMapping(layout, bands);
   const steps = flow.steps.flatMap((step): DrilldownStep[] => {
@@ -141,7 +150,7 @@ export function buildDrilldown(input: DrilldownInput): DrilldownModel {
     const entry = step.lineId ? planes.find((p) => p.board.serviceDefinitionId === step.serviceDefinitionId)?.entries.get(step.lineId) : undefined;
     return step.lineId && entry ? [{ stepId: step.id, serviceDefinitionId: step.serviceDefinitionId, lineId: step.lineId, from: step.position, to: entry }] : [];
   });
-  return { flowId: flow.id, flowPlane, lanes, steps, outcomes, transitions, boards, shafts, bounds: boundsOf(flowPlane, boards) };
+  return { flowId: flow.id, drop, flowPlane, lanes, steps, outcomes, transitions, boards, shafts, bounds: boundsOf(flowPlane, boards, drop) };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -154,16 +163,16 @@ interface PlacedPlane {
   entries: Map<string, Vec3>;
 }
 
+type PlaneGeometry = ReturnType<typeof planeOf>;
+
 /** One plane per service lane, in lane order along z, each centred under the lane's steps along x. */
-function placeBoardPlanes(input: DrilldownInput, serviceIds: readonly string[]): PlacedPlane[] {
+function placeBoardPlanes(input: DrilldownInput, sized: readonly { serviceId: string; index: BoardIndex | null; plane: PlaneGeometry | null }[], drop: number): PlacedPlane[] {
   const out: PlacedPlane[] = [];
   let z = 0;
-  for (const serviceId of serviceIds) {
-    const index = input.boards.get(serviceId) ?? null;
-    const plane = index ? planeOf(index) : null;
+  for (const { serviceId, index, plane } of sized) {
     const depth = plane ? plane.depth : EMPTY_BOARD_DEPTH;
-    const center: Vec3 = [laneCenterX(input, serviceId), -BOARD_DROP, z + depth / 2];
-    out.push(plane ? placedBoard(input, serviceId, index as BoardIndex, plane, center) : { board: { serviceDefinitionId: serviceId, name: input.serviceName(serviceId), hasBoard: false, center, width: BOARD_WIDTH, depth, stations: [], lines: [] }, entries: new Map() });
+    const center: Vec3 = [laneCenterX(input, serviceId), -drop, z + depth / 2];
+    out.push(index && plane ? placedBoard(input, serviceId, index, plane, center) : { board: { serviceDefinitionId: serviceId, name: input.serviceName(serviceId), hasBoard: false, center, width: BOARD_WIDTH, depth, stations: [], lines: [] }, entries: new Map() });
     z += depth + BOARD_GAP;
   }
   return out;
@@ -179,7 +188,7 @@ function planeOf(index: BoardIndex): { positions: Map<string, PlanePoint>; uc: n
   return { positions, uc: (PLANE_U[0] + PLANE_U[1]) / 2, vc: (v0 + v1) / 2, k, depth: (v1 - v0) * k };
 }
 
-function placedBoard(input: DrilldownInput, serviceId: string, index: BoardIndex, plane: ReturnType<typeof planeOf>, center: Vec3): PlacedPlane {
+function placedBoard(input: DrilldownInput, serviceId: string, index: BoardIndex, plane: PlaneGeometry, center: Vec3): PlacedPlane {
   const at = (p: PlanePoint): Vec3 => [round(center[0] + (p.u - plane.uc) * plane.k), center[1], round(center[2] + (p.v - plane.vc) * plane.k)];
   const graph = buildTrackGraph(index, plane.positions);
   const stations = index.board.stations.map((s) => ({ id: s.id, name: s.name, kind: s.kind, position: at(plane.positions.get(s.id) ?? { u: 0, v: 0 }) }));
@@ -231,10 +240,10 @@ function flowPlaneMapping(layout: SwimlaneLayout, bands: Map<string, { z0: numbe
   };
 }
 
-function boundsOf(flowPlane: DrilldownModel['flowPlane'], boards: readonly DrilldownBoard[]): DrilldownModel['bounds'] {
+function boundsOf(flowPlane: DrilldownModel['flowPlane'], boards: readonly DrilldownBoard[], drop: number): DrilldownModel['bounds'] {
   const xs = [flowPlane.x0, flowPlane.x1, ...boards.flatMap((b) => [b.center[0] - b.width / 2, b.center[0] + b.width / 2])];
   const zs = [flowPlane.z0, flowPlane.z1, ...boards.flatMap((b) => [b.center[2] - b.depth / 2, b.center[2] + b.depth / 2])];
-  return { min: [Math.min(...xs), boards.length ? -BOARD_DROP : 0, Math.min(...zs)], max: [Math.max(...xs), 0, Math.max(...zs)] };
+  return { min: [Math.min(...xs), boards.length ? -drop : 0, Math.min(...zs)], max: [Math.max(...xs), 0, Math.max(...zs)] };
 }
 
 /** The part of the scene a scope looks at: the whole flow, or one service's plane. */

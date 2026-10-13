@@ -100,7 +100,7 @@ function Drilldown({ flow, layout, boards, serviceName, scope, onScope, selected
 function Overlay({ flowName, boards, entered, enteredName, onScope, onExit }: { flowName: string; boards: { serviceDefinitionId: string; name: string; hasBoard: boolean }[]; entered: string | null; enteredName: string | null; onScope: (id: string | null) => void; onExit: () => void }) {
   return (
     <>
-      <nav aria-label="3D scope" className={cx(floatClass, 'top-3 left-3 flex flex-wrap items-center gap-2 px-2.5 py-1.5 text-sm')}>
+      <nav aria-label="3D scope" className={cx(floatClass, 'top-3 left-3 z-30 flex flex-wrap items-center gap-2 px-2.5 py-1.5 text-sm')}>
         <button type="button" className="font-semibold text-fg hover:underline aria-[current=true]:no-underline" aria-current={entered ? undefined : true} onClick={() => onScope(null)}>
           {flowName}
         </button>
@@ -118,20 +118,22 @@ function Overlay({ flowName, boards, entered, enteredName, onScope, onExit }: { 
           </>
         )}
       </nav>
-      <section aria-label="Services in this flow" className={cx(floatClass, 'top-3 right-3 flex max-h-[70%] w-[220px] flex-col gap-1 overflow-auto px-2.5 py-2 max-md:hidden')}>
-        <h3 className={cx(kickerClass, 'm-0')}>Services · click a plane or here</h3>
-        <ul className="m-0 flex list-none flex-col gap-0.5 p-0 text-sm">
-          {boards.map((b) => (
-            <li key={b.serviceDefinitionId}>
-              <button type="button" className="w-full rounded-sm px-1.5 py-0.5 text-left text-fg hover:bg-surface-3 aria-pressed:bg-accent-soft" aria-pressed={entered === b.serviceDefinitionId} onClick={() => onScope(b.serviceDefinitionId)}>
-                Enter {b.name}
-                {!b.hasBoard && <span className="text-xs text-fg-3"> · no board yet</span>}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-      <p className={cx(floatClass, 'bottom-3 left-3 m-0 px-2.5 py-1 text-xs text-fg-2')}>
+      <details open className={cx(floatClass, 'top-3 right-3 z-30 max-h-[70%] w-[220px] overflow-auto px-2.5 py-2 max-md:w-[180px]')}>
+        <summary className={cx(kickerClass, 'cursor-pointer')}>Services ({boards.length}) · or click a plane</summary>
+        <section aria-label="Services in this flow">
+          <ul className="m-0 mt-1 flex list-none flex-col gap-0.5 p-0 text-sm">
+            {boards.map((b) => (
+              <li key={b.serviceDefinitionId}>
+                <button type="button" className="w-full rounded-sm px-1.5 py-0.5 text-left text-fg hover:bg-surface-3 aria-pressed:bg-accent-soft" aria-pressed={entered === b.serviceDefinitionId} onClick={() => onScope(b.serviceDefinitionId)}>
+                  Enter {b.name}
+                  {!b.hasBoard && <span className="text-xs text-fg-3"> · no board yet</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </details>
+      <p className={cx(floatClass, 'bottom-3 left-3 z-30 m-0 px-2.5 py-1 text-xs text-fg-2')}>
         Drag to orbit · right-drag to pan · scroll to zoom · click a step to select it ·{' '}
         <button type="button" className="underline" onClick={onExit}>
           Back to the swimlane

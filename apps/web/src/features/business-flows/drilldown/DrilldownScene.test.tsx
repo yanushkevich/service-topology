@@ -23,7 +23,7 @@ const model = buildDrilldown({ flow: checkoutFlow, layout: computeSwimlanes(chec
 const colors: DrilldownColors = {
   background: '#070a13', accent: '#5fe1ff', ok: '#3dd6b0', warn: '#f5b454', crit: '#ff7b7b', text3: '#7f8cab',
   edge: { http: '#a9c8ff', grpc: '#5fe1ff', data: '#b79cff', event: '#8ef0c0', other: '#7f8cab' },
-  lines: ['#5fe1ff', '#b48cff', '#7ff0c0'], plane: '#101626', planeLine: '#2a3350', text: '#e8edf9',
+  lines: ['#5fe1ff', '#b48cff', '#7ff0c0'], plane: '#101626', planeLine: '#2a3350', text: '#e8edf9', planeOpacity: 0.35,
 };
 
 const probe: { camera: THREE.Camera | null } = { camera: null };

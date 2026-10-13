@@ -10,6 +10,8 @@ export interface DrilldownColors extends GalaxyColors {
   plane: string;
   planeLine: string;
   text: string;
+  /** Plane fill opacity: stronger on the light theme, where the fill is close to the page. */
+  planeOpacity: number;
 }
 
 const LINE_TOKENS = 12;
@@ -24,6 +26,7 @@ export function readDrilldownColors(): DrilldownColors {
     plane: v('--color-bg-2', galaxy.background),
     planeLine: v('--color-line-strong', galaxy.text3),
     text: v('--color-text', galaxy.accent),
+    planeOpacity: document.documentElement.dataset.theme === 'light' ? 0.75 : 0.35,
   };
 }
 

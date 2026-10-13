@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router';
 import { businessFlowsIn, resolveBusinessFlow, typicalPath } from '../../domain/businessFlow';
 import { dataStoresOf, flowDataStores } from '../../domain/dataStores';
@@ -8,7 +8,7 @@ import { useTopology } from '../../data/topologyContext';
 import { DEFAULT_WINDOW, isWindow, windowLabel } from '../../transit/board';
 import { indexFlows, type FlowBoardIndex } from '../../transit/flows/flowIndex';
 import { computeSwimlanes } from '../../transit/flows/swimlane';
-import { flowFindings, lineForStep } from '../../transit/flows/flowModel';
+import { flowFindings } from '../../transit/flows/flowModel';
 import { sampleTransactions, txDivergence } from '../../transit/flows/observed';
 import type { TransitWindow } from '../../transit/types';
 import { ignoreShortcut } from '../../shared/keyboard';
@@ -23,6 +23,7 @@ import { createPlayback, playbackActions, usePlaybackClock, useReplayUrlTime, ty
 import { WindowSelect } from '../boards/WindowSelect';
 import { useRepositoryRead } from '../transit-board/useTransitBoard';
 import { FlowEditActions } from './FlowEditActions';
+import { useBoardIndexes, useFlowBoards, useInnerAttempts } from './useFlowBoards';
 import { FlowImpactBanner } from './FlowImpactPanels';
 import { FlowSwimlane } from './FlowSwimlane';
 import { SwimlaneLegend } from './SwimlaneParts';
@@ -34,6 +35,9 @@ import { StripSwitch } from '../boards/StripSwitch';
 import { flowProcess } from '../../transit/process';
 
 type Mode = 'typical' | 'replay';
+
+// The 3D drill-down (ADR-026) is its own chunk: Three.js loads only when it is opened.
+const FlowDrilldown3D = lazy(() => import('./drilldown/FlowDrilldown3D').then((m) => ({ default: m.FlowDrilldown3D })));
 
 /**
  * Flow board (ADR-022, ADR-023; docs/BUSINESS_FLOWS.md §7 and Revision 2 §9): one flow as
@@ -81,6 +85,9 @@ function Board({ index, flow, environmentId, viewingHistory }: { index: Topology
   const stepId = params.get('step');
   const txKey = params.get('tx');
   const strip = params.get('strip') === 'process' ? 'process' : 'stages';
+  // The map as swimlanes or as the 3D drill-down, and the service the 3D camera has entered.
+  const scene = params.get('scene') === '3d' ? '3d' : '2d';
+  const drill = params.get('drill');
 
   const serviceName = useCallback((id: string) => index.definitions.get(id)?.name ?? id, [index]);
   const eventName = useCallback((id: string) => index.eventTypes.get(id)?.name ?? id, [index]);
@@ -104,7 +111,9 @@ function Board({ index, flow, environmentId, viewingHistory }: { index: Topology
   const stats = useRepositoryRead(`${flow.id}\u0000${environmentId}\u0000${windowValue}`, (r, signal) => r.getFlowStats(flow, environmentId, windowValue, signal));
   const flowStats = stats.status === 'ready' ? stats.value : null;
   const shares = useMemo(() => new Map(Object.entries(flowStats?.transitions ?? {})), [flowStats]);
-  const inner = useInnerAttempts(flow, environmentId, windowValue);
+  const serviceBoards = useFlowBoards(flow, environmentId, windowValue);
+  const inner = useInnerAttempts(flow, serviceBoards);
+  const boardIndexes = useBoardIndexes(serviceBoards);
   const findings = useMemo(
     () =>
       flowFindings(flow, {
@@ -154,6 +163,15 @@ function Board({ index, flow, environmentId, viewingHistory }: { index: Topology
       else p.delete('mode');
       p.delete('t');
     });
+  const setScene = (next: '2d' | '3d') =>
+    update((p) => {
+      if (next === '3d') p.set('scene', '3d');
+      else {
+        p.delete('scene');
+        p.delete('drill');
+      }
+    });
+  const setDrill = (serviceId: string | null) => update((p) => (serviceId ? p.set('drill', serviceId) : p.delete('drill')));
   const selectStep = (id: string | null) =>
     update((p) => {
       if (id) p.set('step', id);
@@ -196,14 +214,24 @@ function Board({ index, flow, environmentId, viewingHistory }: { index: Topology
         breadcrumb={`${environmentName} / Business flows /`}
         title={flow.name}
         modes={
-          <Segmented aria-label="View">
-            <Segment pressed={mode === 'typical'} onClick={() => setMode('typical')}>
-              Typical
-            </Segment>
-            <Segment pressed={mode === 'replay'} onClick={() => setMode('replay')}>
-              Transaction replay
-            </Segment>
-          </Segmented>
+          <>
+            <Segmented aria-label="View">
+              <Segment pressed={mode === 'typical'} onClick={() => setMode('typical')}>
+                Typical
+              </Segment>
+              <Segment pressed={mode === 'replay'} onClick={() => setMode('replay')}>
+                Transaction replay
+              </Segment>
+            </Segmented>
+            <Segmented aria-label="Map view">
+              <Segment pressed={scene === '2d'} onClick={() => setScene('2d')}>
+                Swimlane
+              </Segment>
+              <Segment pressed={scene === '3d'} onClick={() => setScene('3d')}>
+                3D
+              </Segment>
+            </Segmented>
+          </>
         }
         aside={
           <>
@@ -232,21 +260,38 @@ function Board({ index, flow, environmentId, viewingHistory }: { index: Topology
         wideMap
         index={<FlowPicker fx={fx} selectedId={flow.id} query={query} onQuery={setQuery} matchCount={mapView.matches?.size ?? null} warnings={warnings} search={params.toString() ? `?${params.toString()}` : ''} />}
         map={
-          <FlowSwimlane
-            fx={fx}
-            flow={flow}
-            layout={layout}
-            serviceName={serviceName}
-            eventName={eventName}
-            shares={shares}
-            storesOf={storesOf}
-            view={mapView}
-            replay={mode === 'replay' && tx ? { tx, playback, divergence } : null}
-            playback={playback}
-            onSelectStep={(id) => selectStep(id === stepId ? null : id)}
-          />
+          scene === '3d' ? (
+            <Suspense fallback={<p className="m-0 p-4 text-sm text-fg-2">Loading the 3D view…</p>}>
+              <FlowDrilldown3D
+                flow={flow}
+                layout={layout}
+                boards={boardIndexes}
+                serviceName={serviceName}
+                scope={drill}
+                onScope={setDrill}
+                selectedStepId={stepId}
+                onSelectStep={(id) => selectStep(id === stepId ? null : id)}
+                replay={mode === 'replay' && tx ? { steps: tx.steps, playback } : null}
+                onExit={() => setScene('2d')}
+              />
+            </Suspense>
+          ) : (
+            <FlowSwimlane
+              fx={fx}
+              flow={flow}
+              layout={layout}
+              serviceName={serviceName}
+              eventName={eventName}
+              shares={shares}
+              storesOf={storesOf}
+              view={mapView}
+              replay={mode === 'replay' && tx ? { tx, playback, divergence } : null}
+              playback={playback}
+              onSelectStep={(id) => selectStep(id === stepId ? null : id)}
+            />
+          )
         }
-        legend={<SwimlaneLegend className="max-md:hidden" />}
+        legend={scene === '3d' ? undefined : <SwimlaneLegend className="max-md:hidden" />}
         strip={
           mode === 'replay' && tx ? (
             <TxStrip flow={flow} tx={tx} playback={playback} divergence={divergence} onSeek={actions.seek} onJump={actions.jump} />
@@ -292,34 +337,4 @@ function Board({ index, flow, environmentId, viewingHistory }: { index: Topology
       />
     </BoardFrame>
   );
-}
-
-/**
- * Retries inside each step, read from the service's transit board (the clients of the line that
- * implements the step): used to multiply retries across levels in the findings.
- */
-function useInnerAttempts(flow: BusinessFlow, environmentId: string, window: TransitWindow): Map<string, { attempts: number; what: string }> {
-  const services = [...new Set(flow.steps.map((s) => s.serviceDefinitionId))].sort();
-  const boards = useRepositoryRead(`${services.join(',')}\u0000${environmentId}\u0000${window}`, (r, signal) => Promise.all(services.map((id) => r.getBoard(id, environmentId, window, signal))));
-  return useMemo(() => {
-    const out = new Map<string, { attempts: number; what: string }>();
-    if (boards.status !== 'ready') return out;
-    for (const board of boards.value) {
-      if (!board) continue;
-      for (const step of flow.steps.filter((s) => s.serviceDefinitionId === board.serviceDefinitionId)) {
-        const line = lineForStep(board.lines, step);
-        if (!line) continue;
-        let best: { attempts: number; what: string } | null = null;
-        for (const id of new Set(line.route.flatMap((b) => b.stations))) {
-          const station = board.stations.find((s) => s.id === id);
-          if (station?.kind !== 'client') continue;
-          const retry = board.policies.find((p) => p.clientId === id && p.type === 'retry' && p.state !== 'missing' && p.state !== 'unknown');
-          const attempts = Number(retry?.config?.maxAttempts ?? 1);
-          if (Number.isFinite(attempts) && attempts > (best?.attempts ?? 1)) best = { attempts, what: `the ${station.name}` };
-        }
-        if (best) out.set(`${step.serviceDefinitionId}\u0000${step.entryPoint ?? ''}`, best);
-      }
-    }
-    return out;
-  }, [boards, flow]);
 }
