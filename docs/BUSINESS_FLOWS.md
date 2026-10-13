@@ -305,7 +305,7 @@ Specify all three, build Milestone 11 only. Decisions: ADR-023 (sections 9–10)
   - The example scenario (the card processor unavailable) marks Checkout's Authorize payment and Refund's Refund payment as affected, with Cancelled and Rejected as the likely outcomes.
   - Nothing simulated is called live.
 
-## 13. The 3D drill-down: the process over its services (Milestone 13; specified, not built)
+## 13. The 3D drill-down: the process over its services (Milestone 13; implemented 2026-10-13)
 
 - **What it shows.** An optional "3D" view of the flow board, lazy-loaded like the galaxy:
   - The swimlane plane floats on top.
@@ -327,6 +327,15 @@ Specify all three, build Milestone 11 only. Decisions: ADR-023 (sections 9–10)
   - colours from tokens through a palette module;
   - no Three.js objects in Zustand, and no per-frame global state.
 - **Performance** is measured with `npm run bench:3d` at 12 steps × 6 service boards and recorded in `BENCHMARKS.md`.
+- **Implementation notes (2026-10-13):**
+  - **Code:** `apps/web/src/features/business-flows/drilldown/` — `drilldownModel.ts` (pure scene model), `drilldownCamera.ts` (poses, particle positions), `drilldownLabels.ts`, `drilldownPalette.ts`, `DrilldownScene.tsx` + `DrilldownParts.tsx` (R3F), `FlowDrilldown3D.tsx` (the lazy boundary and overlay).
+  - **Opening it:** the flow board's **Swimlane | 3D** switch. URL: `scene=3d`, and `drill=<service>` for an entered service (`scope` is the galaxy's). The selected step is the shared `step` parameter.
+  - **Layout:** one plane per service lane, in lane order, centred under the lane's steps; each lane is stretched over its plane on the flow plane. The planes hang at least 420 units down, more for a big flow (35% of its extent). A service without a board is an empty plane labelled "no board yet". A shaft starts at a step and ends at its line's entry station (the gate, else the first station after the caller).
+  - **Labels** are drei `Html` (ADR-011 rejected runtime font fetching), decluttered by the galaxy's `LabelLayer`, now generic. Stations are labelled only inside the entered service.
+  - **Camera:** CameraControls; about 45° onto a single plane, lower and to the side for the stack; instant under reduced motion.
+  - **Replay particles** read the board's playback clock in the frame loop; with reduced motion they rest at the station.
+  - **Bloom** only in the dark theme, and only on colours pushed above 1 (shafts and particles).
+  - **Accessible path:** the overlay lists every service as a button, with the breadcrumb and "Back to the flow (Esc)"; the swimlane, strip, and card stay beside it.
 
 ## Revision 2 implementation notes (Milestone 11, 2026-10-12)
 These refine sections 9–11. Where they differ, these notes win.

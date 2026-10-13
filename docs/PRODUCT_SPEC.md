@@ -419,7 +419,7 @@ Spec: `docs/BUSINESS_FLOWS.md` Revision 2. Decisions: ADR-023 to ADR-026.
   - at-least-once delivery without deduplication;
   - polling without a deadline.
 
-### Q.2 Milestones 12 (implemented 2026-10-13) and 13 (specified, not started)
+### Q.2 Milestones 12 and 13 (implemented 2026-10-13)
 - **Flow impact:** simulated failures show which flows break, at which step, and the likely outcome. This appears in the inspector, the simulation page, the flow board, and the catalog, and is always labelled simulated.
 - **3D drill-down:** an optional 3D view with the flow above its services' boards. The user flies down into a service and climbs back. The 2D views stay primary.
 
@@ -465,3 +465,11 @@ Those of `docs/milestones/MILESTONE_11_FLOW_SWIMLANES_PATTERNS.md`, `MILESTONE_1
 - A simulated failure now shows which business flows it reaches, at which step they stop, and how they likely end (an outcome, with or without compensation; delayed; or unknown). Example: the card processor unavailable → Checkout stops at Authorize payment, likely Cancelled, with compensation; Refund stops at Refund payment, likely Rejected.
 - It appears in the inspector, on the simulation page, as a banner and step marks on the flow board, and in the catalog, always labelled simulated.
 - The backend's impact preview returns the same result.
+
+## Revision V — 3D drill-down from a flow (2026-10-13, Milestone 13)
+**Source:** product owner: "lets start implementing", after Milestone 13 was named as the next specified milestone. Decision: ADR-026. Spec: `docs/BUSINESS_FLOWS.md` §13.
+
+- The flow board has a **Swimlane | 3D** switch. In 3D, the flow floats above a plane per service, each showing that service's transit board, with a light shaft from each step down to the line it enters.
+- Clicking a plane, or a service in the list, flies down to it; Escape or the breadcrumb climbs back. The selected step is the same as in the swimlane, and the view is in the URL.
+- During transaction replay, a particle travels down the active step's shaft and back up.
+- Without WebGL the board says so and offers the swimlane. The lists, strip, and card remain the accessible path.

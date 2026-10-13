@@ -649,3 +649,11 @@ Decision: ADR-025. Spec: `docs/BUSINESS_FLOWS.md` §12.
 - **Domain:** `flowImpacts(index, roots, impacts)` in `domain/flowImpact.ts` (pure; Go port `internal/domain/flowimpact.go`; fixtures `conformance/impact/flows.json`). `typicalPath` moved to `domain/businessFlow.ts` so both stacks share it.
 - **API:** `GET /topology/impact` returns `flows` (FlowImpact, AffectedFlowStep, LikelyFlowOutcome in OpenAPI).
 - **UI:** `state/useFlowImpacts.ts` derives flow impact from the simulation store, memoized on failures and impacts (never per frame). Surfaces: the inspector's simulated section, the simulation page, the flow board banner and swimlane marks (`SwimlaneView.simulated`), and the catalog.
+
+## Revision 18 — 3D drill-down from a flow (2026-10-13, Milestone 13)
+Decision: ADR-026. Spec: `docs/BUSINESS_FLOWS.md` §13 and its implementation notes.
+
+- **Layers:** `features/business-flows/drilldown/`: the pure scene model (swimlane layout + transit plane coordinates → world positions, shafts, scope bounds) → the R3F scene → the lazy boundary. Three.js, R3F, and drei are one lazy chunk shared with the galaxy; the main bundle has none.
+- **State:** `scene` and `drill` are page URL parameters of `/flows/` (`PAGE_PARAMS`); the selected step is `step`, shared with the swimlane. Camera poses live in CameraControls; replay particles read the board's local playback store. Nothing is written to Zustand per frame (frame-loop guard).
+- **Shared 3D modules:** `galaxy/webgl.ts`, `galaxy/palette.ts` (fallback colours), and `galaxy/labelLayer.ts` (now generic anchors).
+- **Dependencies (pinned):** `@react-three/postprocessing` 3.1.3 and `postprocessing` 6.39.5 (selective Bloom), `maath` 0.10.8 (frame-local easing).

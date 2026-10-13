@@ -9,7 +9,8 @@ import { createApiClient } from './http/apiClient';
 import { createHttpBoardStore } from './boards/httpBoardStore';
 import { createSandbox } from './sandbox/sandbox';
 import { createTransitRepository } from './transitRepository';
-import type { TransitRepository } from '../transit/repository';
+import { createExampleTransitRepository, type TransitRepository } from '../transit/repository';
+import { FLOW_DATASET, generateFlowDataset } from './mock/generateFlowDataset';
 
 export interface Repositories {
   topology: TopologyRepository;
@@ -32,6 +33,7 @@ export function selectRepository(search: string, defaultSource: string | undefin
     return { topology: createHttpTopologyRepository(api), snapshots: createHttpSnapshotRepository(api), layouts: createHttpSavedLayoutRepository(api), transit: createTransitRepository(createHttpBoardStore(api)) };
   }
   const name = params.get('dataset');
+  if (name === FLOW_DATASET) return flowDataset();
   if (name && name in GENERATED_DATASETS) {
     const options = GENERATED_DATASETS[name as GeneratedDatasetName];
     return {
@@ -46,3 +48,15 @@ export function selectRepository(search: string, defaultSource: string | undefin
   const sandbox = createSandbox();
   return { topology: sandbox.topology, snapshots: createInMemorySnapshotRepository(mockSnapshots()), layouts: createLocalSavedLayoutRepository(), transit: createTransitRepository(sandbox.boards) };
 }
+
+/** The 3D drill-down benchmark dataset (`?dataset=flow-12x6`): its boards come with it. */
+function flowDataset(): Repositories {
+  const { topology, boards } = generateFlowDataset();
+  return {
+    topology: createMockTopologyRepository(topology, `Generated dataset “${FLOW_DATASET}”`),
+    snapshots: createInMemorySnapshotRepository(),
+    layouts: createLocalSavedLayoutRepository(),
+    transit: createExampleTransitRepository(Object.fromEntries(Object.entries(boards).map(([id, board]) => [id, { board: () => board, traces: () => new Map() }]))),
+  };
+}
+

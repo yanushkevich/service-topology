@@ -3,7 +3,7 @@
 // against a running production build:
 //
 //   npm run build && npx vite preview --port 4173 &
-//   npm run bench:3d -- --url http://localhost:4173 [--chrome "/path/to/chrome"] [--gpu]
+//   npm run bench:3d -- --url http://localhost:4173 [--chrome "/path/to/chrome"] [--gpu] [--only galaxy|drilldown]
 //
 // Without --gpu, Chrome renders WebGL with SwiftShader (CPU). That gives a pessimistic lower bound,
 // not representative of a GPU-equipped desktop. Prints environment + JSON + table.
@@ -18,6 +18,8 @@ const args = Object.fromEntries(
 );
 const BASE = typeof args.url === 'string' ? args.url : 'http://localhost:4173';
 const GPU = args.gpu === true || args.gpu === 'true';
+/** Run one section only: the galaxy (Milestone 4) or the flow drill-down (Milestone 13). */
+const ONLY = typeof args.only === 'string' ? args.only : null;
 const CHROME =
   (typeof args.chrome === 'string' && args.chrome) ||
   process.env.CHROME ||
@@ -87,91 +89,138 @@ async function main() {
     };
     const step = (name) => console.error(`[bench-3d] ${name}`);
 
-    step('load 250/750 overview');
-    // 1. Load the 250/750 overview directly in 3D.
-    const loads = [];
     let webgl;
-    for (let i = 0; i < 3; i++) {
-      await open('/map?dataset=scale-250&v=1&env=production&view=3d');
-      const r = await evaluate(`(async () => {
+    if (!ONLY || ONLY === 'galaxy') {
+      step('load 250/750 overview');
+      // 1. Load the 250/750 overview directly in 3D.
+      const loads = [];
+      for (let i = 0; i < 3; i++) {
+        await open('/map?dataset=scale-250&v=1&env=production&view=3d');
+        const r = await evaluate(`(async () => {
+          await __waitFor(() => document.querySelector('canvas') && __btn('Entities in this scope'));
+          await __frames(3);
+          const gl = document.querySelector('canvas').getContext('webgl2');
+          return { t: performance.now(), count: __btn('Entities in this scope').textContent, renderer: gl ? (gl.getExtension('WEBGL_debug_renderer_info') ? gl.getParameter(gl.getExtension('WEBGL_debug_renderer_info').UNMASKED_RENDERER_WEBGL) : 'webgl2') : 'unknown' };
+        })()`);
+        loads.push(r.t);
+        webgl = r.renderer;
+        results['250/750: entities in scope'] = { value: r.count };
+      }
+      results['250/750: navigation → 3D scene drawn (ms)'] = stats(loads);
+
+      step('idle frames');
+      // 2. Frame intervals: idle with simulated traffic particles (continuous rendering).
+      await sleep(1500);
+      const idle = await evaluate(`__frameIntervals(3000)`);
+      results['250/750: frame interval, idle with traffic particles (ms)'] = { ...stats(idle), fps: +(1000 / (idle.reduce((a, b) => a + b, 0) / idle.length)).toFixed(1) };
+
+      step('orbit frames');
+      // 3. Frame intervals while orbiting (drag on the canvas).
+      const orbit = await evaluate(`(async () => {
+        const canvas = document.querySelector('canvas');
+        const r = canvas.getBoundingClientRect();
+        const cx = r.x + r.width / 2, cy = r.y + r.height / 2;
+        const opts = (x, y) => ({ clientX: x, clientY: y, pointerId: 1, pointerType: 'mouse', button: 0, buttons: 1, bubbles: true, isPrimary: true });
+        canvas.dispatchEvent(new PointerEvent('pointerdown', opts(cx, cy)));
+        const measure = __frameIntervals(2000);
+        for (let i = 0; i < 110; i++) { canvas.ownerDocument.dispatchEvent(new PointerEvent('pointermove', opts(cx + i * 4, cy + Math.sin(i / 10) * 30))); await new Promise((res) => setTimeout(res, 16)); }
+        canvas.ownerDocument.dispatchEvent(new PointerEvent('pointerup', opts(cx + 440, cy)));
+        return measure;
+      })()`);
+      results['250/750: frame interval while orbiting (ms)'] = { ...stats(orbit), fps: +(1000 / (orbit.reduce((a, b) => a + b, 0) / orbit.length)).toFixed(1) };
+
+      step('selection');
+      // 4. Selection response via the accessible entity list → inspector updated (+2 frames).
+      await attempt('250/750: select entity → inspector + highlight drawn (ms)', async () => {
+      const select = await evaluate(`(async () => {
+        __btn('Entities in this scope').click();
+        await __frames(2);
+        const buttons = [...document.querySelectorAll('[aria-label="Inside"] li > button:first-child')].slice(0, 12);
+        const out = [];
+        for (const b of buttons) {
+          const name = b.querySelector('span:nth-child(2)').textContent;
+          const t0 = performance.now();
+          b.click();
+          await __waitFor(() => document.querySelector('aside[aria-label="Inspector"] h2')?.textContent === name);
+          await __frames(2);
+          out.push(performance.now() - t0);
+        }
+        return out;
+      })()`);
+      results['250/750: select entity → inspector + highlight drawn (ms)'] = stats(select);
+      });
+
+      step('explore inside');
+      // 5. Explore inside a constellation → breadcrumb updated (+2 frames), includes the dive animation.
+      await attempt('250/750: Explore inside → new scope shown, incl. dive animation (ms)', async () => {
+      const enter = await evaluate(`(async () => {
+        const button = document.querySelector('[aria-label^="Explore inside"]');
+        const name = button.getAttribute('aria-label').replace('Explore inside ', '');
+        const t0 = performance.now();
+        button.click();
+        await __waitFor(() => [...document.querySelectorAll('nav[aria-label="Exploration path"] button')].some((b) => b.getAttribute('aria-current') === 'location' && b.textContent.startsWith(name)));
+        await __frames(2);
+        return performance.now() - t0;
+      })()`);
+      results['250/750: Explore inside → new scope shown, incl. dive animation (ms)'] = { value: +enter.toFixed(1) };
+      });
+
+      step('1,000 inventory');
+      // 6. 1,000-entity inventory: aggregated overview.
+      await open('/map?dataset=inventory-1000&v=1&env=production&view=3d');
+      const inventory = await evaluate(`(async () => {
         await __waitFor(() => document.querySelector('canvas') && __btn('Entities in this scope'));
         await __frames(3);
-        const gl = document.querySelector('canvas').getContext('webgl2');
-        return { t: performance.now(), count: __btn('Entities in this scope').textContent, renderer: gl ? (gl.getExtension('WEBGL_debug_renderer_info') ? gl.getParameter(gl.getExtension('WEBGL_debug_renderer_info').UNMASKED_RENDERER_WEBGL) : 'webgl2') : 'unknown' };
+        return { t: performance.now(), count: __btn('Entities in this scope').textContent, note: document.querySelector('nav[aria-label="Exploration path"]')?.parentElement?.querySelector('p')?.textContent ?? '' };
       })()`);
-      loads.push(r.t);
-      webgl = r.renderer;
-      results['250/750: entities in scope'] = { value: r.count };
+      results['1,000 inventory: navigation → aggregated 3D overview drawn (ms)'] = { value: +inventory.t.toFixed(1) };
+      results['1,000 inventory: overview'] = { value: `${inventory.count} — ${inventory.note}` };
     }
-    results['250/750: navigation → 3D scene drawn (ms)'] = stats(loads);
 
-    step('idle frames');
-    // 2. Frame intervals: idle with simulated traffic particles (continuous rendering).
-    await sleep(1500);
-    const idle = await evaluate(`__frameIntervals(3000)`);
-    results['250/750: frame interval, idle with traffic particles (ms)'] = { ...stats(idle), fps: +(1000 / (idle.reduce((a, b) => a + b, 0) / idle.length)).toFixed(1) };
-
-    step('orbit frames');
-    // 3. Frame intervals while orbiting (drag on the canvas).
-    const orbit = await evaluate(`(async () => {
-      const canvas = document.querySelector('canvas');
-      const r = canvas.getBoundingClientRect();
-      const cx = r.x + r.width / 2, cy = r.y + r.height / 2;
-      const opts = (x, y) => ({ clientX: x, clientY: y, pointerId: 1, pointerType: 'mouse', button: 0, buttons: 1, bubbles: true, isPrimary: true });
-      canvas.dispatchEvent(new PointerEvent('pointerdown', opts(cx, cy)));
-      const measure = __frameIntervals(2000);
-      for (let i = 0; i < 110; i++) { canvas.ownerDocument.dispatchEvent(new PointerEvent('pointermove', opts(cx + i * 4, cy + Math.sin(i / 10) * 30))); await new Promise((res) => setTimeout(res, 16)); }
-      canvas.ownerDocument.dispatchEvent(new PointerEvent('pointerup', opts(cx + 440, cy)));
-      return measure;
-    })()`);
-    results['250/750: frame interval while orbiting (ms)'] = { ...stats(orbit), fps: +(1000 / (orbit.reduce((a, b) => a + b, 0) / orbit.length)).toFixed(1) };
-
-    step('selection');
-    // 4. Selection response via the accessible entity list → inspector updated (+2 frames).
-    await attempt('250/750: select entity → inspector + highlight drawn (ms)', async () => {
-    const select = await evaluate(`(async () => {
-      __btn('Entities in this scope').click();
-      await __frames(2);
-      const buttons = [...document.querySelectorAll('[aria-label="Inside"] li > button:first-child')].slice(0, 12);
-      const out = [];
-      for (const b of buttons) {
-        const name = b.querySelector('span:nth-child(2)').textContent;
-        const t0 = performance.now();
-        b.click();
-        await __waitFor(() => document.querySelector('aside[aria-label="Inspector"] h2')?.textContent === name);
-        await __frames(2);
-        out.push(performance.now() - t0);
+    if (!ONLY || ONLY === 'drilldown') {
+      step('drill-down 12 steps × 6 boards');
+      // 7. The 3D drill-down (ADR-026) at the spec's scale: a generated 12-step flow over 6 boards.
+      const drillLoads = [];
+      for (let i = 0; i < 3; i++) {
+        await open('/flows/flow-generated?dataset=flow-12x6&v=1&env=production&scene=3d');
+        const r = await evaluate(`(async () => {
+          await __waitFor(() => document.querySelector('canvas') && document.querySelectorAll('[data-board-label]').length === 6);
+          await __frames(3);
+          const gl = document.querySelector('canvas').getContext('webgl2');
+          return { t: performance.now(), steps: document.querySelectorAll('[data-step-label]').length, renderer: gl && gl.getExtension('WEBGL_debug_renderer_info') ? gl.getParameter(gl.getExtension('WEBGL_debug_renderer_info').UNMASKED_RENDERER_WEBGL) : 'webgl2' };
+        })()`);
+        drillLoads.push(r.t);
+        webgl = webgl ?? r.renderer;
+        results['drill-down: steps × boards'] = { value: `${r.steps} × 6` };
       }
-      return out;
-    })()`);
-    results['250/750: select entity → inspector + highlight drawn (ms)'] = stats(select);
-    });
-
-    step('explore inside');
-    // 5. Explore inside a constellation → breadcrumb updated (+2 frames), includes the dive animation.
-    await attempt('250/750: Explore inside → new scope shown, incl. dive animation (ms)', async () => {
-    const enter = await evaluate(`(async () => {
-      const button = document.querySelector('[aria-label^="Explore inside"]');
-      const name = button.getAttribute('aria-label').replace('Explore inside ', '');
-      const t0 = performance.now();
-      button.click();
-      await __waitFor(() => [...document.querySelectorAll('nav[aria-label="Exploration path"] button')].some((b) => b.getAttribute('aria-current') === 'location' && b.textContent.startsWith(name)));
-      await __frames(2);
-      return performance.now() - t0;
-    })()`);
-    results['250/750: Explore inside → new scope shown, incl. dive animation (ms)'] = { value: +enter.toFixed(1) };
-    });
-
-    step('1,000 inventory');
-    // 6. 1,000-entity inventory: aggregated overview.
-    await open('/map?dataset=inventory-1000&v=1&env=production&view=3d');
-    const inventory = await evaluate(`(async () => {
-      await __waitFor(() => document.querySelector('canvas') && __btn('Entities in this scope'));
-      await __frames(3);
-      return { t: performance.now(), count: __btn('Entities in this scope').textContent, note: document.querySelector('nav[aria-label="Exploration path"]')?.parentElement?.querySelector('p')?.textContent ?? '' };
-    })()`);
-    results['1,000 inventory: navigation → aggregated 3D overview drawn (ms)'] = { value: +inventory.t.toFixed(1) };
-    results['1,000 inventory: overview'] = { value: `${inventory.count} — ${inventory.note}` };
+      results['drill-down: navigation → 3D scene drawn (ms)'] = stats(drillLoads);
+      const drillOrbit = await evaluate(`(async () => {
+        const canvas = document.querySelector('canvas');
+        const r = canvas.getBoundingClientRect();
+        const cx = r.x + r.width / 2, cy = r.y + r.height / 2;
+        const opts = (x, y) => ({ clientX: x, clientY: y, pointerId: 1, pointerType: 'mouse', button: 0, buttons: 1, bubbles: true, isPrimary: true });
+        canvas.dispatchEvent(new PointerEvent('pointerdown', opts(cx, cy)));
+        const measure = __frameIntervals(2000);
+        for (let i = 0; i < 110; i++) { canvas.ownerDocument.dispatchEvent(new PointerEvent('pointermove', opts(cx + i * 4, cy + Math.sin(i / 10) * 30))); await new Promise((res) => setTimeout(res, 16)); }
+        canvas.ownerDocument.dispatchEvent(new PointerEvent('pointerup', opts(cx + 440, cy)));
+        return measure;
+      })()`);
+      results['drill-down: frame interval while orbiting (ms)'] = { ...stats(drillOrbit), fps: +(1000 / (drillOrbit.reduce((a, b) => a + b, 0) / drillOrbit.length)).toFixed(1) };
+      await attempt('drill-down: enter a service → scope shown (ms)', async () => {
+        const enter = await evaluate(`(async () => {
+          const out = [];
+          for (const i of [2, 4, 1]) {
+            const t0 = performance.now();
+            __btn('Enter Service ' + i).click();
+            await __waitFor(() => document.querySelector('[data-drilldown-scope]')?.getAttribute('data-drilldown-scope') === 'svc-' + i);
+            await __frames(2);
+            out.push(performance.now() - t0);
+          }
+          return out;
+        })()`);
+        results['drill-down: enter a service → scope shown (ms)'] = stats(enter);
+      });
+    }
 
     const environment = {
       date: new Date().toISOString(),

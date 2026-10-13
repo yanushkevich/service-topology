@@ -213,6 +213,12 @@ The Events page and inspector explain the new rule automatically.
 - **UI** reads `useFlowImpacts(index, environmentId)`; pass a null index while viewing history. Text comes from `describeFlowImpact`, and every surface carries the Simulated tag or sits in a simulated section.
 - **Screenshots of simulated states** need the failure injected in the page and in-app navigation (the simulation is in memory); see the "Flow board (simulated impact)" entry in `scripts/audit-a11y.mjs`.
 
+## 7e. 3D drill-down (ADR-026, Milestone 13)
+- **Layers:** `drilldownModel.ts` (pure, jsdom tests) → `DrilldownScene.tsx` (R3F test renderer) → `FlowDrilldown3D.tsx` (lazy boundary; the flow board imports it with `lazy`). Keep Three.js out of the main bundle: import 3D modules only from the lazy chunk.
+- **Shared with the galaxy:** `galaxy/webgl.ts` (detection, context loss) and `galaxy/labelLayer.ts` (HTML label declutter with memoized `LabelAnchor`s).
+- **Testing the overlay in jsdom:** mock `galaxy/webgl` to report WebGL and `@react-three/fiber`'s `Canvas` to render nothing (see `FlowDrilldown3D.test.tsx`). CameraControls applies a pose on its next update: advance frames in the test renderer before reading the camera.
+- **Benchmark data:** `?dataset=flow-12x6` (a generated flow with a board per service); `npm run bench:3d -- --only drilldown`.
+
 ## 8. Known limitations (current)
 - No real integrations, authentication, or tenancy. All data is mock; all telemetry is simulated.
 - Sandbox edits stay in one browser. To move them to the backend, export a data bundle from Settings → Data source and import it with `?source=api` (ADR-032).
@@ -225,4 +231,5 @@ The Events page and inspector explain the new rule automatically.
 - Preferences are per browser (localStorage); there is no user account to sync them.
 - Generated datasets (`?dataset=…`) have no event types, so the Events catalog is empty there. Event types are not part of the snapshot diff.
 - The Infrastructure tree renders every expanded row (no virtualization); at 1,000 entities use search/filters or collapse levels.
+- The 3D drill-down shows observed data only where boards have it: services without a board are empty planes until one is authored (or Milestone 14 brings real data).
 - The 3D view logs a `THREE.Clock` deprecation warning. It comes from React Three Fiber 9.8.1, the latest stable release (only the 10.0 canaries use `THREE.Timer`); it goes away with that upgrade.

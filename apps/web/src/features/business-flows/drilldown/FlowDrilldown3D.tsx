@@ -119,12 +119,12 @@ function Overlay({ flowName, boards, entered, enteredName, onScope, onExit }: { 
         )}
       </nav>
       <details open className={cx(floatClass, 'top-3 right-3 z-30 max-h-[70%] w-[220px] overflow-auto px-2.5 py-2 max-md:w-[180px]')}>
-        <summary className={cx(kickerClass, 'cursor-pointer')}>Services ({boards.length}) · or click a plane</summary>
+        <summary className={cx(kickerClass, 'flex min-h-6 cursor-pointer items-center')}>Services ({boards.length}) · or click a plane</summary>
         <section aria-label="Services in this flow">
           <ul className="m-0 mt-1 flex list-none flex-col gap-0.5 p-0 text-sm">
             {boards.map((b) => (
               <li key={b.serviceDefinitionId}>
-                <button type="button" className="w-full rounded-sm px-1.5 py-0.5 text-left text-fg hover:bg-surface-3 aria-pressed:bg-accent-soft" aria-pressed={entered === b.serviceDefinitionId} onClick={() => onScope(b.serviceDefinitionId)}>
+                <button type="button" className="min-h-6 w-full rounded-sm px-1.5 py-0.5 text-left text-fg hover:bg-surface-3 aria-pressed:bg-accent-soft" aria-pressed={entered === b.serviceDefinitionId} onClick={() => onScope(b.serviceDefinitionId)}>
                   Enter {b.name}
                   {!b.hasBoard && <span className="text-xs text-fg-3"> · no board yet</span>}
                 </button>

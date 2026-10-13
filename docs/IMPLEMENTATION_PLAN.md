@@ -217,7 +217,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 11.6 | Implemented (2026-10-13) | UI polish: defects from a real-browser review, quick search across everything (ADR-033), inspector only when useful, map opens at the selection, phone header, flows on the Overview, clearer flow targets; `docs/milestones/MILESTONE_11_6_UI_POLISH.md`. |
 | 14 | **On hold** (2026-10-12) | Real data instead of example data: sources, contract freeze, backend observability module, HTTP repository (ADR-030, proposed). Waits for the answers in `docs/REAL_DATA_INTEGRATION.md` §6; `docs/milestones/MILESTONE_14_REAL_DATA.md`. |
 | 12 | Implemented (2026-10-13) | Flows in impact analysis and simulation, with backend B9 (ADR-025); see the Milestone 12 closeout. `make test-integration` and `make contract-check` not yet run. |
-| 13 | In progress (2026-10-13) | 3D drill-down from a flow into its services (ADR-026). |
+| 13 | Implemented (2026-10-13) | 3D drill-down from a flow into its services (ADR-026); see the Milestone 13 closeout. |
 | 9 | Implemented (2026-10-12) | Transit board on example data (ADR-021): spec Phase 1 plus the Phase 4 replay UI, hover tooltips, windows, and per-step stats; see the Milestone 9 closeout and follow-up below. Real data sources (phases 2, 3, and 5) are not started. |
 | B1 (backend) | Implemented (2026-10-11) | Go foundation in `backend/`; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B2 (backend) | Implemented (2026-10-11) | ArcadeDB adapter, schema, idempotent seed, integration tests; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. The database was replaced by MongoDB afterwards (ADR-019). |
@@ -809,3 +809,30 @@ Flows in impact analysis and simulation, with backend B9 (ADR-025; `docs/BUSINES
 - **Per service, not per operation.** A step is affected when its service is, unless the failure arrives over the flow's own hand-off. A degraded service may not affect every one of its steps in reality.
 - **No observed shares in the typical path** for flow impact (the backend has none): decisions take their first declared exit.
 - **One likely outcome.** The first affected step decides it; later steps' outcomes are not combined.
+
+### Milestone 13 closeout (2026-10-13)
+3D drill-down from a flow into its services (ADR-026; `docs/BUSINESS_FLOWS.md` §13 and its implementation notes).
+
+**Commits:**
+- `2dd01f4` scene model (and ADR-026 accepted);
+- `c85f26a` scene, camera rig, shafts, particles, and the lazy boundary;
+- `b193f4a` the flow board switch, URL scope, navigation, label declutter, and layout tuning;
+- the close-out commit (benchmark dataset and section, audit page, target sizes, docs).
+
+**Checks run:**
+- **Frontend (`apps/web`):** `npm run check`: typecheck and lint clean; 91 files, 1,203 passed, 1 skipped; build passes. The drill-down is a 153 kB lazy chunk; Three.js is in a lazy chunk shared with the galaxy, none in the main bundle (checked in the build output).
+- **Real-browser audit:** `npm run audit:a11y`, 30 pages × 2 themes, all pass, including the drill-down with a service entered. The first run found two targets under 24 px in the services list; fixed.
+- **Benchmark:** `npm run bench:3d -- --only drilldown` at 12 steps × 6 boards on SwiftShader; recorded in `docs/BENCHMARKS.md`.
+- **Screenshots** (headless Chrome, SwiftShader): the flow overview, a service entered with a step selected, and replay with the particle on its shaft, at 1440 px (dark and light) and 390 px. No horizontal scroll; the only console message is the known `THREE.Clock` warning.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Lazy-loaded; without WebGL it falls back with a message; the lists remain the accessible path | Pass | Build output; `FlowBoardPage.test.tsx` (fallback); the services list and breadcrumb (`FlowDrilldown3D.test.tsx`); audit |
+| Entering a service and climbing back is reversible and keeps the selection | Pass | `FlowDrilldown3D.test.tsx` (buttons, Escape, browser Back); `DrilldownScene.test.tsx` (camera poses) |
+| No Three.js object in Zustand; no global state per frame | Pass | Frame-loop guard (`frameLoop.test.ts`) over the new `useFrame` callbacks; state lives in the URL and local stores |
+| Timings recorded; `npm run check` passes | Pass | `docs/BENCHMARKS.md`; as listed |
+
+**Known limitations:**
+- **Software WebGL only.** Frame rates were measured on SwiftShader; GPU numbers are still needed.
+- **Empty planes.** Only Payment Service has an example board; other services show an empty plane until a board is authored (or Milestone 14).
+- **Labels** of dense planes are decluttered, so some names show only when you fly closer or enter the service.

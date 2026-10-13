@@ -319,7 +319,7 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 - **Alternatives:** compute flow impact only in the browser. Rejected: API clients of `/topology/impact` would miss it, and parity is the rule (ADR-016).
 
 ## ADR-026 — 3D drill-down from a flow into its services (2026-10-12, Milestone 13)
-- **Status:** Accepted 2026-10-13 (product owner: "lets start implementing", after Milestone 13 was named as the next specified milestone). Spec: `docs/BUSINESS_FLOWS.md` Revision 2, section 13. Follows `docs/3D_GALAXY_EXPERIENCE.md` and ADR-011.
+- **Status:** Accepted and implemented 2026-10-13 (product owner: "lets start implementing", after Milestone 13 was named as the next specified milestone). Spec: `docs/BUSINESS_FLOWS.md` Revision 2, section 13. Follows `docs/3D_GALAXY_EXPERIENCE.md` and ADR-011.
 - **Refinements at acceptance:**
   - **Labels are drei `Html`, not `Text`/`Billboard`:** ADR-011 rejected troika SDF text because it fetches a font at runtime; HTML labels are crisp and use the app's font.
   - **Shared with the galaxy:** WebGL detection and context loss (`galaxy/webgl.ts`) and theme colours read from the tokens (`galaxy/palette.ts`). Line colours are read from the `--transit-line-*` tokens, so no new literal colours.
