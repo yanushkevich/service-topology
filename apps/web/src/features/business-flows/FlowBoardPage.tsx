@@ -7,7 +7,7 @@ import { useTopology } from '../../data/topologyContext';
 import { DEFAULT_WINDOW, isWindow, windowLabel } from '../../transit/board';
 import { indexFlows, type FlowBoardIndex } from '../../transit/flows/flowIndex';
 import { computeSwimlanes } from '../../transit/flows/swimlane';
-import { flowFindings, typicalPath } from '../../transit/flows/flowModel';
+import { flowFindings, lineForStep, typicalPath } from '../../transit/flows/flowModel';
 import { sampleTransactions, txDivergence } from '../../transit/flows/observed';
 import type { TransitWindow } from '../../transit/types';
 import { ignoreShortcut } from '../../shared/keyboard';
@@ -266,9 +266,8 @@ function useInnerAttempts(flow: BusinessFlow, environmentId: string, window: Tra
     if (boards.status !== 'ready') return out;
     for (const board of boards.value) {
       if (!board) continue;
-      for (const step of flow.steps.filter((s) => s.serviceDefinitionId === board.serviceDefinitionId && s.entryPoint)) {
-        const entry = (step.entryPoint ?? '').toLowerCase();
-        const line = board.lines.find((l) => l.name.toLowerCase() === entry || l.signature.toLowerCase() === entry);
+      for (const step of flow.steps.filter((s) => s.serviceDefinitionId === board.serviceDefinitionId)) {
+        const line = lineForStep(board.lines, step);
         if (!line) continue;
         let best: { attempts: number; what: string } | null = null;
         for (const id of new Set(line.route.flatMap((b) => b.stations))) {

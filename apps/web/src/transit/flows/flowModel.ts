@@ -2,6 +2,7 @@ import { reachableFrom, stepById } from '../../domain/businessFlow';
 import type { BusinessFlow, FlowPolicyType, FlowStep, FlowTransition } from '../../domain/types';
 import { flowRanks } from './flowIndex';
 import { patternLabel } from '../../domain/patterns';
+import { lineNamed } from '../board';
 
 /**
  * Flow-level reading of a business flow (docs/BUSINESS_FLOWS.md §3, §5): the typical path, the
@@ -237,4 +238,23 @@ export function flowSearchText(flow: BusinessFlow, serviceName: (id: string) => 
   for (const s of flow.steps) parts.push(s.name, serviceName(s.serviceDefinitionId), s.entryPoint ?? '');
   for (const t of flow.transitions) if (t.via.kind === 'event') parts.push(eventName(t.via.eventTypeId));
   return parts.join(' ').toLowerCase();
+}
+
+/** The service-board line a flow step enters: its entry point names the line (ADR-023 §10). */
+export function lineForStep<T extends { id: string; name: string; signature: string }>(lines: readonly T[], step: FlowStep): T | null {
+  return step.entryPoint ? lineNamed(lines, step.entryPoint) : null;
+}
+
+export interface FlowOnService {
+  flow: BusinessFlow;
+  /** The flow's steps on this service, with the line each enters (null: not mapped to a line). */
+  steps: { step: FlowStep; lineId: string | null }[];
+}
+
+/** Flows with at least one step on the service, in the given order, each with its steps there. */
+export function flowsOnService(flows: readonly BusinessFlow[], serviceDefinitionId: string, lines: readonly { id: string; name: string; signature: string }[]): FlowOnService[] {
+  return flows.flatMap((flow) => {
+    const steps = flow.steps.filter((s) => s.serviceDefinitionId === serviceDefinitionId).map((step) => ({ step, lineId: lineForStep(lines, step)?.id ?? null }));
+    return steps.length ? [{ flow, steps }] : [];
+  });
 }

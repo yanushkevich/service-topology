@@ -312,6 +312,7 @@ function StepDetail({ flow, step, stats, serviceName, search }: { flow: Business
   const compensation = step.compensatedBy ? flow.steps.find((s) => s.id === step.compensatedBy)?.name : undefined;
   const board = new URLSearchParams(stripPageParams(search));
   if (step.entryPoint) board.set('line', step.entryPoint);
+  board.set('flow', flow.id);
   return (
     <section aria-labelledby={id} className="rounded-lg border border-accent-ring bg-accent-soft px-3 py-2">
       <h3 id={id} className="m-0 text-sm font-semibold">

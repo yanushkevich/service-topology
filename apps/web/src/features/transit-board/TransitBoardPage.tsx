@@ -1,7 +1,10 @@
 import { useContext, useEffect, useId, useMemo, useState } from 'react';
 import { Link, useLocation, useParams, useSearchParams } from 'react-router';
 import { useTopology } from '../../data/topologyContext';
+import { businessFlowsIn } from '../../domain/businessFlow';
 import type { ServiceDefinition } from '../../domain/types';
+import { indexFlows, type FlowBoardIndex } from '../../transit/flows/flowIndex';
+import { flowsOnService, type FlowOnService } from '../../transit/flows/flowModel';
 import { DEFAULT_WINDOW, findLine, indexBoard, isUnobserved, isWindow, matchingLines, windowLabel } from '../../transit/board';
 import { computeMapGeometry } from '../../transit/layout';
 import { TransitRepositoryContext } from '../../transit/repository';
@@ -23,11 +26,12 @@ import { createPlayback, playbackActions, usePlaybackClock, useReplayUrlTime, ty
 import { StopStrip } from './StopStrip';
 import { TraceCard, TraceStrip, TrainMarker } from './TraceReplay';
 import { MapLegend, TransitMap } from './TransitMap';
+import { FlowRows, UsedByFlows } from './FlowsOnService';
 import { useTraceDetail, useTraceList, useTransitBoard } from './useTransitBoard';
 
 type Mode = 'typical' | 'trace';
 
-/** Page-local view state in the URL (`line`, `mode`, `trace`, `t`, `window`; kept by useUrlStateSync on this route). */
+/** Page-local view state in the URL (`line`, `mode`, `trace`, `t`, `window`, `flow`; kept by useUrlStateSync on this route). */
 function useBoardParams() {
   const [params, setParams] = useSearchParams();
   const update = (change: (next: URLSearchParams) => void, replace = false) =>
@@ -45,6 +49,7 @@ function useBoardParams() {
     mode: (params.get('mode') === 'trace' ? 'trace' : 'typical') as Mode,
     traceId: params.get('trace'),
     t: params.get('t'),
+    flowId: params.get('flow'),
     window: isWindow(windowParam) ? windowParam : DEFAULT_WINDOW,
     update,
   };
@@ -183,6 +188,10 @@ function ModeSwitch({ mode, line, window, onMode }: { mode: Mode; line: Line | n
 
 function BoardView({ board, definition, mode, onMode, url }: { board: TransitBoard; definition: ServiceDefinition; mode: Mode; onMode: (mode: Mode) => void; url: ReturnType<typeof useBoardParams> }) {
   const index = useMemo(() => indexBoard(board), [board]);
+  const { fx, onService } = useFlowsOnService(definition, board);
+  const selectedFlow = onService.find((f) => f.flow.id === url.flowId) ?? null;
+  const flowLines = useMemo(() => (selectedFlow ? new Set(selectedFlow.steps.flatMap((s) => (s.lineId ? [s.lineId] : []))) : null), [selectedFlow]);
+  const selectFlow = (flowId: string | null) => url.update((p) => (flowId ? p.set('flow', flowId) : p.delete('flow')));
   const narrow = useMediaQuery(NARROW_QUERY);
   const reduced = useMotionReduced();
   // Computed once per data load (and per projection mode); selection, search, and playback never rebuild it.
@@ -252,9 +261,10 @@ function BoardView({ board, definition, mode, onMode, url }: { board: TransitBoa
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape' && line) {
+    if (e.key === 'Escape' && (line || selectedFlow)) {
       e.preventDefault();
-      select(null);
+      if (line) select(null);
+      else selectFlow(null);
       return;
     }
     if (ignoreShortcut(e) || !line) return;
@@ -278,14 +288,24 @@ function BoardView({ board, definition, mode, onMode, url }: { board: TransitBoa
       labels={{ index: 'Lines', map: 'Map', strip: 'Stop strip', card: 'Line card' }}
       onKeyDown={onKeyDown}
       narrowIndex={<LineSelect index={index} selectedId={line?.id ?? null} onSelect={select} />}
-      index={<LineIndex index={index} query={query} onQuery={setQuery} matches={matches} selectedId={line?.id ?? null} onSelect={select} />}
+      index={
+        <LineIndex
+          index={index}
+          query={query}
+          onQuery={setQuery}
+          matches={matches}
+          selectedId={line?.id ?? null}
+          onSelect={select}
+          flows={<FlowRows fx={fx} flows={onService} selectedFlowId={selectedFlow?.flow.id ?? null} onSelect={selectFlow} />}
+        />
+      }
       map={
         <TransitMap
           index={index}
           geometry={geometry}
           serviceName={definition.name}
           selectedId={line?.id ?? null}
-          matches={query.trim() ? matches : null}
+          matches={query.trim() ? matches : flowLines}
           focusStations={focusStations}
           showStepStats={mode === 'typical'}
           onSelect={select}
@@ -318,7 +338,14 @@ function BoardView({ board, definition, mode, onMode, url }: { board: TransitBoa
               onStep={actions.step}
             />
           ) : (
-            <LineCard index={index} line={line} focusedFinding={focusedFinding} onFocusFinding={(at) => setFocus(at === null || !line ? null : { lineId: line.id, at })} onReplay={line && !isUnobserved(line) ? () => onMode('trace') : undefined} />
+            <LineCard
+              index={index}
+              line={line}
+              focusedFinding={focusedFinding}
+              onFocusFinding={(at) => setFocus(at === null || !line ? null : { lineId: line.id, at })}
+              onReplay={line && !isUnobserved(line) ? () => onMode('trace') : undefined}
+              usedBy={line && onService.length > 0 ? <UsedByFlows fx={fx} uses={usesOf(onService, line.id)} /> : undefined}
+            />
           )}
           {line && (
             <p className="m-0 mt-4 text-xs">
@@ -331,4 +358,20 @@ function BoardView({ board, definition, mode, onMode, url }: { board: TransitBoa
       }
     />
   );
+}
+
+/** The business flows deployed in the environment that have a step on this service (ADR-023). */
+function useFlowsOnService(definition: ServiceDefinition, board: TransitBoard): { fx: FlowBoardIndex; onService: FlowOnService[] } {
+  const topology = useTopology();
+  const environmentId = useUiStore((s) => s.environmentId);
+  const index = topology.status === 'ready' ? topology.index : null;
+  return useMemo(() => {
+    const flows = index ? businessFlowsIn(index, environmentId).map((r) => r.flow) : [];
+    const fx = indexFlows(flows, (id) => index?.definitions.get(id)?.name ?? id);
+    return { fx, onService: flowsOnService(fx.flows, definition.id, board.lines) };
+  }, [index, environmentId, definition.id, board.lines]);
+}
+
+function usesOf(onService: readonly FlowOnService[], lineId: string) {
+  return onService.flatMap(({ flow, steps }) => steps.filter((s) => s.lineId === lineId).map((s) => ({ flowId: flow.id, flowName: flow.name, stepId: s.step.id, stepName: s.step.name })));
 }

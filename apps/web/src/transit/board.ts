@@ -180,9 +180,16 @@ export function stepTint(index: BoardIndex, line: Line, stationId: string, stats
   return index.stations.get(stationId)?.kind === 'dependency' && stats.p99Ms > line.deadlineMs / deps ? 'slow' : null;
 }
 
+type Named = { id: string; name: string; signature: string };
+
 /** A line by ID, or by name or signature (case-insensitive): flow steps link here by entry point. */
-export function findLine<T extends { id: string; name: string; signature: string }>(lines: readonly T[], idOrName: string | null): T | null {
+export function findLine<T extends Named>(lines: readonly T[], idOrName: string | null): T | null {
   if (!idOrName) return null;
-  const wanted = idOrName.toLowerCase();
-  return lines.find((l) => l.id === idOrName) ?? lines.find((l) => l.name.toLowerCase() === wanted || l.signature.toLowerCase() === wanted) ?? null;
+  return lines.find((l) => l.id === idOrName) ?? lineNamed(lines, idOrName);
+}
+
+/** The line whose name or signature equals `name`, ignoring case (the step ↔ line rule, ADR-023). */
+export function lineNamed<T extends Named>(lines: readonly T[], name: string): T | null {
+  const wanted = name.toLowerCase();
+  return lines.find((l) => l.name.toLowerCase() === wanted || l.signature.toLowerCase() === wanted) ?? null;
 }

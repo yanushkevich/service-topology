@@ -43,6 +43,10 @@ export const kickerClass = 'text-[10px] tracking-[0.07em] text-fg-3 uppercase';
 /** A content card on a page (mock .card). */
 export const cardClass = 'rounded-xl border border-line bg-surface-1';
 
+/** A row of a board index (lines, flows): the current row is tinted and ringed. */
+export const indexRowClass =
+  'flex w-full items-center gap-2.5 rounded-md px-2 py-[7px] text-left text-[12.5px] text-fg-2 hover:bg-surface-3 hover:text-fg aria-[current=true]:bg-accent-soft aria-[current=true]:text-fg aria-[current=true]:shadow-[inset_0_0_0_1px_var(--color-accent-ring)]';
+
 /** A panel of the transit and flow boards (index, map, strip, card). */
 export const boardPanelClass = 'min-w-0 rounded-2xl border border-line bg-surface-1';
 

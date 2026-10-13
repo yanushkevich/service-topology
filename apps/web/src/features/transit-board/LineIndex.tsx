@@ -1,11 +1,8 @@
-import { useId, useRef } from 'react';
+import { useId, useRef, type ReactNode } from 'react';
 import { dependenciesOf, GROUP_LABELS, GROUP_ORDER, hasWarnings, isUnobserved, type BoardIndex } from '../../transit/board';
-import { fieldClass, kickerClass } from '../../shared/ui/classes';
+import { fieldClass, indexRowClass, kickerClass } from '../../shared/ui/classes';
 import { SearchField, Kicker } from '../../shared/ui/primitives';
 import { LineBadge } from './visuals';
-
-const rowClass =
-  'flex w-full items-center gap-2.5 rounded-md px-2 py-[7px] text-left text-[12.5px] text-fg-2 hover:bg-surface-3 hover:text-fg aria-[current=true]:bg-accent-soft aria-[current=true]:text-fg aria-[current=true]:shadow-[inset_0_0_0_1px_var(--color-accent-ring)]';
 
 /**
  * Line index (spec "Screen layout"): search, "All lines", lines grouped by kind. A real list of
@@ -18,6 +15,7 @@ export function LineIndex({
   matches,
   selectedId,
   onSelect,
+  flows,
 }: {
   index: BoardIndex;
   query: string;
@@ -25,6 +23,8 @@ export function LineIndex({
   matches: Set<string>;
   selectedId: string | null;
   onSelect: (lineId: string | null) => void;
+  /** More rows after the line groups (the business flows on this service, ADR-023). */
+  flows?: ReactNode;
 }) {
   const list = useRef<HTMLDivElement>(null);
   const onKeyDown = (event: React.KeyboardEvent) => {
@@ -42,7 +42,7 @@ export function LineIndex({
     <div className="flex flex-col gap-3" onKeyDown={onKeyDown}>
       <SearchField label="Find a line" placeholder="Find an endpoint, job, or station" value={query} onChange={onQuery} />
       <div ref={list} className="flex flex-col gap-1">
-        <button type="button" data-row className={rowClass} aria-current={selectedId === null} onClick={() => onSelect(null)}>
+        <button type="button" data-row className={indexRowClass} aria-current={selectedId === null} onClick={() => onSelect(null)}>
           <span className="h-5 w-7 flex-none rounded-[5px]" style={{ background: 'linear-gradient(90deg, var(--transit-line-1), var(--transit-line-2), var(--transit-line-3), var(--transit-line-7))' }} aria-hidden="true" />
           <span className="min-w-0 flex-1">All lines</span>
           <span className="text-[10.5px] text-fg-3">network</span>
@@ -61,7 +61,7 @@ export function LineIndex({
                   const warn = hasWarnings(line);
                   return (
                     <li key={line.id}>
-                      <button type="button" data-row className={rowClass} aria-current={selectedId === line.id} onClick={() => onSelect(line.id)}>
+                      <button type="button" data-row className={indexRowClass} aria-current={selectedId === line.id} onClick={() => onSelect(line.id)}>
                         <LineBadge index={index} lineId={line.id} code={line.code} />
                         <span className="min-w-0 flex-1 truncate font-mono text-xs">
                           <span className="sr-only">{line.code}:</span>{' '}
@@ -87,6 +87,7 @@ export function LineIndex({
             </section>
           );
         })}
+        {flows}
         {listed.length === 0 && (
           <p className="m-0 p-2 text-sm text-fg-3" role="status">
             No line matches “{query}”. Try an endpoint name, a caller such as “Admin”, a transport such as “kafka”, or a station such as “ledger”.

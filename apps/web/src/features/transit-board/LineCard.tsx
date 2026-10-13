@@ -16,6 +16,7 @@ export function LineCard({
   focusedFinding,
   onFocusFinding,
   onReplay,
+  usedBy,
 }: {
   index: BoardIndex;
   line: Line | null;
@@ -23,6 +24,8 @@ export function LineCard({
   onFocusFinding: (finding: number | null) => void;
   /** Switches to trace replay; absent when the line has no traces in the window. */
   onReplay?: (() => void) | undefined;
+  /** Business-flow steps that enter this line (ADR-023), shown when any flow runs on the service. */
+  usedBy?: ReactNode;
 }) {
   const failed = index.board.sources.filter((s) => s.status === 'failed');
   if (!line) {
@@ -83,6 +86,7 @@ export function LineCard({
           <Source tag="declared" text="Policies from resilience config" />
         </dl>
       </Block>
+      {usedBy && <Block title="Used by business flows">{usedBy}</Block>}
       <Block title="Patterns on this line">
         <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">
           {line.patterns.map((p) => (

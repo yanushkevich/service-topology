@@ -109,3 +109,24 @@ describe('example business transactions', () => {
     expect(exampleFlowStats('nope', '24h')).toBeNull();
   });
 });
+
+describe('flows on a service board (ADR-023)', () => {
+  const lines = [
+    { id: 'A1', name: 'Authorize', signature: 'rpc Authorize(AuthorizeRequest) returns (Authorization)' },
+    { id: 'A2', name: 'Capture', signature: 'rpc Capture(CaptureRequest) returns (Payment)' },
+  ];
+  it('matches a step to the line its entry point names, ignoring case, and reports unmapped steps', async () => {
+    const { flowsOnService, lineForStep } = await import('./flowModel');
+    expect(lineForStep(lines, { id: 's', name: 'S', serviceDefinitionId: 'payment-service', kind: 'task', entryPoint: 'capture' })?.id).toBe('A2');
+    expect(lineForStep(lines, { id: 's', name: 'S', serviceDefinitionId: 'payment-service', kind: 'task' })).toBeNull();
+    const [checkout] = flowsOnService([checkoutFlow, refundFlow], 'payment-service', lines);
+    expect(checkout?.flow.id).toBe('flow-checkout');
+    expect(checkout?.steps.map((s) => [s.step.id, s.lineId])).toEqual([
+      ['authorize-payment', 'A1'],
+      ['capture-payment', 'A2'],
+      ['await-settlement', null],
+      ['void-authorization', null],
+    ]);
+    expect(flowsOnService([checkoutFlow], 'no-such-service', lines)).toEqual([]);
+  });
+});
