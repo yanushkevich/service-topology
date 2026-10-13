@@ -1,0 +1,458 @@
+{
+  "description": "A valid bundle: the base topology and one board",
+  "bundle": {
+    "format": "service-topology.bundle",
+    "version": 1,
+    "exportedAt": "2026-10-11T08:00:00Z",
+    "source": {
+      "label": "Fixture",
+      "isMock": true
+    },
+    "environments": [
+      {
+        "id": "prod",
+        "name": "Production",
+        "kind": "production"
+      },
+      {
+        "id": "stg",
+        "name": "Staging",
+        "kind": "staging"
+      }
+    ],
+    "serviceDefinitions": [
+      {
+        "id": "svc-api",
+        "name": "API",
+        "category": "api",
+        "protocols": [
+          "https",
+          "kafka",
+          "rabbitmq",
+          "postgresql"
+        ]
+      },
+      {
+        "id": "svc-worker",
+        "name": "Worker",
+        "category": "worker",
+        "protocols": [
+          "kafka",
+          "rabbitmq"
+        ]
+      }
+    ],
+    "serviceInstances": [
+      {
+        "id": "api.prod",
+        "serviceDefinitionId": "svc-api",
+        "environmentId": "prod",
+        "provider": "aws",
+        "health": "healthy",
+        "resourceId": "ns",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      },
+      {
+        "id": "worker.prod",
+        "serviceDefinitionId": "svc-worker",
+        "environmentId": "prod",
+        "provider": "aws",
+        "health": "degraded",
+        "resourceId": "ns",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      },
+      {
+        "id": "api.stg",
+        "serviceDefinitionId": "svc-api",
+        "environmentId": "stg",
+        "provider": "aws",
+        "health": "healthy",
+        "resourceId": "ns-stg",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      }
+    ],
+    "resources": [
+      {
+        "id": "acct",
+        "name": "account",
+        "type": "account",
+        "provider": "aws",
+        "environmentId": "prod"
+      },
+      {
+        "id": "cluster",
+        "name": "cluster",
+        "type": "cluster",
+        "provider": "aws",
+        "parentResourceId": "acct"
+      },
+      {
+        "id": "ns",
+        "name": "namespace",
+        "type": "namespace",
+        "provider": "aws",
+        "parentResourceId": "cluster"
+      },
+      {
+        "id": "db",
+        "name": "db",
+        "type": "database",
+        "provider": "aws",
+        "parentResourceId": "acct",
+        "health": "healthy"
+      },
+      {
+        "id": "broker",
+        "name": "broker",
+        "type": "broker",
+        "provider": "on-prem",
+        "parentResourceId": "acct"
+      },
+      {
+        "id": "topic",
+        "name": "orders",
+        "type": "topic",
+        "provider": "on-prem",
+        "parentResourceId": "broker"
+      },
+      {
+        "id": "exchange",
+        "name": "notify",
+        "type": "exchange",
+        "provider": "on-prem",
+        "parentResourceId": "broker"
+      },
+      {
+        "id": "queue",
+        "name": "notify.email",
+        "type": "queue",
+        "provider": "on-prem",
+        "parentResourceId": "broker"
+      },
+      {
+        "id": "saas",
+        "name": "Payments SaaS",
+        "type": "external-resource",
+        "provider": "saas"
+      },
+      {
+        "id": "acct-stg",
+        "name": "account-stg",
+        "type": "account",
+        "provider": "aws",
+        "environmentId": "stg"
+      },
+      {
+        "id": "ns-stg",
+        "name": "namespace-stg",
+        "type": "namespace",
+        "provider": "aws",
+        "parentResourceId": "acct-stg"
+      }
+    ],
+    "relationships": [
+      {
+        "id": "r-db",
+        "sourceEntityId": "api.prod",
+        "targetEntityId": "db",
+        "protocol": "postgresql",
+        "pattern": "database",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      },
+      {
+        "id": "r-pub",
+        "sourceEntityId": "api.prod",
+        "targetEntityId": "topic",
+        "protocol": "kafka",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      },
+      {
+        "id": "r-sub",
+        "sourceEntityId": "topic",
+        "targetEntityId": "worker.prod",
+        "protocol": "kafka",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      },
+      {
+        "id": "r-ex",
+        "sourceEntityId": "api.prod",
+        "targetEntityId": "exchange",
+        "protocol": "rabbitmq",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      },
+      {
+        "id": "r-bind",
+        "sourceEntityId": "exchange",
+        "targetEntityId": "queue",
+        "protocol": "rabbitmq",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T08:00:00Z",
+        "metadata": {
+          "bindingKey": "notify.email.*"
+        }
+      },
+      {
+        "id": "r-read",
+        "sourceEntityId": "queue",
+        "targetEntityId": "worker.prod",
+        "protocol": "rabbitmq",
+        "pattern": "asynchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      },
+      {
+        "id": "r-saas",
+        "sourceEntityId": "api.prod",
+        "targetEntityId": "saas",
+        "protocol": "https",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      },
+      {
+        "id": "r-saas-stg",
+        "sourceEntityId": "api.stg",
+        "targetEntityId": "saas",
+        "protocol": "https",
+        "pattern": "synchronous",
+        "direction": "unidirectional",
+        "status": "active",
+        "updatedAt": "2026-10-11T08:00:00Z"
+      }
+    ],
+    "eventTypes": [
+      {
+        "id": "evt-created",
+        "name": "Created",
+        "channelResourceIds": [
+          "topic"
+        ],
+        "producerServiceIds": [
+          "svc-api"
+        ],
+        "consumerServiceIds": [
+          "svc-worker"
+        ]
+      },
+      {
+        "id": "evt-notify",
+        "name": "NotifyRequested",
+        "channelResourceIds": [
+          "exchange"
+        ],
+        "producerServiceIds": [
+          "svc-api"
+        ],
+        "consumerServiceIds": [
+          "svc-worker"
+        ]
+      }
+    ],
+    "businessFlows": [
+      {
+        "id": "flow-base",
+        "name": "Base flow",
+        "trigger": {
+          "kind": "call",
+          "ref": "svc-api"
+        },
+        "startStepId": "create",
+        "steps": [
+          {
+            "id": "create",
+            "name": "Create",
+            "serviceDefinitionId": "svc-api",
+            "kind": "task",
+            "compensatedBy": "undo"
+          },
+          {
+            "id": "process",
+            "name": "Process",
+            "serviceDefinitionId": "svc-worker",
+            "kind": "task"
+          },
+          {
+            "id": "finish",
+            "name": "Finish",
+            "serviceDefinitionId": "svc-worker",
+            "kind": "task"
+          },
+          {
+            "id": "undo",
+            "name": "Undo",
+            "serviceDefinitionId": "svc-api",
+            "kind": "compensation"
+          }
+        ],
+        "transitions": [
+          {
+            "id": "t-created",
+            "from": "create",
+            "to": "process",
+            "via": {
+              "kind": "event",
+              "eventTypeId": "evt-created"
+            },
+            "policies": [
+              {
+                "type": "redelivery",
+                "label": "redelivery ×3",
+                "state": "exercised"
+              }
+            ]
+          },
+          {
+            "id": "t-local",
+            "from": "process",
+            "to": "finish",
+            "via": {
+              "kind": "local"
+            },
+            "policies": []
+          },
+          {
+            "id": "t-done",
+            "from": "finish",
+            "to": "done",
+            "via": {
+              "kind": "local"
+            },
+            "policies": []
+          },
+          {
+            "id": "t-saas",
+            "from": "create",
+            "to": "undo",
+            "via": {
+              "kind": "call"
+            },
+            "condition": "rejected",
+            "policies": []
+          },
+          {
+            "id": "t-undone",
+            "from": "undo",
+            "to": "failed",
+            "via": {
+              "kind": "local"
+            },
+            "policies": []
+          }
+        ],
+        "outcomes": [
+          {
+            "id": "done",
+            "name": "Done",
+            "kind": "success"
+          },
+          {
+            "id": "failed",
+            "name": "Failed",
+            "kind": "compensated"
+          }
+        ],
+        "source": {
+          "kind": "authored"
+        }
+      }
+    ],
+    "transitBoards": [
+      {
+        "serviceDefinitionId": "svc-api",
+        "stations": [
+          {
+            "id": "caller",
+            "name": "Client",
+            "kind": "caller"
+          },
+          {
+            "id": "gate",
+            "name": "HTTP ingress",
+            "kind": "gate"
+          },
+          {
+            "id": "module",
+            "name": "API",
+            "kind": "module"
+          },
+          {
+            "id": "client",
+            "name": "db client",
+            "kind": "client"
+          },
+          {
+            "id": "dep",
+            "name": "db",
+            "kind": "dependency",
+            "entityId": "db"
+          }
+        ],
+        "lines": [
+          {
+            "id": "H1",
+            "code": "H1",
+            "name": "Create",
+            "group": "http",
+            "signature": "POST /v1/things",
+            "caller": "caller",
+            "route": [
+              {
+                "stations": [
+                  "caller",
+                  "gate",
+                  "module",
+                  "client",
+                  "dep"
+                ],
+                "kind": "sequential"
+              }
+            ],
+            "patterns": [
+              "outbox"
+            ]
+          }
+        ],
+        "policies": [
+          {
+            "id": "p-timeout",
+            "clientId": "client",
+            "order": 1,
+            "type": "timeout",
+            "label": "timeout 2s",
+            "config": {
+              "timeout": "2s"
+            }
+          }
+        ],
+        "tables": [
+          {
+            "id": "outbox",
+            "stationId": "dep",
+            "name": "outbox",
+            "pattern": "outbox",
+            "writes": [
+              "H1"
+            ],
+            "reads": []
+          }
+        ]
+      }
+    ]
+  },
+  "expected": []
+}

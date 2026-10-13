@@ -15,6 +15,7 @@ import { createSimulation, injectFailure, recover, recoverAll, reset, step, type
 import type { TopologyData } from '../domain/types';
 import { validateTopology, type ValidationIssue } from '../domain/validation';
 import { definitionOf, validateBoardDefinition, type BoardDefinition } from '../transit/definition';
+import { bundleOf, validateBundle } from '../data/bundle/bundle';
 import { paymentServiceBoard } from '../transit/mock/paymentServiceBoard';
 
 /**
@@ -260,6 +261,7 @@ function files(): Record<string, string> {
   for (const snapshot of mockSnapshots()) out[`snapshots/${snapshot.id}.v1.json`] = json(snapshot);
   for (const [path, value] of Object.entries(traversalCases())) out[path] = json(value);
   for (const [path, value] of Object.entries(boardCases())) out[path] = json(value);
+  for (const [path, value] of Object.entries(bundleCases())) out[path] = json(value);
   out['topology/scale-250.v1.json'] = json(generateTopology(SCALE_250));
   out['topology/inventory-1000.v1.json'] = json(generateTopology(INVENTORY_1000));
   return out;
@@ -292,6 +294,46 @@ function boardCases(): Record<string, unknown> {
     const definition = structuredClone(valid);
     mutate(definition);
     out[`conformance/boards/${name}.json`] = { description, topology: 'topology/mock.v1.json', definition, expected: validateBoardDefinition(definition, index).map(({ code, path }) => ({ code, path })) };
+  }
+  return out;
+}
+
+/**
+ * Data bundle cases (ADR-032): a small valid bundle (the base topology and one board) and one case
+ * per rule. The Go port must report the same codes, paths, and entity IDs in the same order.
+ */
+function bundleCases(): Record<string, unknown> {
+  const board: BoardDefinition = {
+    serviceDefinitionId: 'svc-api',
+    stations: [
+      { id: 'caller', name: 'Client', kind: 'caller' },
+      { id: 'gate', name: 'HTTP ingress', kind: 'gate' },
+      { id: 'module', name: 'API', kind: 'module' },
+      { id: 'client', name: 'db client', kind: 'client' },
+      { id: 'dep', name: 'db', kind: 'dependency', entityId: 'db' },
+    ],
+    lines: [{ id: 'H1', code: 'H1', name: 'Create', group: 'http', signature: 'POST /v1/things', caller: 'caller', route: [{ stations: ['caller', 'gate', 'module', 'client', 'dep'], kind: 'sequential' }], patterns: ['outbox'] }],
+    policies: [{ id: 'p-timeout', clientId: 'client', order: 1, type: 'timeout', label: 'timeout 2s', config: { timeout: '2s' } }],
+    tables: [{ id: 'outbox', stationId: 'dep', name: 'outbox', pattern: 'outbox', writes: ['H1'], reads: [] }],
+  };
+  const valid = () => JSON.parse(JSON.stringify(bundleOf(base(), [board], { exportedAt: T, source: { label: 'Fixture', isMock: true } }))) as Record<string, unknown> & { transitBoards: BoardDefinition[]; serviceInstances: { environmentId: string }[] };
+  const cases: Record<string, { description: string; mutate: (b: ReturnType<typeof valid>) => unknown }> = {
+    'unsupported-format': { description: 'Another format', mutate: (b) => void (b.format = 'something-else') },
+    'unsupported-version': { description: 'A newer version', mutate: (b) => void (b.version = 2) },
+    'missing-module': { description: 'A required topology module is missing', mutate: (b) => void delete b.resources },
+    'module-not-a-list': { description: 'A module that is not a list', mutate: (b) => void (b.eventTypes = { id: 'x' }) },
+    'entry-without-id': { description: 'An entry without an ID', mutate: (b) => void (b.serviceDefinitions as unknown[]).push({ name: 'nameless' }) },
+    'board-shape': { description: 'A board without its lists', mutate: (b) => void (b.transitBoards as unknown[]).push({ serviceDefinitionId: 'svc-worker' }) },
+    'topology-error': { description: 'A topology rule fails (instance in an unknown environment)', mutate: (b) => void (b.serviceInstances[0]!.environmentId = 'nowhere') },
+    'duplicate-board': { description: 'Two boards for one service', mutate: (b) => void b.transitBoards.push(structuredClone(board)) },
+    'board-error': { description: 'A board rule fails against the bundle’s topology', mutate: (b) => void (b.transitBoards[0]!.stations[4]!.entityId = 'no-such-entity') },
+    'board-service-removed': { description: 'The board’s service is not in the bundle', mutate: (b) => void (b.transitBoards[0]!.serviceDefinitionId = 'svc-gone') },
+  };
+  const out: Record<string, unknown> = { 'conformance/bundles/valid.json': { description: 'A valid bundle: the base topology and one board', bundle: valid(), expected: [] } };
+  for (const [name, { description, mutate }] of Object.entries(cases)) {
+    const bundle = valid();
+    mutate(bundle);
+    out[`conformance/bundles/${name}.json`] = { description, bundle, expected: validateBundle(bundle).map(({ code, path, entityId }) => ({ code, path, ...(entityId ? { entityId } : {}) })) };
   }
   return out;
 }

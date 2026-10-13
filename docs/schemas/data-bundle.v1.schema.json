@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.test/schemas/data-bundle.v1.schema.json",
+  "title": "Data bundle v1",
+  "description": "Every data module in one file, JSON or YAML (ADR-032, docs/DATA_BUNDLE.md): the TopologyData modules at the top level plus transit board definitions. Referential integrity and board rules are checked by validateBundle (apps/web/src/data/bundle/bundle.ts) and its Go port, which JSON Schema cannot express.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "version",
+    "exportedAt",
+    "source",
+    "environments",
+    "serviceDefinitions",
+    "serviceInstances",
+    "resources",
+    "relationships"
+  ],
+  "properties": {
+    "format": {
+      "const": "service-topology.bundle"
+    },
+    "version": {
+      "const": 1
+    },
+    "exportedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "isMock"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "isMock": {
+          "type": "boolean"
+        }
+      },
+      "description": "Where the data came from when exported. Informational only."
+    },
+    "environments": {
+      "type": "array",
+      "items": {
+        "$ref": "topology.v1.schema.json#/$defs/EnvironmentRecord"
+      }
+    },
+    "serviceDefinitions": {
+      "type": "array",
+      "items": {
+        "$ref": "topology.v1.schema.json#/$defs/ServiceDefinition"
+      }
+    },
+    "serviceInstances": {
+      "type": "array",
+      "items": {
+        "$ref": "topology.v1.schema.json#/$defs/ServiceInstance"
+      }
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "$ref": "topology.v1.schema.json#/$defs/InfrastructureResource"
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "$ref": "topology.v1.schema.json#/$defs/CommunicationRelationship"
+      }
+    },
+    "eventTypes": {
+      "type": "array",
+      "items": {
+        "$ref": "topology.v1.schema.json#/$defs/EventType"
+      }
+    },
+    "businessFlows": {
+      "type": "array",
+      "items": {
+        "$ref": "topology.v1.schema.json#/$defs/BusinessFlow"
+      }
+    },
+    "transitBoards": {
+      "type": "array",
+      "items": {
+        "$ref": "transit-board-definition.v1.schema.json"
+      },
+      "description": "Transit board definitions (declared structure only, ADR-031); at most one per service."
+    }
+  }
+}

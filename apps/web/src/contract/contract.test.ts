@@ -18,6 +18,7 @@ import {
   SERVICE_CATEGORIES,
 } from '../domain/types';
 import { PATTERN_IDS } from '../domain/patterns';
+import { bundleOf, BUNDLE_MODULES } from '../data/bundle/bundle';
 import { definitionOf } from '../transit/definition';
 import { paymentServiceBoard } from '../transit/mock/paymentServiceBoard';
 import { POLICY_TYPES } from '../transit/types';
@@ -37,6 +38,7 @@ const snapshotSchema = json('schemas/topology-snapshot.v1.schema.json');
 const layoutSchema = json('schemas/saved-layout.v1.schema.json');
 const flowFileSchema = json('schemas/business-flow.v1.schema.json');
 const boardSchema = json('schemas/transit-board-definition.v1.schema.json');
+const bundleSchema = json('schemas/data-bundle.v1.schema.json');
 const openapi = json('api/openapi.json');
 const OPENAPI_ID = 'https://example.test/api/openapi.json';
 
@@ -48,6 +50,7 @@ function makeAjv() {
   ajv.addSchema(layoutSchema);
   ajv.addSchema(flowFileSchema);
   ajv.addSchema(boardSchema);
+  ajv.addSchema(bundleSchema);
   ajv.addSchema({ ...openapi, $id: OPENAPI_ID });
   return ajv;
 }
@@ -70,6 +73,19 @@ describe('transit board definition schema (ADR-031)', () => {
   it('enumerates exactly the catalog’s patterns and the board policy types', () => {
     expect(boardSchema.$defs.Line.properties.patterns.items.enum).toEqual(PATTERN_IDS);
     expect(boardSchema.$defs.Policy.properties.type.enum).toEqual([...POLICY_TYPES]);
+  });
+});
+
+describe('data bundle schema (ADR-032)', () => {
+  const bundle = () => JSON.parse(JSON.stringify(bundleOf(mockTopology, [definitionOf(paymentServiceBoard('production'))], { exportedAt: '2026-10-13T09:30:00Z', source: { label: 'Mock inventory', isMock: true } })));
+  it('accepts an exported bundle and rejects unknown fields and other versions', () => {
+    expect(validate(bundleSchema.$id, bundle())).toEqual([]);
+    expect(validate(bundleSchema.$id, { ...bundle(), surprise: 1 })).not.toEqual([]);
+    expect(validate(bundleSchema.$id, { ...bundle(), version: 2 })).not.toEqual([]);
+  });
+  it('lists exactly the code’s modules, the topology modules as in the topology schema', () => {
+    expect(Object.keys(bundleSchema.properties)).toEqual(['format', 'version', 'exportedAt', 'source', ...BUNDLE_MODULES.map((m) => m.key)]);
+    expect(Object.keys(topologySchema.properties).every((k) => k in bundleSchema.properties)).toBe(true);
   });
 });
 
