@@ -11,21 +11,29 @@ export interface Pose {
   target: Vec3;
 }
 
+/** The drill-down's camera lens: narrow, so verticals stay nearly parallel and the view reads like a diagram. */
+export const DRILLDOWN_FOV = 28;
+
 /**
- * Look at a box from in front (+z is "down the page", as in 2D), far enough to see all of it: from
- * about 45° for one plane (readable, like the 2D board), lower and a little to the side for the
- * stacked flow so the floors read as layers.
+ * Look at a box from in front and above (+z is "down the page", as in 2D), centred, at the distance
+ * where it fills the view for this lens and aspect: about 40° down onto the stacked flow, so the
+ * layers separate, and 55° onto a single plane, so it reads like the 2D board.
  */
-export function poseFor(bounds: DrilldownModel['bounds']): Pose {
+export function poseFor(bounds: DrilldownModel['bounds'], view: { fov?: number; aspect?: number } = {}): Pose {
+  const fov = ((view.fov ?? DRILLDOWN_FOV) * Math.PI) / 180;
+  const aspect = view.aspect ?? 1.6;
   const [x0, y0, z0] = bounds.min;
   const [x1, y1, z1] = bounds.max;
   const target: Vec3 = [(x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2];
-  const span = Math.max(x1 - x0, z1 - z0, 200);
-  const stacked = y1 - y0 > 1;
-  const distance = span * (stacked ? 0.72 : 0.95) + (y1 - y0) * 0.5 + 120;
-  return stacked
-    ? { target, position: [target[0] + span * 0.18, target[1] + distance * 0.42, target[2] + distance * 0.9] }
-    : { target, position: [target[0], target[1] + distance * 0.72, target[2] + distance * 0.7] };
+  const width = Math.max(x1 - x0, 200);
+  const depth = Math.max(z1 - z0, 100);
+  const height = y1 - y0;
+  const elevation = ((height > 1 ? 40 : 55) * Math.PI) / 180;
+  // Extent across the screen, and up the screen (the depth foreshortened, plus the drop).
+  const across = width / 2 / (Math.tan(fov / 2) * aspect);
+  const up = (depth * Math.sin(elevation) + height * Math.cos(elevation)) / 2 / Math.tan(fov / 2);
+  const distance = Math.max(across, up) * 1.08;
+  return { target, position: [target[0], target[1] + distance * Math.sin(elevation), target[2] + distance * Math.cos(elevation)] };
 }
 
 /**

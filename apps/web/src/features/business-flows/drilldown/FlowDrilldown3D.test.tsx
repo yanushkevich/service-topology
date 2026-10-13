@@ -13,6 +13,12 @@ vi.mock('@react-three/fiber', async (importOriginal) => ({ ...(await importOrigi
 
 const params = (router: ReturnType<typeof renderApp>) => new URLSearchParams(router.state.location.search);
 
+/** The services list starts collapsed: open it and return it. */
+async function servicesList(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByText(/^Services \(\d+\)$/));
+  return screen.getByRole('region', { name: 'Services in this flow' });
+}
+
 describe('3D drill-down navigation', () => {
   beforeEach(resetUiStore);
 
@@ -21,9 +27,9 @@ describe('3D drill-down navigation', () => {
     const router = renderApp('/flows/flow-checkout?v=1&env=production&step=capture-payment');
     await user.click(await screen.findByRole('button', { name: '3D' }));
     expect(params(router).get('scene')).toBe('3d');
-    const services = await screen.findByRole('region', { name: 'Services in this flow' });
+    const services = await servicesList(user);
 
-    await user.click(within(services).getByRole('button', { name: 'Enter Payment Service' }));
+    await user.click(within(services).getByRole('button', { name: /^Enter Payment Service/ }));
     expect(params(router).get('drill')).toBe('payment-service');
     expect(params(router).get('step')).toBe('capture-payment');
     const scope = screen.getByRole('navigation', { name: '3D scope' });
@@ -40,7 +46,7 @@ describe('3D drill-down navigation', () => {
   it('enters and leaves with the browser history too, and returns to the swimlane', async () => {
     const user = userEvent.setup();
     const router = renderApp('/flows/flow-checkout?v=1&env=production&scene=3d');
-    const services = await screen.findByRole('region', { name: 'Services in this flow' });
+    const services = await servicesList(user);
     await user.click(within(services).getByRole('button', { name: /^Enter Inventory Service/ }));
     expect(params(router).get('drill')).toBe('inventory-service');
     await act(() => router.navigate(-1));
@@ -51,10 +57,27 @@ describe('3D drill-down navigation', () => {
     expect(await screen.findByRole('button', { name: 'Swimlane' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('says which services have no transit board yet', async () => {
+  it('lists each service with its steps and the flow’s share of its lines', async () => {
+    const user = userEvent.setup();
     renderApp('/flows/flow-checkout?v=1&env=production&scene=3d');
-    const services = await screen.findByRole('region', { name: 'Services in this flow' });
-    expect(within(services).getByRole('button', { name: 'Enter Payment Service' })).toBeInTheDocument();
-    expect(within(services).getByRole('button', { name: /^Enter Inventory Service.*no board yet$/ })).toBeInTheDocument();
+    const services = await servicesList(user);
+    await waitFor(() => expect(within(services).getByRole('button', { name: /^Enter Payment Service/ })).toHaveTextContent('4 steps · 4 of 11 lines'));
+    expect(within(services).getByRole('button', { name: /^Enter Inventory Service/ })).toHaveTextContent('2 steps · no board yet');
+  });
+
+  it('inside a service: lists the flow’s steps there with their lines, selects them, and shows all lines on request', async () => {
+    const user = userEvent.setup();
+    const router = renderApp('/flows/flow-checkout?v=1&env=production&scene=3d&drill=payment-service');
+    const panel = await screen.findByRole('region', { name: 'Payment Service in this flow' });
+    await waitFor(() => expect(within(panel).getByRole('button', { name: /^Capture payment/ })).toHaveTextContent('A2'));
+    await user.click(within(panel).getByRole('button', { name: /^Capture payment/ }));
+    expect(params(router).get('step')).toBe('capture-payment');
+    const all = within(panel).getByRole('checkbox', { name: 'Show all 11 lines of Payment Service' });
+    await user.click(all);
+    expect(all).toBeChecked();
+    // Entering another service starts again with the flow's lines.
+    await act(() => router.navigate({ search: '?v=1&env=production&scene=3d&drill=inventory-service' }));
+    const pad = await screen.findByRole('region', { name: 'Inventory Service in this flow' });
+    expect(within(pad).getByRole('link', { name: 'Open its service board' })).toHaveAttribute('href', expect.stringContaining('/services/inventory-service/transit'));
   });
 });

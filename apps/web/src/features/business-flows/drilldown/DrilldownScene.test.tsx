@@ -23,8 +23,12 @@ const model = buildDrilldown({ flow: checkoutFlow, layout: computeSwimlanes(chec
 const colors: DrilldownColors = {
   background: '#070a13', accent: '#5fe1ff', ok: '#3dd6b0', warn: '#f5b454', crit: '#ff7b7b', text3: '#7f8cab',
   edge: { http: '#a9c8ff', grpc: '#5fe1ff', data: '#b79cff', event: '#8ef0c0', other: '#7f8cab' },
-  lines: ['#5fe1ff', '#b48cff', '#7ff0c0'], plane: '#101626', planeLine: '#2a3350', text: '#e8edf9', planeOpacity: 0.35,
+  lines: ['#5fe1ff', '#b48cff', '#7ff0c0'], plane: '#101626', strip: '#141b2e', planeLine: '#2a3350', grid: '#1d2540', text: '#e8edf9',
+  station: '#f4f7ff', stationRing: '#0a0d18', dim: '#4a5577', planeOpacity: 0.55, dark: false,
+  policy: { bulkhead: '#8fb4ff', timeout: '#f5b454', retry: '#5fe1ff', breaker: '#ff7b7b', fallback: '#b48cff', cache: '#7ff0c0', idempotency: '#ff9ecf' },
 };
+const board = model.boards.find((b) => b.serviceDefinitionId === 'payment-service');
+if (!board) throw new Error('expected the Payment Service plane');
 
 const probe: { camera: THREE.Camera | null } = { camera: null };
 function CameraProbe() {
@@ -36,7 +40,7 @@ function CameraProbe() {
 }
 
 async function render(overrides: Partial<DrilldownSceneProps> = {}) {
-  const props: DrilldownSceneProps = { model, colors, scope: null, selectedStepId: null, onSelectStep: vi.fn(), onEnterService: vi.fn(), replay: null, reduced: true, bloom: false, ...overrides };
+  const props: DrilldownSceneProps = { model, colors, flowColorIndex: 0, scope: null, allLines: false, selectedStepId: null, onSelectStep: vi.fn(), onEnterService: vi.fn(), replay: null, reduced: true, bloom: false, ...overrides };
   const element = (p: DrilldownSceneProps) => (
     <>
       <CameraProbe />
@@ -56,14 +60,32 @@ describe('DrilldownScene (ADR-026)', () => {
   it('draws every step and every service plane, identified by canonical IDs', async () => {
     const { renderer } = await render();
     expect(withData(renderer, 'stepId').map((n) => n.instance.userData.stepId).sort()).toEqual(model.steps.map((s) => s.id).sort());
-    expect(withData(renderer, 'serviceDefinitionId').map((n) => n.instance.userData.serviceDefinitionId)).toEqual(model.boards.map((b) => b.serviceDefinitionId));
+    // Only services with a board hang a plane.
+    expect(withData(renderer, 'serviceDefinitionId').map((n) => n.instance.userData.serviceDefinitionId)).toEqual(model.boards.filter((b) => b.kind === 'board').map((b) => b.serviceDefinitionId));
   });
 
-  it('instances the stations of each board in one mesh', async () => {
+  it('draws only the flow’s lines and their stations, until Show all lines inside the service', async () => {
+    const { renderer, update } = await render();
+    const lineIds = () => [...new Set(renderer.scene.findAll((n) => n.instance.userData?.inFlow === true).map((n) => n.instance.userData.lineId))].sort();
+    const stationGroup = () => renderer.scene.find((n) => n.type === 'Group' && Array.isArray(n.instance.userData?.stations)).instance.userData.stations as string[];
+    expect(lineIds()).toEqual(['A1', 'A2', 'A4', 'W1']);
+    expect(stationGroup()).toHaveLength(board.stations.filter((s) => s.inFlow).length);
+    // Show all lines does nothing outside the service, and adds every station inside it.
+    await update({ allLines: true });
+    expect(stationGroup()).toHaveLength(board.stations.filter((s) => s.inFlow).length);
+    await update({ allLines: true, scope: 'payment-service' });
+    expect(stationGroup()).toHaveLength(payments.board.stations.length);
+    // Stations and rings are instanced: two meshes for the board.
+    expect(instanced(renderer).filter((n) => n.parent?.instance.userData?.stations).length).toBe(2);
+  });
+
+  it('hangs nothing under services without a board: their steps end in stub rings', async () => {
     const { renderer } = await render();
-    const meshes = instanced(renderer);
-    expect(meshes).toHaveLength(1); // only Payment Service has a board
-    expect((meshes[0]?.instance as THREE.InstancedMesh).count).toBe(payments.board.stations.length);
+    const stubEnds = renderer.scene.findAll((n) => typeof n.instance.userData?.stubEnd === 'string').map((n) => n.instance.userData.stubEnd);
+    expect(stubEnds.sort()).toEqual(model.shafts.filter((s) => s.lineId === null).map((s) => s.stepId).sort());
+    const shafts = renderer.scene.find((n) => n.type === 'Group' && Array.isArray(n.instance.userData?.stubs)).instance.userData;
+    expect(shafts.stubs).toContain('reserve-stock');
+    expect(shafts.shafts).toContain('capture-payment');
   });
 
   it('selects a step and enters a service by clicking, by canonical ID', async () => {
@@ -87,7 +109,9 @@ describe('DrilldownScene (ADR-026)', () => {
     expect(await position()).toEqual(poseFor(model.bounds).position.map(Math.round));
     await update({ scope: 'payment-service' });
     expect(await position()).toEqual(poseFor(scopeBounds(model, 'payment-service')).position.map(Math.round));
-    await update({ scope: null });
+    await update({ scope: 'payment-service', allLines: true });
+    expect(await position()).toEqual(poseFor(scopeBounds(model, 'payment-service', true)).position.map(Math.round));
+    await update({ scope: null, allLines: false });
     expect(await position()).toEqual(poseFor(model.bounds).position.map(Math.round));
   });
 
@@ -109,7 +133,7 @@ describe('DrilldownScene (ADR-026)', () => {
     const before = renderer.scene.findAll((n) => n.type === 'Mesh').length;
     await update({ scope: 'payment-service' });
     expect(renderer.scene.findAll((n) => n.type === 'Mesh').length).toBe(before);
-    expect(instanced(renderer)).toHaveLength(1);
+    expect(instanced(renderer).length).toBeGreaterThan(0);
   });
 });
 

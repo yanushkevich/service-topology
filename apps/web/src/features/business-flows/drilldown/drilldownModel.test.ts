@@ -5,7 +5,8 @@ import { buildTopologyIndex } from '../../../domain/topologyIndex';
 import { indexBoard } from '../../../transit/board';
 import { computeSwimlanes } from '../../../transit/flows/swimlane';
 import { paymentServiceBoard } from '../../../transit/mock/paymentServiceBoard';
-import { BOARD_DROP, CAPTION_GUTTER, MIN_BAND, PAD_DEPTH, PAD_WIDTH, buildDrilldown, scopeBounds } from './drilldownModel';
+import { generateFlowDataset } from '../../../data/mock/generateFlowDataset';
+import { BOARD_DROP, CAPTION_GUTTER, MIN_BAND, PLANE_GAP, ROW_GAP, STUB_DEPTH, buildDrilldown, scopeBounds } from './drilldownModel';
 
 const topology = buildTopologyIndex(mockTopology);
 const serviceName = (id: string) => topology.definitions.get(id)?.name ?? id;
@@ -36,13 +37,17 @@ describe('3D drill-down scene model (ADR-026, Milestone 13.1)', () => {
     for (const line of board.lines.filter((l) => l.inFlow)) for (const branch of line.branches) for (const p of branch) expect(inside(p), line.code).toBe(true);
   });
 
-  it('makes services without a board compact pads, with stubs from their steps', () => {
+  it('hangs nothing under services without a board: their steps get short stubs, and their lanes say so', () => {
     const inventory = model.boards.find((b) => b.serviceDefinitionId === 'inventory-service');
-    expect(inventory).toMatchObject({ kind: 'pad', width: PAD_WIDTH, depth: PAD_DEPTH, stations: [], lines: [] });
+    expect(inventory).toMatchObject({ kind: 'pad', stations: [], lines: [], policies: [] });
+    expect(model.lanes.find((l) => l.serviceDefinitionId === 'inventory-service')?.hasBoard).toBe(false);
+    expect(model.lanes.find((l) => l.serviceDefinitionId === 'payment-service')?.hasBoard).toBe(true);
+    const step = model.steps.find((s) => s.id === 'reserve-stock');
     const stub = model.shafts.find((s) => s.stepId === 'reserve-stock');
     expect(stub).toMatchObject({ lineId: null, serviceDefinitionId: 'inventory-service' });
-    expect(stub?.to[1]).toBe(-model.drop);
-    expect(Math.abs((stub?.to[2] ?? 0) - (inventory?.center[2] ?? NaN))).toBeLessThan(1);
+    expect(stub?.to).toEqual([step?.position[0], -STUB_DEPTH, step?.position[2]]);
+    // The camera can still go there: the pad's footprint covers the lane's steps.
+    expect(Math.abs((step?.position[0] ?? 0) - (inventory?.center[0] ?? NaN))).toBeLessThanOrEqual((inventory?.width ?? 0) / 2);
   });
 
   it('drops a shaft from each mapped step to its line’s entry station, under the steps', () => {
@@ -56,12 +61,9 @@ describe('3D drill-down scene model (ADR-026, Milestone 13.1)', () => {
     expect(model.shafts.map((s) => s.stepId).sort()).toEqual(model.steps.map((s) => s.id).sort());
   });
 
-  it('keeps each lane over its plane, at least MIN_BAND deep, with a caption gutter on the left', () => {
-    for (const lane of model.lanes) {
-      const plane = model.boards.find((b) => b.serviceDefinitionId === lane.serviceDefinitionId);
-      expect((lane.z0 + lane.z1) / 2).toBeCloseTo(plane?.center[2] ?? NaN, 0);
-      expect(lane.z1 - lane.z0).toBeGreaterThanOrEqual(MIN_BAND);
-    }
+  it('puts the planes in a row below and in front of the flow plane, which keeps compact lanes and a caption gutter', () => {
+    for (const lane of model.lanes) expect(lane.z1 - lane.z0).toBe(MIN_BAND);
+    for (const b of model.boards.filter((x) => x.kind === 'board')) expect(b.center[2] - b.depth / 2).toBeCloseTo(model.flowPlane.z1 + ROW_GAP, 0);
     expect(model.flowPlane.x0).toBe(-layout.width / 2 - CAPTION_GUTTER);
     expect(Math.min(...model.steps.map((s) => s.position[0]))).toBeGreaterThan(model.flowPlane.x0 + CAPTION_GUTTER);
     for (const step of model.steps) {
@@ -71,9 +73,25 @@ describe('3D drill-down scene model (ADR-026, Milestone 13.1)', () => {
     }
   });
 
+  it('packs many planes into the row without overlap (12 steps × 6 boards)', () => {
+    const { topology, boards } = generateFlowDataset();
+    const index = buildTopologyIndex(topology);
+    const flow = topology.businessFlows?.[0];
+    if (!flow) throw new Error('expected the generated flow');
+    const name = (id: string) => index.definitions.get(id)?.name ?? id;
+    const big = buildDrilldown({ flow, layout: computeSwimlanes(flow, name), boards: new Map(Object.entries(boards).map(([id, b]) => [id, indexBoard(b)])), serviceName: name });
+    const planes = big.boards.filter((b) => b.kind === 'board').sort((a, b) => a.center[0] - b.center[0]);
+    expect(planes).toHaveLength(6);
+    for (let i = 1; i < planes.length; i++) {
+      const [a, b] = [planes[i - 1], planes[i]];
+      if (a && b) expect(b.center[0] - b.width / 2 - (a.center[0] + a.width / 2)).toBeGreaterThanOrEqual(PLANE_GAP - 0.5);
+    }
+    expect(big.shafts.filter((s) => s.lineId !== null)).toHaveLength(12);
+  });
+
   it('hangs every plane at the same drop, and is deterministic', () => {
     expect(model.drop).toBeGreaterThanOrEqual(BOARD_DROP);
-    expect(model.boards.every((b) => b.center[1] === -model.drop)).toBe(true);
+    expect(model.boards.filter((b) => b.kind === 'board').every((b) => b.center[1] === -model.drop)).toBe(true);
     expect(buildDrilldown({ flow: checkoutFlow, layout, boards: new Map([['payment-service', payments]]), serviceName })).toEqual(model);
   });
 

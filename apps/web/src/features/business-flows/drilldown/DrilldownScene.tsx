@@ -1,61 +1,77 @@
-import { CameraControls, Html, Line, type CameraControlsImpl } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
+import { CameraControls, type CameraControlsImpl } from '@react-three/drei';
+import { useFrame, useThree } from '@react-three/fiber';
 import { Bloom, EffectComposer } from '@react-three/postprocessing';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import * as THREE from 'three';
 import type { TxStep } from '../../../transit/flows/observed';
 import type { Playback } from '../../boards/playback';
 import { LabelLayer, type LabelAnchor } from '../../service-map/galaxy/labelLayer';
+import { DRILLDOWN_FOV, poseFor } from './drilldownCamera';
 import { labelAnchors } from './drilldownLabels';
-import { poseFor } from './drilldownCamera';
-import { scopeBounds, type DrilldownModel, type Vec3 } from './drilldownModel';
-import type { DrilldownColors } from './drilldownPalette';
-import { BoardLines, BoardPlane, ReplayParticles, Shafts, Stations, StepMarker } from './DrilldownParts';
+import { scopeBounds, type DrilldownModel } from './drilldownModel';
+import { lineColorOf, type DrilldownColors } from './drilldownPalette';
+import { ServicePlane } from './DrilldownBoards';
+import { FlowPlane, StepTile } from './DrilldownFlowPlane';
+import { ReplayParticles, Shafts } from './DrilldownParts';
 
 /**
- * The 3D drill-down scene (ADR-026, docs/BUSINESS_FLOWS.md §13): the flow plane with its lanes,
- * steps, and transitions over the services' transit planes, joined by light shafts. View models
- * only; selection and scope live in the URL, the camera pose in CameraControls.
+ * The 3D drill-down scene (ADR-026, Milestone 13.1): the flow plane over what the flow does inside
+ * each service, joined by beams. View models only; selection and scope live in the URL, the camera
+ * pose in CameraControls.
  */
 export interface DrilldownSceneProps {
   model: DrilldownModel;
   colors: DrilldownColors;
+  /** The flow's colour, as on the 2D board (its position in the flow list). */
+  flowColorIndex: number;
   /** The service the camera has entered, or null for the whole flow. */
   scope: string | null;
+  /** Inside a service: show all its lines, not only the flow's. */
+  allLines: boolean;
   selectedStepId: string | null;
   onSelectStep: (stepId: string) => void;
   onEnterService: (serviceDefinitionId: string) => void;
   replay: { steps: readonly TxStep[]; playback: Playback } | null;
   reduced: boolean;
-  /** Selective bloom on the shafts and particles (off in tests and the light theme). */
+  /** Selective bloom on the selected beam and particles (dark theme; off in tests). */
   bloom: boolean;
 }
 
-export function DrilldownScene({ model, colors, scope, selectedStepId, onSelectStep, onEnterService, replay, reduced, bloom }: DrilldownSceneProps) {
+export function DrilldownScene({ model, colors, flowColorIndex, scope, allLines, selectedStepId, onSelectStep, onEnterService, replay, reduced, bloom }: DrilldownSceneProps) {
   const [labels] = useState(() => new LabelLayer());
-  const anchors = useMemo(() => labelAnchors(model, selectedStepId, scope), [model, selectedStepId, scope]);
+  const anchors = useMemo(() => labelAnchors(model, { selectedStepId, scope, allLines }), [model, selectedStepId, scope, allLines]);
+  const flowColor = lineColorOf(colors, flowColorIndex);
+  const selected = model.steps.find((s) => s.id === selectedStepId);
+  const overview = poseFor(model.bounds);
+  const reach = Math.hypot(overview.position[0] - overview.target[0], overview.position[1] - overview.target[1], overview.position[2] - overview.target[2]);
   return (
     <>
-      <ambientLight intensity={0.7} />
+      {colors.dark && <fog attach="fog" args={[colors.background, reach * 0.9, reach * 2.6]} />}
+      <ambientLight intensity={0.75} />
       <directionalLight position={[300, 900, 600]} intensity={1.1} />
-      <FlowPlane model={model} colors={colors} />
+      <FlowPlane model={model} colors={colors} flowColor={flowColor} faded={scope !== null} labels={labels} />
       {model.steps.map((step) => (
-        <StepMarker key={step.id} step={step} colors={colors} selected={step.id === selectedStepId} reduced={reduced} onSelect={onSelectStep} labels={labels} />
+        <StepTile key={step.id} step={step} colors={colors} flowColor={flowColor} selected={step.id === selectedStepId} faded={scope !== null && step.serviceDefinitionId !== scope} reduced={reduced} onSelect={onSelectStep} labels={labels} />
       ))}
       {model.boards.map((board) => (
-        <group key={board.serviceDefinitionId}>
-          <BoardPlane board={board} colors={colors} entered={scope === board.serviceDefinitionId} onEnter={onEnterService} labels={labels} />
-          <BoardLines board={board} colors={colors} />
-          <Stations board={board} colors={colors} labelled={scope === board.serviceDefinitionId} labels={labels} />
-        </group>
+        <ServicePlane
+          key={board.serviceDefinitionId}
+          board={board}
+          colors={colors}
+          entered={scope === board.serviceDefinitionId}
+          faded={scope !== null && scope !== board.serviceDefinitionId}
+          allLines={allLines}
+          focusLineId={selected?.serviceDefinitionId === board.serviceDefinitionId ? selected.lineId : null}
+          onEnter={onEnterService}
+          labels={labels}
+        />
       ))}
-      <Shafts shafts={model.shafts} colors={colors} selectedStepId={selectedStepId} />
-      {replay && <ReplayParticles steps={replay.steps} playback={replay.playback} shafts={model.shafts} colors={colors} reduced={reduced} />}
-      <CameraRig model={model} scope={scope} reduced={reduced} />
+      <Shafts shafts={model.shafts} colors={colors} flowColor={flowColor} selectedStepId={selectedStepId} scope={scope} />
+      {replay && <ReplayParticles steps={replay.steps} playback={replay.playback} shafts={model.shafts} colors={colors} flowColor={flowColor} reduced={reduced} />}
+      <CameraRig model={model} scope={scope} allLines={allLines} reduced={reduced} />
       <LabelDeclutter labels={labels} anchors={anchors} />
       {bloom && (
         <EffectComposer>
-          {/* Selective: only colours pushed above 1 (shafts, particles; toneMapped off) pass the threshold. */}
+          {/* Selective: only colours pushed above 1 (the selected beam and line, particles) pass the threshold. */}
           <Bloom luminanceThreshold={1} intensity={0.9} mipmapBlur />
         </EffectComposer>
       )}
@@ -63,64 +79,19 @@ export function DrilldownScene({ model, colors, scope, selectedStepId, onSelectS
   );
 }
 
-/** The flow plane: a band per lane with its caption, the outcomes band, transitions, and outcomes. */
-function FlowPlane({ model, colors }: { model: DrilldownModel; colors: DrilldownColors }) {
-  const { x0, x1 } = model.flowPlane;
-  const transitions = useMemo(
-    () =>
-      model.transitions.flatMap((t) =>
-        t.points.slice(1).flatMap((b, i) => {
-          const a = t.points[i] ?? b;
-          return [lifted(a), lifted(b)];
-        }),
-      ),
-    [model],
-  );
-  return (
-    <group userData={{ flowId: model.flowId }}>
-      {model.lanes.map((lane, i) => (
-        <group key={lane.serviceDefinitionId}>
-          <mesh position={[(x0 + x1) / 2, -0.5, (lane.z0 + lane.z1) / 2]} rotation={[-Math.PI / 2, 0, 0]} userData={{ lane: lane.serviceDefinitionId }}>
-            <planeGeometry args={[x1 - x0, lane.z1 - lane.z0]} />
-            <meshBasicMaterial color={colors.plane} transparent opacity={i % 2 ? colors.planeOpacity : Math.min(1, colors.planeOpacity + 0.15)} side={THREE.DoubleSide} depthWrite={false} />
-          </mesh>
-          <Html position={[x0, 0, lane.z0 + 14]} zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
-            <div className="pointer-events-none pl-2 text-[10px] tracking-[0.07em] whitespace-nowrap text-fg-3 uppercase select-none" data-lane-label={lane.serviceDefinitionId}>
-              {lane.label}
-            </div>
-          </Html>
-        </group>
-      ))}
-      {transitions.length > 0 && <Line points={transitions} segments color={colors.text3} lineWidth={1.5} transparent opacity={0.85} />}
-      {model.outcomes.map((o) => (
-        <group key={o.id} position={o.position as [number, number, number]}>
-          <mesh position={[0, 8, 0]} rotation={[0, Math.PI / 4, 0]} userData={{ outcomeId: o.id }}>
-            <octahedronGeometry args={[11]} />
-            <meshStandardMaterial color={o.kind === 'success' ? colors.ok : colors.warn} roughness={0.4} />
-          </mesh>
-          <Html position={[0, 26, 0]} center zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
-            <div className="pointer-events-none rounded-md border border-line bg-float/85 px-1.5 py-px text-xs whitespace-nowrap text-fg-2 select-none">{o.name}</div>
-          </Html>
-        </group>
-      ))}
-    </group>
-  );
-}
-
-const lifted = (p: Vec3): [number, number, number] => [p[0], p[1] + 1, p[2]];
-
-/** Flies to the scope: the whole flow, or one service's plane. Instant the first time and under reduced motion. */
-function CameraRig({ model, scope, reduced }: { model: DrilldownModel; scope: string | null; reduced: boolean }) {
+/** Flies to the scope: the whole flow, or one service's plane (its whole board with all lines). Instant the first time and under reduced motion. */
+function CameraRig({ model, scope, allLines, reduced }: { model: DrilldownModel; scope: string | null; allLines: boolean; reduced: boolean }) {
   const controls = useRef<CameraControlsImpl>(null);
   const placed = useRef(false);
+  const aspect = useThree((s) => (s.size.height > 0 ? s.size.width / s.size.height : 1.6));
   useEffect(() => {
     const c = controls.current;
     if (!c) return;
-    const { position, target } = poseFor(scopeBounds(model, scope));
+    const { position, target } = poseFor(scopeBounds(model, scope, allLines), { fov: DRILLDOWN_FOV, aspect });
     void c.setLookAt(position[0], position[1], position[2], target[0], target[1], target[2], placed.current && !reduced);
     placed.current = true;
-  }, [model, scope, reduced]);
-  return <CameraControls ref={controls} makeDefault minDistance={60} maxDistance={8000} />;
+  }, [model, scope, allLines, reduced, aspect]);
+  return <CameraControls ref={controls} makeDefault minDistance={60} maxDistance={9000} />;
 }
 
 /** Hides labels that overlap a more important one, re-measured only when the camera or the labels change. */
@@ -128,4 +99,3 @@ function LabelDeclutter({ labels, anchors }: { labels: LabelLayer; anchors: read
   useFrame(({ camera, size }) => labels.update(camera, size, anchors));
   return null;
 }
-

@@ -1,171 +1,47 @@
-import { Html, Line } from '@react-three/drei';
-import { useFrame, type ThreeEvent } from '@react-three/fiber';
-import { easing } from 'maath';
-import { memo, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
+import { Line } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
+import { memo, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { activeTxSteps, type TxStep } from '../../../transit/flows/observed';
 import type { Playback } from '../../boards/playback';
-import type { LabelLayer } from '../../service-map/galaxy/labelLayer';
 import { particleOnShaft } from './drilldownCamera';
-import { boardLabelAnchor, stationLabelAnchor, stepLabelAnchor } from './drilldownLabels';
-import type { DrilldownBoard, DrilldownShaft, DrilldownStep, Vec3 } from './drilldownModel';
-import { lineColorOf, type DrilldownColors } from './drilldownPalette';
+import type { DrilldownShaft } from './drilldownModel';
+import type { DrilldownColors } from './drilldownPalette';
 
 /**
- * Pieces of the 3D drill-down scene (ADR-026). View models only: every mesh carries its canonical
- * ID in `userData`. Stations are one instanced mesh per board; lines, transitions, and shafts are
- * one segment set each. Nothing here writes React or store state per frame.
+ * Shafts and replay particles of the drill-down (Milestone 13.1). Shafts are beams in the flow's
+ * colour from each step to the entry station of its line, with a ring where they land; the
+ * selected step's beam is bright enough to bloom. Steps without a line get a short dashed stub.
+ * Nothing here writes React or store state per frame.
  */
-
-const LABEL = 'pointer-events-none select-none whitespace-nowrap rounded-md border border-line bg-float/85 px-1.5 py-px text-xs font-medium text-fg';
-
-/** A service's transit plane: a translucent slab with its outline and name; clicking it enters the service. */
-export const BoardPlane = memo(function BoardPlane({ board, colors, entered, onEnter, labels }: { board: DrilldownBoard; colors: DrilldownColors; entered: boolean; onEnter: (serviceId: string) => void; labels: LabelLayer }) {
-  const attach = useLabel(labels, `board:${board.serviceDefinitionId}`);
-  const [x, y, z] = board.center;
-  const hw = board.width / 2;
-  const hd = board.depth / 2;
-  const outline: Vec3[] = [
-    [x - hw, y, z - hd],
-    [x + hw, y, z - hd],
-    [x + hw, y, z + hd],
-    [x - hw, y, z + hd],
-    [x - hw, y, z - hd],
-  ];
+export const Shafts = memo(function Shafts({ shafts, colors, flowColor, selectedStepId, scope }: { shafts: readonly DrilldownShaft[]; colors: DrilldownColors; flowColor: string; selectedStepId: string | null; scope: string | null }) {
+  const mapped = shafts.filter((s) => s.lineId !== null);
+  const stubs = shafts.filter((s) => s.lineId === null);
+  const inScope = (s: DrilldownShaft) => !scope || s.serviceDefinitionId === scope;
+  const pairs = (list: readonly DrilldownShaft[]) => list.flatMap((s) => [s.from, s.to] as [number, number, number][]);
+  const selected = mapped.filter((s) => s.stepId === selectedStepId);
+  const near = mapped.filter((s) => s.stepId !== selectedStepId && inScope(s));
+  const far = mapped.filter((s) => s.stepId !== selectedStepId && !inScope(s));
+  const glow = useMemo(() => new THREE.Color(flowColor).multiplyScalar(colors.dark ? 2.2 : 1), [flowColor, colors.dark]);
   return (
-    <group userData={{ serviceDefinitionId: board.serviceDefinitionId }}>
-      <mesh
-        position={[x, y - 1, z]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        userData={{ serviceDefinitionId: board.serviceDefinitionId }}
-        onClick={(e: ThreeEvent<MouseEvent>) => {
-          e.stopPropagation();
-          onEnter(board.serviceDefinitionId);
-        }}
-      >
-        <planeGeometry args={[board.width, board.depth]} />
-        <meshBasicMaterial color={colors.plane} transparent opacity={entered ? Math.min(1, colors.planeOpacity + 0.2) : colors.planeOpacity} side={THREE.DoubleSide} depthWrite={false} />
-      </mesh>
-      <Line points={outline as [number, number, number][]} color={entered ? colors.accent : colors.planeLine} lineWidth={entered ? 2 : 1} transparent opacity={0.9} />
-      <Html position={boardLabelAnchor(board) as [number, number, number]} center zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
-        <div ref={attach} className={`${LABEL} font-semibold`} data-board-label={board.serviceDefinitionId}>
-          {board.name}
-          {board.kind === 'pad' && <span className="ml-1.5 font-normal text-fg-3">no board yet</span>}
-        </div>
-      </Html>
-    </group>
-  );
-});
-
-const STATION_COLOR: Record<string, keyof DrilldownColors> = { caller: 'text3', gate: 'accent', module: 'text', client: 'text3', dependency: 'ok' };
-
-/** A board's stations as one instanced mesh; labelled only when the camera has entered the service. */
-export const Stations = memo(function Stations({ board, colors, labelled, labels }: { board: DrilldownBoard; colors: DrilldownColors; labelled: boolean; labels: LabelLayer }) {
-  const mesh = useRef<THREE.InstancedMesh>(null);
-  useLayoutEffect(() => {
-    const m = mesh.current;
-    if (!m) return;
-    const matrix = new THREE.Matrix4();
-    const color = new THREE.Color();
-    board.stations.forEach((s, i) => {
-      m.setMatrixAt(i, matrix.makeTranslation(s.position[0], s.position[1] + 4, s.position[2]));
-      const key = STATION_COLOR[s.kind] ?? 'text3';
-      const value = colors[key];
-      m.setColorAt(i, color.set(typeof value === 'string' ? value : colors.accent));
-    });
-    m.instanceMatrix.needsUpdate = true;
-    if (m.instanceColor) m.instanceColor.needsUpdate = true;
-  }, [board, colors]);
-  if (board.stations.length === 0) return null;
-  return (
-    <>
-      <instancedMesh ref={mesh} args={[undefined, undefined, board.stations.length]} userData={{ serviceDefinitionId: board.serviceDefinitionId, stations: board.stations.map((s) => s.id) }}>
-        <sphereGeometry args={[5, 12, 8]} />
-        <meshStandardMaterial roughness={0.5} />
-      </instancedMesh>
-      {labelled &&
-        board.stations.map((s) => (
-          <Html key={s.id} position={stationLabelAnchor(s) as [number, number, number]} center zIndexRange={[18, 0]} style={{ pointerEvents: 'none' }}>
-            <div ref={(el) => labels.attach(`station:${s.id}`, el)} className={LABEL} data-station-label={s.id}>
-              {s.name}
-            </div>
-          </Html>
-        ))}
-    </>
-  );
-});
-
-/** A board's lines as one set of coloured segments, in the transit board's line colours. */
-export const BoardLines = memo(function BoardLines({ board, colors }: { board: DrilldownBoard; colors: DrilldownColors }) {
-  const { points, vertexColors } = useMemo(() => {
-    const pts: [number, number, number][] = [];
-    const cols: [number, number, number][] = [];
-    const color = new THREE.Color();
-    for (const line of board.lines) {
-      color.set(lineColorOf(colors, line.colorIndex));
-      for (const branch of line.branches) {
-        for (let i = 1; i < branch.length; i++) {
-          const a = branch[i - 1];
-          const b = branch[i];
-          if (!a || !b) continue;
-          pts.push([a[0], a[1] + 2, a[2]], [b[0], b[1] + 2, b[2]]);
-          cols.push([color.r, color.g, color.b], [color.r, color.g, color.b]);
-        }
-      }
-    }
-    return { points: pts, vertexColors: cols };
-  }, [board, colors]);
-  if (points.length === 0) return null;
-  return <Line points={points} vertexColors={vertexColors} segments lineWidth={2.5} userData={{ serviceDefinitionId: board.serviceDefinitionId, lines: board.lines.map((l) => l.lineId) }} />;
-});
-
-/** Light shafts from steps to their lines' entry stations; bright enough to bloom, and the selected step's brightest. */
-export const Shafts = memo(function Shafts({ shafts, colors, selectedStepId }: { shafts: readonly DrilldownShaft[]; colors: DrilldownColors; selectedStepId: string | null }) {
-  if (shafts.length === 0) return null;
-  const glow = new THREE.Color(colors.accent).multiplyScalar(2.2);
-  const rest = shafts.filter((s) => s.stepId !== selectedStepId);
-  const selected = shafts.filter((s) => s.stepId === selectedStepId);
-  const segments = (list: readonly DrilldownShaft[]) => list.flatMap((s) => [s.from, s.to] as [number, number, number][]);
-  return (
-    <group userData={{ shafts: shafts.map((s) => s.stepId) }}>
-      {rest.length > 0 && <Line points={segments(rest)} segments color={glow} lineWidth={1.5} transparent opacity={0.7} toneMapped={false} dashed dashSize={10} gapSize={6} />}
-      {selected.length > 0 && <Line points={segments(selected)} segments color={glow} lineWidth={3.5} toneMapped={false} />}
-    </group>
-  );
-});
-
-/** A step on the flow plane: a tile with its label; the selected one lifts and glows (maath easing, frame-local). */
-export const StepMarker = memo(function StepMarker({ step, colors, selected, reduced, onSelect, labels }: { step: DrilldownStep; colors: DrilldownColors; selected: boolean; reduced: boolean; onSelect: (stepId: string) => void; labels: LabelLayer }) {
-  const ref = useRef<THREE.Mesh>(null);
-  const attach = useLabel(labels, `step:${step.id}`);
-  const target = useMemo(() => new THREE.Vector3(1, selected ? 2.4 : 1, 1), [selected]);
-  useFrame((state, delta) => {
-    const mesh = ref.current;
-    if (!mesh) return;
-    if (reduced) mesh.scale.copy(target);
-    else if (easing.damp3(mesh.scale, target, 0.12, delta)) state.invalidate(); // keep frames coming until it settles
-  });
-  return (
-    <group position={step.position as [number, number, number]}>
-      <mesh
-        ref={ref}
-        position={[0, 6, 0]}
-        userData={{ stepId: step.id }}
-        onClick={(e: ThreeEvent<MouseEvent>) => {
-          e.stopPropagation();
-          onSelect(step.id);
-        }}
-        onPointerOver={() => (document.body.style.cursor = 'pointer')}
-        onPointerOut={() => (document.body.style.cursor = '')}
-      >
-        <boxGeometry args={[46, 10, 26]} />
-        <meshStandardMaterial color={selected ? colors.accent : colors.plane} emissive={selected ? colors.accent : colors.text3} emissiveIntensity={selected ? 0.6 : 0.15} roughness={0.4} />
-      </mesh>
-      <Html position={[0, stepLabelAnchor(step)[1] - step.position[1], 0]} center zIndexRange={[25, 0]} style={{ pointerEvents: 'none' }}>
-        <div ref={attach} className={`${LABEL} ${selected ? 'border-accent' : ''}`} data-step-label={step.id}>
-          {step.name}
-        </div>
-      </Html>
+    <group userData={{ shafts: mapped.map((s) => s.stepId), stubs: stubs.map((s) => s.stepId) }}>
+      {near.length > 0 && <Line points={pairs(near)} segments color={flowColor} lineWidth={2.5} transparent opacity={selectedStepId ? 0.35 : 0.7} />}
+      {far.length > 0 && <Line points={pairs(far)} segments color={flowColor} lineWidth={1.5} transparent opacity={0.15} />}
+      {selected.length > 0 && <Line points={pairs(selected)} segments color={glow} lineWidth={4.5} toneMapped={false} />}
+      {stubs.length > 0 && <Line points={pairs(stubs)} segments color={colors.text3} lineWidth={1.5} dashed dashSize={10} gapSize={8} transparent opacity={scope ? 0.2 : 0.6} />}
+      {stubs.map((s) => (
+        // An empty ring where a stub ends: nothing is known inside this service yet.
+        <mesh key={s.stepId} position={[s.to[0], s.to[1], s.to[2]]} rotation={[-Math.PI / 2, 0, 0]} userData={{ stubEnd: s.stepId }}>
+          <ringGeometry args={[8, 10, 24]} />
+          <meshBasicMaterial color={colors.text3} transparent opacity={scope ? 0.2 : 0.7} side={THREE.DoubleSide} />
+        </mesh>
+      ))}
+      {mapped.map((s) => (
+        <mesh key={s.stepId} position={[s.to[0], s.to[1] + 5, s.to[2]]} rotation={[-Math.PI / 2, 0, 0]} userData={{ landing: s.stepId }}>
+          <ringGeometry args={[11, 14, 28]} />
+          <meshBasicMaterial color={s.stepId === selectedStepId ? glow : flowColor} transparent opacity={inScope(s) ? 0.9 : 0.2} toneMapped={s.stepId !== selectedStepId} side={THREE.DoubleSide} />
+        </mesh>
+      ))}
     </group>
   );
 });
@@ -176,10 +52,10 @@ const PARTICLES = 6;
  * Replay particles on the playback clock (never stepped from frames): each active step's particle
  * goes down its shaft into the service's line and back up. Positions are set imperatively.
  */
-export function ReplayParticles({ steps, playback, shafts, colors, reduced }: { steps: readonly TxStep[]; playback: Playback; shafts: readonly DrilldownShaft[]; colors: DrilldownColors; reduced: boolean }) {
+export function ReplayParticles({ steps, playback, shafts, colors, flowColor, reduced }: { steps: readonly TxStep[]; playback: Playback; shafts: readonly DrilldownShaft[]; colors: DrilldownColors; flowColor: string; reduced: boolean }) {
   const pool = useRef<(THREE.Mesh | null)[]>([]);
-  const byStep = useMemo(() => new Map(shafts.map((s) => [s.stepId, s])), [shafts]);
-  const glow = useMemo(() => new THREE.Color(colors.accent).multiplyScalar(3), [colors]);
+  const byStep = useMemo(() => new Map(shafts.filter((s) => s.lineId !== null).map((s) => [s.stepId, s])), [shafts]);
+  const glow = useMemo(() => new THREE.Color(flowColor).multiplyScalar(colors.dark ? 3 : 1), [flowColor, colors.dark]);
   useFrame(() => {
     const clock = playback.get();
     const active = activeTxSteps(steps, clock.t, clock.step).filter((s) => byStep.has(s.stepId));
@@ -204,16 +80,10 @@ export function ReplayParticles({ steps, playback, shafts, colors, reduced }: { 
             pool.current[i] = m;
           }}
         >
-          <sphereGeometry args={[16, 16, 12]} />
+          <sphereGeometry args={[14, 16, 12]} />
           <meshBasicMaterial color={glow} toneMapped={false} />
         </mesh>
       ))}
     </group>
   );
 }
-
-/** A stable callback ref that registers a label with the scene's declutter. */
-function useLabel(labels: LabelLayer, id: string) {
-  return useCallback((el: HTMLElement | null) => labels.attach(id, el), [labels, id]);
-}
-

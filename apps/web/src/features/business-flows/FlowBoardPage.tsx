@@ -264,6 +264,7 @@ function Board({ index, flow, environmentId, viewingHistory }: { index: Topology
             <Suspense fallback={<p className="m-0 p-4 text-sm text-fg-2">Loading the 3D view…</p>}>
               <FlowDrilldown3D
                 flow={flow}
+                flowColorIndex={Math.max(0, fx.flows.findIndex((f) => f.id === flow.id))}
                 layout={layout}
                 boards={boardIndexes}
                 serviceName={serviceName}
