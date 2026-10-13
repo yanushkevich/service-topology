@@ -116,7 +116,12 @@ function Fragment({ item, at, name }: { item: Extract<ProcessItem, { kind: 'frag
     <li className={cx('relative z-1 col-span-full mx-1 grid grid-cols-subgrid rounded-md border py-1', FRAME[item.type])} data-fragment={item.type}>
       <span className="col-span-full flex items-center gap-1.5 px-2">
         <span className="rounded-sm bg-surface-3 px-1.5 font-mono text-[10px] tracking-[0.07em] text-fg uppercase">{TITLE[item.type]}</span>
-        {item.guard && item.type !== 'alt' && <span className="font-mono text-[11px] text-fg-2">{item.guard}</span>}
+        {item.guard && item.type !== 'alt' && (
+          <span className="font-mono text-[11px] text-fg-2">
+            {item.guard}
+            {item.type === 'opt' && item.sections[0]?.share !== undefined && ` · ${share(item.sections[0].share)}`}
+          </span>
+        )}
       </span>
       {item.sections.map((section, i) => (
         <SectionView key={i} section={section} first={i === 0} type={item.type} at={at} name={name} />
@@ -129,10 +134,10 @@ function SectionView({ section, first, type, at, name }: { section: Section; fir
   // An alt names each section's condition; a loop or opt already shows it in its title.
   const guard = type === 'alt' || (type === 'par' && !first) ? section.guard : undefined;
   const heading: ReactNode =
-    guard !== undefined || (type === 'alt' && section.share !== undefined) || (type === 'opt' && section.share !== undefined) ? (
+    guard !== undefined || (type === 'alt' && section.share !== undefined) ? (
       <span className="col-span-full px-2 font-mono text-[11px] text-fg-2">
         {guard !== undefined && `[${guard}]`}
-        {section.share !== undefined && ` · ${Number((section.share * 100).toFixed(1))}%`}
+        {section.share !== undefined && ` · ${share(section.share)}`}
       </span>
     ) : null;
   return (
@@ -146,3 +151,5 @@ function SectionView({ section, first, type, at, name }: { section: Section; fir
     </div>
   );
 }
+
+const share = (value: number) => `${Number((value * 100).toFixed(1))}%`;

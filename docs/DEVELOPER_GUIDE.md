@@ -174,6 +174,9 @@ The Events page and inspector explain the new rule automatically.
   - Link a service-board dependency with `entityId` (a service definition or resource ID); never match by name.
   - Declare a database's tables on the board (`tables`), with writer and reader lines that reach the station. `tables.test.ts` checks this on the example.
   - Flow steps get their stores from `dataStoresOf` (topology relationships).
+- **Process view (ADR-028):**
+  - `lineProcess` and `flowProcess` (`src/transit/process.ts`) build the sequence; `ProcessDiagram` draws it.
+  - To show a condition, a parallel fork, a repeat, or a transaction on a service-board line, declare it (`Branch.condition`, `Branch.parallel`, `Line.repeat`, `Line.transactions`); never infer it.
 - **Editing:** `features/business-flows/FlowEditorDialog.tsx` is wired into `EntityEditorProvider` for the `business-flow` kind.
 - **Import:** `make -C backend import-flows FILE=…` (examples in `fixtures/flows/`).
 

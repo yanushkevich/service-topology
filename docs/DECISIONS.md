@@ -360,3 +360,4 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - A canvas or SVG diagram library. Rejected: a new dependency, and weaker accessibility than a list.
   - Inferring loops and conditions from traces. Deferred until real trace ingestion: example traces cannot support it honestly.
 - **Consequences:** additive optional fields on the transit read model, and a `strip` page parameter on both boards.
+- **Implemented (2026-10-12, Milestone 11.2):** see the closeout in `docs/IMPLEMENTATION_PLAN.md`. The flow builder uses `opt` for conditional exits beside unconditional ones, because the flow model has no `else`.

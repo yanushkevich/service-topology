@@ -586,3 +586,14 @@ Decision: ADR-027. Spec: `docs/BUSINESS_FLOWS.md` Revision 3.
   - `FlowsOnService.tsx` holds `UsedByChips` and `FlowsWithoutBoard`.
 - **Flow board:** `StoreRef` and `policyStores` in `swimlaneAdapter.ts`, store chips in `SwimlaneParts.tsx`, and `DataStores` in `FlowPanels.tsx`.
 - **Shared:** `shared/hooks/useKeyed.ts`.
+
+## Revision 12 — Process view (2026-10-12, Milestone 11.2)
+Decision: ADR-028. Spec: `docs/BUSINESS_FLOWS.md` Revision 4.
+
+- **Model:** `apps/web/src/transit/process.ts` (pure): `Process`, `lineProcess`, `flowProcess`, `fragmentsOf`.
+- **Declared transit fields:** `Branch.condition`, `Branch.parallel`, `Line.repeat`, `Line.transactions`.
+- **UI** (`features/boards/`):
+  - `ProcessDiagram.tsx`: an ordered list on a CSS subgrid, with lifelines and fragments;
+  - `StripSwitch.tsx`;
+  - the `strip` page parameter on `/services/` and `/flows/`.
+- **Endpoint chip:** in `features/transit-board/TransitMap.tsx`.

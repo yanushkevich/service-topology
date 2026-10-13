@@ -1,6 +1,6 @@
 # Milestone 11.2 — Process view (sequence diagram) and visible endpoints
 
-**Status:** in progress (2026-10-12).
+**Status:** implemented 2026-10-12 (closeout in `docs/IMPLEMENTATION_PLAN.md`).
 
 **Read first:** `docs/BUSINESS_FLOWS.md` Revision 4, sections 17–18; `docs/DECISIONS.md` ADR-028; `docs/CONVENTIONS.md`.
 

@@ -41,6 +41,8 @@ const PAGES = [
   { name: 'Transit board (business flow selected)', path: '/services/payment-service/transit?v=1&env=production&flow=flow-checkout&line=A2', ready: '[aria-label="Line card"] h2' },
   { name: 'Transit board (no board data, flows listed)', path: '/services/order-service/transit?v=1&env=production', ready: '[aria-label="Business flows on this service"] li' },
   { name: 'Transit board (Capture: data and dependencies)', path: '/services/payment-service/transit?v=1&env=production&line=A2', ready: '[aria-label="Line card"] [aria-label="Data"], [aria-label="Line card"] section' },
+  { name: 'Transit board (process view)', path: '/services/payment-service/transit?v=1&env=production&line=W1&strip=process', ready: '[aria-label="Process of line W1"]' },
+  { name: 'Flow board (process view)', path: '/flows/flow-checkout?v=1&env=production&strip=process', ready: '[aria-label="Process of Checkout"]' },
   { name: 'Business flows catalog', path: '/flows?v=1&env=production', ready: '[aria-label="Business flows"] li' },
   { name: 'Flow board (swimlane)', path: '/flows/flow-checkout?v=1&env=production', ready: '.react-flow__node-step' },
   { name: 'Flow board (step selected)', path: '/flows/flow-checkout?v=1&env=production&step=capture-payment', ready: '[aria-label="Flow card"] h2' },

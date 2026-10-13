@@ -210,7 +210,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 10 | Implemented (2026-10-12) | Business flows (ADR-022): model, board, typical mode, transaction replay, and authoring, on example observed data; see the Milestone 10 closeout. |
 | 11 | Implemented (2026-10-12) | Flow swimlanes, flows on the service board, pattern catalog (ADR-023, ADR-024); see the Milestone 11 closeout. |
 | 11.1 | Implemented (2026-10-12) | Data stores on both boards (linked dependencies, tables, store chips) and findable flows (ADR-027); `docs/milestones/MILESTONE_11_1_DATA_STORES.md`. |
-| 11.2 | In progress (2026-10-12) | Process view (sequence diagram with alt/opt/loop/par/transaction/compensation) for lines and flows, and visible endpoints (ADR-028); `docs/milestones/MILESTONE_11_2_PROCESS_VIEW.md`. |
+| 11.2 | Implemented (2026-10-12) | Process view (sequence diagram with alt/opt/loop/par/transaction/compensation) for lines and flows, and visible endpoints (ADR-028); `docs/milestones/MILESTONE_11_2_PROCESS_VIEW.md`. |
 | 12 | Specified (2026-10-12) | Flows in impact analysis and simulation, with backend B9 (ADR-025, proposed). Not started. |
 | 13 | Specified (2026-10-12) | 3D drill-down from a flow into its services (ADR-026, proposed). Not started. |
 | 9 | Implemented (2026-10-12) | Transit board on example data (ADR-021): spec Phase 1 plus the Phase 4 replay UI, hover tooltips, windows, and per-step stats; see the Milestone 9 closeout and follow-up below. Real data sources (phases 2, 3, and 5) are not started. |
@@ -579,3 +579,38 @@ Data stores on both boards, and flows you can find (ADR-027; `docs/BUSINESS_FLOW
 - **Stores per service.** Stores belong to services in the topology, so a step shows its service's stores, and the UI says so. Per-operation data access needs `db.*` span attributes from real traces.
 - **Example tables.** Tables are example data, and only Payment Service has a board.
 - **The strip's stop text gets tall.** A database stop that a line writes several tables at wraps to several lines.
+
+### Milestone 11.2 closeout (2026-10-12)
+Process view (sequence diagram) for lines and flows, and visible endpoints (ADR-028; `docs/BUSINESS_FLOWS.md` Revision 4).
+
+**Commits:**
+- `7d2ae4d` spec;
+- `1ddb8ba` model and builders;
+- `b24708e` renderer, switches, and endpoints (phases 2 and 3 in one commit);
+- the close-out commit.
+
+**Checks run:**
+- **Frontend (`apps/web`):** `npx tsc -b`, `npx eslint .`, and `npx vitest run --maxWorkers=3`: 68 files, 983 passed, 1 skipped. `npm run build` passes.
+- **Real-browser audit:** `npm run audit:a11y`, 24 pages × 2 themes, all pass, including both process views.
+- **Screenshots** reviewed:
+  - Capture (light) and OutboxRelay (dark);
+  - GetPayment and ReconcileSettlements (dark);
+  - the Checkout process (dark and light);
+  - the webhook's process at 390 px.
+
+  No horizontal page scroll; no console errors.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Capture: loop (retry ×3) around the card call; transaction with the `payments` and `payment_outbox` writes. GetPayment: opt "cache miss · 6%". OutboxRelay: loop "every 200 ms". ReconcileSettlements: par. Checkout: alt at Authorize payment, opt for the settlement timeout and the void, redelivery loop, compensation into Void | Pass | `process.test.ts` |
+| Reads as an ordered list (axe in jsdom and the real browser, both themes); the switch is in the URL | Pass | `ProcessDiagram.test.tsx`; `a11y.test.tsx`; `npm run audit:a11y` |
+| The selected line's endpoint shows on the map; the index says "Endpoints" | Pass | `ProcessDiagram.test.tsx` |
+| `npm run check` | Pass | As listed |
+
+**Decided while building:**
+- **No `else` in flows.** The flow builder follows the flow model: unconditional exits always run, so a conditional exit beside them is an `opt`, and only all-conditional exits are an `alt`. The spec first said "unconditional siblings become `else`", which would have drawn Cancel order as releasing stock only when the payment was not authorized. The flow model cannot say "else". Await settlement's normal path runs unconditionally, and its timeout path is optional.
+- **Endpoint label on the map.** It is a chip in the map's corner, not a label at the line's start: the start of a line is too dense for another label.
+
+**Known limitations:**
+- **Data is declared, never inferred.** Conditions, parallelism, repetition, and transactions on service-board lines come only from declared example data (A5, J2, O1, and the transactions of Capture and the webhook). Other lines show plain sequences.
+- **Wide flows scroll.** A flow's process grows wide with many services and scrolls sideways inside its strip.
