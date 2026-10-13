@@ -63,6 +63,7 @@ var (
 	_ ports.TopologyRepository     = (*TopologyRepository)(nil)
 	_ ports.TopologyMetaRepository = (*TopologyRepository)(nil)
 	_ ports.TopologyWriter         = (*TopologyRepository)(nil)
+	_ ports.BundleImporter         = (*TopologyRepository)(nil)
 )
 
 // NewTopologyRepository returns a repository using s.
@@ -85,21 +86,91 @@ func canonicalDoc(id string, entity any, meta bson.D) (bson.D, error) {
 }
 
 // ReplaceTopology validates data and, in one transaction, replaces the stored canonical topology
-// with it (snapshots, layouts, and runs are untouched). Importing the same data twice yields the
-// same state, so seeding is idempotent. On any failure nothing is committed.
+// (seed load). Stored transit boards are kept.
 func (r *TopologyRepository) ReplaceTopology(ctx context.Context, data *domain.TopologyData, sourceType string) (ImportResult, error) {
 	if issues := domain.Validate(data); len(issues) > 0 {
 		return ImportResult{}, &ValidationError{Issues: issues}
 	}
-	recordedAt := r.now().UTC().Format(time.RFC3339)
-	docs := map[string][]any{}
+	docs, err := canonicalDocs(data, r.now().UTC().Format(time.RFC3339), sourceType)
+	if err != nil {
+		return ImportResult{}, err
+	}
+	err = r.s.inTx(ctx, func(ctx context.Context) error {
+		if err := r.writeCanonical(ctx, docs); err != nil {
+			return err
+		}
+		return r.newRevision(ctx, docs.recordedAt, sourceType, newRevisionID())
+	})
+	if err != nil {
+		return ImportResult{}, err
+	}
+	res := ImportResult{Documents: map[string]int{}}
+	for _, c := range canonicalCollections {
+		res.Documents[c] = len(docs.byColl[c])
+	}
+	return res, nil
+}
+
+// ReplaceAll replaces the canonical topology and every stored transit board in one transaction
+// (ports.BundleImporter, ADR-032). Boards start again at revision 1. The application validates.
+func (r *TopologyRepository) ReplaceAll(ctx context.Context, data *domain.TopologyData, boards []domain.BoardDefinition, expectedRevision, sourceType, updatedAt string) (*ports.ReplaceResult, error) {
+	docs, err := canonicalDocs(data, r.now().UTC().Format(time.RFC3339), sourceType)
+	if err != nil {
+		return nil, err
+	}
+	boardDocs := make([]any, 0, len(boards))
+	for i := range boards {
+		payload, err := toDocument(&boards[i])
+		if err != nil {
+			return nil, err
+		}
+		boardDocs = append(boardDocs, bson.D{{Key: "_id", Value: boards[i].ServiceDefinitionID}, {Key: "revision", Value: int64(1)}, {Key: "updatedAt", Value: updatedAt}, {Key: "payload", Value: payload}})
+	}
+	revision := newRevisionID()
+	err = r.s.inTx(ctx, func(ctx context.Context) error {
+		if expectedRevision != "" {
+			st, err := readState(ctx, r.s)
+			if err != nil {
+				return err
+			}
+			if st.Revision != expectedRevision {
+				return ports.ErrPreconditionFailed
+			}
+		}
+		if err := r.writeCanonical(ctx, docs); err != nil {
+			return err
+		}
+		if _, err := r.s.coll(collBoards).DeleteMany(ctx, bson.D{}); err != nil {
+			return err
+		}
+		if len(boardDocs) > 0 {
+			if _, err := r.s.coll(collBoards).InsertMany(ctx, boardDocs); err != nil {
+				return err
+			}
+		}
+		return r.newRevision(ctx, docs.recordedAt, sourceType, revision)
+	})
+	if err != nil {
+		return nil, mapErr(err)
+	}
+	return &ports.ReplaceResult{Revision: revision, Documents: domain.ModuleCounts(data), Boards: len(boards)}, nil
+}
+
+// canonical holds the documents of a whole topology, by collection.
+type canonical struct {
+	byColl     map[string][]any
+	recordedAt string
+}
+
+func canonicalDocs(data *domain.TopologyData, recordedAt, sourceType string) (canonical, error) {
+	docs := canonical{byColl: map[string][]any{}, recordedAt: recordedAt}
 	add := func(coll, id string, ord int, entity any, extra ...bson.E) error {
 		meta := append(bson.D{{Key: "ord", Value: ord}, {Key: "recordedAt", Value: recordedAt}, {Key: "sourceType", Value: sourceType}}, extra...)
 		d, err := canonicalDoc(id, entity, meta)
 		if err != nil {
 			return err
 		}
-		docs[coll] = append(docs[coll], d)
+		docs.byColl[coll] = append(docs.byColl[coll], d)
 		return nil
 	}
 	var err error
@@ -124,38 +195,36 @@ func (r *TopologyRepository) ReplaceTopology(ctx context.Context, data *domain.T
 	for i, f := range data.BusinessFlows {
 		err = errors.Join(err, add(collBusinessFlows, f.ID, i, f))
 	}
-	if err != nil {
-		return ImportResult{}, err
+	return docs, err
+}
+
+// writeCanonical empties every canonical collection and inserts docs (inside a transaction).
+func (r *TopologyRepository) writeCanonical(ctx context.Context, docs canonical) error {
+	for _, c := range canonicalCollections {
+		if _, err := r.s.coll(c).DeleteMany(ctx, bson.D{}); err != nil {
+			return err
+		}
+		if len(docs.byColl[c]) == 0 {
+			continue
+		}
+		if _, err := r.s.coll(c).InsertMany(ctx, docs.byColl[c]); err != nil {
+			return err
+		}
 	}
+	return nil
+}
+
+func (r *TopologyRepository) newRevision(ctx context.Context, recordedAt, sourceType, revision string) error {
+	_, err := r.s.coll(collTopologyState).ReplaceOne(ctx, bson.D{{Key: "_id", Value: "topology"}},
+		bson.D{{Key: "revision", Value: revision}, {Key: "recordedAt", Value: recordedAt}, {Key: "sourceType", Value: sourceType}},
+		options.Replace().SetUpsert(true))
+	return err
+}
+
+func newRevisionID() string {
 	var b [16]byte
 	_, _ = rand.Read(b[:])
-	revision := hex.EncodeToString(b[:])
-
-	res := ImportResult{Documents: map[string]int{}}
-	err = r.s.inTx(ctx, func(ctx context.Context) error {
-		for _, c := range canonicalCollections {
-			if _, err := r.s.coll(c).DeleteMany(ctx, bson.D{}); err != nil {
-				return err
-			}
-			if len(docs[c]) == 0 {
-				continue
-			}
-			if _, err := r.s.coll(c).InsertMany(ctx, docs[c]); err != nil {
-				return err
-			}
-		}
-		_, err := r.s.coll(collTopologyState).ReplaceOne(ctx, bson.D{{Key: "_id", Value: "topology"}},
-			bson.D{{Key: "revision", Value: revision}, {Key: "recordedAt", Value: recordedAt}, {Key: "sourceType", Value: sourceType}},
-			options.Replace().SetUpsert(true))
-		return err
-	})
-	if err != nil {
-		return ImportResult{}, err
-	}
-	for _, c := range canonicalCollections {
-		res.Documents[c] = len(docs[c])
-	}
-	return res, nil
+	return hex.EncodeToString(b[:])
 }
 
 type topologyState struct {

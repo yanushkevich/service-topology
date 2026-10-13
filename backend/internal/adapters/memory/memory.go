@@ -380,6 +380,27 @@ func (s *Store) ApplyChange(_ context.Context, change ports.EntityChange, expect
 	return s.revisionLocked(), nil
 }
 
+var _ ports.BundleImporter = (*Store)(nil)
+
+// ReplaceAll implements ports.BundleImporter (no validation here: the application validates).
+func (s *Store) ReplaceAll(_ context.Context, data *domain.TopologyData, defs []domain.BoardDefinition, expectedRevision, _, updatedAt string) (*ports.ReplaceResult, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.Err != nil {
+		return nil, s.Err
+	}
+	if expectedRevision != "" && expectedRevision != s.revisionLocked() {
+		return nil, ports.ErrPreconditionFailed
+	}
+	s.Data = clone(data)
+	s.boards = map[domain.EntityID]domain.StoredBoard{}
+	for _, def := range defs {
+		s.boards[def.ServiceDefinitionID] = domain.StoredBoard{Definition: clone(def), Revision: "1", UpdatedAt: updatedAt}
+	}
+	s.writes++
+	return &ports.ReplaceResult{Revision: s.revisionLocked(), Documents: domain.ModuleCounts(data), Boards: len(defs)}, nil
+}
+
 // Boards adapts the store to ports.BoardRepository (ADR-031), with the same revision rules as MongoDB.
 func (s *Store) Boards() ports.BoardRepository { return boards{s} }
 

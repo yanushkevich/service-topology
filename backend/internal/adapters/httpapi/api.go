@@ -7,8 +7,9 @@ const (
 	maxSnapshotBody = 16 << 20
 	maxLayoutBody   = 1 << 20
 	maxEntityBody   = 1 << 20
-	maxImportBody   = 4 << 20 // a workflow definition file plus its mapping
-	maxRequestBody  = 1 << 20 // simulation requests
+	maxImportBody   = 4 << 20  // a workflow definition file plus its mapping
+	maxBundleBody   = 16 << 20 // a data bundle: every module (ADR-032)
+	maxRequestBody  = 1 << 20  // simulation requests
 )
 
 // handlerFunc is an API handler: it writes the response, or returns an error that writeError maps
@@ -50,6 +51,7 @@ func (d Deps) apiRoutes(mux *http.ServeMux) {
 	h("PUT /api/v1/entities/{kind}/{id}", d.replaceEntity)
 	h("DELETE /api/v1/entities/{kind}/{id}", d.deleteEntity)
 	h("POST /api/v1/imports/business-flows", d.importBusinessFlows)
+	h("POST /api/v1/imports/bundle", d.importBundle)
 
 	h("GET /api/v1/topology/snapshots", d.listSnapshots)
 	h("POST /api/v1/topology/snapshots", d.captureSnapshot)

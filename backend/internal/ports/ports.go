@@ -59,6 +59,21 @@ type TopologyWriter interface {
 	ApplyChange(ctx context.Context, change EntityChange, expectedRevision, sourceType string) (string, error)
 }
 
+// BundleImporter replaces the whole canonical topology and every stored transit board in one atomic
+// step (ADR-032, POST /imports/bundle). The application validates first. An expectedRevision of ""
+// skips the revision check; otherwise ErrPreconditionFailed if the stored revision moved.
+type BundleImporter interface {
+	ReplaceAll(ctx context.Context, data *domain.TopologyData, boards []domain.BoardDefinition, expectedRevision, sourceType, updatedAt string) (*ReplaceResult, error)
+}
+
+// ReplaceResult is what a bundle import stored: the new topology revision, documents per topology
+// module (keyed like the bundle), and the number of boards.
+type ReplaceResult struct {
+	Revision  string         `json:"revision"`
+	Documents map[string]int `json:"documents"`
+	Boards    int            `json:"boards"`
+}
+
 // FlowMapping makes the import of workflow definitions explicit (ADR-022): which service runs each
 // task, and which event type carries a hand-off. Nothing is guessed.
 type FlowMapping struct {

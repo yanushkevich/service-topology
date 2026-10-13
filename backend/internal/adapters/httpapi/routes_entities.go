@@ -71,6 +71,21 @@ func (d Deps) importBusinessFlows(w http.ResponseWriter, r *http.Request) error 
 	return nil
 }
 
+// importBundle replaces the topology and every transit board with a data bundle (ADR-032).
+func (d Deps) importBundle(w http.ResponseWriter, r *http.Request) error {
+	raw, err := readBody(w, r, maxBundleBody)
+	if err != nil {
+		return err
+	}
+	res, err := d.API.ImportBundle(r.Context(), raw, ifMatch(r))
+	if err != nil {
+		return err
+	}
+	setETag(w, res.Revision)
+	writeJSON(w, http.StatusOK, res)
+	return nil
+}
+
 // readEntity reads the body as the canonical entity type of kind (unknown fields are rejected).
 func readEntity(w http.ResponseWriter, r *http.Request, kind string) (any, error) {
 	raw, err := readBody(w, r, maxEntityBody)

@@ -82,6 +82,21 @@ type BoardIssue struct {
 	Path string `json:"path"`
 }
 
+// BundleCase is one file in fixtures/conformance/bundles (ADR-032). Bundle stays raw: some cases
+// are deliberately malformed.
+type BundleCase struct {
+	Description string          `json:"description"`
+	Bundle      json.RawMessage `json:"bundle"`
+	Expected    []BundleIssue   `json:"expected"`
+}
+
+// BundleIssue is an expected bundle issue: code, field path, and the entity of a topology rule.
+type BundleIssue struct {
+	Code     string          `json:"code"`
+	Path     string          `json:"path"`
+	EntityID domain.EntityID `json:"entityId,omitempty"`
+}
+
 // ValidationCase is one file in fixtures/conformance/validation.
 type ValidationCase struct {
 	Description string              `json:"description"`

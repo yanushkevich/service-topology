@@ -1773,6 +1773,87 @@
         "x-repository": "Backend only (ADR-022): workflow definitions are imported through the API or make import-flows; the client reads the result through TopologyRepository.getTopology"
       }
     },
+    "/imports/bundle": {
+      "post": {
+        "operationId": "importDataBundle",
+        "tags": [
+          "topology"
+        ],
+        "summary": "Replace all data with a data bundle",
+        "description": "Validates a data bundle (docs/DATA_BUNDLE.md, ADR-032): bundle checks (bundle-unsupported, bundle-invalid-module, bundle-duplicate-board), the topology rules, the entity field checks, and each transit board against the bundle's topology. Then replaces the canonical topology and every stored transit board in one transaction. Boards start again at revision 1. Unknown fields are rejected. YAML files are converted to JSON by the client. Needs the editor role when token authentication is on.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../schemas/data-bundle.v1.schema.json"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Imported: the new topology revision and what was stored.",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BundleImportResult"
+                },
+                "examples": {
+                  "imported": {
+                    "value": {
+                      "revision": "5f2c9d0e8a7b4c1d9e3f2a6b7c8d9e0f",
+                      "documents": {
+                        "environments": 3,
+                        "serviceDefinitions": 9,
+                        "serviceInstances": 20,
+                        "resources": 41,
+                        "relationships": 30,
+                        "eventTypes": 8,
+                        "businessFlows": 3
+                      },
+                      "boards": 2
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "412": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "x-repository": "TopologyRepository.importer.importBundle (ADR-032); with built-in data the local sandbox imports instead"
+      }
+    },
     "/transit-boards": {
       "get": {
         "operationId": "listTransitBoards",
@@ -3202,6 +3283,34 @@
           "revision": {
             "type": "string",
             "description": "Topology revision after the import."
+          }
+        }
+      },
+      "BundleImportResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "documents",
+          "boards"
+        ],
+        "properties": {
+          "revision": {
+            "type": "string",
+            "description": "The new topology revision (also the ETag)."
+          },
+          "documents": {
+            "type": "object",
+            "description": "Entities stored per topology module, keyed like the bundle.",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "boards": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Transit board definitions stored."
           }
         }
       }

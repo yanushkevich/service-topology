@@ -42,6 +42,8 @@ func (d Deps) problemFor(r *http.Request, err error) Problem {
 		return problem("import-overwrites-authored", "Conflict", http.StatusConflict, err.Error(), "import-overwrites-authored")
 	case errors.Is(err, application.ErrImportedFlow):
 		return problem("imported-read-only", "Conflict", http.StatusConflict, err.Error(), "imported-read-only")
+	case errors.Is(err, application.ErrNoBundleImport):
+		return problem("unavailable", "Service unavailable", http.StatusServiceUnavailable, "This deployment cannot import data bundles.", "")
 	case errors.Is(err, application.ErrNoBoardStore):
 		return problem("unavailable", "Service unavailable", http.StatusServiceUnavailable, "This deployment does not store transit boards.", "")
 	case errors.Is(err, ports.ErrConflict):

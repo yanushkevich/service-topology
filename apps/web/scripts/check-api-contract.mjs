@@ -21,7 +21,7 @@ const OPENAPI_ID = 'https://example.test/api/openapi.json';
 const openapi = load('api/openapi.json');
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 addFormats(ajv);
-for (const s of ['schemas/topology.v1.schema.json', 'schemas/topology-snapshot.v1.schema.json', 'schemas/saved-layout.v1.schema.json', 'schemas/transit-board-definition.v1.schema.json']) ajv.addSchema(load(s));
+for (const s of ['schemas/topology.v1.schema.json', 'schemas/topology-snapshot.v1.schema.json', 'schemas/saved-layout.v1.schema.json', 'schemas/transit-board-definition.v1.schema.json', 'schemas/data-bundle.v1.schema.json']) ajv.addSchema(load(s));
 ajv.addSchema({ ...openapi, $id: OPENAPI_ID });
 const pointer = (...parts) => `${OPENAPI_ID}#/${parts.map((p) => String(p).replace(/~/g, '~0').replace(/\//g, '~1')).join('/')}`;
 
@@ -251,6 +251,18 @@ await check('replace transit board', 'put', '/transit-boards/{serviceId}', `/tra
 await check('replace transit board, stale If-Match', 'put', '/transit-boards/{serviceId}', `/transit-boards/${boardService}`, { status: 412, body: board, headers: { 'If-Match': boardRev } });
 await check('delete transit board', 'delete', '/transit-boards/{serviceId}', `/transit-boards/${boardService}`, { status: 204 });
 await check('delete transit board, missing', 'delete', '/transit-boards/{serviceId}', `/transit-boards/${boardService}`, { status: 404 });
+
+// Data bundle import (ADR-032): re-imports the current data and boards, so the stored content is
+// unchanged (board revisions restart at 1). Stale and invalid imports write nothing.
+const current = await check('topology for the bundle', 'get', '/topology', '/topology', { status: 200 });
+const topologyTag = lastHeaders.get('etag');
+const storedBoards = await check('boards for the bundle', 'get', '/transit-boards', '/transit-boards', { status: 200 });
+const definitions = [];
+for (const { serviceDefinitionId } of storedBoards?.items ?? []) definitions.push(await (await fetch(`${BASE}/transit-boards/${serviceDefinitionId}`)).json());
+const dataBundle = { format: 'service-topology.bundle', version: 1, exportedAt: new Date().toISOString(), source: { label: 'contract check', isMock: true }, ...current, transitBoards: definitions };
+await check('import bundle, stale If-Match', 'post', '/imports/bundle', '/imports/bundle', { status: 412, body: dataBundle, headers: { 'If-Match': '"stale"' } });
+await check('import bundle, invalid', 'post', '/imports/bundle', '/imports/bundle', { status: 422, body: { ...dataBundle, version: 2 } });
+await check('import bundle', 'post', '/imports/bundle', '/imports/bundle', { status: 200, body: dataBundle, headers: topologyTag ? { 'If-Match': topologyTag } : {} });
 
 console.log(`\n${checks - failures}/${checks} checks passed against ${BASE}`);
 process.exit(failures ? 1 : 0);
