@@ -405,3 +405,40 @@ The service board drew databases only as anonymous endpoints (`payments-pg`), no
 - **No rebuilds on simulation ticks.** The linked board is rebuilt only when a link or a linked health changes (`useKeyed`).
 - **The outbox rule.** The outbox pattern is satisfied by writing or polling an outbox table (the relay carries it too). The inbox must be written; the polling publisher must read.
 - **Where flows show.** The flow group in the index sits right after "All lines", so the arrow keys reach it first.
+
+---
+
+# Revision 4 — The process view, and endpoints you can see (2026-10-12, Milestone 11.2)
+
+**Source:** product owner: "maybe on the board we could add a process section? and a loop, with if else conditions", and "I don't see endpoints, where are they supposed to be?" Decision: ADR-028.
+
+## 17. Process view: the line or flow as a sequence diagram
+
+- **Where it lives.**
+  - On the service board, a selected line's strip panel switches between **Stops** and **Process**.
+  - On the flow board, the typical-mode strip switches between **Stages** and **Process**.
+  - The choice is a page parameter (`strip=process`).
+- **What it draws.**
+  - **Lifelines:** the stations a line passes through (caller, entry, module, clients, dependencies), or the services a flow passes through (in lane order).
+  - **Messages:** a call, an asynchronous hand-off, a reply, a table write or read, or a local step.
+  - **Fragments:** the standard sequence-diagram blocks.
+
+| Fragment | Service board (line) | Flow board |
+|---|---|---|
+| `alt` (if / else) | — | a decision's conditional exits, with observed shares; unconditional siblings become `else` |
+| `opt` (if) | an alternative branch, with its condition and share (A5: cache miss · 6%) | — |
+| `loop` | a retry policy around the call it retries (retry ×3), and a line's `repeat` (OutboxRelay: every 200 ms) | retry on a call, redelivery on an event |
+| `par` | branches declared `parallel` (J2 reconciles card and ledger together) | unconditional exits that run together |
+| `transaction` | a line's declared transaction: the table writes it groups (Capture: `payments` + `payment_outbox`) | — |
+| `compensation` | — | transitions into a compensation step |
+
+- **Attached to messages.** Timeout, breaker, bulkhead, idempotency, and fallback appear as guards on the call ("timeout 2 s · breaker"). A missing policy says "missing". A wait step is a note ("wait ≤ 10 min"). An outcome ends its section ("⊣ Completed").
+- **Rule.** Nothing is inferred. Conditions, parallelism, repetition, and transactions come from declared data (`Branch.condition`, `Branch.parallel`, `Line.repeat`, `Line.transactions` on the service board) or from the flow model. A step reached a second time says "continues at …" instead of repeating.
+- **Accessibility.** The diagram is an ordered list, with fragments as nested lists headed "loop: retry ×3". It reads in order without the drawing.
+
+## 18. Endpoints on the service board
+
+- **Every line is one endpoint** (a gRPC method, an HTTP route, a consumed event, a schedule, or a background job).
+- **The index** heads its line groups "Endpoints".
+- **The map** labels the selected line's start with its code and signature ("A2 · rpc Capture(CaptureRequest) returns (Payment)").
+- **The process view's first message** is the endpoint call.

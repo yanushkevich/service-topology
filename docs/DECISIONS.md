@@ -345,3 +345,18 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - The transit read model changes additively (`entityId`, `tables`), frontend only. Real adapters must fill them from service catalogues and traces.
   - Flow impact (ADR-025, Milestone 12) can start from a database.
 - **Implemented (2026-10-12, Milestone 11.1):** see the Revision 3 implementation notes in `docs/BUSINESS_FLOWS.md`.
+
+## ADR-028 — A process view (sequence diagram) for lines and flows; endpoints labelled (2026-10-12, Milestone 11.2)
+- **Status:** Accepted (product owner, 2026-10-12: "make it as Milestone 11.2"). Spec: `docs/BUSINESS_FLOWS.md` Revision 4.
+- **Context:**
+  - The service board reads like a sequence diagram but does not draw one. Conditions, loops, parallel work, and transactions are implicit in branch shares, policies, and tables.
+  - Endpoints appear only in the index and the card.
+- **Decision:**
+  - **Model.** A pure process model (`transit/process.ts`: lifelines, messages, notes, fragments `alt` / `opt` / `loop` / `par` / `transaction` / `compensation`) with two builders: `lineProcess` and `flowProcess`.
+  - **Renderer.** One renderer, an ordered list laid out on a CSS subgrid with lifelines, reached from a Stops/Stages ↔ Process switch on both boards.
+  - **Declared data, no inference.** The transit read model gains optional declared fields: `Branch.condition`, `Branch.parallel`, `Line.repeat`, and `Line.transactions`.
+  - **Endpoints.** The selected line's endpoint is labelled on the map, and the index heading says "Endpoints".
+- **Alternatives:**
+  - A canvas or SVG diagram library. Rejected: a new dependency, and weaker accessibility than a list.
+  - Inferring loops and conditions from traces. Deferred until real trace ingestion: example traces cannot support it honestly.
+- **Consequences:** additive optional fields on the transit read model, and a `strip` page parameter on both boards.
