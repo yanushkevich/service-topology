@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { formatCount, formatMs, formatRate, isUnobserved, stepTint, windowLabel, type BoardIndex, tablesOfLine } from '../../transit/board';
-import type { Line, PolicyStop, Station } from '../../transit/types';
+import { formatCount, formatMs, formatRate, isUnobserved, lineStops, stepTint, windowLabel, type BoardIndex, type LineStop, tablesOfLine } from '../../transit/board';
+import type { Line } from '../../transit/types';
 import { cx } from '../../shared/ui/classes';
 import { lineColor, POLICY_STATE_LABEL } from './colors';
 import { KeyValueRow, Kicker } from '../../shared/ui/primitives';
@@ -8,18 +8,7 @@ import { PolicyDiamond } from './visuals';
 import { patternLabel } from '../../domain/patterns';
 import { StripScroller } from '../boards/StripScroller';
 
-type StripItem = { station: Station } | { stop: PolicyStop };
-
-/** The stops of one branch in order: stations, and after each client the policies on its lane. */
-function stripItems(index: BoardIndex, line: Line, branch: number): StripItem[] {
-  const ids = (line.route[branch]?.stations ?? []).slice(branch === 0 ? 0 : 1);
-  return ids.flatMap((id) => {
-    const station = index.stations.get(id);
-    if (!station) return [];
-    const stops = station.kind === 'client' ? (index.policiesByClient.get(id) ?? []) : [];
-    return [{ station }, ...stops.map((stop) => ({ stop }))];
-  });
-}
+type StripItem = LineStop;
 
 /**
  * Stop strip (spec "Screen layout", "Typical route mode"): the selected line as an ordered list of
@@ -50,7 +39,7 @@ export function StopStrip({ index, line, focusStations }: { index: BoardIndex; l
                 </p>
               )}
               <ol aria-label={`${label}${branch.kind === 'alternative' ? ', taken only on some requests' : ''}`} className="m-0 flex min-w-max list-none p-0">
-                {stripItems(index, line, b).map((item, i, all) => (
+                {lineStops(index, line, b).map((item, i, all) => (
                   <StripStop key={'station' in item ? item.station.id : item.stop.id} index={index} line={line} item={item} first={i === 0} last={i === all.length - 1} color={color} dashed={dashed || branch.kind === 'alternative'} focused={'station' in item && focusStations.has(item.station.id)} />
                 ))}
               </ol>

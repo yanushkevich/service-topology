@@ -67,6 +67,21 @@ export function indexBoard(board: TransitBoard): BoardIndex {
   return { board, stations, policiesByClient, lines, lineById: new Map(lines.map((l) => [l.id, l])), linesByStation, searchText, tablesByStation };
 }
 
+
+/** One stop of a line in order: a station, or a policy stop on the client before it. */
+export type LineStop = { station: Station } | { stop: PolicyStop };
+
+/** The stops of one branch in order: stations, and after each client the policies on its lane (a branch starts after its fork). */
+export function lineStops(index: BoardIndex, line: Line, branch: number): LineStop[] {
+  const ids = (line.route[branch]?.stations ?? []).slice(branch === 0 ? 0 : 1);
+  return ids.flatMap((id) => {
+    const station = index.stations.get(id);
+    if (!station) return [];
+    const stops = station.kind === 'client' ? (index.policiesByClient.get(id) ?? []) : [];
+    return [{ station }, ...stops.map((stop) => ({ stop }))];
+  });
+}
+
 /** What a line does with each table it touches, in route order: "writes", "reads", or both. */
 export function tablesOfLine(index: BoardIndex, line: Line): { table: DataTable; writes: boolean; reads: boolean }[] {
   return lineStations(line).flatMap((id) =>
