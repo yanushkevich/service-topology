@@ -49,6 +49,8 @@ const PAGES = [
   { name: 'Business flows catalog', path: '/flows?v=1&env=production', ready: '[aria-label="Business flows"] li' },
   { name: 'Flow board (swimlane)', path: '/flows/flow-checkout?v=1&env=production', ready: '.react-flow__node-step' },
   { name: 'Flow board (step selected)', path: '/flows/flow-checkout?v=1&env=production&step=capture-payment', ready: '[aria-label="Flow card"] h2' },
+  // `then` runs in the page once it is ready (opening a dialog); `ready` is awaited again after it.
+  { name: 'Quick search (results)', path: '/overview?v=1&env=production', ready: '[aria-keyshortcuts]', then: `document.querySelector('[aria-keyshortcuts]').click()`, after: '[role="listbox"] [role="option"]' },
   { name: 'Flow board (transaction replay)', path: '/flows/flow-checkout?v=1&env=production&mode=replay&tx=order%204466', ready: '[aria-label^="Steps of order"]' },
 ];
 
@@ -92,7 +94,12 @@ async function main() {
       for (const page of PAGES) {
         await send('Page.navigate', { url: BASE + page.path });
         await sleep(400);
-        await evaluate(`new Promise((resolve, reject) => { const t0 = performance.now(); const tick = () => document.querySelector(${JSON.stringify(page.ready)}) ? setTimeout(resolve, 1200) : performance.now() - t0 > 30000 ? reject(new Error('page not ready')) : requestAnimationFrame(tick); tick(); })`);
+        const waitFor = (selector) => evaluate(`new Promise((resolve, reject) => { const t0 = performance.now(); const tick = () => document.querySelector(${JSON.stringify(selector)}) ? setTimeout(resolve, 1200) : performance.now() - t0 > 30000 ? reject(new Error('page not ready')) : requestAnimationFrame(tick); tick(); })`);
+        await waitFor(page.ready);
+        if (page.then) {
+          await evaluate(page.then);
+          await waitFor(page.after);
+        }
         await evaluate(AXE_SOURCE);
         // target-size (2.5.8) is checked everywhere except zoomable canvas content, whose controls
         // scale with the user's zoom; the full-size Groups panel / entity list are the equivalents.

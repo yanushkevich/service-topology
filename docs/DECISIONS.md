@@ -422,10 +422,10 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 - **Status:** Accepted (product owner, 2026-10-13: "implement these recommendations"). Spec: `docs/milestones/MILESTONE_11_6_UI_POLISH.md`.
 - **Context:** the header search only filtered services and resources. Typing on a page other than the map or registry sent the user to the registry on the first keystroke, and it could not find flows, event types, or endpoints. The map, registry, and infrastructure pages already have their own filter box bound to the same shared filter.
 - **Decision:**
-  - The header search is a **quick search**: a combobox with results grouped by kind (services and resources in the environment, business flows, event types, transit-board endpoints, pages). Choosing a result opens it; typing never navigates.
+  - The header search is a **quick search**, as in the design reference's command palette: a search-styled header button (an icon on phones) opens a dialog with a combobox. Results are grouped by kind (services and resources in the environment, business flows, event types, transit-board endpoints, pages). Choosing a result opens it; typing never navigates.
   - It no longer writes the shared filter. Its last option, "Filter the registry", does that explicitly.
-  - **⌘K / Ctrl+K** focuses it from anywhere. On phones it opens in a dialog from a search button.
-  - Matching is a pure function (`shared/quickSearch.ts`) over the loaded data; endpoints come from the transit repository's board definitions, loaded when the search first opens.
+  - **⌘K / Ctrl+K** opens it from anywhere.
+  - Matching is a pure function (`features/search/quickSearch.ts`) over the loaded data; endpoints come from the transit repository's board definitions, loaded when the dialog opens.
 - **Alternatives:**
   - **Keep the filter and add a separate ⌘K palette.** Rejected: two search boxes in the header, one of them duplicating each page's own filter.
   - **Search on the backend.** Not needed at the scale target (1,000 entities); the data is already loaded.

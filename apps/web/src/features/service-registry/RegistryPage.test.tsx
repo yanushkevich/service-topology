@@ -154,13 +154,4 @@ describe('service registry', () => {
     renderApp('/registry', failing);
     expect((await screen.findAllByRole('alert'))[0]).toHaveTextContent('inventory unavailable');
   });
-
-  it('routes header search into the registry from pages without their own results', async () => {
-    const user = userEvent.setup();
-    const router = renderApp('/overview');
-    await user.type(screen.getByRole('searchbox', { name: 'Search services and resources' }), 'ledger');
-    expect(router.state.location.pathname).toBe('/registry');
-    const table = await registryTable();
-    expect(rowNames(table).every((text) => /ledger/i.test(text))).toBe(true);
-  });
 });

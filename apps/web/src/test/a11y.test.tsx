@@ -162,6 +162,18 @@ describe('accessibility audit (axe-core)', () => {
     expect(await audit()).toEqual([]);
   });
 
+  it('quick search with results in every group, and with no match (ADR-033)', async () => {
+    const user = userEvent.setup();
+    renderApp('/overview');
+    await user.click(await screen.findByRole('button', { name: 'Search services, flows, events' }));
+    await user.type(screen.getByRole('combobox', { name: /^Search services/ }), 'pay');
+    await screen.findByRole('option', { name: /^A1 Authorize/ });
+    expect(await audit()).toEqual([]);
+    await user.clear(screen.getByRole('combobox', { name: /^Search services/ }));
+    await user.type(screen.getByRole('combobox', { name: /^Search services/ }), 'zzzz');
+    expect(await audit()).toEqual([]);
+  });
+
   it('business flows catalog', async () => {
     renderApp('/flows');
     await screen.findByRole('list', { name: 'Business flows' });

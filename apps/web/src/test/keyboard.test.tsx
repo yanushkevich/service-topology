@@ -27,7 +27,7 @@ describe('keyboard access', () => {
     await user.tab();
     expect(screen.getByLabelText('Environment')).toHaveFocus();
     await user.tab();
-    expect(screen.getByRole('searchbox', { name: 'Search services and resources' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Search services, flows, events' })).toHaveFocus();
     await user.tab();
     expect(screen.getByRole('button', { name: 'New' })).toHaveFocus();
     await user.tab();

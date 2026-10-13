@@ -1,5 +1,6 @@
-import { useEffect, useId } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { useEffect, useId, useState } from 'react';
+import { Link, useLocation } from 'react-router';
+import { NAV_ITEMS } from '../app/navigation';
 import { useSimulationStore } from '../state/simulationStore';
 import { formatClock } from '../shared/format';
 import { useTopology } from '../data/topologyContext';
@@ -8,17 +9,22 @@ import { useUiStore } from '../state/uiStore';
 import { usePreferencesStore } from '../state/preferencesStore';
 import { Icon } from '../shared/ui/Icon';
 import { NewEntityMenu } from '../features/editing/EditingControls';
+import { QuickSearchDialog } from '../features/search/QuickSearchDialog';
+
+/** Pages the quick search can open. */
+const SEARCH_PAGES = NAV_ITEMS.map(({ path, label }) => ({ path, label }));
+/** The shortcut as this platform writes it. */
+const SHORTCUT = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘K' : 'Ctrl K';
 
 export function Header() {
   const theme = useUiStore((s) => s.theme);
   const setThemePreference = (next: 'dark' | 'light') => usePreferencesStore.getState().update({ theme: next });
   const environmentId = useUiStore((s) => s.environmentId);
   const setEnvironmentId = useUiStore((s) => s.setEnvironmentId);
-  const query = useUiStore((s) => s.filters.query);
-  const setFilters = useUiStore((s) => s.setFilters);
   const topology = useTopology();
-  const navigate = useNavigate();
   const location = useLocation();
+  const [searchOpen, setSearchOpen] = useState(false);
+  useSearchShortcut(setSearchOpen);
   const environments = topology.status === 'ready' ? sortEnvironments(topology.index.data.environments) : [];
   const fallbackEnvironment = environments[0]?.id;
   const environmentKnown = environments.length === 0 || environments.some((env) => env.id === environmentId);
@@ -27,7 +33,6 @@ export function Header() {
     if (!environmentKnown && fallbackEnvironment) setEnvironmentId(fallbackEnvironment);
   }, [environmentKnown, fallbackEnvironment, setEnvironmentId]);
   const envSelectId = useId();
-  const searchId = useId();
   const nextTheme = theme === 'dark' ? 'light' : 'dark';
 
   return (
@@ -64,26 +69,20 @@ export function Header() {
         <Icon name="chevronDown" className="pointer-events-none absolute right-2" />
       </div>
 
-      <div className={`relative flex h-8 items-center gap-2 rounded-md border border-control bg-surface-2 px-2.5 whitespace-nowrap text-fg-2 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent max-w-[440px] flex-[1_1_260px]`}>
+      <button
+        type="button"
+        className="flex h-8 max-w-[440px] min-w-0 flex-[1_1_260px] items-center gap-2 rounded-md border border-control bg-surface-2 px-2.5 text-fg-3 hover:border-line-strong max-md:size-8.5 max-md:flex-none max-md:justify-center max-md:px-0"
+        onClick={() => setSearchOpen(true)}
+        aria-haspopup="dialog"
+        aria-keyshortcuts="Meta+K Control+K"
+        aria-label="Search services, flows, events"
+        title={`Search (${SHORTCUT})`}
+      >
         <Icon name="search" />
-        <label htmlFor={searchId} className="sr-only">
-          Search services and resources
-        </label>
-        <input
-          id={searchId}
-          className="min-w-0 flex-1 border-0 bg-transparent text-fg placeholder:text-fg-3 focus-visible:outline-none disabled:cursor-not-allowed"
-          type="search"
-          placeholder="Search services, resources, owners…"
-          value={query}
-          onChange={(e) => {
-            setFilters({ query: e.target.value });
-            // The map and registry filter in place; other pages show results in the registry.
-            if (location.pathname !== '/registry' && location.pathname !== '/map') {
-              navigate({ pathname: '/registry', search: location.search });
-            }
-          }}
-        />
-      </div>
+        <span className="min-w-0 flex-1 truncate text-left max-md:hidden">Search services, flows, events…</span>
+        <kbd className="rounded-[5px] border border-line-strong px-1.5 font-mono text-[10.5px] max-md:hidden">{SHORTCUT}</kbd>
+      </button>
+      {searchOpen && <QuickSearchDialog pages={SEARCH_PAGES} onClose={() => setSearchOpen(false)} />}
 
       <div className="ml-auto flex items-center gap-1.5">
         <NewEntityMenu />
@@ -100,6 +99,20 @@ export function Header() {
       </div>
     </header>
   );
+}
+
+/** ⌘K / Ctrl+K opens the quick search from anywhere (ADR-033). */
+function useSearchShortcut(setOpen: (open: boolean) => void) {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setOpen(true);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [setOpen]);
 }
 
 /** Simulation status. Deliberately never says "live": all data here is mock/simulated. */
