@@ -52,7 +52,7 @@ describe('business flows on the service board (ADR-023)', () => {
     const user = userEvent.setup();
     const router = renderApp('/flows/flow-checkout?v=1&env=production&step=authorize-payment');
     const card = await waitFor(() => panel('Flow card'));
-    await user.click(within(card).getByRole('link', { name: 'Open the Payment Service transit board' }));
+    await user.click(await within(card).findByRole('link', { name: 'Open line A1 on the Payment Service board' }));
     await waitFor(() => expect(router.state.location.pathname).toBe('/services/payment-service/transit'));
     expect(params(router).get('flow')).toBe('flow-checkout');
     await waitFor(() => expect(within(panel('Lines')).getByRole('button', { name: /Checkout/ })).toHaveAttribute('aria-pressed', 'true'));

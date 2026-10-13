@@ -8,6 +8,7 @@ import { useTopology } from '../../data/topologyContext';
 import { DEFAULT_WINDOW, isWindow, windowLabel } from '../../transit/board';
 import { indexFlows, type FlowBoardIndex } from '../../transit/flows/flowIndex';
 import { computeSwimlanes } from '../../transit/flows/swimlane';
+import { flowLineRows } from '../../transit/flows/flowLines';
 import { flowFindings } from '../../transit/flows/flowModel';
 import { sampleTransactions, txDivergence } from '../../transit/flows/observed';
 import type { TransitWindow } from '../../transit/types';
@@ -25,6 +26,7 @@ import { useRepositoryRead } from '../transit-board/useTransitBoard';
 import { FlowEditActions } from './FlowEditActions';
 import { useBoardIndexes, useFlowBoards, useInnerAttempts } from './useFlowBoards';
 import { FlowImpactBanner } from './FlowImpactPanels';
+import { FlowLinesView } from './FlowLines';
 import { FlowSwimlane } from './FlowSwimlane';
 import { SwimlaneLegend } from './SwimlaneParts';
 import { FlowCard, FlowPicker, FlowStrip } from './FlowPanels';
@@ -35,6 +37,15 @@ import { StripSwitch } from '../boards/StripSwitch';
 import { flowProcess } from '../../transit/process';
 
 type Mode = 'typical' | 'replay';
+
+/** What the strip shows: the stages, the process (sequence diagram), or which line each step uses. */
+const STRIP_OPTIONS = [
+  { id: 'stages', label: 'Stages' },
+  { id: 'process', label: 'Process' },
+  { id: 'lines', label: 'Lines' },
+] as const;
+type StripView = (typeof STRIP_OPTIONS)[number]['id'];
+const stripOf = (value: string | null): StripView => STRIP_OPTIONS.find((o) => o.id === value)?.id ?? 'stages';
 
 // The 3D drill-down (ADR-026) is its own chunk: Three.js loads only when it is opened.
 const FlowDrilldown3D = lazy(() => import('./drilldown/FlowDrilldown3D').then((m) => ({ default: m.FlowDrilldown3D })));
@@ -84,7 +95,7 @@ function Board({ index, flow, environmentId, viewingHistory }: { index: Topology
   const mode: Mode = params.get('mode') === 'replay' ? 'replay' : 'typical';
   const stepId = params.get('step');
   const txKey = params.get('tx');
-  const strip = params.get('strip') === 'process' ? 'process' : 'stages';
+  const strip = stripOf(params.get('strip'));
   // The map as swimlanes or as the 3D drill-down, and the service the 3D camera has entered.
   const scene = params.get('scene') === '3d' ? '3d' : '2d';
   const drill = params.get('drill');
@@ -146,6 +157,8 @@ function Board({ index, flow, environmentId, viewingHistory }: { index: Topology
   const txError = txRead.status === 'error' ? txRead.message : txRead.status === 'ready' && !txRead.value && chosenKey ? `No transaction “${chosenKey}” for ${flow.name}.` : null;
   const process = useMemo(() => flowProcess(flow, { serviceName, eventName, shares }), [flow, serviceName, eventName, shares]);
   const typical = useMemo(() => typicalPath(flow, shares).steps, [flow, shares]);
+  // Which line each step uses on its service's board (Milestone 13.2).
+  const lineRows = useMemo(() => flowLineRows(flow, boardIndexes, serviceName, typical), [flow, boardIndexes, serviceName, typical]);
   const divergence = useMemo(() => (tx ? txDivergence(flow, tx, typical) : null), [flow, tx, typical]);
   const [playback] = useState(() => createPlayback());
   const timeline: Timeline | null = useMemo(() => (tx ? { starts: tx.steps.map((s) => s.displayStartMs), total: Math.max(...tx.steps.map((s) => s.displayStartMs + s.displayDurationMs), 1) } : null), [tx]);
@@ -300,16 +313,13 @@ function Board({ index, flow, environmentId, viewingHistory }: { index: Topology
             <>
               <StripSwitch
                 label="Strip"
-                options={[
-                  { id: 'stages', label: 'Stages' },
-                  { id: 'process', label: 'Process' },
-                ]}
+                options={STRIP_OPTIONS}
                 value={strip}
-                onChange={(v) => update((p) => (v === 'process' ? p.set('strip', 'process') : p.delete('strip')))}
+                onChange={(v) => update((p) => (v === 'stages' ? p.delete('strip') : p.set('strip', v)))}
               />
-              {strip === 'process' ? (
-                <ProcessDiagram process={process} label={`Process of ${flow.name}`} endpointPanel={EndpointContractPanel} />
-              ) : (
+              {strip === 'process' && <ProcessDiagram process={process} label={`Process of ${flow.name}`} endpointPanel={EndpointContractPanel} />}
+              {strip === 'lines' && <FlowLinesView rows={lineRows} boards={boardIndexes} flowId={flow.id} selectedStepId={stepId} onSelectStep={(id) => selectStep(id === stepId ? null : id)} />}
+              {strip === 'stages' && (
                 <FlowStrip flow={flow} stats={flowStats} selectedStep={stepId} focusSteps={focusSteps} onSelectStep={(id) => selectStep(id === stepId ? null : id)} serviceName={serviceName} eventName={eventName} />
               )}
             </>
@@ -328,6 +338,7 @@ function Board({ index, flow, environmentId, viewingHistory }: { index: Topology
               focusedFinding={focus}
               onFocusFinding={setFocus}
               selectedStep={selectedStep}
+              selectedStepLine={lineRows.find((r) => r.stepId === stepId) ?? null}
               serviceName={serviceName}
               onReplay={() => setMode('replay')}
               actions={<FlowEditActions flow={flow} />}

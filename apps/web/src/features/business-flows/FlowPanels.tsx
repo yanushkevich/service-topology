@@ -20,6 +20,8 @@ import { patternLabel } from '../../domain/patterns';
 import { ContractView } from '../contracts/ContractView';
 import { useEndpointContract } from '../contracts/useEndpointContract';
 import { StripScroller } from '../boards/StripScroller';
+import type { StepLineRow } from '../../transit/flows/flowLines';
+import { StepInside } from './FlowLines';
 
 /**
  * The flow board's index bar (ADR-023): the catalog link, a flow picker, and a step search that
@@ -207,6 +209,7 @@ export function FlowCard({
   focusedFinding,
   onFocusFinding,
   selectedStep,
+  selectedStepLine,
   serviceName,
   onReplay,
   actions,
@@ -220,6 +223,8 @@ export function FlowCard({
   focusedFinding: number | null;
   onFocusFinding: (i: number | null) => void;
   selectedStep: FlowStep | null;
+  /** The selected step's line on its service's board, or why it has none (Milestone 13.2). */
+  selectedStepLine?: StepLineRow | null;
   serviceName: (id: string) => string;
   onReplay?: (() => void) | undefined;
   actions?: ReactNode;
@@ -251,7 +256,7 @@ export function FlowCard({
         )}
       </p>
       {actions}
-      {selectedStep && <StepDetail flow={flow} step={selectedStep} stats={stats?.steps[selectedStep.id]} serviceName={serviceName} search={search} environmentId={resolved.environmentId} />}
+      {selectedStep && <StepDetail flow={flow} step={selectedStep} line={selectedStepLine ?? null} stats={stats?.steps[selectedStep.id]} serviceName={serviceName} search={search} environmentId={resolved.environmentId} />}
       {budget && <FlowBudgetBar budget={budget} />}
       <dl className="m-0">
         <KeyValueRow label="Owner">{[flow.owner, flow.team].filter(Boolean).join(' / ') || '—'}</KeyValueRow>
@@ -316,7 +321,7 @@ export function FlowCard({
   );
 }
 
-function StepDetail({ flow, step, stats, serviceName, search, environmentId }: { flow: BusinessFlow; step: FlowStep; stats: StepStats | undefined; serviceName: (id: string) => string; search: string; environmentId: string }) {
+function StepDetail({ flow, step, line, stats, serviceName, search, environmentId }: { flow: BusinessFlow; step: FlowStep; line: StepLineRow | null; stats: StepStats | undefined; serviceName: (id: string) => string; search: string; environmentId: string }) {
   const id = useId();
   const compensation = step.compensatedBy ? flow.steps.find((s) => s.id === step.compensatedBy)?.name : undefined;
   const board = new URLSearchParams(stripPageParams(search));
@@ -338,9 +343,13 @@ function StepDetail({ flow, step, stats, serviceName, search, environmentId }: {
           p50 {formatMs(stats.p50Ms)} · p99 {formatMs(stats.p99Ms)} · {formatRate(stats.share)} of transactions · errors {formatRate(stats.errorRate)} · retries {formatRate(stats.retryRate)}
         </p>
       )}
-      <Link to={{ pathname: `/services/${encodeURIComponent(step.serviceDefinitionId)}/transit`, search: `?${board.toString()}` }} className="mt-1.5 inline-block text-xs text-accent-fg underline">
-        Open the {serviceName(step.serviceDefinitionId)} transit board
-      </Link>
+      {line ? (
+        <StepInside row={line} flowId={flow.id} />
+      ) : (
+        <Link to={{ pathname: `/services/${encodeURIComponent(step.serviceDefinitionId)}/transit`, search: `?${board.toString()}` }} className="mt-1.5 inline-block text-xs text-accent-fg underline">
+          Open the {serviceName(step.serviceDefinitionId)} transit board
+        </Link>
+      )}
       <StepContract step={step} environmentId={environmentId} />
     </section>
   );

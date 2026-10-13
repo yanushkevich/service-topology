@@ -196,6 +196,13 @@ describe('accessibility audit (axe-core)', { timeout: 30_000 }, () => {
     expect(await audit()).toEqual([]);
   });
 
+  it('flow board: which line each step uses, with a step selected (Milestone 13.2)', async () => {
+    renderApp('/flows/flow-checkout?v=1&env=production&strip=lines&step=capture-payment');
+    await screen.findByRole('list', { name: 'Stops on line A2' });
+    await screen.findByRole('region', { name: 'Inside Payment Service' });
+    expect(await audit()).toEqual([]);
+  });
+
   it('business flows catalog', async () => {
     renderApp('/flows');
     await screen.findByRole('list', { name: 'Business flows' });

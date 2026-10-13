@@ -72,9 +72,9 @@ describe('flow board, typical mode', () => {
     expect(params(router).get('step')).toBe('authorize-payment');
     const detail = within(panel('Flow card')).getByRole('region', { name: 'Step: Authorize payment' });
     expect(detail).toHaveTextContent(/Payment Service · decision · Authorize · deadline 3 s · undone by Void authorization/);
-    await user.click(within(detail).getByRole('link', { name: 'Open the Payment Service transit board' }));
+    // The step card's Inside block (Milestone 13.2) links straight to the step's line.
+    await user.click(await within(detail).findByRole('link', { name: 'Open line A1 on the Payment Service board' }));
     await waitFor(() => expect(router.state.location.pathname).toBe('/services/payment-service/transit'));
-    // The entry point names the line; the board rewrites it to the line's ID.
     await waitFor(() => expect(params(router).get('line')).toBe('A1'));
   });
 
