@@ -401,3 +401,68 @@ This section takes precedence over the imported text above until the product own
    - dimming of unselected lines: 22% (layout table, map rendering §7) vs. "about 15%" (interactions). Proposal: 22%, as in the prototype.
    - the card and line stats show p50/p95, while per-step stats and hover show p50/p99. Proposal: keep both, label them explicitly, and put p99 in the data model's step stats.
    - responsive 760–1180px: "card full width below" (layout) vs. "index becomes a collapsible drawer" (responsive). Proposal: the responsive section wins (it is the more specific one).
+
+---
+
+## Revision 2 — Authoring boards, and a local sandbox (2026-10-12, Milestone 11.4 with backend B10)
+
+**Source:** product owner: "data is mocked; implement create/edit/delete of a transit board or a new flow". Answers:
+1. Storage is the backend plus a local sandbox.
+2. What can be edited is the declared structure.
+3. Editing uses a structured form with a live preview.
+
+Decision: ADR-031, which amends ADR-020 (mock data was read-only) and ADR-021 (the board was a read model only).
+
+### A. What a board definition is
+
+A **board definition** is the declared part of a transit board, written once per service and independent of the environment.
+
+| Part | Fields |
+|---|---|
+| Stations | id, name, sub, kind (caller, gate, module, client, dependency); dependencies may link `entityId` to a topology entity (ADR-027) |
+| Lines (endpoints) | id, code, name, group (gRPC, HTTP, webhook, event, scheduled, background), signature, caller, deadline; route (branches with `kind`, `share`, `condition`, `parallel`); patterns (catalog IDs, ADR-024); `repeat`; `transactions` |
+| Policies | id, client station, order, type (the board policy types), label, config, `missing` (declared as expected but absent) |
+| Tables | id, dependency station, name, pattern (`outbox` / `inbox` / none), writer and reader lines |
+
+**Observed data is never authored:** statistics, step statistics, traces, policy firing states, and findings. A new board shows its lines as "not observed". Observed data, today the example data, merges onto a definition by line ID and station ID. Policies show `idle` (declared, not observed), or `missing` when flagged so.
+
+### B. Validation
+
+The same codes are used in TypeScript (`validateBoardDefinition`) and Go, on shared conformance fixtures:
+
+| Code | Rule |
+|---|---|
+| `board-service-not-found` | the service definition does not exist |
+| `invalid-board-station` | duplicate ID, unknown kind, or an `entityId` on a non-dependency |
+| `board-entity-not-found` | a dependency's `entityId` is not a service definition or resource in the topology |
+| `invalid-board-line` | duplicate ID or code; an empty route; an unknown station; a fork that does not start at a station of an earlier branch; a share outside 0..1 |
+| `invalid-board-policy` | duplicate ID; not on a client station; a type that is not a board policy type |
+| `invalid-board-table` | not on a dependency station; an unknown line; a writer or reader whose route does not reach the table's station |
+
+### C. Storage and API (backend B10)
+
+- **Storage.** A `transitBoards` collection, `_id` = service definition ID, with a revision per board.
+- **Endpoints:**
+  - `GET /api/v1/transit-boards` (summaries);
+  - `GET /api/v1/transit-boards/{serviceId}` (with `ETag`);
+  - `POST /api/v1/transit-boards` (409 if it exists);
+  - `PUT /api/v1/transit-boards/{serviceId}` (`If-Match`);
+  - `DELETE /api/v1/transit-boards/{serviceId}` (`If-Match`).
+- **Validation.** Writes validate against the current topology. Failures are 422 with `errors[]`, and the editor role is required when `AUTH_MODE=token`.
+- **Example fallback.** A service with no stored definition still shows the example board where one exists. Saving it (or creating one) stores a definition, which then wins.
+
+### D. Local sandbox (mock data)
+
+- **What it is.** With the built-in mock data, edits go to a **local sandbox** in the browser: every editable entity kind, business flows, and board definitions. The data is the mock topology plus the changes, saved in `localStorage`.
+- **Same rules as the server.** Writes validate the whole result exactly like the server (`validateTopology`, `validateBoardDefinition`), with the same error shapes.
+- **Clear labelling.** Everywhere the source shows, it reads "Mock inventory · local sandbox (not saved to the backend)". A **Reset sandbox** action (in Settings) restores the built-in data.
+- **When there is no storage.** In private windows or with storage blocked, the sandbox works in memory and says so.
+
+### E. Editor
+
+- **Entry points.** The service board header gets **Edit board** and **Delete board**. A service with no board gets **Create a transit board**.
+- **The dialog.** Sections for endpoints, stations, routes, policies, and tables, using the shared form fields (`shared/ui/form.tsx`).
+  - Pick-lists come from the topology: dependencies link to resources and services, and patterns come from the catalog.
+  - A **live preview** (map and process view) and the validation issues update while editing.
+  - Errors focus their field.
+- **Flows.** They use the existing flow editor, which now also works in the sandbox.

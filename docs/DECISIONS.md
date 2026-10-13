@@ -387,3 +387,18 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - Query the trace store at read time (A1): slow and vendor-specific.
   - Collector connectors only (A3): no per-route data.
   - Hand-maintained example data: not real.
+
+## ADR-031 — Authored transit boards (declared structure) in the backend, and a local sandbox for mock data (2026-10-12, Milestone 11.4 / B10)
+- **Status:** Accepted (product owner, 2026-10-12: backend plus local sandbox; declared structure; structured form with preview). Spec: `docs/TRANSIT_BOARD.md` Revision 2. Amends ADR-020 and ADR-021.
+- **Decision:**
+  - **Definitions.** Board definitions are the declared part of a transit board (stations, lines, routes, policies, tables), validated in TypeScript and Go with shared codes. They are stored per service in MongoDB (`transitBoards`, revision-guarded API).
+  - **Observed data.** Observed data is never authored; it merges onto definitions by ID.
+  - **Sandbox.** With the built-in mock data, a labelled local sandbox (`localStorage`) accepts writes for every editable entity kind, flows, and boards, with the server's validation.
+- **Alternatives:**
+  - Backend only. Rejected by the product owner: editing should work without running the backend.
+  - Authoring statistics. Rejected: it blurs declared and observed data (ADR-021, ADR-030).
+  - Visual map editing. Deferred: the layout is computed, and a form is accessible and consistent.
+- **Consequences:**
+  - A new collection, endpoints, OpenAPI operations, conformance fixtures, and a Go port of the board rules.
+  - Mock mode becomes editable (the sandbox).
+  - The transit repository becomes a composition: stored or sandbox definitions plus observed or example data.
