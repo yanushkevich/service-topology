@@ -218,7 +218,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 14 | **On hold** (2026-10-12) | Real data instead of example data: sources, contract freeze, backend observability module, HTTP repository (ADR-030, proposed). Waits for the answers in `docs/REAL_DATA_INTEGRATION.md` §6; `docs/milestones/MILESTONE_14_REAL_DATA.md`. |
 | 12 | Implemented (2026-10-13) | Flows in impact analysis and simulation, with backend B9 (ADR-025); see the Milestone 12 closeout. `make test-integration` and `make contract-check` not yet run. |
 | 13 | Implemented (2026-10-13) | 3D drill-down from a flow into its services (ADR-026); see the Milestone 13 closeout. |
-| 13.1 | Specified (2026-10-13) | 3D drill-down refinement: the flow's lines only, planes under their steps, pads for services without a board, the 2D board's visual language; `docs/milestones/MILESTONE_13_1_DRILLDOWN_REFINEMENT.md`. |
+| 13.1 | Implemented (2026-10-13) | 3D drill-down refinement: the flow's lines only, planes under their steps, pads for services without a board, the 2D board's visual language; `docs/milestones/MILESTONE_13_1_DRILLDOWN_REFINEMENT.md`. |
 | 9 | Implemented (2026-10-12) | Transit board on example data (ADR-021): spec Phase 1 plus the Phase 4 replay UI, hover tooltips, windows, and per-step stats; see the Milestone 9 closeout and follow-up below. Real data sources (phases 2, 3, and 5) are not started. |
 | B1 (backend) | Implemented (2026-10-11) | Go foundation in `backend/`; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B2 (backend) | Implemented (2026-10-11) | ArcadeDB adapter, schema, idempotent seed, integration tests; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. The database was replaced by MongoDB afterwards (ADR-019). |
@@ -837,3 +837,21 @@ Flows in impact analysis and simulation, with backend B9 (ADR-025; `docs/BUSINES
 - **Software WebGL only.** Frame rates were measured on SwiftShader; GPU numbers are still needed.
 - **Empty planes.** Only Payment Service has an example board; other services show an empty plane until a board is authored (or Milestone 14).
 - **Labels** of dense planes are decluttered, so some names show only when you fly closer or enter the service.
+
+### Milestone 13.1 closeout (2026-10-13)
+3D drill-down refinement after the product owner's review ("it does not look good … transit board shows everything in this view"). `docs/milestones/MILESTONE_13_1_DRILLDOWN_REFINEMENT.md`.
+
+**Commits:** `74cb50d` spec; `cdd6f8b` model (flow lines, fitted planes, under-step placement); `a5b7288` two-tier scene, visual language, overlay; the close-out commit.
+
+**What changed from the design while building it** (each checked in screenshots):
+- **Pads were dropped.** Five compact pads under the lanes still stacked their labels in the middle of the view; services without a board now hang nothing, and their steps end in stubs.
+- **Two tiers instead of planes under each lane.** Planes under their lanes project into the middle of the flow plane from any readable angle; a row in front of the flow plane separates the layers on screen.
+- **A narrow lens** (28°) so the beams no longer converge into a fan.
+
+**Checks run:**
+- `npm run check`: 92 files, 1,220 passed, 1 skipped; build passes. One earlier full run had the load-sensitive App shell test fail (two real ELK layouts at load average ≈ 16); it passes alone and in the rerun.
+- Real-browser audit: 30 pages × 2 themes, all pass (including the drill-down with a service entered).
+- Screenshots at 1440 px, both themes: the overview, a step selected, a service entered, and Show all lines.
+- Benchmark re-run and recorded in `docs/BENCHMARKS.md`.
+
+**Product decision recorded:** the 3D view stays an optional "explain the flow end to end" view (ADR-026); the 2D flow board gets the step-to-line overview (Milestone 13.2).

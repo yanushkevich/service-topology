@@ -24,6 +24,8 @@ Run: `npm run bench:3d -- --url <preview-url> --only drilldown` (the section add
 | Frame interval while orbiting | 100 ms median (~11 fps) |
 | Enter a service → scope shown (includes the camera flight) | 756 ms median, 983 ms p95 (3 services) |
 
+**After the refinement (Milestone 13.1, same machine, load average ≈ 8):** drawn in 3,503 ms median (5,049 ms p95); orbiting at 100 ms median (~9.5 fps); entering a service 428 ms median. More geometry (ribbons, discs, diamonds, grids) costs some load time; the shorter camera flight makes entering faster.
+
 For comparison, the galaxy measured in the same session: 250/750 drawn in 2,134 ms, orbiting at 133 ms (~6.6 fps), Explore inside 1,137 ms.
 
 Assessment: the drill-down at the spec's scale renders completely and stays interactive on software WebGL, faster than the galaxy at 250/750. **GPU measurement is still needed** before claiming a frame rate. Mitigations: on-demand rendering when nothing animates (continuous only during replay), stations instanced per board, lines and shafts as one segment set each, bloom only above luminance 1, and label declutter re-measured only on camera or label changes.

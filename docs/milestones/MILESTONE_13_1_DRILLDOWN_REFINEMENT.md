@@ -1,6 +1,6 @@
 # Milestone 13.1 — 3D drill-down refinement: show the flow, not every board
 
-**Status:** specified 2026-10-13.
+**Status:** implemented 2026-10-13 (closeout in `docs/IMPLEMENTATION_PLAN.md`). Built with one change to the design: services without a board hang nothing (D3), and the planes form a row in front of the flow plane instead of hanging under each lane (D2); see the closeout.
 
 **Source:** product owner, with a screenshot of the Checkout drill-down: "transit board and flows 3d needs refinement, it does not look good … transit board shows everything in this view". Refines ADR-026 (Milestone 13).
 

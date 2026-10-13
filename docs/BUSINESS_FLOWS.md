@@ -336,6 +336,12 @@ Specify all three, build Milestone 11 only. Decisions: ADR-023 (sections 9–10)
   - **Replay particles** read the board's playback clock in the frame loop; with reduced motion they rest at the station.
   - **Bloom** only in the dark theme, and only on colours pushed above 1 (shafts and particles).
   - **Accessible path:** the overlay lists every service as a button, with the breadcrumb and "Back to the flow (Esc)"; the swimlane, strip, and card stay beside it.
+- **Refinement (Milestone 13.1, 2026-10-13; these notes win over the ones above where they differ):**
+  - **The flow's lines only.** A service plane shows the lines the flow's steps enter, their stations, and the policy stops on them, fitted to them at one scale for every service. Inside a service, **Show all N lines** adds the rest, dimmed, and frames the whole board.
+  - **Two tiers.** The flow plane (compact lanes, caption gutter) is on top; the service planes form a row below and in front of it, each under its steps along x (entry stations under the steps' mean x), packed so they never overlap. Beams fan from the steps into their lines.
+  - **No board, no plane.** A service without a board hangs nothing: its steps end in short dashed stubs with an empty ring, and its lane caption says "no transit board".
+  - **Visual language of the 2D board:** line ribbons in their colours, flat white stations on dark rings, policy diamonds, flow-coloured transitions with arrowheads and step tiles, and beams in the flow colour (the selected step's beam and line bloom).
+  - **Camera:** a 28° lens fitted to the canvas aspect; 40° down onto the stack, 55° onto one plane; Reset view.
 
 ## Revision 2 implementation notes (Milestone 11, 2026-10-12)
 These refine sections 9–11. Where they differ, these notes win.
