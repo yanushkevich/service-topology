@@ -1,6 +1,6 @@
 import { reachableFrom, stepById } from '../../domain/businessFlow';
 import type { BusinessFlow, FlowPolicyType, FlowStep, FlowTransition } from '../../domain/types';
-import { flowRanks } from './flowLayout';
+import { flowRanks } from './flowIndex';
 import { patternLabel } from '../../domain/patterns';
 
 /**

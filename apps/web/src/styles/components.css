@@ -209,6 +209,33 @@
     fill: var(--color-text-3);
   }
 
+  /* ---- Flow swimlane (ADR-023): React Flow on the flow board. ---- */
+  .flow-swimlane .react-flow {
+    background: var(--color-stage);
+    border-radius: inherit;
+    --xy-edge-stroke: var(--color-text-3);
+    --xy-minimap-background-color: var(--color-bg-1);
+    --xy-minimap-mask-background-color: color-mix(in srgb, var(--color-bg-0) 60%, transparent);
+  }
+
+  .flow-swimlane .react-flow__node:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 10px;
+  }
+
+  .swimlane-minimap {
+    margin: 10px !important;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-line);
+    overflow: hidden;
+  }
+
+  .flow-swimlane .react-flow__arrowhead polyline {
+    stroke: var(--color-text-3);
+    fill: var(--color-text-3);
+  }
+
   /* Entity node (mock .n2); emphasis comes from data-emphasis. */
   .flow-node {
     width: 100%;
@@ -332,6 +359,10 @@
 
   .flow-minimap-node {
     fill: var(--color-indigo);
+  }
+
+  .flow-minimap-lane {
+    fill: transparent;
   }
 
   .flow-minimap-group {

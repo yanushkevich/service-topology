@@ -9,7 +9,8 @@ import { createElkLayoutService } from './elkLayoutService';
 import { indexBoard } from '../../../transit/board';
 import { computeMapGeometry } from '../../../transit/layout';
 import { generateBoard } from '../../../transit/mock/generateBoard';
-import { computeFlowGeometry, indexFlows } from '../../../transit/flows/flowLayout';
+import { indexFlows } from '../../../transit/flows/flowIndex';
+import { computeSwimlanes } from '../../../transit/flows/swimlane';
 import { generateFlows } from '../../../transit/flows/generateFlows';
 
 /**
@@ -44,7 +45,6 @@ describe.runIf(enabled)('performance benchmarks', () => {
     expect(topology.edges).toHaveLength(750);
     const transitTarget = generateBoard({ lines: 60, stations: 80 });
     const flowTarget = generateFlows({ flows: 50, steps: 40 });
-    const flowIndex = indexFlows(flowTarget, (id) => id);
     const transitIndex = indexBoard(transitTarget);
     expect(transitTarget.stations).toHaveLength(80);
     const providers = new Set(['provider:aws', 'provider:azure', 'provider:gcp', 'provider:on-prem', 'provider:saas']);
@@ -59,8 +59,8 @@ describe.runIf(enabled)('performance benchmarks', () => {
       ),
       'Transit board 60 lines / 80 stations: index + map geometry (perspective)': await time(() => computeMapGeometry(indexBoard(transitTarget), { flat: false }), 50),
       'Transit board 60 lines / 80 stations: map geometry (flat)': await time(() => computeMapGeometry(transitIndex, { flat: true }), 50),
-      'Business flows 50 flows × 40 steps: index + flow geometry (perspective)': await time(() => computeFlowGeometry(indexFlows(flowTarget, (id) => id), { flat: false }), 20),
-      'Business flows 50 flows × 40 steps: flow geometry (flat)': await time(() => computeFlowGeometry(flowIndex, { flat: true }), 20),
+      'Business flows 50 flows × 40 steps: flow index': await time(() => indexFlows(flowTarget, (id) => id), 20),
+      'Business flow 40 steps: swimlane layout (one flow, ADR-023)': await time(() => computeSwimlanes(flowTarget[0]!, (id) => id), 50),
       '1,000 inventory grouped + collapsed to providers': await time(
         () => buildTopologyGraph(inventory, { ...prod, mode: 'infrastructure', collapsedGroupIds: providers }),
         50,

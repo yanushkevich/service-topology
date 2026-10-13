@@ -1,5 +1,5 @@
-import type { BusinessFlow, FlowOutcomeKind, FlowStepKind } from '../../domain/types';
-import { flowRanks } from './flowLayout';
+import type { BusinessFlow, FlowOutcomeKind, FlowStepKind, FlowTransition } from '../../domain/types';
+import { flowRanks } from './flowIndex';
 
 /**
  * Swimlane layout of one business flow (ADR-023, docs/BUSINESS_FLOWS.md Revision 2 §9). Lanes are
@@ -10,18 +10,22 @@ import { flowRanks } from './flowLayout';
  */
 
 export const SWIMLANE = {
-  laneLabelWidth: 148,
-  stepWidth: 188,
+  /** Room on the left for the lane captions (the renderer keeps them in a frozen column). */
+  laneLabelWidth: 112,
+  stepWidth: 176,
   stepHeight: 58,
-  outcomeWidth: 150,
+  outcomeWidth: 176,
   outcomeHeight: 40,
-  /** Space between two columns, where vertical segments run. */
-  channel: 132,
+  /** Each channel (the space between two columns) is as wide as its tracks and labels need. */
+  channelPadding: 16,
+  minChannel: 44,
   trackGap: 9,
+  /** Estimated width of one character of an edge label (10.5 px monospace). */
+  labelChar: 6.4,
   stackGap: 18,
-  lanePadding: 22,
+  lanePadding: 14,
   /** Band at the bottom of each lane for edges that must go around nodes. */
-  gutter: 26,
+  gutter: 20,
 } as const;
 
 export const OUTCOMES_LANE = '__outcomes__';
@@ -59,7 +63,7 @@ export interface SwimlaneEdge {
   to: string;
   points: Point[];
   path: string;
-  /** Where the condition and share label goes. */
+  /** Where the label ends: just before the target, above the line into it. Several labels into one target stack upwards. */
   label: Point;
   /** Policy diamonds, in the transition's policy order. */
   policies: Point[];
@@ -76,11 +80,19 @@ export interface SwimlaneLayout {
 }
 
 const S = SWIMLANE;
-const columnX = (rank: number) => S.laneLabelWidth + S.channel + rank * (S.stepWidth + S.channel);
-/** Left edge of the channel after a column (rank -1: the channel before the first column). */
-const channelX = (rank: number) => columnX(rank) + S.stepWidth;
 
-export function computeSwimlanes(flow: BusinessFlow, serviceName: (id: string) => string): SwimlaneLayout {
+/**
+ * The text an edge label can show: condition, event name, and room for a share ("· 99.9%").
+ * The layout reserves its width; the renderer fills in the share.
+ */
+export function edgeLabelText(t: FlowTransition, eventName: (id: string) => string): string {
+  const parts: string[] = [];
+  if (t.condition) parts.push(`if ${t.condition}`);
+  if (t.via.kind === 'event') parts.push(eventName(t.via.eventTypeId));
+  return parts.join(' · ');
+}
+
+export function computeSwimlanes(flow: BusinessFlow, serviceName: (id: string) => string, eventName: (id: string) => string = (id) => id): SwimlaneLayout {
   const ranks = flowRanks(flow);
   const laneIds = laneOrder(flow);
   const cells = new Map<string, SwimlaneNode[]>();
@@ -111,16 +123,20 @@ export function computeSwimlanes(flow: BusinessFlow, serviceName: (id: string) =
     if (!first || !lane) continue;
     let top = lane.y + S.lanePadding + (lane.height - S.gutter - 2 * S.lanePadding - stackHeight(cell)) / 2;
     for (const n of cell) {
-      const width = n.width;
-      nodes.push({ ...n, x: columnX(n.rank) + (S.stepWidth - width) / 2, y: top });
+      nodes.push({ ...n, y: top });
       top += n.height + S.stackGap;
     }
   }
   nodes.sort((a, b) => a.rank - b.rank || a.y - b.y || a.id.localeCompare(b.id));
 
+  // Routes are planned on ranks and heights; channel widths follow from them, then x positions.
   const maxRank = Math.max(0, ...nodes.map((n) => n.rank));
-  const edges = routeEdges(flow, nodes, laneById);
-  return { width: channelX(maxRank) + S.channel, height: y, lanes, nodes, edges };
+  const plan = planRoutes(flow, nodes, laneById);
+  const columns = columnGeometry(plan, maxRank, flow, eventName);
+  for (const n of nodes) n.x = columns.columnX(n.rank) + (S.stepWidth - n.width) / 2;
+  const labelled = new Set(flow.transitions.filter((t) => edgeLabelText(t, eventName)).map((t) => t.id));
+  const edges = finishRoutes(flow, plan, columns, laneById, labelled);
+  return { width: columns.width, height: y, lanes, nodes, edges };
 }
 
 /** Services in the order a breadth-first walk from the start first reaches them; outcomes last. */
@@ -154,13 +170,19 @@ interface Draft {
   gutterLane?: SwimlaneLane | undefined;
 }
 
+interface Plan {
+  drafts: Draft[];
+  /** Vertical-run keys per channel (by the column it follows; -1 is before the first column), in track order. */
+  perChannel: Map<number, string[]>;
+}
+
 /**
- * Routes every transition. A forward edge leaves its source to the right, turns in the channel
+ * Plans every transition. A forward edge leaves its source to the right, turns in the channel
  * before its target, and enters the target from the left; if the straight run at the source's
  * height would cross a node, it goes down to the source lane's gutter first. Back edges always use
  * the gutter. Tracks are assigned per channel in transition order, so the result is stable.
  */
-function routeEdges(flow: BusinessFlow, nodes: SwimlaneNode[], laneById: Map<string, SwimlaneLane>): SwimlaneEdge[] {
+function planRoutes(flow: BusinessFlow, nodes: SwimlaneNode[], laneById: Map<string, SwimlaneLane>): Plan {
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const drafts: Draft[] = [];
   for (const t of flow.transitions) {
@@ -179,39 +201,85 @@ function routeEdges(flow: BusinessFlow, nodes: SwimlaneNode[], laneById: Map<str
     }
     drafts.push(draft);
   }
-
-  // One track per vertical run in each channel; one gutter track per gutter edge in each lane.
-  const tracks = new Map<string, number>();
   const perChannel = new Map<number, string[]>();
   for (const d of drafts) for (const v of d.verticals) perChannel.set(v.channel, [...(perChannel.get(v.channel) ?? []), v.key]);
-  for (const [channel, keys] of perChannel) {
-    keys.forEach((key, i) => tracks.set(key, channelX(channel) + S.channel / 2 + (i - (keys.length - 1) / 2) * Math.min(S.trackGap, (S.channel - 24) / Math.max(1, keys.length - 1))));
+  return { drafts, perChannel };
+}
+
+interface Columns {
+  columnX: (rank: number) => number;
+  /** x of a vertical run (its track in its channel). */
+  track: (key: string) => number | undefined;
+  width: number;
+}
+
+/**
+ * Column positions from channel widths. Tracks are packed from the left of their channel, and each
+ * channel keeps room on the right for the longest label on an edge entering the next column (labels
+ * sit above the entry stub, ending at the target).
+ */
+function columnGeometry(plan: Plan, maxRank: number, flow: BusinessFlow, eventName: (id: string) => string): Columns {
+  const labelWidth = new Map<number, number>();
+  for (const t of flow.transitions) {
+    const text = edgeLabelText(t, eventName);
+    const draft = plan.drafts.find((d) => d.id === t.id);
+    if (!text || !draft) continue;
+    const channel = draft.to.rank - 1;
+    labelWidth.set(channel, Math.max(labelWidth.get(channel) ?? 0, (text.length + 8) * S.labelChar + 10));
   }
+  const start = new Map<number, number>();
+  const tracks = new Map<string, number>();
+  let x = S.laneLabelWidth;
+  for (let c = -1; c <= maxRank; c++) {
+    const keys = plan.perChannel.get(c) ?? [];
+    start.set(c, x);
+    keys.forEach((key, i) => tracks.set(key, x + S.channelPadding + i * S.trackGap));
+    const width = Math.max(S.minChannel, S.channelPadding * 2 + Math.max(0, keys.length - 1) * S.trackGap + (labelWidth.get(c) ?? 0));
+    x += width + (c < maxRank ? S.stepWidth : 0);
+  }
+  return {
+    columnX: (rank) => (start.get(rank - 1) ?? 0) + channelWidthOf(start, rank - 1),
+    track: (key) => tracks.get(key),
+    width: x,
+  };
+}
+const channelWidthOf = (start: Map<number, number>, channel: number) => (start.get(channel + 1) ?? 0) - (start.get(channel) ?? 0) - SWIMLANE.stepWidth;
+
+function finishRoutes(flow: BusinessFlow, plan: Plan, columns: Columns, laneById: Map<string, SwimlaneLane>, labelled: ReadonlySet<string>): SwimlaneEdge[] {
   const gutterTrack = new Map<string, number>();
   const perLane = new Map<string, string[]>();
-  for (const d of drafts) if (d.gutterLane) perLane.set(d.gutterLane.id, [...(perLane.get(d.gutterLane.id) ?? []), d.id]);
+  for (const d of plan.drafts) if (d.gutterLane) perLane.set(d.gutterLane.id, [...(perLane.get(d.gutterLane.id) ?? []), d.id]);
   for (const [laneId, ids] of perLane) {
     const lane = laneById.get(laneId);
     if (!lane) continue;
     const step = Math.min(6, (S.gutter - 8) / Math.max(1, ids.length - 1));
     ids.forEach((id, i) => gutterTrack.set(id, lane.y + lane.height - 6 - i * step));
   }
-
   const policiesOf = new Map(flow.transitions.map((t) => [t.id, t.policies.length]));
-  return drafts.map((d) => {
+  // Labelled edges into the same target stack their labels, in transition order.
+  const labelSlot = new Map<string, number>();
+  const perTarget = new Map<string, number>();
+  for (const d of plan.drafts) {
+    if (!labelled.has(d.id)) continue;
+    const n = perTarget.get(d.to.id) ?? 0;
+    labelSlot.set(d.id, n);
+    perTarget.set(d.to.id, n + 1);
+  }
+  return plan.drafts.map((d) => {
     const start = { x: d.from.x + d.from.width, y: midY(d.from) };
     const end = { x: d.to.x, y: midY(d.to) };
-    const xIn = tracks.get(`${d.id}:in`) ?? end.x - S.channel / 2;
+    const xIn = columns.track(`${d.id}:in`) ?? end.x - S.channelPadding;
     let points: Point[];
     if (d.gutterLane) {
-      const xOut = tracks.get(`${d.id}:out`) ?? start.x + S.channel / 2;
+      const xOut = columns.track(`${d.id}:out`) ?? start.x + S.channelPadding;
       const gy = gutterTrack.get(d.id) ?? d.gutterLane.y + d.gutterLane.height - 6;
       points = [start, { x: xOut, y: start.y }, { x: xOut, y: gy }, { x: xIn, y: gy }, { x: xIn, y: end.y }, end];
     } else {
       points = [start, { x: xIn, y: start.y }, { x: xIn, y: end.y }, end];
     }
     points = simplify(points);
-    return { id: d.id, from: d.from.id, to: d.to.id, points, path: pathOf(points), label: labelPoint(points), policies: policyPoints(points, policiesOf.get(d.id) ?? 0), back: d.back };
+    const label = { x: end.x - 8, y: end.y - 6 - 13 * (labelSlot.get(d.id) ?? 0) };
+    return { id: d.id, from: d.from.id, to: d.to.id, points, path: pathOf(points), label, policies: policyPoints(points, policiesOf.get(d.id) ?? 0), back: d.back };
   });
 }
 
@@ -245,15 +313,6 @@ function segments(points: Point[]): Segment[] {
     const a = points[i] ?? b;
     return { a, b, length: Math.abs(b.x - a.x) + Math.abs(b.y - a.y) };
   });
-}
-
-/** The label sits beside the edge's own vertical run (unique to the edge), else on its longest run. */
-function labelPoint(points: Point[]): Point {
-  const segs = segments(points);
-  const vertical = segs.filter((s) => s.a.x === s.b.x && s.length >= 28).pop();
-  if (vertical) return { x: vertical.a.x + 6, y: (vertical.a.y + vertical.b.y) / 2 };
-  const longest = segs.reduce<Segment | undefined>((best, s) => (!best || s.length > best.length ? s : best), undefined);
-  return longest ? { x: (longest.a.x + longest.b.x) / 2, y: longest.a.y - 10 } : (points[0] ?? { x: 0, y: 0 });
 }
 
 /**

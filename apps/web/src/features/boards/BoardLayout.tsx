@@ -41,10 +41,19 @@ export interface BoardGridProps {
   card: ReactNode;
   /** Width of the card column at ≥ 1180px. */
   cardWidth?: 330 | 340;
+  /**
+   * The flow board's arrangement (ADR-023): the index is a compact bar across the top, and the map
+   * takes the full width beside the card, because a swimlane needs width more than a list does.
+   */
+  wideMap?: boolean;
   onKeyDown?: (event: KeyboardEvent) => void;
 }
 
-export function BoardGrid({ labels, index, narrowIndex, map, legend, strip, card, cardWidth = 330, onKeyDown }: BoardGridProps) {
+export function BoardGrid(props: BoardGridProps) {
+  return props.wideMap ? <WideMapGrid {...props} /> : <ThreeColumnGrid {...props} />;
+}
+
+function ThreeColumnGrid({ labels, index, narrowIndex, map, legend, strip, card, cardWidth = 330, onKeyDown }: BoardGridProps) {
   const [indexOpen, setIndexOpen] = useState(true);
   return (
     <div
@@ -75,6 +84,26 @@ export function BoardGrid({ labels, index, narrowIndex, map, legend, strip, card
       >
         {card}
       </aside>
+    </div>
+  );
+}
+
+function WideMapGrid({ labels, index, map, legend, strip, card, onKeyDown }: BoardGridProps) {
+  return (
+    <div className="grid grid-cols-1 gap-3.5 min-[1180px]:grid-cols-[minmax(0,1fr)_340px]" onKeyDown={onKeyDown}>
+      <nav aria-label={labels.index} className={cx(boardPanelClass, 'px-3.5 py-2.5 min-[1180px]:col-span-2')}>
+        {index}
+      </nav>
+      <section aria-label={labels.map} className={cx(boardPanelClass, 'relative overflow-hidden bg-stage pb-12 max-md:pb-0')}>
+        {map}
+        {legend}
+      </section>
+      <aside aria-label={labels.card} className={cx(boardPanelClass, 'p-4 min-[1180px]:col-start-2 min-[1180px]:row-span-2 min-[1180px]:row-start-2 min-[1180px]:max-h-[820px] min-[1180px]:self-start min-[1180px]:overflow-auto')}>
+        {card}
+      </aside>
+      <section aria-label={labels.strip} className={cx(boardPanelClass, 'px-4 py-3 max-[1179px]:row-start-3 min-[1180px]:col-start-1 min-[1180px]:row-start-3')}>
+        {strip}
+      </section>
     </div>
   );
 }

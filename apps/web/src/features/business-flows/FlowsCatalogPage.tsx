@@ -2,7 +2,7 @@ import { useId, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { businessFlowsIn } from '../../domain/businessFlow';
 import { useTopology } from '../../data/topologyContext';
-import { indexFlows } from '../../transit/flows/flowLayout';
+import { indexFlows } from '../../transit/flows/flowIndex';
 import { flowFindings, flowSearchText } from '../../transit/flows/flowModel';
 import { fieldClass, kickerClass } from '../../shared/ui/classes';
 import { LoadState } from '../../shared/ui/LoadState';

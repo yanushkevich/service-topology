@@ -1,13 +1,13 @@
 import { useId, type ReactNode } from 'react';
-import { Link, useLocation } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import type { ResolvedFlow } from '../../domain/businessFlow';
 import type { BusinessFlow, FlowStep, FlowTransition } from '../../domain/types';
 import { formatCount, formatMs, formatRate, STEP_THRESHOLDS, windowLabel } from '../../transit/board';
-import type { FlowBoardIndex } from '../../transit/flows/flowLayout';
+import type { FlowBoardIndex } from '../../transit/flows/flowIndex';
 import { flowBudget, stages, type FlowFinding } from '../../transit/flows/flowModel';
 import type { FlowStats } from '../../transit/flows/observed';
 import type { StepStats } from '../../transit/types';
-import { buttonClass, cx, kickerClass } from '../../shared/ui/classes';
+import { buttonClass, cx, fieldClass, kickerClass } from '../../shared/ui/classes';
 import { Icon } from '../../shared/ui/Icon';
 import { KeyValueRow, SearchField, Kicker } from '../../shared/ui/primitives';
 import { POLICY_STATE_LABEL } from '../transit-board/colors';
@@ -16,58 +16,51 @@ import { FlowBadge } from './FlowBadge';
 import { stripPageParams } from './flowVisuals';
 import { patternLabel } from '../../domain/patterns';
 
-const rowClass =
-  'flex w-full items-center gap-2.5 rounded-md px-2 py-[7px] text-left text-[12.5px] text-fg-2 hover:bg-surface-3 hover:text-fg aria-[current=page]:bg-accent-soft aria-[current=page]:text-fg aria-[current=page]:shadow-[inset_0_0_0_1px_var(--color-accent-ring)]';
-
-/** Flow index: search and one row per flow (links: each flow has its own board URL). */
-export function FlowList({
+/**
+ * The flow board's index bar (ADR-023): the catalog link, a flow picker, and a step search that
+ * highlights matching steps on the swimlane.
+ */
+export function FlowPicker({
   fx,
   selectedId,
   query,
   onQuery,
-  matches,
+  matchCount,
   warnings,
   search,
 }: {
   fx: FlowBoardIndex;
-  selectedId: string | null;
+  selectedId: string;
   query: string;
   onQuery: (q: string) => void;
-  matches: Set<string>;
+  /** Steps matching the query, or null without one. */
+  matchCount: number | null;
   warnings: Map<string, number>;
   search: string;
 }) {
-  const listed = fx.flows.filter((f) => matches.has(f.id));
+  const navigate = useNavigate();
+  const pickerId = useId();
   return (
-    <div className="flex flex-col gap-3">
-      <SearchField label="Find a flow" placeholder="Find a flow, step, service, or event" value={query} onChange={onQuery} />
-      <Link to={{ pathname: '/flows', search: stripPageParams(search) }} className={rowClass}>
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <Link to={{ pathname: '/flows', search: stripPageParams(search) }} className={buttonClass('ghost')}>
         <Icon name="flows" />
-        <span className="min-w-0 flex-1">All flows</span>
-        <span className="text-[10.5px] text-fg-3">catalog</span>
+        All flows
       </Link>
-      <ul className="m-0 flex list-none flex-col gap-0.5 p-0" aria-label="Business flows">
-        {listed.map((flow) => (
-          <li key={flow.id}>
-            <Link to={{ pathname: `/flows/${encodeURIComponent(flow.id)}`, search: stripPageParams(search) }} className={rowClass} aria-current={flow.id === selectedId ? 'page' : undefined}>
-              <FlowBadge fx={fx} flowId={flow.id} />
-              <span className="min-w-0 flex-1 truncate">{flow.name}</span>
-              <span className="text-[10.5px] whitespace-nowrap text-fg-3 tabular-nums">
-                {flow.steps.length} steps
-                {(warnings.get(flow.id) ?? 0) > 0 && (
-                  <span className="ml-1 font-semibold text-warn-fg">
-                    !{' '}<span className="sr-only">has warnings</span>
-                  </span>
-                )}
-              </span>
-            </Link>
-          </li>
+      <label htmlFor={pickerId} className="text-sm text-fg-3">
+        Flow
+      </label>
+      <select id={pickerId} className={cx(fieldClass, 'max-w-[320px]')} value={selectedId} onChange={(e) => navigate({ pathname: `/flows/${encodeURIComponent(e.target.value)}`, search: stripPageParams(search) })}>
+        {fx.flows.map((flow) => (
+          <option key={flow.id} value={flow.id}>
+            {fx.codes.get(flow.id)} · {flow.name} · {flow.steps.length} steps{(warnings.get(flow.id) ?? 0) > 0 ? ' · has warnings' : ''}
+          </option>
         ))}
-      </ul>
-      {listed.length === 0 && (
-        <p className="m-0 p-2 text-sm text-fg-3" role="status">
-          No flow matches “{query}”. Try a step such as “Capture”, a service, or an event such as “OrderPlaced”.
-        </p>
+      </select>
+      <SearchField label="Find a step" placeholder="Find a step, service, or entry point" value={query} onChange={onQuery} className="min-w-[220px] flex-1 md:max-w-[360px]" />
+      {matchCount !== null && (
+        <span role="status" className="text-xs text-fg-3">
+          {matchCount === 0 ? `No step matches “${query}”` : `${matchCount} matching step${matchCount === 1 ? '' : 's'} highlighted`}
+        </span>
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import type { FlowBoardIndex } from '../../transit/flows/flowLayout';
+import type { FlowBoardIndex } from '../../transit/flows/flowIndex';
 import { cx } from '../../shared/ui/classes';
 import { flowColor } from './flowVisuals';
 

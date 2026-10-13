@@ -1,5 +1,5 @@
 import type { BusinessFlow } from '../../domain/types';
-import type { FlowBoardIndex } from '../../transit/flows/flowLayout';
+import type { FlowBoardIndex } from '../../transit/flows/flowIndex';
 
 /** Token colour of a flow line: the transit board's categorical palette by global (name) order. */
 export function flowColor(fx: FlowBoardIndex, flowId: string): string {

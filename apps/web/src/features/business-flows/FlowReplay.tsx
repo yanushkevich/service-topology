@@ -3,8 +3,8 @@ import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'react-router';
 import type { BusinessFlow } from '../../domain/types';
 import { formatMs } from '../../transit/board';
-import type { FlowBoardIndex, FlowGeometry } from '../../transit/flows/flowLayout';
-import { activeTxSteps, isCompressed, type FlowTransaction, type TxSampleReason, type TxStep } from '../../transit/flows/observed';
+import type { FlowBoardIndex } from '../../transit/flows/flowIndex';
+import { isCompressed, type FlowTransaction, type TxSampleReason, type TxStep } from '../../transit/flows/observed';
 import { buttonClass, cx, fieldClass, kickerClass } from '../../shared/ui/classes';
 import { PlaybackControls } from '../boards/PlaybackControls';
 import { usePlayback, type Playback } from '../boards/playback';
@@ -13,33 +13,6 @@ import { stripPageParams } from './flowVisuals';
 
 const WORD: Record<TxStep['status'], string> = { ok: 'ok', warn: 'warning', fail: 'failed' };
 const color = (s: TxStep['status']) => (s === 'fail' ? 'var(--color-crit)' : s === 'warn' ? 'var(--color-warn)' : 'var(--color-accent)');
-
-/** The train on the flow map: one marker per running step; red on failure; jumps with reduced motion. */
-export function TxTrain({ fx, geometry, tx, playback, reduced }: { fx: FlowBoardIndex; geometry: FlowGeometry; tx: FlowTransaction; playback: Playback; reduced: boolean }) {
-  const active = usePlayback(playback, (s) =>
-    activeTxSteps(tx.steps, s.t, s.step)
-      .map((step) => tx.steps.indexOf(step))
-      .join(','),
-  );
-  return (
-    <>
-      {active
-        .split(',')
-        .filter(Boolean)
-        .map((i, slot) => {
-          const step = tx.steps[Number(i)];
-          const station = step && geometry.stations.find((g) => g.id === fx.stationOf(tx.flowId, step.stepId));
-          if (!step || !station) return null;
-          return (
-            <g key={slot} data-train={step.stepId} data-status={step.status} style={{ transform: `translate(${station.x}px, ${station.y}px)`, transition: reduced ? 'none' : 'transform 220ms ease-out' }}>
-              <circle r={18} fill="none" stroke={color(step.status)} strokeWidth={2} strokeDasharray={step.correlated ? undefined : '4 3'} opacity={0.85} />
-              <circle r={6} fill={color(step.status)} stroke="var(--color-stage)" strokeWidth={2} />
-            </g>
-          );
-        })}
-    </>
-  );
-}
 
 /**
  * The transaction timeline (spec §5): a slider to scrub and one button per step. Waits are

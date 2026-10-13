@@ -3,14 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { renderApp, resetUiStore } from '../../test/renderApp';
 
-/** Panels are queried within their landmark: page-wide role queries walk the whole SVG map. */
+/** Panels are queried within their landmark: page-wide role queries walk the whole map. */
 const panel = (label: string) => {
   const element = document.querySelector<HTMLElement>(`[aria-label="${label}"]`);
   if (!element) throw new Error(`No panel "${label}"`);
   return element;
 };
 const ready = () => waitFor(() => panel('Flow card'));
-const svg = () => panel('Map').querySelector('svg') as SVGSVGElement;
 const params = (router: ReturnType<typeof renderApp>) => new URLSearchParams(router.state.location.search);
 const BOARD = '/flows/flow-checkout?v=1&env=production';
 
@@ -79,20 +78,41 @@ describe('flow board, typical mode', () => {
     await waitFor(() => expect(params(router).get('line')).toBe('A1'));
   });
 
-  it('dims other flows on the map without rebuilding paths, and selects steps there', async () => {
+  it('draws one flow as swimlanes, selects steps by click or keyboard, and never moves anything', async () => {
     const router = renderApp(BOARD);
     await ready();
-    const before = [...svg().querySelectorAll('[data-layer="static"] path')];
-    expect(svg().querySelector('[data-flow="flow-refund"]')).toHaveAttribute('data-state', 'dim');
-    expect(svg().querySelector('[data-selected-flow="flow-checkout"]')).not.toBeNull();
-    fireEvent.click(svg().querySelector('[data-station^="step:ledger-service:PostCapture"]')!);
+    const map = panel('Map');
+    expect([...map.querySelectorAll('[data-lane-caption]')].map((l) => l.textContent)).toEqual(['Order Service', 'Inventory Service', 'Payment Service', 'Notification Service', 'Ledger Service', 'Email Dispatcher', 'Outcomes']);
+    // One flow per board: Refund's steps are not drawn.
+    expect(map.querySelector('[data-step="request-refund"]')).toBeNull();
+    const positions = () => [...map.querySelectorAll<HTMLElement>('.react-flow__node')].map((n) => `${n.dataset.id}@${n.style.transform}`);
+    const paths = () => [...map.querySelectorAll('.react-flow__edge-path')].map((p) => p.getAttribute('d'));
+    const before = { nodes: positions(), edges: paths() };
+    expect(before.edges.length).toBeGreaterThan(10);
+    fireEvent.click(map.querySelector('[data-step="post-to-ledger"]')!);
     await waitFor(() => expect(params(router).get('step')).toBe('post-to-ledger'));
-    const after = [...svg().querySelectorAll('[data-layer="static"] path')];
-    after.forEach((p, i) => expect(p).toBe(before[i]));
+    expect(map.querySelector('[data-step="post-to-ledger"]')).toHaveAttribute('data-selected');
+    expect(positions()).toEqual(before.nodes);
+    expect(paths()).toEqual(before.edges);
+    // Keyboard: Enter on a focused step selects it.
+    const ship = map.querySelector<HTMLElement>('.react-flow__node[data-id="ship-order"]')!;
+    ship.focus();
+    fireEvent.keyDown(ship, { key: 'Enter' });
+    await waitFor(() => expect(params(router).get('step')).toBe('ship-order'));
     // Compensation runs on dashed undo tracks.
-    expect(svg().querySelector('[data-flow="flow-checkout"] [data-transition="void"] [data-top]')).toHaveAttribute('stroke-dasharray', '9 6');
-    fireEvent.pointerEnter(svg().querySelector('[data-stop^="flow-checkout:settled:"]')!);
-    expect(within(panel('Map')).getByRole('tooltip')).toHaveTextContent(/outbox · declared and observed.*on “Await settlement → Post to ledger”/);
+    expect(map.querySelector('[data-transition="void"]')).toHaveAttribute('data-undo');
+    fireEvent.pointerEnter(map.querySelector('[data-stop^="flow-checkout:settled:"]')!);
+    expect(within(map).getByRole('tooltip')).toHaveTextContent(/Transactional outbox · declared and observed.*on “Await settlement → Post to ledger”/);
+  });
+
+  it('focuses a finding’s steps on the map', async () => {
+    const user = userEvent.setup();
+    renderApp(BOARD);
+    await ready();
+    await user.click(within(panel('Flow card')).getByRole('button', { name: /Capture payment is not undone/ }));
+    const map = panel('Map');
+    expect(map.querySelector('[data-step="capture-payment"]')).toHaveAttribute('data-emphasis', 'focus');
+    expect(map.querySelector('[data-step="place-order"]')).toHaveAttribute('data-emphasis', 'dim');
   });
 
   it('switches the window and reports an unknown flow', async () => {
@@ -124,10 +144,12 @@ describe('business-transaction replay', () => {
     await openReplay();
     const samples = within(panel('Flow card')).getByRole('region', { name: 'Sample transactions' });
     for (const reason of ['slowest', 'failed', 'compensated', 'with retries', 'typical']) expect(samples).toHaveTextContent(reason);
-    expect(svg().querySelectorAll('[data-train]')).toHaveLength(1);
+    expect(panel('Map').querySelectorAll('[data-train]')).toHaveLength(1);
     await user.click(within(panel('Flow card')).getByRole('button', { name: 'Next' }));
     expect(current()).toHaveTextContent('Reserve stock');
-    expect(svg().querySelector('[data-train]')).toHaveAttribute('data-train', 'reserve-stock');
+    expect(panel('Map').querySelector('[data-train]')).toHaveAttribute('data-train', 'reserve-stock');
+    // The transition taken so far is highlighted.
+    expect(panel('Map').querySelector('[data-transition="placed"]')).toHaveAttribute('data-emphasis', 'traversed');
   });
 
   it('shows compressed waits, compensation on the undo track, the divergence, and trace drill-down', async () => {

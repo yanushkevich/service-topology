@@ -1,15 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router';
 import { businessFlowsIn, resolveBusinessFlow } from '../../domain/businessFlow';
 import type { TopologyIndex } from '../../domain/topologyIndex';
 import type { BusinessFlow, FlowStep } from '../../domain/types';
 import { useTopology } from '../../data/topologyContext';
 import { DEFAULT_WINDOW, isWindow, windowLabel } from '../../transit/board';
-import { computeFlowGeometry, indexFlows, type FlowBoardIndex } from '../../transit/flows/flowLayout';
-import { flowFindings, flowSearchText, typicalPath } from '../../transit/flows/flowModel';
+import { indexFlows, type FlowBoardIndex } from '../../transit/flows/flowIndex';
+import { computeSwimlanes } from '../../transit/flows/swimlane';
+import { flowFindings, typicalPath } from '../../transit/flows/flowModel';
 import { sampleTransactions, txDivergence } from '../../transit/flows/observed';
 import type { TransitWindow } from '../../transit/types';
-import { NARROW_QUERY, useMediaQuery } from '../../shared/hooks/useMediaQuery';
 import { ignoreShortcut } from '../../shared/keyboard';
 import { Segment, Segmented } from '../../shared/ui/primitives';
 import { LoadState } from '../../shared/ui/LoadState';
@@ -21,16 +21,17 @@ import { createPlayback, playbackActions, usePlaybackClock, useReplayUrlTime, ty
 import { WindowSelect } from '../boards/WindowSelect';
 import { useRepositoryRead } from '../transit-board/useTransitBoard';
 import { FlowEditActions } from './FlowEditActions';
-import { FlowLegend, FlowMap } from './FlowMap';
-import { FlowCard, FlowList, FlowStrip } from './FlowPanels';
-import { TxCard, TxStrip, TxTrain } from './FlowReplay';
+import { FlowSwimlane } from './FlowSwimlane';
+import { SwimlaneLegend } from './SwimlaneParts';
+import { FlowCard, FlowPicker, FlowStrip } from './FlowPanels';
+import { TxCard, TxStrip } from './FlowReplay';
 
 type Mode = 'typical' | 'replay';
 
 /**
- * Flow board (ADR-022, docs/BUSINESS_FLOWS.md §7): business flows as a transit network, the
- * selected flow highlighted, with typical mode (stats, budget, findings) and business-transaction
- * replay. Steps drill down to the service's transit board.
+ * Flow board (ADR-022, ADR-023; docs/BUSINESS_FLOWS.md §7 and Revision 2 §9): one flow as
+ * swimlanes, with typical mode (stats, budget, findings) and business-transaction replay. Steps
+ * drill down to the service's transit board.
  */
 export function FlowBoardPage() {
   const { flowId = '' } = useParams();
@@ -73,18 +74,17 @@ function Board({ index, flow, environmentId }: { index: TopologyIndex; flow: Bus
   const stepId = params.get('step');
   const txKey = params.get('tx');
 
-  const serviceName = (id: string) => index.definitions.get(id)?.name ?? id;
-  const eventName = (id: string) => index.eventTypes.get(id)?.name ?? id;
+  const serviceName = useCallback((id: string) => index.definitions.get(id)?.name ?? id, [index]);
+  const eventName = useCallback((id: string) => index.eventTypes.get(id)?.name ?? id, [index]);
   const environmentName = index.environments.get(environmentId)?.name ?? environmentId;
   const flows = useMemo(() => {
     const deployed = businessFlowsIn(index, environmentId).map((r) => r.flow);
     return deployed.some((f) => f.id === flow.id) ? deployed : [...deployed, flow];
   }, [index, environmentId, flow]);
   const fx: FlowBoardIndex = useMemo(() => indexFlows(flows, (id) => index.definitions.get(id)?.name ?? id), [flows, index]);
-  const narrow = useMediaQuery(NARROW_QUERY);
   const reduced = useMotionReduced();
-  // Computed once per data load; selection, search, and replay never rebuild it.
-  const geometry = useMemo(() => computeFlowGeometry(fx, { flat: narrow }), [fx, narrow]);
+  // Computed once per flow; selection, search, and replay never rebuild it (ADR-023).
+  const layout = useMemo(() => computeSwimlanes(flow, serviceName, eventName), [flow, serviceName, eventName]);
   const resolved = useMemo(() => resolveBusinessFlow(index, flow, environmentId), [index, flow, environmentId]);
 
   const stats = useRepositoryRead(`${flow.id}\u0000${environmentId}\u0000${windowValue}`, (r, signal) => r.getFlowStats(flow, environmentId, windowValue, signal));
@@ -93,18 +93,18 @@ function Board({ index, flow, environmentId }: { index: TopologyIndex; flow: Bus
   const inner = useInnerAttempts(flow, environmentId, windowValue);
   const findings = useMemo(
     () => flowFindings(flow, { eventName, serviceName, shares, innerAttempts: (step) => inner.get(`${step.serviceDefinitionId}\u0000${step.entryPoint ?? ''}`) ?? null }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [flow, shares, inner],
+    [flow, shares, inner, eventName, serviceName],
   );
   const warnings = useMemo(() => new Map(fx.flows.map((f) => [f.id, f.id === flow.id ? findings.filter((x) => x.severity === 'warn').length : 0])), [fx, flow.id, findings]);
   const [query, setQuery] = useState('');
-  const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return new Set(fx.flows.filter((f) => !q || flowSearchText(f, serviceName, eventName).includes(q)).map((f) => f.id));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fx, query]);
   const [focus, setFocus] = useState<number | null>(null);
   const focusSteps = useMemo(() => new Set(focus !== null && mode === 'typical' ? (findings[focus]?.stepIds ?? []) : []), [focus, findings, mode]);
+  const mapView = useMemo(() => {
+    const finding = focus !== null && mode === 'typical' ? findings[focus] : undefined;
+    const q = query.trim().toLowerCase();
+    const stepMatches = q ? new Set(flow.steps.filter((s) => `${s.name} ${serviceName(s.serviceDefinitionId)} ${s.entryPoint ?? ''}`.toLowerCase().includes(q)).map((s) => s.id)) : null;
+    return { selectedStepId: stepId, focus: finding ? { steps: new Set(finding.stepIds), transitions: new Set(finding.transitionIds) } : null, matches: stepMatches };
+  }, [focus, mode, findings, query, flow, serviceName, stepId]);
   const selectedStep: FlowStep | null = (stepId && flow.steps.find((s) => s.id === stepId)) || null;
 
   // Replay: samples, the chosen (or first) transaction, a local playback clock.
@@ -206,22 +206,23 @@ function Board({ index, flow, environmentId }: { index: TopologyIndex; flow: Bus
         labels={{ index: 'Flows', map: 'Map', strip: 'Step strip', card: 'Flow card' }}
         cardWidth={340}
         onKeyDown={onKeyDown}
-        index={<FlowList fx={fx} selectedId={flow.id} query={query} onQuery={setQuery} matches={matches} warnings={warnings} search={params.toString() ? `?${params.toString()}` : ''} />}
+        wideMap
+        index={<FlowPicker fx={fx} selectedId={flow.id} query={query} onQuery={setQuery} matchCount={mapView.matches?.size ?? null} warnings={warnings} search={params.toString() ? `?${params.toString()}` : ''} />}
         map={
-          <FlowMap
+          <FlowSwimlane
             fx={fx}
-            geometry={geometry}
-            selectedFlowId={flow.id}
-            selectedStation={selectedStep ? fx.stationOf(flow.id, selectedStep.id) : null}
-            matches={query.trim() ? matches : null}
-            onSelectStation={(key, flowId) => {
-              const ref = fx.stations.get(key)?.refs.find((r) => r.flowId === flowId);
-              if (ref && flowId === flow.id && flow.steps.some((s) => s.id === ref.id)) selectStep(ref.id);
-            }}
-            overlay={mode === 'replay' && tx ? <TxTrain fx={fx} geometry={geometry} tx={tx} playback={playback} reduced={reduced} /> : undefined}
+            flow={flow}
+            layout={layout}
+            serviceName={serviceName}
+            eventName={eventName}
+            shares={shares}
+            view={mapView}
+            replay={mode === 'replay' && tx ? { tx, playback, divergence } : null}
+            playback={playback}
+            onSelectStep={(id) => selectStep(id === stepId ? null : id)}
           />
         }
-        legend={<FlowLegend className="max-md:hidden" />}
+        legend={<SwimlaneLegend className="max-md:hidden" />}
         strip={
           mode === 'replay' && tx ? (
             <TxStrip flow={flow} tx={tx} playback={playback} divergence={divergence} onSeek={actions.seek} onJump={actions.jump} />
