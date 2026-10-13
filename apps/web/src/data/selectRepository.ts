@@ -6,11 +6,17 @@ import { createInMemorySnapshotRepository, type SnapshotRepository } from './sna
 import { createLocalSavedLayoutRepository, type SavedLayoutRepository } from './savedLayouts/SavedLayoutRepository';
 import { createHttpSavedLayoutRepository, createHttpSnapshotRepository, createHttpTopologyRepository } from './http/httpRepositories';
 import { createApiClient } from './http/apiClient';
+import { createHttpBoardStore } from './boards/httpBoardStore';
+import { createSandbox } from './sandbox/sandbox';
+import { createTransitRepository } from './transitRepository';
+import type { TransitRepository } from '../transit/repository';
 
 export interface Repositories {
   topology: TopologyRepository;
   snapshots: SnapshotRepository;
   layouts: SavedLayoutRepository;
+  /** Transit boards: stored definitions (backend or sandbox) over observed data (ADR-031). */
+  transit: TransitRepository;
 }
 
 /**
@@ -23,7 +29,7 @@ export function selectRepository(search: string, defaultSource: string | undefin
   const params = new URLSearchParams(search);
   if ((params.get('source') ?? defaultSource) === 'api') {
     const api = createApiClient();
-    return { topology: createHttpTopologyRepository(api), snapshots: createHttpSnapshotRepository(api), layouts: createHttpSavedLayoutRepository(api) };
+    return { topology: createHttpTopologyRepository(api), snapshots: createHttpSnapshotRepository(api), layouts: createHttpSavedLayoutRepository(api), transit: createTransitRepository(createHttpBoardStore(api)) };
   }
   const name = params.get('dataset');
   if (name && name in GENERATED_DATASETS) {
@@ -33,7 +39,10 @@ export function selectRepository(search: string, defaultSource: string | undefin
       // History fixtures describe the hand-written mock; generated datasets start without history.
       snapshots: createInMemorySnapshotRepository(),
       layouts: createLocalSavedLayoutRepository(),
+      transit: createTransitRepository(null),
     };
   }
-  return { topology: createMockTopologyRepository(), snapshots: createInMemorySnapshotRepository(mockSnapshots()), layouts: createLocalSavedLayoutRepository() };
+  // The built-in mock data is editable in a labelled local sandbox (ADR-031).
+  const sandbox = createSandbox();
+  return { topology: sandbox.topology, snapshots: createInMemorySnapshotRepository(mockSnapshots()), layouts: createLocalSavedLayoutRepository(), transit: createTransitRepository(sandbox.boards) };
 }

@@ -9,6 +9,8 @@
 export interface ProblemIssue {
   code: string;
   entityId?: string;
+  /** The field of a board definition (ADR-031). */
+  path?: string;
   message: string;
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { useTopology } from '../../data/topologyContext';
+import { useTopology, useTopologyEditing } from '../../data/topologyContext';
 import { useSavedLayoutRepository } from '../../data/savedLayouts/savedLayoutContext';
 import type { SavedLayout } from '../../data/savedLayouts/savedLayout';
 import { DataSourceTag } from '../../shared/ui/DataSourceTag';
@@ -241,6 +241,7 @@ function DataCard() {
           ))}
         </ul>
       </Row>
+      <SandboxRow />
       <Row label="Backend contract" hint="The Go + MongoDB backend in backend/ implements docs/api/openapi.json (OpenAPI 3.1).">
         <code className="font-mono text-sm text-fg-2">docs/API_CONTRACT.md</code>
       </Row>
@@ -253,5 +254,49 @@ function DataCard() {
         {message}
       </p>
     </Card>
+  );
+}
+
+/**
+ * The local sandbox (ADR-031): with the built-in data, edits stay in this browser. Reset drops them
+ * after a confirmation and reloads the built-in data.
+ */
+function SandboxRow() {
+  const { sandbox, reload } = useTopologyEditing();
+  const [confirming, setConfirming] = useState(false);
+  const [done, setDone] = useState('');
+  if (!sandbox) return null;
+  const reset = async () => {
+    sandbox.reset();
+    setConfirming(false);
+    await reload();
+    setDone('Sandbox reset: the built-in data is restored.');
+  };
+  return (
+    <Row
+      label="Local sandbox"
+      hint={`Your edits to the built-in data (entities, business flows, transit boards) are saved ${sandbox.persistent ? 'in this browser only' : 'in memory until this page closes (browser storage is unavailable)'}, never on the backend.`}
+    >
+      <div className="flex flex-col items-start gap-1.5">
+        {sandbox.notice && <p className="m-0 text-sm text-warn-fg">{sandbox.notice}</p>}
+        {confirming ? (
+          <div className="flex gap-2">
+            <Button variant="danger" onClick={() => void reset()}>
+              Confirm reset
+            </Button>
+            <Button variant="secondary" onClick={() => setConfirming(false)}>
+              Keep my changes
+            </Button>
+          </div>
+        ) : (
+          <Button variant="secondary" onClick={() => setConfirming(true)}>
+            Reset sandbox
+          </Button>
+        )}
+        <p role="status" className="m-0 text-sm text-fg-2">
+          {done}
+        </p>
+      </div>
+    </Row>
   );
 }

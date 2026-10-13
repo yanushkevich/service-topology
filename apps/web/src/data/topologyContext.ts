@@ -5,6 +5,7 @@ import type { ValidationIssue } from '../domain/validation';
 import type { TopologyData } from '../domain/types';
 import type { TopologyRepository, TopologyWriter } from './repositories/TopologyRepository';
 import { createMockTopologyRepository } from './repositories/mockTopologyRepository';
+import type { SandboxControls } from './sandbox/sandbox';
 
 export type TopologyState =
   | { status: 'loading' }
@@ -37,9 +38,11 @@ export interface TopologyEditing {
   baseline: TopologyData | null;
   /** Reloads from the repository; resolves once the new data is shown (the simulation restarts from it). */
   reload(): Promise<void>;
+  /** The local sandbox's controls when edits stay in this browser (ADR-031); null otherwise. */
+  sandbox: SandboxControls | null;
 }
 
-export const TopologyEditingContext = createContext<TopologyEditing>({ writer: null, baseline: null, reload: async () => {} });
+export const TopologyEditingContext = createContext<TopologyEditing>({ writer: null, baseline: null, reload: async () => {}, sandbox: null });
 
 export function useTopologyEditing(): TopologyEditing {
   return useContext(TopologyEditingContext);

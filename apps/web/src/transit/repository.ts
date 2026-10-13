@@ -7,6 +7,7 @@ import type { BusinessFlow } from '../domain/types';
 import type { TraceDetail, TraceSummary, TransitBoard, TransitWindow } from './types';
 import { exampleOpenApi } from '../contracts/examples';
 import type { OpenApiDocument } from '../contracts/openapi';
+import type { BoardStore } from './boardStore';
 
 /**
  * Source of transit boards and traces (ADR-021). Only the example implementation exists; an HTTP
@@ -28,6 +29,8 @@ export interface TransitRepository {
   getTransactions(flow: BusinessFlow, window: TransitWindow, signal?: AbortSignal): Promise<FlowTransaction[]>;
   /** One business transaction by its business key; null when unknown. */
   getTransaction(flow: BusinessFlow, key: string, signal?: AbortSignal): Promise<FlowTransaction | null>;
+  /** Where authored board definitions are stored (ADR-031); absent when boards cannot be edited. */
+  readonly boards?: BoardStore;
   /** The service's OpenAPI document and its file name (ADR-029); null when none is known. */
   getOpenApi(serviceDefinitionId: string, signal?: AbortSignal): Promise<{ file: string; doc: OpenApiDocument; isExample: boolean } | null>;
 }

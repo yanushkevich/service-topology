@@ -116,7 +116,7 @@ export function TopologyDataProvider({ children }: { children: ReactNode }) {
   }
 
   const editing = useMemo<TopologyEditing>(
-    () => ({ writer: repository.writer ?? null, baseline, reload }),
+    () => ({ writer: repository.writer ?? null, baseline, reload, sandbox: repository.sandbox ?? null }),
     [repository, baseline, reload],
   );
 

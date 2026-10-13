@@ -350,36 +350,8 @@ export function entityFromValues<K extends WritableKind>(
   return { entity: out as unknown as EntityOfKind[K], errors: null };
 }
 
-const COLLECTION: Record<WritableKind, keyof TopologyData> = {
-  environment: 'environments',
-  'service-definition': 'serviceDefinitions',
-  'service-instance': 'serviceInstances',
-  resource: 'resources',
-  relationship: 'relationships',
-  'event-type': 'eventTypes',
-  'business-flow': 'businessFlows',
-};
 
-/** The topology after a create, replace (same ID), or delete. Does not modify data. */
-export function applyChange(data: TopologyData, kind: WritableKind, change: { op: 'create' | 'update'; entity: { id: EntityId } } | { op: 'delete'; id: EntityId }): TopologyData {
-  const key = COLLECTION[kind];
-  const items = [...((data[key] as { id: EntityId }[] | undefined) ?? [])];
-  if (change.op === 'delete') {
-    const at = items.findIndex((e) => e.id === change.id);
-    if (at >= 0) items.splice(at, 1);
-  } else if (change.op === 'create') {
-    items.push(change.entity);
-  } else {
-    const at = items.findIndex((e) => e.id === change.entity.id);
-    if (at >= 0) items[at] = change.entity;
-  }
-  return { ...data, [key]: items } as TopologyData;
-}
-
-/** Whether any collection already uses id (IDs are unique across collections). */
-export function idTaken(data: TopologyData, id: EntityId): boolean {
-  return Object.values(COLLECTION).some((key) => ((data[key] as { id: EntityId }[] | undefined) ?? []).some((e) => e.id === id));
-}
+export { applyChange, idTaken } from '../../domain/topologyChanges';
 
 const issueKey = (i: ValidationIssue) => `${i.code}\u0000${i.entityId}\u0000${i.message}`;
 

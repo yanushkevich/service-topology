@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 import { RepositoryProvider } from '../data/TopologyDataProvider';
+import { TransitRepositoryContext } from '../transit/repository';
 import { selectRepository } from '../data/selectRepository';
 import { SnapshotRepositoryContext } from '../data/snapshots/snapshotContext';
 import { SavedLayoutRepositoryContext } from '../data/savedLayouts/savedLayoutContext';
@@ -15,7 +16,9 @@ export function App() {
     <RepositoryProvider repository={repositories.topology}>
       <SnapshotRepositoryContext.Provider value={repositories.snapshots}>
         <SavedLayoutRepositoryContext.Provider value={repositories.layouts}>
-          <RouterProvider router={router} />
+          <TransitRepositoryContext.Provider value={repositories.transit}>
+            <RouterProvider router={router} />
+          </TransitRepositoryContext.Provider>
         </SavedLayoutRepositoryContext.Provider>
       </SnapshotRepositoryContext.Provider>
     </RepositoryProvider>

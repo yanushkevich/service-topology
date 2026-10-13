@@ -89,7 +89,7 @@ describe('HTTP repositories (backend integration)', () => {
   it('selects the backend with ?source=api or VITE_DATA_SOURCE=api', () => {
     expect(selectRepository('?source=api').topology.sourceLabel).toBe('Backend API');
     expect(selectRepository('', 'api').topology.sourceLabel).toBe('Backend API');
-    expect(selectRepository('').topology.sourceLabel).toBe('Mock inventory');
+    expect(selectRepository('').topology.sourceLabel).toBe('Mock inventory · local sandbox');
     expect(selectRepository('?dataset=scale-250').topology.sourceLabel).toContain('scale-250');
   });
 });
@@ -143,8 +143,17 @@ describe('HTTP topology writer (ADR-020)', () => {
     expect((stale as ApiError).detail).toBe('The topology changed since it was read.');
   });
 
-  it('is absent for built-in mock data (editing needs the backend)', () => {
-    expect(selectRepository('').topology.writer).toBeUndefined();
-    expect(selectRepository('?source=api').topology.writer).toBeDefined();
+  it('writes to the local sandbox for built-in mock data, and to the backend with ?source=api (ADR-031)', () => {
+    const local = selectRepository('');
+    expect(local.topology.writer).toBeDefined();
+    expect(local.topology.sandbox).toBeDefined();
+    expect(local.transit.boards?.kind).toBe('sandbox');
+    const api = selectRepository('?source=api');
+    expect(api.topology.writer).toBeDefined();
+    expect(api.topology.sandbox).toBeUndefined();
+    expect(api.transit.boards?.kind).toBe('backend');
+    // Generated datasets stay read-only.
+    expect(selectRepository('?dataset=scale-250').topology.writer).toBeUndefined();
+    expect(selectRepository('?dataset=scale-250').transit.boards).toBeUndefined();
   });
 });

@@ -11,6 +11,8 @@ import type {
   TopologyData,
 } from '../../domain/types';
 
+import type { SandboxControls } from '../sandbox/sandbox';
+
 /**
  * Data access boundary. Features depend on this interface, never on mock arrays directly, so a
  * future HTTP adapter (docs/API_CONTRACT.md) can replace the mock without touching UI code.
@@ -26,6 +28,8 @@ export interface TopologyRepository {
    * so the UI offers editing only against the backend.
    */
   readonly writer?: TopologyWriter;
+  /** Present for the local sandbox (ADR-031): its storage state and reset. */
+  readonly sandbox?: SandboxControls;
 }
 
 /** Entity kinds that can be created, updated, and deleted (ADR-020): the selection kinds plus event types and business flows (ADR-022). */
