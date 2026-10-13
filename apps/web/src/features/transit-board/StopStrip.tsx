@@ -5,6 +5,7 @@ import { cx } from '../../shared/ui/classes';
 import { lineColor, POLICY_STATE_LABEL } from './colors';
 import { KeyValueRow, Kicker } from '../../shared/ui/primitives';
 import { PolicyDiamond } from './visuals';
+import { patternLabel } from '../../domain/patterns';
 
 type StripItem = { station: Station } | { stop: PolicyStop };
 
@@ -115,7 +116,7 @@ function StripStop({ index, line, item, first, last, color, dashed, focused }: {
       </svg>
     );
     stat = <span className={stop.state === 'missing' ? 'text-warn-fg' : 'text-fg-3'}>{stop.state === 'missing' ? 'missing' : stop.state === 'unknown' ? 'unknown' : stop.stat}</span>;
-    hidden = ` (${stop.type} policy, ${POLICY_STATE_LABEL[stop.state]})`;
+    hidden = ` (${patternLabel(stop.type)} policy, ${POLICY_STATE_LABEL[stop.state]})`;
   }
   return (
     <li data-focused={focused || undefined} className={cx('relative flex w-[118px] flex-none flex-col items-center gap-0.5 px-1 text-center', focused && 'rounded-lg shadow-[inset_0_0_0_2px_var(--color-warn)]')}>

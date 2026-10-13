@@ -7,6 +7,7 @@ import { GlowFilter, MapChooser, MapGround, MapTooltip, RibbonLine, SelectedLine
 import { overlayPosition } from '../boards/overlay';
 import { lineColor, policySummary, POLICY_STATE_LABEL } from './colors';
 import { LineBadge, PolicyDiamond, ProvenanceTag } from './visuals';
+import { patternLabel } from '../../domain/patterns';
 
 type Hover = { kind: 'station' | 'stop'; id: string; x: number; y: number };
 
@@ -266,7 +267,7 @@ function StopTip({ stop }: { stop: PolicyStop | undefined }) {
     <>
       <div className="font-mono font-medium text-fg">{policySummary(stop)}</div>
       <div className="text-fg-3">
-        {stop.type} · {POLICY_STATE_LABEL[stop.state]}
+        {patternLabel(stop.type)} · {POLICY_STATE_LABEL[stop.state]}
         {stop.stat ? ` · ${stop.stat}` : ''}
       </div>
       {stop.source && <div className="mt-1 font-mono text-fg-2">{stop.source}</div>}

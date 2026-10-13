@@ -1,6 +1,7 @@
 import { reachableFrom, stepById } from '../../domain/businessFlow';
-import type { BusinessFlow, FlowStep, FlowTransition } from '../../domain/types';
+import type { BusinessFlow, FlowPolicyType, FlowStep, FlowTransition } from '../../domain/types';
 import { flowRanks } from './flowLayout';
+import { patternLabel } from '../../domain/patterns';
 
 /**
  * Flow-level reading of a business flow (docs/BUSINESS_FLOWS.md §3, §5): the typical path, the
@@ -86,12 +87,26 @@ export function flowBudget(flow: BusinessFlow, shares?: ReadonlyMap<string, numb
 }
 
 export interface FlowFinding {
-  ruleId: 'retry-amplification' | 'missing-compensation' | 'event-without-dead-letter' | 'deadline-over-target' | 'missing-policy';
+  ruleId:
+    | 'retry-amplification'
+    | 'missing-compensation'
+    | 'event-without-dead-letter'
+    | 'deadline-over-target'
+    | 'missing-policy'
+    | 'outbox-without-relay'
+    | 'at-least-once-without-dedup'
+    | 'polling-without-deadline';
   severity: 'warn' | 'info';
   text: string;
   stepIds: string[];
   transitionIds: string[];
 }
+
+/** A policy is declared unless it is recorded as missing. */
+const declared = (t: FlowTransition, type: FlowPolicyType) => t.policies.some((p) => p.type === type && p.state !== 'missing');
+/** An outbox or broker redelivery means a message can arrive more than once. */
+const atLeastOnce = (t: FlowTransition) => declared(t, 'outbox') || declared(t, 'redelivery');
+const deduplicated = (t: FlowTransition) => declared(t, 'inbox') || declared(t, 'idempotent-consumer');
 
 const fmt = (ms: number) => (ms >= 60_000 ? `${Math.round(ms / 60_000)} min` : ms >= 1000 ? `${Number((ms / 1000).toFixed(1))} s` : `${ms} ms`);
 
@@ -161,6 +176,32 @@ export function flowFindings(
     }
   }
 
+  // Messaging reliability and polling (ADR-024).
+  const at = (t: FlowTransition) => `${name(t.from)} → ${name(t.to)}`;
+  for (const t of flow.transitions) {
+    if (t.via.kind === 'event') {
+      const event = options.eventName?.(t.via.eventTypeId) ?? t.via.eventTypeId;
+      if (declared(t, 'outbox') && !declared(t, 'polling-publisher')) {
+        out.push({ ruleId: 'outbox-without-relay', severity: 'info', text: `${event} (${at(t)}) is written to an outbox, but no relay is declared to publish it: messages may stay in the outbox.`, stepIds: [t.from], transitionIds: [t.id] });
+      }
+      if (atLeastOnce(t) && !deduplicated(t)) {
+        out.push({
+          ruleId: 'at-least-once-without-dedup',
+          severity: 'warn',
+          text: `${event} (${at(t)}) can be delivered more than once, and ${name(t.to)} has neither an inbox nor an idempotent consumer: duplicates reach the step.`,
+          stepIds: [t.to],
+          transitionIds: [t.id],
+        });
+      }
+    }
+    if (t.via.kind === 'call' && declared(t, 'async-request-reply')) {
+      const polling = t.policies.find((p) => p.type === 'async-request-reply');
+      if (!num(polling?.config?.timeoutMs) && stepById(flow, t.to)?.deadlineMs === undefined) {
+        out.push({ ruleId: 'polling-without-deadline', severity: 'warn', text: `${at(t)} polls for the result with no timeout and no step deadline: a lost job keeps the caller polling forever.`, stepIds: [t.from, t.to], transitionIds: [t.id] });
+      }
+    }
+  }
+
   // The typical path's timeouts and deadlines against the target.
   const budget = flowBudget(flow, options.shares);
   if (budget && budget.overflowMs > 0) {
@@ -182,8 +223,9 @@ export function flowFindings(
   // Expected policies that are absent (declared as missing by the rule list).
   for (const t of flow.transitions) {
     for (const p of t.policies) {
-      if (p.state !== 'missing' || p.type === 'dead-letter') continue;
-      out.push({ ruleId: 'missing-policy', severity: 'info', text: `No ${p.type.replace(/-/g, ' ')} on ${name(t.from)} → ${name(t.to)} (“${p.label}”).`, stepIds: [t.from, t.to], transitionIds: [t.id] });
+      // Dead-letter queues and deduplication have their own findings above.
+      if (p.state !== 'missing' || p.type === 'dead-letter' || ((p.type === 'idempotent-consumer' || p.type === 'inbox') && t.via.kind === 'event' && atLeastOnce(t))) continue;
+      out.push({ ruleId: 'missing-policy', severity: 'info', text: `No ${patternLabel(p.type).toLowerCase()} on ${name(t.from)} → ${name(t.to)} (“${p.label}”).`, stepIds: [t.from, t.to], transitionIds: [t.id] });
     }
   }
   return out;

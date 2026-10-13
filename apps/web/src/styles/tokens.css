@@ -97,6 +97,9 @@
   --transit-policy-step-deadline: #ffab70;
   --transit-policy-compensation: #c9b6ff;
   --transit-policy-manual-intervention: #ff8f9c;
+  --transit-policy-inbox: #e8c66a;
+  --transit-policy-polling-publisher: #b48cff;
+  --transit-policy-async-request-reply: #9dbbff;
   --transit-dim: #4a5577;
   --transit-shadow: rgba(0, 0, 0, 0.55);
 }
@@ -186,6 +189,9 @@
   --transit-policy-step-deadline: #a24f12;
   --transit-policy-compensation: #5b4aa8;
   --transit-policy-manual-intervention: #b3243a;
+  --transit-policy-inbox: #765e00;
+  --transit-policy-polling-publisher: #6a3fc4;
+  --transit-policy-async-request-reply: #2a5db0;
   --transit-dim: #9aa5bf;
   --transit-shadow: rgba(40, 55, 95, 0.25);
 }

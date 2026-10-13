@@ -3,6 +3,8 @@
  * Renderer-independent: nothing in src/domain may import React, React Flow, or Three.js.
  */
 
+import type { PatternId } from './patterns';
+
 export type EntityId = string;
 
 export const PROVIDERS = ['aws', 'azure', 'gcp', 'on-prem', 'saas', 'internal', 'unknown'] as const;
@@ -218,7 +220,11 @@ export const FLOW_POLICY_TYPES = [
   'step-deadline',
   'compensation',
   'manual-intervention',
-] as const;
+  'inbox',
+  'polling-publisher',
+  'async-request-reply',
+] as const satisfies readonly PatternId[];
+/** Policies on flow transitions: a subset of the pattern catalog (ADR-024). */
 export type FlowPolicyType = (typeof FLOW_POLICY_TYPES)[number];
 
 export const FLOW_POLICY_STATES = ['exercised', 'idle', 'missing', 'unknown'] as const;

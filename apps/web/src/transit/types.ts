@@ -4,6 +4,8 @@
  * link is the service definition the board belongs to.
  */
 
+import type { PatternId } from '../domain/patterns';
+
 export type ProvenanceKind = 'declared' | 'observed' | 'inferred';
 
 export interface Provenance {
@@ -30,7 +32,9 @@ export interface Station {
   labelHint?: 'above' | 'below' | 'right';
 }
 
-export type PolicyType = 'bulkhead' | 'timeout' | 'retry' | 'breaker' | 'fallback' | 'cache' | 'idempotency';
+/** Policies on the service board's client lanes: a subset of the pattern catalog (ADR-024). */
+export const POLICY_TYPES = ['bulkhead', 'timeout', 'retry', 'breaker', 'fallback', 'cache', 'idempotency'] as const satisfies readonly PatternId[];
+export type PolicyType = (typeof POLICY_TYPES)[number];
 
 /**
  * How a policy renders (spec "Policies on the line" and the missing/unknown rule):
@@ -102,7 +106,8 @@ export interface Line {
   stats: { p50Ms: number; p95Ms: number; errorRate: number; callsPerDay: number; traces: number };
   /** First = main path; others fork from a module. */
   route: Branch[];
-  patterns: string[];
+  /** Pattern catalog IDs shown on the line card. */
+  patterns: PatternId[];
   findings: Finding[];
   provenance: { entry: Provenance; route: Provenance };
   /** Per-step stats keyed by station id (typical mode). */

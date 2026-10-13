@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { contrast, over, parseColor, tokensFor, type Rgb } from './contrast';
+import { FLOW_POLICY_TYPES } from '../domain/types';
+import { POLICY_TYPES } from '../transit/types';
 
 // Raw token source, so the test checks exactly what ships.
 const css = Object.values(import.meta.glob<string>('./tokens.css', { query: '?raw', import: 'default', eager: true }))[0] ?? '';
@@ -78,7 +80,8 @@ describe.each(['dark', 'light'] as const)('%s theme contrast (WCAG 2.2 AA)', (th
 });
 
 const TRANSIT_LINES = Array.from({ length: 12 }, (_, i) => `--transit-line-${i + 1}`);
-const TRANSIT_POLICIES = ['timeout', 'retry', 'bulkhead', 'breaker', 'fallback', 'cache', 'idempotency', 'redelivery', 'dead-letter', 'idempotent-consumer', 'outbox', 'step-deadline', 'compensation', 'manual-intervention'].map((p) => `--transit-policy-${p}`);
+// Every policy type of either board has a fill token (both lists are subsets of the pattern catalog).
+const TRANSIT_POLICIES = [...new Set([...POLICY_TYPES, ...FLOW_POLICY_TYPES])].map((p) => `--transit-policy-${p}`);
 
 describe.each(['dark', 'light'] as const)('%s theme transit board contrast (ADR-021)', (theme) => {
   it('line colours are at least 3:1 on the map', () => {

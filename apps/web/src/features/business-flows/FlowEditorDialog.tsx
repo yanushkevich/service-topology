@@ -20,6 +20,7 @@ import { applyChange, idTaken, newIssues, type FormContext } from '../editing/en
 import { IssueList } from '../editing/issues';
 import { problemMessage, splitServerIssues, type DisplayIssue } from '../editing/issueMessages';
 import { cleanFlow, flowFieldErrors, nextId, suggestFlowId, type FlowErrors } from './flowForm';
+import { patternLabel } from '../../domain/patterns';
 
 /**
  * Create or edit a business flow (ADR-022, Milestone 10 phase 6): basics, steps, outcomes, and
@@ -400,7 +401,7 @@ function TransitionFields({
 function PolicyFields({ label, path, policy, error, onChange, onRemove }: { label: string; path: string; policy: FlowPolicy; error: string | undefined; onChange: (change: (p: FlowPolicy) => void) => void; onRemove: () => void }) {
   return (
     <div className="grid grid-cols-[1fr_1fr_1fr_auto] items-end gap-1.5">
-      <SelectInput compact label={`${label} type`} path={`${path}.type`} value={policy.type} options={FLOW_POLICY_TYPES.map((t) => ({ value: t, label: t }))} onChange={(v) => onChange((p) => void (p.type = v as FlowPolicy['type']))} />
+      <SelectInput compact label={`${label} type`} path={`${path}.type`} value={policy.type} options={FLOW_POLICY_TYPES.map((t) => ({ value: t, label: patternLabel(t) }))} onChange={(v) => onChange((p) => void (p.type = v as FlowPolicy['type']))} />
       <TextInput compact label={`${label} label`} path={`${path}.label`} required value={policy.label} error={error} onChange={(v) => onChange((p) => void (p.label = v))} />
       <SelectInput compact label={`${label} state`} path={`${path}.state`} value={policy.state ?? 'exercised'} options={FLOW_POLICY_STATES.map((s) => ({ value: s, label: s }))} onChange={(v) => onChange((p) => void (p.state = v as NonNullable<FlowPolicy['state']>))} />
       <Button aria-label={`Remove ${label.toLowerCase()}`} onClick={onRemove}>

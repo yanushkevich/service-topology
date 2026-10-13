@@ -8,6 +8,7 @@ import { policySummary, POLICY_STATE_LABEL } from '../transit-board/colors';
 import { PolicyDiamond } from '../transit-board/visuals';
 import { flowColor, isUndoTransition } from './flowVisuals';
 import { FlowBadge } from './FlowBadge';
+import { patternLabel } from '../../domain/patterns';
 
 type Hover = { kind: 'station' | 'stop'; id: string; x: number; y: number };
 
@@ -232,7 +233,7 @@ function StopTip({ fx, stopId }: { fx: FlowBoardIndex; stopId: string }) {
     <>
       <div className="font-mono font-medium text-fg">{policySummary(policy)}</div>
       <div className="text-fg-3">
-        {policy.type} · {POLICY_STATE_LABEL[policy.state ?? 'idle']}
+        {patternLabel(policy.type)} · {POLICY_STATE_LABEL[policy.state ?? 'idle']}
         {policy.stat ? ` · ${policy.stat}` : ''}
       </div>
       <div className="mt-1 text-fg-2">on “{transitionLabel(flow, transition.id)}”</div>

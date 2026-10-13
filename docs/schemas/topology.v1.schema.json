@@ -130,7 +130,7 @@
       "required": ["type", "label"],
       "properties": {
         "type": {
-          "enum": ["timeout", "retry", "breaker", "bulkhead", "idempotency", "redelivery", "dead-letter", "idempotent-consumer", "outbox", "step-deadline", "compensation", "manual-intervention"]
+          "enum": ["timeout", "retry", "breaker", "bulkhead", "idempotency", "redelivery", "dead-letter", "idempotent-consumer", "outbox", "step-deadline", "compensation", "manual-intervention", "inbox", "polling-publisher", "async-request-reply"]
         },
         "label": { "type": "string" },
         "config": { "type": "object", "additionalProperties": { "type": "string" } },

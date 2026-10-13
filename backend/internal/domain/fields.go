@@ -37,7 +37,7 @@ var (
 	FlowOutcomeKindValues = []string{"success", "cancelled", "failed", "compensated"}
 	FlowTriggerKindValues = []string{"call", "event", "schedule", "manual"}
 	FlowViaKindValues     = []string{"local", "call", "event"}
-	FlowPolicyTypeValues  = []string{"timeout", "retry", "breaker", "bulkhead", "idempotency", "redelivery", "dead-letter", "idempotent-consumer", "outbox", "step-deadline", "compensation", "manual-intervention"}
+	FlowPolicyTypeValues  = []string{"timeout", "retry", "breaker", "bulkhead", "idempotency", "redelivery", "dead-letter", "idempotent-consumer", "outbox", "step-deadline", "compensation", "manual-intervention", "inbox", "polling-publisher", "async-request-reply"}
 	FlowPolicyStateValues = []string{"exercised", "idle", "missing", "unknown"}
 	FlowSourceKindValues  = []string{"authored", "imported"}
 )

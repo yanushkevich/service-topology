@@ -2132,6 +2132,14 @@
                 "state": "exercised"
               },
               {
+                "type": "polling-publisher",
+                "label": "relay every 200 ms",
+                "state": "exercised",
+                "config": {
+                  "intervalMs": "200"
+                }
+              },
+              {
                 "type": "redelivery",
                 "label": "redelivery ×5",
                 "state": "exercised",
@@ -2146,8 +2154,8 @@
                 "state": "missing"
               },
               {
-                "type": "idempotent-consumer",
-                "label": "dedupe by payment",
+                "type": "inbox",
+                "label": "ledger inbox",
                 "state": "exercised"
               }
             ]

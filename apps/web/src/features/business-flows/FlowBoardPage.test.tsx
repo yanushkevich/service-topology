@@ -46,7 +46,9 @@ describe('flow board, typical mode', () => {
     const stages = within(panel('Step strip')).getByRole('list', { name: 'Stages of Checkout' });
     expect(within(stages).getAllByRole('listitem').length).toBeGreaterThan(5);
     expect(panel('Step strip')).toHaveTextContent(/→ Reserve stock OrderPlaced/);
-    expect(panel('Step strip')).toHaveTextContent(/no dedupe \(idempotent-consumer, missing\) · missing/);
+    // Policy names come from the pattern catalog (ADR-024).
+    expect(panel('Step strip')).toHaveTextContent(/no dedupe \(Idempotent consumer, missing\) · missing/);
+    expect(panel('Step strip')).toHaveTextContent(/relay every 200 ms \(Polling publisher, declared and observed\)/);
     const card = panel('Flow card');
     expect(card).toHaveTextContent(/The typical path may take 23 s against a 4 s p95 target: 19 s over\./);
     expect(within(card).getByRole('region', { name: 'Outcomes' })).toHaveTextContent(/Completed \(success\)97.5%/);
@@ -54,6 +56,9 @@ describe('flow board, typical mode', () => {
     // Retries multiplied across levels, read from the Payment Service transit board's card client.
     await waitFor(() => expect(findings).toHaveTextContent('Authorize payment: Order Service retries 3× and the card client retries 4× inside: up to 12 calls per checkout.'));
     expect(findings).toHaveTextContent('Capture payment is not undone when the flow ends Cancelled');
+    // Messaging reliability (ADR-024): OrderPlaced is redelivered and Reserve stock does not deduplicate.
+    expect(findings).toHaveTextContent('OrderPlaced (Place order → Reserve stock) can be delivered more than once, and Reserve stock has neither an inbox nor an idempotent consumer');
+    expect(findings).not.toHaveTextContent('No idempotent consumer on Place order');
   });
 
   it('highlights a finding’s steps and selects a step with a drill-down to its service board', async () => {

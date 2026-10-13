@@ -14,6 +14,7 @@ import { POLICY_STATE_LABEL } from '../transit-board/colors';
 import { PolicyDiamond, SeverityMark } from '../transit-board/visuals';
 import { FlowBadge } from './FlowBadge';
 import { stripPageParams } from './flowVisuals';
+import { patternLabel } from '../../domain/patterns';
 
 const rowClass =
   'flex w-full items-center gap-2.5 rounded-md px-2 py-[7px] text-left text-[12.5px] text-fg-2 hover:bg-surface-3 hover:text-fg aria-[current=page]:bg-accent-soft aria-[current=page]:text-fg aria-[current=page]:shadow-[inset_0_0_0_1px_var(--color-accent-ring)]';
@@ -188,7 +189,7 @@ function TransitionRow({ t, to, share, eventName }: { t: FlowTransition; to: str
                 <PolicyDiamond stop={p} x={6} y={6} size={7} />
               </svg>
               {p.label}
-              <span className="sr-only"> ({p.type}, {POLICY_STATE_LABEL[p.state ?? 'idle']})</span>
+              <span className="sr-only"> ({patternLabel(p.type)}, {POLICY_STATE_LABEL[p.state ?? 'idle']})</span>
               {p.state === 'missing' && ' · missing'}
             </span>
           ))}

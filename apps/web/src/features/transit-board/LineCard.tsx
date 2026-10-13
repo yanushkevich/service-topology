@@ -4,6 +4,7 @@ import type { Finding, Line, SourceStatus } from '../../transit/types';
 import { buttonClass, cx, kickerClass } from '../../shared/ui/classes';
 import { KeyValueRow, Kicker } from '../../shared/ui/primitives';
 import { LineBadge, ProvenanceTag, SeverityMark } from './visuals';
+import { patternDescription, patternLabel } from '../../domain/patterns';
 
 /**
  * Line card (spec "Screen layout", "Typical route mode"): with a line selected, its signature,
@@ -85,8 +86,8 @@ export function LineCard({
       <Block title="Patterns on this line">
         <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">
           {line.patterns.map((p) => (
-            <li key={p} className="inline-flex h-[22px] items-center rounded-full border border-line-strong px-2.5 text-[11px] text-fg-2">
-              {p}
+            <li key={p} title={patternDescription(p)} className="inline-flex h-[22px] items-center rounded-full border border-line-strong px-2.5 text-[11px] text-fg-2">
+              {patternLabel(p)}
             </li>
           ))}
         </ul>
