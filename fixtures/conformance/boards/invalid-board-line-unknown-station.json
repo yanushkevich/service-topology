@@ -1,0 +1,826 @@
+{
+  "description": "A route goes through an unknown station",
+  "topology": "topology/mock.v1.json",
+  "definition": {
+    "serviceDefinitionId": "payment-service",
+    "stations": [
+      {
+        "id": "caller:order-service",
+        "name": "Order Service",
+        "sub": "caller",
+        "kind": "caller"
+      },
+      {
+        "id": "caller:admin-console",
+        "name": "Admin Console",
+        "sub": "caller",
+        "kind": "caller"
+      },
+      {
+        "id": "caller:orders-events",
+        "name": "orders.events",
+        "sub": "topic",
+        "kind": "caller"
+      },
+      {
+        "id": "caller:card-processor",
+        "name": "Card Processor",
+        "sub": "webhooks",
+        "kind": "caller",
+        "labelHint": "below"
+      },
+      {
+        "id": "gate:grpc",
+        "name": "gRPC ingress",
+        "sub": "mTLS · rate · idem",
+        "kind": "gate"
+      },
+      {
+        "id": "gate:consumer",
+        "name": "Consumer",
+        "sub": "orders-cg",
+        "kind": "gate",
+        "labelHint": "below"
+      },
+      {
+        "id": "gate:webhook",
+        "name": "Webhook gate",
+        "sub": "HMAC",
+        "kind": "gate",
+        "labelHint": "below"
+      },
+      {
+        "id": "gate:scheduler",
+        "name": "Scheduler",
+        "sub": "in-process",
+        "kind": "gate",
+        "labelHint": "below"
+      },
+      {
+        "id": "mod:authorize",
+        "name": "Authorize",
+        "kind": "module"
+      },
+      {
+        "id": "mod:capture",
+        "name": "Capture",
+        "sub": "tx",
+        "kind": "module"
+      },
+      {
+        "id": "mod:refund",
+        "name": "Refund",
+        "kind": "module"
+      },
+      {
+        "id": "mod:query",
+        "name": "Query",
+        "sub": "read model",
+        "kind": "module"
+      },
+      {
+        "id": "mod:void",
+        "name": "Void",
+        "kind": "module"
+      },
+      {
+        "id": "mod:saga",
+        "name": "PaymentSaga",
+        "kind": "module"
+      },
+      {
+        "id": "mod:expire",
+        "name": "Expire auths",
+        "sub": "*/15",
+        "kind": "module"
+      },
+      {
+        "id": "mod:reconcile",
+        "name": "Reconcile",
+        "sub": "02:15",
+        "kind": "module",
+        "labelHint": "below"
+      },
+      {
+        "id": "mod:outbox",
+        "name": "OutboxRelay",
+        "sub": "worker",
+        "kind": "module",
+        "labelHint": "below"
+      },
+      {
+        "id": "cli:fraud",
+        "name": "fraud client",
+        "sub": "gRPC",
+        "kind": "client"
+      },
+      {
+        "id": "cli:card",
+        "name": "card client",
+        "sub": "HTTPS",
+        "kind": "client"
+      },
+      {
+        "id": "cli:ledger",
+        "name": "ledger client",
+        "sub": "gRPC",
+        "kind": "client"
+      },
+      {
+        "id": "cli:pg",
+        "name": "pg pool",
+        "sub": "SQL",
+        "kind": "client"
+      },
+      {
+        "id": "cli:cache",
+        "name": "cache client",
+        "sub": "RESP",
+        "kind": "client"
+      },
+      {
+        "id": "cli:replica",
+        "name": "replica pool",
+        "sub": "SQL",
+        "kind": "client"
+      },
+      {
+        "id": "cli:producer",
+        "name": "producer",
+        "sub": "Kafka",
+        "kind": "client"
+      },
+      {
+        "id": "dep:fraud",
+        "name": "Fraud Scoring",
+        "sub": "degraded",
+        "kind": "dependency",
+        "entityId": "fraud-scoring"
+      },
+      {
+        "id": "dep:card",
+        "name": "Card Processor",
+        "sub": "external",
+        "kind": "dependency",
+        "entityId": "ext-card-processor"
+      },
+      {
+        "id": "dep:ledger",
+        "name": "Ledger",
+        "sub": "service",
+        "kind": "dependency",
+        "entityId": "ledger-service"
+      },
+      {
+        "id": "dep:pg",
+        "name": "payments-pg",
+        "sub": "primary",
+        "kind": "dependency",
+        "entityId": "pg-payments-prod"
+      },
+      {
+        "id": "dep:redis",
+        "name": "Redis",
+        "sub": "cache",
+        "kind": "dependency"
+      },
+      {
+        "id": "dep:replica",
+        "name": "payments-pg",
+        "sub": "replica",
+        "kind": "dependency",
+        "entityId": "pg-payments-prod"
+      },
+      {
+        "id": "dep:kafka",
+        "name": "payments.events",
+        "sub": "topic",
+        "kind": "dependency",
+        "entityId": "topic-payments-events-prod"
+      }
+    ],
+    "lines": [
+      {
+        "id": "A1",
+        "code": "A1",
+        "name": "Authorize",
+        "group": "grpc",
+        "signature": "rpc Authorize(AuthorizeRequest) returns (Authorization)",
+        "caller": "Order Service",
+        "deadlineMs": 3000,
+        "route": [
+          {
+            "stations": [
+              "caller:order-service",
+              "gate:grpc",
+              "mod:authorize",
+              "cli:fraud",
+              "dep:fraud",
+              "nowhere"
+            ],
+            "kind": "sequential"
+          },
+          {
+            "stations": [
+              "mod:authorize",
+              "cli:card",
+              "dep:card"
+            ],
+            "kind": "sequential"
+          }
+        ],
+        "patterns": [
+          "mtls",
+          "rate-limit",
+          "idempotency",
+          "timeout",
+          "retry",
+          "fallback",
+          "bulkhead",
+          "breaker"
+        ]
+      },
+      {
+        "id": "A2",
+        "code": "A2",
+        "name": "Capture",
+        "group": "grpc",
+        "signature": "rpc Capture(CaptureRequest) returns (Payment)",
+        "caller": "Order Service",
+        "deadlineMs": 3000,
+        "route": [
+          {
+            "stations": [
+              "caller:order-service",
+              "gate:grpc",
+              "mod:capture",
+              "cli:card",
+              "dep:card"
+            ],
+            "kind": "sequential"
+          },
+          {
+            "stations": [
+              "mod:capture",
+              "cli:pg",
+              "dep:pg"
+            ],
+            "kind": "sequential"
+          }
+        ],
+        "patterns": [
+          "mtls",
+          "idempotency",
+          "transaction",
+          "outbox",
+          "bulkhead",
+          "timeout",
+          "retry",
+          "breaker"
+        ],
+        "transactions": [
+          {
+            "stationId": "dep:pg",
+            "tableIds": [
+              "payments",
+              "payment_outbox"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "A3",
+        "code": "A3",
+        "name": "Refund",
+        "group": "grpc",
+        "signature": "rpc Refund(RefundRequest) returns (Refund)",
+        "caller": "Order Service",
+        "deadlineMs": 5000,
+        "route": [
+          {
+            "stations": [
+              "caller:order-service",
+              "gate:grpc",
+              "mod:refund",
+              "cli:card",
+              "dep:card"
+            ],
+            "kind": "sequential"
+          },
+          {
+            "stations": [
+              "mod:refund",
+              "cli:ledger",
+              "dep:ledger"
+            ],
+            "kind": "sequential"
+          }
+        ],
+        "patterns": [
+          "idempotency",
+          "timeout",
+          "retry"
+        ]
+      },
+      {
+        "id": "A4",
+        "code": "A4",
+        "name": "Void",
+        "group": "grpc",
+        "signature": "rpc Void(VoidRequest) returns (Payment)",
+        "caller": "Order Service",
+        "deadlineMs": 3000,
+        "route": [
+          {
+            "stations": [
+              "caller:order-service",
+              "gate:grpc",
+              "mod:void",
+              "cli:card",
+              "dep:card"
+            ],
+            "kind": "sequential"
+          }
+        ],
+        "patterns": [
+          "idempotency",
+          "retry",
+          "breaker"
+        ]
+      },
+      {
+        "id": "A5",
+        "code": "A5",
+        "name": "GetPayment",
+        "group": "grpc",
+        "signature": "rpc GetPayment(GetPaymentRequest) returns (Payment)",
+        "caller": "Order Service",
+        "deadlineMs": 500,
+        "route": [
+          {
+            "stations": [
+              "caller:order-service",
+              "gate:grpc",
+              "mod:query",
+              "cli:cache",
+              "dep:redis"
+            ],
+            "kind": "sequential"
+          },
+          {
+            "stations": [
+              "mod:query",
+              "cli:replica",
+              "dep:replica"
+            ],
+            "kind": "alternative",
+            "share": 0.06,
+            "condition": "cache miss"
+          }
+        ],
+        "patterns": [
+          "cache",
+          "read-replica",
+          "timeout"
+        ]
+      },
+      {
+        "id": "A6",
+        "code": "A6",
+        "name": "ListPayments",
+        "group": "grpc",
+        "signature": "rpc ListPayments(ListRequest) returns (PaymentPage)",
+        "caller": "Admin Console",
+        "deadlineMs": 2000,
+        "route": [
+          {
+            "stations": [
+              "caller:admin-console",
+              "gate:grpc",
+              "mod:query",
+              "cli:replica",
+              "dep:replica"
+            ],
+            "kind": "sequential"
+          }
+        ],
+        "patterns": [
+          "read-replica",
+          "pagination"
+        ]
+      },
+      {
+        "id": "W1",
+        "code": "W1",
+        "name": "POST /webhooks/processor",
+        "group": "webhook",
+        "signature": "POST /webhooks/processor",
+        "caller": "Card Processor",
+        "deadlineMs": 10000,
+        "route": [
+          {
+            "stations": [
+              "caller:card-processor",
+              "gate:webhook",
+              "mod:saga",
+              "cli:ledger",
+              "dep:ledger"
+            ],
+            "kind": "sequential"
+          },
+          {
+            "stations": [
+              "mod:saga",
+              "cli:pg",
+              "dep:pg"
+            ],
+            "kind": "sequential"
+          }
+        ],
+        "patterns": [
+          "hmac-signature",
+          "inbox",
+          "saga",
+          "outbox",
+          "retry"
+        ],
+        "transactions": [
+          {
+            "stationId": "dep:pg",
+            "tableIds": [
+              "processed_webhooks",
+              "payments",
+              "payment_outbox"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "E1",
+        "code": "E1",
+        "name": "OrderCancelled",
+        "group": "event",
+        "signature": "consume orders.events · OrderCancelled",
+        "caller": "orders.events",
+        "route": [
+          {
+            "stations": [
+              "caller:orders-events",
+              "gate:consumer",
+              "mod:void",
+              "cli:card",
+              "dep:card"
+            ],
+            "kind": "sequential"
+          }
+        ],
+        "patterns": [
+          "idempotent-consumer",
+          "retry",
+          "dead-letter"
+        ]
+      },
+      {
+        "id": "J1",
+        "code": "J1",
+        "name": "ExpireAuthorizations",
+        "group": "scheduled",
+        "signature": "cron */15 * * * *",
+        "caller": "Scheduler",
+        "route": [
+          {
+            "stations": [
+              "gate:scheduler",
+              "mod:expire",
+              "cli:pg",
+              "dep:pg"
+            ],
+            "kind": "sequential"
+          },
+          {
+            "stations": [
+              "mod:expire",
+              "cli:card",
+              "dep:card"
+            ],
+            "kind": "sequential"
+          }
+        ],
+        "patterns": [
+          "scheduled-job"
+        ]
+      },
+      {
+        "id": "J2",
+        "code": "J2",
+        "name": "ReconcileSettlements",
+        "group": "scheduled",
+        "signature": "cron 15 2 * * *",
+        "caller": "Scheduler",
+        "route": [
+          {
+            "stations": [
+              "gate:scheduler",
+              "mod:reconcile",
+              "cli:card",
+              "dep:card"
+            ],
+            "kind": "sequential"
+          },
+          {
+            "stations": [
+              "mod:reconcile",
+              "cli:ledger",
+              "dep:ledger"
+            ],
+            "kind": "sequential",
+            "parallel": true
+          }
+        ],
+        "patterns": [
+          "scheduled-job",
+          "leader-lock"
+        ]
+      },
+      {
+        "id": "O1",
+        "code": "O1",
+        "name": "OutboxRelay",
+        "group": "background",
+        "signature": "poll payment_outbox every 200 ms",
+        "caller": "itself",
+        "route": [
+          {
+            "stations": [
+              "mod:outbox",
+              "cli:pg",
+              "dep:pg"
+            ],
+            "kind": "sequential"
+          },
+          {
+            "stations": [
+              "mod:outbox",
+              "cli:producer",
+              "dep:kafka"
+            ],
+            "kind": "sequential"
+          }
+        ],
+        "patterns": [
+          "outbox",
+          "polling-publisher",
+          "idempotent-producer"
+        ],
+        "repeat": "every 200 ms"
+      }
+    ],
+    "policies": [
+      {
+        "id": "pol:fraud:0",
+        "clientId": "cli:fraud",
+        "order": 0,
+        "type": "timeout",
+        "label": "300 ms",
+        "config": {
+          "timeoutMs": "300"
+        },
+        "source": "resilience.yaml · fraud"
+      },
+      {
+        "id": "pol:fraud:1",
+        "clientId": "cli:fraud",
+        "order": 1,
+        "type": "retry",
+        "label": "retry ×1",
+        "config": {
+          "maxAttempts": "2",
+          "backoffMs": "50"
+        },
+        "source": "resilience.yaml · fraud"
+      },
+      {
+        "id": "pol:fraud:2",
+        "clientId": "cli:fraud",
+        "order": 2,
+        "type": "breaker",
+        "label": "no breaker",
+        "source": "resilience.yaml (expected-policy rule)",
+        "missing": true
+      },
+      {
+        "id": "pol:card:0",
+        "clientId": "cli:card",
+        "order": 0,
+        "type": "bulkhead",
+        "label": "bulkhead 20",
+        "config": {
+          "limit": "20"
+        },
+        "source": "resilience.yaml · card"
+      },
+      {
+        "id": "pol:card:1",
+        "clientId": "cli:card",
+        "order": 1,
+        "type": "timeout",
+        "label": "2 s",
+        "config": {
+          "timeoutMs": "2000"
+        },
+        "source": "resilience.yaml · card"
+      },
+      {
+        "id": "pol:card:2",
+        "clientId": "cli:card",
+        "order": 2,
+        "type": "retry",
+        "label": "retry ×3",
+        "config": {
+          "maxAttempts": "4",
+          "backoffMs": "200"
+        },
+        "source": "resilience.yaml · card"
+      },
+      {
+        "id": "pol:card:3",
+        "clientId": "cli:card",
+        "order": 3,
+        "type": "breaker",
+        "label": "breaker",
+        "source": "resilience.yaml · card"
+      },
+      {
+        "id": "pol:ledger:0",
+        "clientId": "cli:ledger",
+        "order": 0,
+        "type": "timeout",
+        "label": "800 ms",
+        "config": {
+          "timeoutMs": "800"
+        },
+        "source": "resilience.yaml · ledger"
+      },
+      {
+        "id": "pol:ledger:1",
+        "clientId": "cli:ledger",
+        "order": 1,
+        "type": "retry",
+        "label": "retry ×2",
+        "config": {
+          "maxAttempts": "3",
+          "backoffMs": "100"
+        },
+        "source": "resilience.yaml · ledger"
+      },
+      {
+        "id": "pol:ledger:2",
+        "clientId": "cli:ledger",
+        "order": 2,
+        "type": "idempotency",
+        "label": "no idem key",
+        "source": "resilience.yaml (expected-policy rule)",
+        "missing": true
+      },
+      {
+        "id": "pol:pg:0",
+        "clientId": "cli:pg",
+        "order": 0,
+        "type": "bulkhead",
+        "label": "pool 40",
+        "config": {
+          "limit": "40"
+        },
+        "source": "resilience.yaml · pg"
+      },
+      {
+        "id": "pol:pg:1",
+        "clientId": "cli:pg",
+        "order": 1,
+        "type": "timeout",
+        "label": "5 s",
+        "config": {
+          "timeoutMs": "5000"
+        },
+        "source": "resilience.yaml · pg"
+      },
+      {
+        "id": "pol:cache:0",
+        "clientId": "cli:cache",
+        "order": 0,
+        "type": "timeout",
+        "label": "50 ms",
+        "config": {
+          "timeoutMs": "50"
+        },
+        "source": "resilience.yaml · cache"
+      },
+      {
+        "id": "pol:cache:1",
+        "clientId": "cli:cache",
+        "order": 1,
+        "type": "fallback",
+        "label": "miss → replica",
+        "source": "resilience.yaml · cache"
+      },
+      {
+        "id": "pol:replica:0",
+        "clientId": "cli:replica",
+        "order": 0,
+        "type": "bulkhead",
+        "label": "pool 20",
+        "config": {
+          "limit": "20"
+        },
+        "source": "resilience.yaml · replica"
+      },
+      {
+        "id": "pol:replica:1",
+        "clientId": "cli:replica",
+        "order": 1,
+        "type": "timeout",
+        "label": "2 s",
+        "config": {
+          "timeoutMs": "2000"
+        },
+        "source": "resilience.yaml · replica"
+      },
+      {
+        "id": "pol:producer:0",
+        "clientId": "cli:producer",
+        "order": 0,
+        "type": "retry",
+        "label": "retry ∞",
+        "source": "resilience.yaml · producer"
+      },
+      {
+        "id": "pol:producer:1",
+        "clientId": "cli:producer",
+        "order": 1,
+        "type": "timeout",
+        "label": "120 s",
+        "config": {
+          "timeoutMs": "120000"
+        },
+        "source": "resilience.yaml · producer"
+      }
+    ],
+    "tables": [
+      {
+        "id": "payments",
+        "stationId": "dep:pg",
+        "name": "payments",
+        "writes": [
+          "A2",
+          "W1",
+          "J1"
+        ],
+        "reads": [
+          "W1",
+          "J1"
+        ]
+      },
+      {
+        "id": "payment_outbox",
+        "stationId": "dep:pg",
+        "name": "payment_outbox",
+        "pattern": "outbox",
+        "writes": [
+          "A2",
+          "W1"
+        ],
+        "reads": [
+          "O1"
+        ]
+      },
+      {
+        "id": "processed_webhooks",
+        "stationId": "dep:pg",
+        "name": "processed_webhooks",
+        "pattern": "inbox",
+        "writes": [
+          "W1"
+        ],
+        "reads": [
+          "W1"
+        ]
+      },
+      {
+        "id": "payments-replica",
+        "stationId": "dep:replica",
+        "name": "payments (read replica)",
+        "writes": [],
+        "reads": [
+          "A5",
+          "A6"
+        ]
+      }
+    ]
+  },
+  "expected": [
+    {
+      "code": "invalid-board-line",
+      "path": "lines[0].route[0].stations[5]"
+    }
+  ]
+}

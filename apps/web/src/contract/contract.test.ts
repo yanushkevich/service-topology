@@ -17,6 +17,10 @@ import {
   RESOURCE_TYPES,
   SERVICE_CATEGORIES,
 } from '../domain/types';
+import { PATTERN_IDS } from '../domain/patterns';
+import { definitionOf } from '../transit/definition';
+import { paymentServiceBoard } from '../transit/mock/paymentServiceBoard';
+import { POLICY_TYPES } from '../transit/types';
 
 /**
  * Contract tests: the published JSON Schemas and OpenAPI document (docs/schemas, docs/api) must
@@ -32,6 +36,7 @@ const topologySchema = json('schemas/topology.v1.schema.json');
 const snapshotSchema = json('schemas/topology-snapshot.v1.schema.json');
 const layoutSchema = json('schemas/saved-layout.v1.schema.json');
 const flowFileSchema = json('schemas/business-flow.v1.schema.json');
+const boardSchema = json('schemas/transit-board-definition.v1.schema.json');
 const openapi = json('api/openapi.json');
 const OPENAPI_ID = 'https://example.test/api/openapi.json';
 
@@ -42,6 +47,7 @@ function makeAjv() {
   ajv.addSchema(snapshotSchema);
   ajv.addSchema(layoutSchema);
   ajv.addSchema(flowFileSchema);
+  ajv.addSchema(boardSchema);
   ajv.addSchema({ ...openapi, $id: OPENAPI_ID });
   return ajv;
 }
@@ -53,6 +59,19 @@ const validate = (id: string, data: unknown) => {
   return ok ? [] : (fn.errors ?? []).map((e) => `${e.instancePath} ${e.message}`);
 };
 const pointer = (...parts: string[]) => `${OPENAPI_ID}#/${parts.map((p) => p.replace(/~/g, '~0').replace(/\//g, '~1')).join('/')}`;
+
+describe('transit board definition schema (ADR-031)', () => {
+  const id = 'https://example.test/schemas/transit-board-definition.v1.schema.json';
+  it('accepts the example board’s definition and rejects observed data', () => {
+    const def = definitionOf(paymentServiceBoard('production'));
+    expect(validate(id, def)).toEqual([]);
+    expect(validate(id, { ...def, lines: def.lines.map((l, i) => (i === 0 ? { ...l, stats: { traces: 1 } } : l)) })).not.toEqual([]);
+  });
+  it('enumerates exactly the catalog’s patterns and the board policy types', () => {
+    expect(boardSchema.$defs.Line.properties.patterns.items.enum).toEqual(PATTERN_IDS);
+    expect(boardSchema.$defs.Policy.properties.type.enum).toEqual([...POLICY_TYPES]);
+  });
+});
 
 describe('business-flow definition file schema (ADR-022)', () => {
   it('accepts flows without a source, one or wrapped, and rejects unknown fields', () => {

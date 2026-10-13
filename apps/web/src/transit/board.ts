@@ -42,7 +42,7 @@ const TRANSPORT: Record<LineGroup, string> = {
 export const byCode = (a: Line, b: Line) => a.code.localeCompare(b.code, 'en', { numeric: true });
 
 /** Every station a line passes through, in route order, without repeats. */
-export function lineStations(line: Line): string[] {
+export function lineStations(line: Pick<Line, 'route'>): string[] {
   const out: string[] = [];
   for (const branch of line.route) for (const id of branch.stations) if (!out.includes(id)) out.push(id);
   return out;

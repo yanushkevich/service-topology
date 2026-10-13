@@ -1,0 +1,333 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.test/schemas/transit-board-definition.v1.schema.json",
+  "title": "Transit board definition v1",
+  "description": "The declared part of a service's transit board (ADR-031, docs/TRANSIT_BOARD.md Revision 2): stations, lines (endpoints) with routes, client policies, and tables. Observed data (stats, step stats, traces, policy firing states, findings) is never part of a definition. Stored by the backend (/transit-boards) or the local sandbox; validated by validateBoardDefinition (TypeScript) and backend/internal/domain/board.go with the same codes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "serviceDefinitionId",
+    "stations",
+    "lines",
+    "policies",
+    "tables"
+  ],
+  "properties": {
+    "serviceDefinitionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Station"
+      }
+    },
+    "lines": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Line"
+      }
+    },
+    "policies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Policy"
+      }
+    },
+    "tables": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Table"
+      }
+    }
+  },
+  "$defs": {
+    "Station": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "kind"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sub": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "caller",
+            "gate",
+            "module",
+            "client",
+            "dependency"
+          ]
+        },
+        "entityId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Dependencies only: a service definition or resource ID of the topology (ADR-027)."
+        },
+        "labelHint": {
+          "enum": [
+            "above",
+            "below",
+            "right"
+          ]
+        }
+      }
+    },
+    "Branch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stations",
+        "kind"
+      ],
+      "properties": {
+        "stations": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "kind": {
+          "enum": [
+            "sequential",
+            "alternative"
+          ]
+        },
+        "share": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "condition": {
+          "type": "string"
+        },
+        "parallel": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Line": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "code",
+        "name",
+        "group",
+        "signature",
+        "caller",
+        "route",
+        "patterns"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "group": {
+          "enum": [
+            "grpc",
+            "http",
+            "webhook",
+            "event",
+            "scheduled",
+            "background"
+          ]
+        },
+        "signature": {
+          "type": "string"
+        },
+        "caller": {
+          "type": "string"
+        },
+        "deadlineMs": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "route": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Branch"
+          }
+        },
+        "patterns": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "timeout",
+              "retry",
+              "breaker",
+              "bulkhead",
+              "fallback",
+              "cache",
+              "idempotency",
+              "async-request-reply",
+              "redelivery",
+              "dead-letter",
+              "idempotent-consumer",
+              "inbox",
+              "outbox",
+              "polling-publisher",
+              "step-deadline",
+              "compensation",
+              "manual-intervention",
+              "transaction",
+              "mtls",
+              "rate-limit",
+              "hmac-signature",
+              "idempotent-producer",
+              "read-replica",
+              "pagination",
+              "saga",
+              "scheduled-job",
+              "leader-lock"
+            ]
+          }
+        },
+        "repeat": {
+          "type": "string"
+        },
+        "transactions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "stationId",
+              "tableIds"
+            ],
+            "properties": {
+              "stationId": {
+                "type": "string"
+              },
+              "tableIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "clientId",
+        "order",
+        "type",
+        "label"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "clientId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "enum": [
+            "bulkhead",
+            "timeout",
+            "retry",
+            "breaker",
+            "fallback",
+            "cache",
+            "idempotency"
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "source": {
+          "type": "string"
+        },
+        "missing": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Table": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "stationId",
+        "name",
+        "writes",
+        "reads"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pattern": {
+          "enum": [
+            "outbox",
+            "inbox"
+          ]
+        },
+        "writes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reads": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

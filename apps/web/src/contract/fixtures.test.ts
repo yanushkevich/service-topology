@@ -14,6 +14,8 @@ import { diffTopology } from '../domain/snapshot';
 import { createSimulation, injectFailure, recover, recoverAll, reset, step, type SimulationState } from '../simulation/engine';
 import type { TopologyData } from '../domain/types';
 import { validateTopology, type ValidationIssue } from '../domain/validation';
+import { definitionOf, validateBoardDefinition, type BoardDefinition } from '../transit/definition';
+import { paymentServiceBoard } from '../transit/mock/paymentServiceBoard';
 
 /**
  * Shared fixtures for the Go backend (docs/backend/TESTING_AND_PERFORMANCE.md, ADR-015). The
@@ -257,8 +259,40 @@ function files(): Record<string, string> {
   for (const [path, value] of Object.entries(registryCases())) out[path] = json(value);
   for (const snapshot of mockSnapshots()) out[`snapshots/${snapshot.id}.v1.json`] = json(snapshot);
   for (const [path, value] of Object.entries(traversalCases())) out[path] = json(value);
+  for (const [path, value] of Object.entries(boardCases())) out[path] = json(value);
   out['topology/scale-250.v1.json'] = json(generateTopology(SCALE_250));
   out['topology/inventory-1000.v1.json'] = json(generateTopology(INVENTORY_1000));
+  return out;
+}
+
+/**
+ * Board definition cases (ADR-031): the example board's definition, valid against the mock
+ * topology, and one case per rule that breaks it. The Go port must report the same codes and paths.
+ */
+function boardCases(): Record<string, unknown> {
+  const index = buildTopologyIndex(mockTopology);
+  const valid = definitionOf(paymentServiceBoard('production'));
+  const cases: Record<string, { description: string; mutate: (d: BoardDefinition) => void }> = {
+    'board-service-not-found': { description: 'The service definition does not exist', mutate: (d) => void (d.serviceDefinitionId = 'no-such-service') },
+    'invalid-board-station-duplicate': { description: 'Two stations share an ID', mutate: (d) => void d.stations.push({ id: 'dep:pg', name: 'again', kind: 'dependency' }) },
+    'invalid-board-station-entity-on-module': { description: 'Only dependencies link to topology entities', mutate: (d) => void d.stations.push({ id: 'mod:linked', name: 'Linked', kind: 'module', entityId: 'pg-payments-prod' }) },
+    'board-entity-not-found': { description: 'A dependency links to an entity the topology lacks', mutate: (d) => void d.stations.push({ id: 'dep:ghost', name: 'Ghost', kind: 'dependency', entityId: 'no-such-entity' }) },
+    'invalid-board-line-duplicate-code': { description: 'Two lines share a code', mutate: (d) => void (d.lines[1]!.code = d.lines[0]!.code) },
+    'invalid-board-line-unknown-station': { description: 'A route goes through an unknown station', mutate: (d) => void d.lines[0]!.route[0]!.stations.push('nowhere') },
+    'invalid-board-line-fork': { description: 'A branch does not start at a station of an earlier branch', mutate: (d) => void (d.lines[0]!.route[1]!.stations[0] = 'cli:ledger') },
+    'invalid-board-line-share': { description: 'A branch share outside 0..1', mutate: (d) => void (d.lines.find((l) => l.id === 'A5')!.route[1]!.share = 1.5) },
+    'invalid-board-policy-not-on-client': { description: 'A policy is not on a client station', mutate: (d) => void (d.policies[0]!.clientId = 'mod:capture') },
+    'invalid-board-table-not-reached': { description: 'A table writer does not reach the table’s station', mutate: (d) => void d.tables[0]!.writes.push('A4') },
+    'invalid-board-table-on-module': { description: 'A table is not on a dependency station', mutate: (d) => void (d.tables[0]!.stationId = 'mod:capture') },
+  };
+  const out: Record<string, unknown> = {
+    'conformance/boards/valid-example.json': { description: 'The example Payment Service board definition', topology: 'topology/mock.v1.json', definition: valid, expected: [] },
+  };
+  for (const [name, { description, mutate }] of Object.entries(cases)) {
+    const definition = structuredClone(valid);
+    mutate(definition);
+    out[`conformance/boards/${name}.json`] = { description, topology: 'topology/mock.v1.json', definition, expected: validateBoardDefinition(definition, index).map(({ code, path }) => ({ code, path })) };
+  }
   return out;
 }
 
@@ -369,6 +403,12 @@ describe('shared fixtures (fixtures/)', () => {
     expect(validateTopology(base())).toEqual([]);
     expect(validateTopology(mockTopology)).toEqual([]);
     expect(validateTopology(collationTopology())).toEqual([]);
+    for (const [path, content] of Object.entries(generated).filter(([p]) => p.startsWith('conformance/boards/'))) {
+      const { expected } = JSON.parse(content) as { expected: { code: string }[] };
+      const name = path.split('/').pop()!.replace('.json', '');
+      if (name === 'valid-example') expect(expected, name).toEqual([]);
+      else expect(expected.map((e) => e.code).some((code) => name.startsWith(code)), name).toBe(true);
+    }
     for (const name of Object.keys(CASES)) {
       const { expected: issues } = JSON.parse(generated[`conformance/validation/${name}.json`]!) as { expected: Expected[] };
       expect(issues.length, name).toBeGreaterThan(0);
