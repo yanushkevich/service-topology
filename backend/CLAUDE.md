@@ -1,6 +1,6 @@
 # Backend instructions (`backend/`) — Service Topology & Registry Platform
 
-The root `CLAUDE.md` still applies; specs are in `docs/backend/`.
+The root `CLAUDE.md` still applies; specs are in `docs/backend/`. Code conventions (layers, HTTP adapter layout, error mapping, readability, parity): `docs/CONVENTIONS.md` §2 and §4.
 
 ## Commands (run in `backend/`)
 - `make check` — gofmt check, `go vet ./...`, `go test ./...` (unit, conformance, lifecycle). The Makefile uses `go` from PATH, else `/usr/local/go/bin/go`; override with `GO=...`.

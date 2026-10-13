@@ -69,12 +69,14 @@ Rules that keep this working (enforced by tests where marked):
 | Saved layouts, snapshots | Their repositories |
 
 ## 4. Styling (Tailwind, ADR-013)
+The full rules, the component catalog, and the review checklist are in `CONVENTIONS.md` (§3.3–§3.4); this section is the summary.
 - Tailwind CSS v4 via `@tailwindcss/vite`; entry `apps/web/src/styles/global.css`. `tokens.css` holds every value; `@theme inline` maps tokens to utilities and `--color-*: initial` disables the default palette, so only token colors exist (`bg-surface-0..3`, `text-fg`/`fg-2`/`fg-3`, `border-line`/`line-strong`/`control`, `bg-accent`, `text-ok-fg`/`warn-fg`/`crit-fg`, `edge-*`).
 - One breakpoint: `max-md:` (≤ 760 px). Theme switches by `data-theme` on `<html>`; never use `dark:` variants.
 - Reuse `Button`, `Chip`, `Segmented`/`Segment`, `Panel`, `Kicker` (`apps/web/src/shared/ui/primitives.tsx`) or the class helpers in `classes.ts` (`buttonClass`, `fieldClass`, `kickerClass`, `cx`). Section pages use `PageShell`, `Card`, `Note`.
 - State styling uses ARIA/data variants (`aria-pressed:`, `aria-selected:`, `data-[emphasis=dim]`), which double as test hooks. Do not test class names.
 - Glyph artwork, status shapes, tags, and React Flow / 3D label overrides live in `@layer components` in `apps/web/src/styles/components.css`.
-- New colors go in `tokens.css` (both themes) and must pass `contrast.test.ts`.
+- New colors go in `tokens.css` (both themes) and must pass `contrast.test.ts`. Literal colours anywhere else in TypeScript fail `rawColors.test.ts`; the only exception is the 3D palette in `features/service-map/galaxy/palette.ts` (WebGL cannot read CSS variables).
+- Forms use `shared/ui/form.tsx`; boards use the kit in `features/boards/`.
 
 ## 5. Testing strategy
 

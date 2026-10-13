@@ -20,6 +20,7 @@ Do not spend a planning phase on a truly trivial one-line change.
 
 ## 3. Implement
 - Follow existing repository patterns unless they conflict with an approved architecture decision.
+- Follow `docs/CONVENTIONS.md`: reuse the shared components and helpers, use token-only styling, keep functions and files to one subject, and respect the layers in both stacks.
 - Keep changes small and cohesive; avoid unrelated refactors and unnecessary dependencies.
 - Keep domain logic renderer-independent; derive renderer-specific nodes/edges through adapters.
 - Treat infrastructure containment as hierarchy, not a communication edge.
@@ -35,7 +36,8 @@ Discover actual scripts before invoking them. Run the smallest relevant checks f
 4. production build;
 5. integration/e2e tests relevant to the change;
 6. running-app visual inspection for meaningful UI changes;
-7. scale/performance measurement when touching topology rendering or layout.
+7. scale/performance measurement when touching topology rendering or layout;
+8. the review checklist in `docs/CONVENTIONS.md` §6.
 
 Record exact commands and outcomes. If a command is unavailable, blocked, or not configured, state that; do not substitute a guess and claim success. Fix regressions caused by the change, not unrelated pre-existing failures unless asked.
 

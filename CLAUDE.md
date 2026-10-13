@@ -26,6 +26,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Navigation and source-of-truth rules: `docs/README_INDEX.md`
 - Decision record: `docs/DECISIONS.md`
 - Per-session procedure (orient → plan → implement → verify → close out): `docs/AGENT_WORKFLOW.md`
+- **Engineering conventions (frontend and backend): `docs/CONVENTIONS.md`.** Read it before adding a component, style, hook, endpoint, or package: layers, the reusable component catalog, Tailwind/token rules, readable-code rules, and the review checklist. Guard tests enforce the layer and colour rules.
 
 ## Non-negotiable project constraints
 - Explore the existing repository before planning or editing. Treat this package as project guidance, not proof that an application implementation already exists.

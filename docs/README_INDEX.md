@@ -20,6 +20,7 @@ Use this file to navigate the project without loading every document into contex
 | Transit board (per-service routes, policies, trace replay) | `TRANSIT_BOARD.md` | `PRODUCT_SPEC.md` Revision 8, Milestone 9, ADR-021, `design-references/payment-transit-board/` |
 | Run all services locally | `GETTING_STARTED.md` | `backend/LOCAL_DEVELOPMENT.md`, `backend/RUNBOOK.md` |
 | Go backend (MongoDB), monorepo layout | `backend/README.md` | `backend/IMPLEMENTATION_PLAN.md` (B1–B6, database migration), ADR-015, ADR-019 |
+| Write or review code (components, Tailwind, hooks, Go packages, endpoints) | `CONVENTIONS.md` | `DEVELOPER_GUIDE.md` |
 | Set up, test, scale, or extend the app | `DEVELOPER_GUIDE.md` | `ARCHITECTURE.md` milestone notes, `BENCHMARKS.md` |
 | Backend/API work | `API_CONTRACT.md` | `api/openapi.json`, `schemas/` |
 | Positioning or competitor questions | `POSITIONING.md` | `PRODUCT_SPEC.md` §I |
