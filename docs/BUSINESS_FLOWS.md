@@ -425,8 +425,8 @@ The service board drew databases only as anonymous endpoints (`payments-pg`), no
 
 | Fragment | Service board (line) | Flow board |
 |---|---|---|
-| `alt` (if / else) | — | a decision's conditional exits, with observed shares; unconditional siblings become `else` |
-| `opt` (if) | an alternative branch, with its condition and share (A5: cache miss · 6%) | — |
+| `alt` (if / else) | — | a step whose exits are all conditional (a decision), with observed shares |
+| `opt` (if) | an alternative branch, with its condition and share (A5: cache miss · 6%) | a conditional exit beside unconditional ones; unconditional exits always run, so the flow model has no `else` |
 | `loop` | a retry policy around the call it retries (retry ×3), and a line's `repeat` (OutboxRelay: every 200 ms) | retry on a call, redelivery on an event |
 | `par` | branches declared `parallel` (J2 reconciles card and ledger together) | unconditional exits that run together |
 | `transaction` | a line's declared transaction: the table writes it groups (Capture: `payments` + `payment_outbox`) | — |

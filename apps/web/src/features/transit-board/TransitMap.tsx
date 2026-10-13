@@ -2,7 +2,7 @@ import { useId, useState, type ReactNode } from 'react';
 import { formatMs, formatRate, isUnobserved, lineStations, type BoardIndex } from '../../transit/board';
 import type { MapGeometry } from '../../transit/layout';
 import type { PolicyStop, Station } from '../../transit/types';
-import { cx } from '../../shared/ui/classes';
+import { cx, floatClass } from '../../shared/ui/classes';
 import { GlowFilter, MapChooser, MapGround, MapTooltip, RibbonLine, SelectedLine, StationLabel, type LineState } from '../boards/MapParts';
 import { overlayPosition } from '../boards/overlay';
 import { lineColor, policySummary, POLICY_STATE_LABEL } from './colors';
@@ -207,6 +207,14 @@ export function TransitMap({
         )}
       </svg>
 
+      {selected && (
+        <p data-endpoint={selected.id} className={cx(floatClass, 'top-3 left-3 m-0 flex max-w-[calc(100%-24px)] items-center gap-2 px-2.5 py-1.5 text-xs')}>
+          <span className="text-fg-3">Endpoint</span>
+          <LineBadge index={index} lineId={selected.id} code={selected.code} />
+          <span className="truncate font-mono text-fg">{selected.signature}</span>
+          <span className="shrink-0 text-fg-3">· from {selected.caller}</span>
+        </p>
+      )}
       {hover && !chooser && (
         <MapTooltip position={at(hover.x, hover.y)}>
           {hover.kind === 'station' ? (

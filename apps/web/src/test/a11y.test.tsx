@@ -102,6 +102,18 @@ describe('accessibility audit (axe-core)', () => {
     expect(await audit()).toEqual([]);
   });
 
+  it('process view of a line and of a flow (ADR-028)', async () => {
+    renderApp('/services/payment-service/transit?v=1&env=production&line=W1&strip=process');
+    await screen.findByRole('list', { name: 'Process of line W1' });
+    expect(await audit()).toEqual([]);
+  });
+
+  it('process view of a flow', async () => {
+    renderApp('/flows/flow-checkout?v=1&env=production&strip=process');
+    await screen.findByRole('list', { name: 'Process of Checkout' });
+    expect(await audit()).toEqual([]);
+  });
+
   it('business flows catalog', async () => {
     renderApp('/flows');
     await screen.findByRole('list', { name: 'Business flows' });

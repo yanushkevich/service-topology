@@ -26,6 +26,9 @@ import { FlowSwimlane } from './FlowSwimlane';
 import { SwimlaneLegend } from './SwimlaneParts';
 import { FlowCard, FlowPicker, FlowStrip } from './FlowPanels';
 import { TxCard, TxStrip } from './FlowReplay';
+import { ProcessDiagram } from '../boards/ProcessDiagram';
+import { StripSwitch } from '../boards/StripSwitch';
+import { flowProcess } from '../../transit/process';
 
 type Mode = 'typical' | 'replay';
 
@@ -74,6 +77,7 @@ function Board({ index, flow, environmentId }: { index: TopologyIndex; flow: Bus
   const mode: Mode = params.get('mode') === 'replay' ? 'replay' : 'typical';
   const stepId = params.get('step');
   const txKey = params.get('tx');
+  const strip = params.get('strip') === 'process' ? 'process' : 'stages';
 
   const serviceName = useCallback((id: string) => index.definitions.get(id)?.name ?? id, [index]);
   const eventName = useCallback((id: string) => index.eventTypes.get(id)?.name ?? id, [index]);
@@ -124,6 +128,7 @@ function Board({ index, flow, environmentId }: { index: TopologyIndex; flow: Bus
   const txRead = useRepositoryRead(chosenKey ? `${flow.id}\u0000${chosenKey}` : null, (r, signal) => r.getTransaction(flow, chosenKey ?? '', signal));
   const tx = txRead.status === 'ready' ? txRead.value : null;
   const txError = txRead.status === 'error' ? txRead.message : txRead.status === 'ready' && !txRead.value && chosenKey ? `No transaction “${chosenKey}” for ${flow.name}.` : null;
+  const process = useMemo(() => flowProcess(flow, { serviceName, eventName, shares }), [flow, serviceName, eventName, shares]);
   const typical = useMemo(() => typicalPath(flow, shares).steps, [flow, shares]);
   const divergence = useMemo(() => (tx ? txDivergence(flow, tx, typical) : null), [flow, tx, typical]);
   const [playback] = useState(() => createPlayback());
@@ -238,7 +243,22 @@ function Board({ index, flow, environmentId }: { index: TopologyIndex; flow: Bus
           mode === 'replay' && tx ? (
             <TxStrip flow={flow} tx={tx} playback={playback} divergence={divergence} onSeek={actions.seek} onJump={actions.jump} />
           ) : (
-            <FlowStrip flow={flow} stats={flowStats} selectedStep={stepId} focusSteps={focusSteps} onSelectStep={(id) => selectStep(id === stepId ? null : id)} serviceName={serviceName} eventName={eventName} />
+            <>
+              <StripSwitch
+                label="Strip"
+                options={[
+                  { id: 'stages', label: 'Stages' },
+                  { id: 'process', label: 'Process' },
+                ]}
+                value={strip}
+                onChange={(v) => update((p) => (v === 'process' ? p.set('strip', 'process') : p.delete('strip')))}
+              />
+              {strip === 'process' ? (
+                <ProcessDiagram process={process} label={`Process of ${flow.name}`} />
+              ) : (
+                <FlowStrip flow={flow} stats={flowStats} selectedStep={stepId} focusSteps={focusSteps} onSelectStep={(id) => selectStep(id === stepId ? null : id)} serviceName={serviceName} eventName={eventName} />
+              )}
+            </>
           )
         }
         card={

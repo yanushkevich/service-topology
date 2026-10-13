@@ -30,6 +30,9 @@ import { TraceCard, TraceStrip, TrainMarker } from './TraceReplay';
 import { MapLegend, TransitMap } from './TransitMap';
 import { FlowRows, FlowsWithoutBoard, UsedByChips, UsedByFlows } from './FlowsOnService';
 import { DependencyList } from './DependencyList';
+import { ProcessDiagram } from '../boards/ProcessDiagram';
+import { StripSwitch } from '../boards/StripSwitch';
+import { lineProcess } from '../../transit/process';
 import { useTraceDetail, useTraceList, useTransitBoard } from './useTransitBoard';
 
 type Mode = 'typical' | 'trace';
@@ -53,6 +56,7 @@ function useBoardParams() {
     traceId: params.get('trace'),
     t: params.get('t'),
     flowId: params.get('flow'),
+    strip: (params.get('strip') === 'process' ? 'process' : 'stops') as 'stops' | 'process',
     window: isWindow(windowParam) ? windowParam : DEFAULT_WINDOW,
     update,
   };
@@ -325,8 +329,21 @@ function BoardView({ board: loaded, definition, mode, onMode, url }: { board: Tr
         strip={
           mode === 'trace' && line && trace ? (
             <TraceStrip line={line} trace={trace} playback={playback} divergence={divergence} onSeek={actions.seek} onJump={actions.jump} />
+          ) : line ? (
+            <>
+              <StripSwitch
+                label="Strip"
+                options={[
+                  { id: 'stops', label: 'Stops' },
+                  { id: 'process', label: 'Process' },
+                ]}
+                value={url.strip}
+                onChange={(v) => url.update((p) => (v === 'process' ? p.set('strip', 'process') : p.delete('strip')))}
+              />
+              {url.strip === 'process' ? <ProcessDiagram process={lineProcess(index, line)} label={`Process of line ${line.code}`} /> : <StopStrip index={index} line={line} focusStations={focusStations} />}
+            </>
           ) : (
-            <StopStrip index={index} line={line} focusStations={focusStations} />
+            <StopStrip index={index} line={null} focusStations={focusStations} />
           )
         }
         card={

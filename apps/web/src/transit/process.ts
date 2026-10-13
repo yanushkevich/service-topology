@@ -134,8 +134,8 @@ const policyGuard = (p: PolicyStop) => (p.state === 'missing' ? `${p.label} (mis
 
 /**
  * A flow as a sequence across services: each transition a message (calls, events, or local
- * steps), decisions as alt (unconditional siblings become else), unconditional exits that run
- * together as par, retries and redeliveries as loops, compensation as its own fragment, waits as
+ * steps); a step whose exits are all conditional as alt; a conditional exit beside unconditional
+ * ones as opt; unconditional exits that run together as par; retries and redeliveries as loops, compensation as its own fragment, waits as
  * notes, and outcomes ending their section. A step reached again "continues at" instead of repeating.
  */
 export function flowProcess(flow: BusinessFlow, options: { serviceName: (id: string) => string; eventName: (id: string) => string; shares?: ReadonlyMap<string, number> }): Process {
@@ -155,15 +155,13 @@ export function flowProcess(flow: BusinessFlow, options: { serviceName: (id: str
     const out = flow.transitions.filter((t) => t.from === step.id);
     const conditional = out.filter((t) => t.condition !== undefined);
     const unconditional = out.filter((t) => t.condition === undefined);
-    if (conditional.length) {
-      const sections: Section[] = conditional.map((t) => ({ guard: t.condition, share: shares.get(t.id), items: transitionItems(step, t) }));
-      if (unconditional.length) sections.push({ guard: 'else', items: unconditional.flatMap((t) => transitionItems(step, t)) });
-      items.push(sections.length === 1 ? { kind: 'fragment', id: `opt:${step.id}`, type: 'opt', guard: sections[0]?.guard, sections } : { kind: 'fragment', id: `alt:${step.id}`, type: 'alt', sections });
-    } else if (unconditional.length > 1) {
-      items.push({ kind: 'fragment', id: `par:${step.id}`, type: 'par', sections: unconditional.map((t) => ({ items: transitionItems(step, t) })) });
-    } else {
-      for (const t of unconditional) items.push(...transitionItems(step, t));
-    }
+    // The flow model: unconditional exits always run (together when several); a conditional exit
+    // runs when its condition holds. Only a step whose exits are all conditional chooses (alt).
+    if (unconditional.length > 1) items.push({ kind: 'fragment', id: `par:${step.id}`, type: 'par', sections: unconditional.map((t) => ({ items: transitionItems(step, t) })) });
+    else for (const t of unconditional) items.push(...transitionItems(step, t));
+    const sections = (ts: FlowTransition[]): Section[] => ts.map((t) => ({ guard: t.condition, share: shares.get(t.id), items: transitionItems(step, t) }));
+    if (conditional.length > 1 && unconditional.length === 0) items.push({ kind: 'fragment', id: `alt:${step.id}`, type: 'alt', sections: sections(conditional) });
+    else for (const t of conditional) items.push({ kind: 'fragment', id: `opt:${t.id}`, type: 'opt', guard: t.condition, sections: sections([t]) });
     return items;
   };
 

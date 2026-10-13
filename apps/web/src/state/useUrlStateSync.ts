@@ -49,8 +49,8 @@ const STARTUP_PARAMS = ['source', 'dataset'] as const;
  * `mode`, `trace`, `t`, `window`). Kept while the path stays on that route, dropped when leaving it.
  */
 const PAGE_PARAMS: readonly { prefix: string; names: readonly string[] }[] = [
-  { prefix: '/services/', names: ['line', 'mode', 'trace', 't', 'window', 'flow'] },
-  { prefix: '/flows/', names: ['step', 'mode', 'tx', 't', 'window'] },
+  { prefix: '/services/', names: ['line', 'mode', 'trace', 't', 'window', 'flow', 'strip'] },
+  { prefix: '/flows/', names: ['step', 'mode', 'tx', 't', 'window', 'strip'] },
 ];
 
 export function withStartupParams(canonical: string, currentSearch: string, pathname = ''): string {

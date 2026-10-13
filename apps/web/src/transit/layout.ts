@@ -493,3 +493,4 @@ export function computeMapGeometry(index: BoardIndex, options: { flat: boolean; 
 
   return { width: projection.width, height: projection.height, flat: options.flat, lines, stations, stops, bands, grid };
 }
+

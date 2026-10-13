@@ -48,6 +48,9 @@ export function LineIndex({
           <span className="text-[10.5px] text-fg-3">network</span>
         </button>
         {flows}
+        <Kicker mono className="px-2 pt-2.5" aria-hidden="true">
+          Endpoints · {listed.length}
+        </Kicker>
         {GROUP_ORDER.map((group) => {
           const lines = listed.filter((l) => l.group === group);
           if (lines.length === 0) return null;

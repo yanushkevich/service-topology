@@ -61,10 +61,14 @@ describe('process view of a business flow (ADR-028)', () => {
     expect(checkout.lifelines.map((l) => l.name)).toEqual(['Order Service', 'Inventory Service', 'Payment Service', 'Notification Service', 'Ledger Service', 'Email Dispatcher']);
   });
 
-  it('draws decisions as alt, with else for the unconditional exit', () => {
+  it('draws an all-conditional decision as alt, and a conditional exit beside unconditional ones as opt', () => {
     const fragments = shape(checkout.items);
     expect(fragments).toContainEqual(['alt', null, ['approved', 'declined']]);
-    expect(fragments).toContainEqual(['alt', null, ['not settled in 10 min', 'else']]);
+    // Unconditional exits always run (the model has no else): settlement continues; the timeout path is optional.
+    expect(fragments).toContainEqual(['opt', 'not settled in 10 min', ['not settled in 10 min']]);
+    // Cancel order always releases stock, and voids only if the payment was authorized.
+    expect(fragments).toContainEqual(['opt', 'payment was authorized', ['payment was authorized']]);
+    expect(fragments.some(([, , guards]) => (guards as (string | null)[]).includes('else'))).toBe(false);
   });
 
   it('draws unconditional exits that run together as par, redelivery as loop, and compensation as its own fragment', () => {
