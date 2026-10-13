@@ -98,10 +98,12 @@ function StripStop({ index, line, item, first, last, color, dashed, focused }: {
         <span className={tint === 'errors' ? 'text-crit-fg' : tint === 'slow' || degraded ? 'text-warn-fg' : 'text-fg-3'} data-tint={tint ?? undefined}>
           p99 {formatMs(stats.p99Ms)}
           {tint && ` · ${tint === 'errors' ? 'errors' : 'slow'}`}
+          {/* Health (from the topology when linked, ADR-027) is never hidden behind the line's stats. */}
+          {degraded && ` · ${station.status}`}
           {extra.length > 0 && <span className="block">{extra.join(' · ')}</span>}
         </span>
       );
-      hidden = ` (${station.kind}, ${station.provenance.kind}${inferred ? ' from a code scan' : ''}; visited by ${formatRate(stats.share)} of requests, p50 ${formatMs(stats.p50Ms)}, p99 ${formatMs(stats.p99Ms)}, errors ${formatRate(stats.errorRate)}, retries ${formatRate(stats.retryRate)})`;
+      hidden = ` (${station.kind}, ${station.provenance.kind}${inferred ? ' from a code scan' : ''}${degraded ? `, ${station.status}` : ''}; visited by ${formatRate(stats.share)} of requests, p50 ${formatMs(stats.p50Ms)}, p99 ${formatMs(stats.p99Ms)}, errors ${formatRate(stats.errorRate)}, retries ${formatRate(stats.retryRate)})`;
     } else {
       const text = station.stats ? `p95 ${station.stats.p95Ms} ms${degraded ? ` · ${station.status}` : ''}` : (station.sub ?? '');
       stat = <span className={degraded ? 'text-warn-fg' : 'text-fg-3'}>{text}</span>;

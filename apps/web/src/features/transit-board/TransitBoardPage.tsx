@@ -8,6 +8,8 @@ import { flowsOnService, type FlowOnService } from '../../transit/flows/flowMode
 import { DEFAULT_WINDOW, findLine, indexBoard, isUnobserved, isWindow, matchingLines, windowLabel } from '../../transit/board';
 import { computeMapGeometry } from '../../transit/layout';
 import { TransitRepositoryContext } from '../../transit/repository';
+import { applyLinks, linkDependencies, linksKey, type DependencyLink } from '../../transit/links';
+import { useKeyed } from '../../shared/hooks/useKeyed';
 import { divergence as divergenceOf, sampleTraces } from '../../transit/trace';
 import type { Line, TraceDetail, TransitBoard, TransitWindow } from '../../transit/types';
 import { boardPanelClass, buttonClass, cx } from '../../shared/ui/classes';
@@ -27,6 +29,7 @@ import { StopStrip } from './StopStrip';
 import { TraceCard, TraceStrip, TrainMarker } from './TraceReplay';
 import { MapLegend, TransitMap } from './TransitMap';
 import { FlowRows, UsedByFlows } from './FlowsOnService';
+import { DependencyList } from './DependencyList';
 import { useTraceDetail, useTraceList, useTransitBoard } from './useTransitBoard';
 
 type Mode = 'typical' | 'trace';
@@ -186,7 +189,9 @@ function ModeSwitch({ mode, line, window, onMode }: { mode: Mode; line: Line | n
   );
 }
 
-function BoardView({ board, definition, mode, onMode, url }: { board: TransitBoard; definition: ServiceDefinition; mode: Mode; onMode: (mode: Mode) => void; url: ReturnType<typeof useBoardParams> }) {
+function BoardView({ board: loaded, definition, mode, onMode, url }: { board: TransitBoard; definition: ServiceDefinition; mode: Mode; onMode: (mode: Mode) => void; url: ReturnType<typeof useBoardParams> }) {
+  // Dependencies take their names and health from the topology (ADR-027); geometry follows only real changes.
+  const { board, links } = useLinkedBoard(loaded);
   const index = useMemo(() => indexBoard(board), [board]);
   const { fx, onService } = useFlowsOnService(definition, board);
   const selectedFlow = onService.find((f) => f.flow.id === url.flowId) ?? null;
@@ -309,6 +314,7 @@ function BoardView({ board, definition, mode, onMode, url }: { board: TransitBoa
           focusStations={focusStations}
           showStepStats={mode === 'typical'}
           onSelect={select}
+          links={links}
           overlay={mode === 'trace' && trace ? <TrainMarker geometry={geometry} trace={trace} playback={playback} reduced={reduced} /> : undefined}
         />
       }
@@ -345,6 +351,7 @@ function BoardView({ board, definition, mode, onMode, url }: { board: TransitBoa
               onFocusFinding={(at) => setFocus(at === null || !line ? null : { lineId: line.id, at })}
               onReplay={line && !isUnobserved(line) ? () => onMode('trace') : undefined}
               usedBy={line && onService.length > 0 ? <UsedByFlows fx={fx} uses={usesOf(onService, line.id)} /> : undefined}
+              dependsOn={line ? <DependencyList index={index} line={line} links={links} /> : undefined}
             />
           )}
           {line && (
@@ -374,4 +381,15 @@ function useFlowsOnService(definition: ServiceDefinition, board: TransitBoard): 
 
 function usesOf(onService: readonly FlowOnService[], lineId: string) {
   return onService.flatMap(({ flow, steps }) => steps.filter((s) => s.lineId === lineId).map((s) => ({ flowId: flow.id, flowName: flow.name, stepId: s.step.id, stepName: s.step.name })));
+}
+
+/** The loaded board with its dependencies linked to the topology in the current environment. */
+function useLinkedBoard(loaded: TransitBoard): { board: TransitBoard; links: ReadonlyMap<string, DependencyLink> } {
+  const topology = useTopology();
+  const environmentId = useUiStore((s) => s.environmentId);
+  const index = topology.status === 'ready' ? topology.index : null;
+  const fresh = useMemo(() => (index ? linkDependencies(loaded, index, environmentId) : new Map<string, DependencyLink>()), [loaded, index, environmentId]);
+  const links = useKeyed(fresh, linksKey(fresh));
+  const board = useMemo(() => applyLinks(loaded, links), [loaded, links]);
+  return { board, links };
 }

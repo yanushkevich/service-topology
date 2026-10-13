@@ -8,6 +8,8 @@ import { overlayPosition } from '../boards/overlay';
 import { lineColor, policySummary, POLICY_STATE_LABEL } from './colors';
 import { LineBadge, PolicyDiamond, ProvenanceTag } from './visuals';
 import { patternLabel } from '../../domain/patterns';
+import type { DependencyLink } from '../../transit/links';
+import { linkSummary } from './linkText';
 
 type Hover = { kind: 'station' | 'stop'; id: string; x: number; y: number };
 
@@ -28,6 +30,7 @@ export function TransitMap({
   showStepStats,
   onSelect,
   overlay,
+  links,
 }: {
   index: BoardIndex;
   geometry: MapGeometry;
@@ -39,6 +42,8 @@ export function TransitMap({
   focusStations: ReadonlySet<string>;
   /** Typical mode: station tooltips show the selected line's p50 and p99. */
   showStepStats: boolean;
+  /** Dependencies resolved in the topology (ADR-027), for their tooltips. */
+  links?: ReadonlyMap<string, DependencyLink> | undefined;
   onSelect: (lineId: string | null) => void;
   overlay?: ReactNode;
 }) {
@@ -205,7 +210,7 @@ export function TransitMap({
       {hover && !chooser && (
         <MapTooltip position={at(hover.x, hover.y)}>
           {hover.kind === 'station' ? (
-            <StationTip index={index} station={index.stations.get(hover.id)} lineId={showStepStats ? (selected?.id ?? null) : null} />
+            <StationTip index={index} station={index.stations.get(hover.id)} lineId={showStepStats ? (selected?.id ?? null) : null} link={links?.get(hover.id)} />
           ) : (
             <StopTip stop={index.board.policies.find((p) => p.id === hover.id)} />
           )}
@@ -237,7 +242,7 @@ export function TransitMap({
 }
 
 /** Station tooltip (spec "Hover"): name, kind, provenance, and in typical mode p50 / p99 for the selected line. */
-function StationTip({ index, station, lineId }: { index: BoardIndex; station: Station | undefined; lineId: string | null }) {
+function StationTip({ index, station, lineId, link }: { index: BoardIndex; station: Station | undefined; lineId: string | null; link: DependencyLink | undefined }) {
   if (!station) return null;
   const stats = lineId ? index.lineById.get(lineId)?.stepStats?.[station.id] : undefined;
   return (
@@ -256,6 +261,7 @@ function StationTip({ index, station, lineId }: { index: BoardIndex; station: St
           {stats.errorRate > 0 ? ` · errors ${formatRate(stats.errorRate)}` : ''}
         </div>
       )}
+      {link && <div className="mt-1 text-fg-2">{linkSummary(link)}</div>}
     </>
   );
 }

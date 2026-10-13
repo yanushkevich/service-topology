@@ -17,6 +17,7 @@ export function LineCard({
   onFocusFinding,
   onReplay,
   usedBy,
+  dependsOn,
 }: {
   index: BoardIndex;
   line: Line | null;
@@ -26,6 +27,8 @@ export function LineCard({
   onReplay?: (() => void) | undefined;
   /** Business-flow steps that enter this line (ADR-023), shown when any flow runs on the service. */
   usedBy?: ReactNode;
+  /** The line's dependencies as the topology knows them (ADR-027). */
+  dependsOn?: ReactNode;
 }) {
   const failed = index.board.sources.filter((s) => s.status === 'failed');
   if (!line) {
@@ -87,6 +90,7 @@ export function LineCard({
         </dl>
       </Block>
       {usedBy && <Block title="Used by business flows">{usedBy}</Block>}
+      {dependsOn && <Block title="Depends on">{dependsOn}</Block>}
       <Block title="Patterns on this line">
         <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">
           {line.patterns.map((p) => (

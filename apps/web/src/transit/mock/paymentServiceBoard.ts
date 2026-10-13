@@ -35,13 +35,13 @@ const stations: Station[] = [
   { id: 'cli:cache', name: 'cache client', sub: 'RESP', kind: 'client', provenance: obs() },
   { id: 'cli:replica', name: 'replica pool', sub: 'SQL', kind: 'client', provenance: obs() },
   { id: 'cli:producer', name: 'producer', sub: 'Kafka', kind: 'client', provenance: obs() },
-  { id: 'dep:fraud', name: 'Fraud Scoring', sub: 'degraded', kind: 'dependency', provenance: obs(), status: 'degraded', stats: { p50Ms: 41, p95Ms: 310, errorRate: 0.011 } },
-  { id: 'dep:card', name: 'Card Processor', sub: 'external', kind: 'dependency', provenance: obs(), status: 'ok', stats: { p50Ms: 180, p95Ms: 420, errorRate: 0.004 } },
-  { id: 'dep:ledger', name: 'Ledger', sub: 'service', kind: 'dependency', provenance: obs(), status: 'ok', stats: { p50Ms: 28, p95Ms: 60, errorRate: 0.002 } },
-  { id: 'dep:pg', name: 'payments-pg', sub: 'primary', kind: 'dependency', provenance: obs(), status: 'ok', stats: { p50Ms: 4, p95Ms: 9, errorRate: 0 } },
+  { id: 'dep:fraud', name: 'Fraud Scoring', sub: 'degraded', kind: 'dependency', entityId: 'fraud-scoring', provenance: obs(), status: 'degraded', stats: { p50Ms: 41, p95Ms: 310, errorRate: 0.011 } },
+  { id: 'dep:card', name: 'Card Processor', sub: 'external', kind: 'dependency', entityId: 'ext-card-processor', provenance: obs(), status: 'ok', stats: { p50Ms: 180, p95Ms: 420, errorRate: 0.004 } },
+  { id: 'dep:ledger', name: 'Ledger', sub: 'service', kind: 'dependency', entityId: 'ledger-service', provenance: obs(), status: 'ok', stats: { p50Ms: 28, p95Ms: 60, errorRate: 0.002 } },
+  { id: 'dep:pg', name: 'payments-pg', sub: 'primary', kind: 'dependency', entityId: 'pg-payments-prod', provenance: obs(), status: 'ok', stats: { p50Ms: 4, p95Ms: 9, errorRate: 0 } },
   { id: 'dep:redis', name: 'Redis', sub: 'cache', kind: 'dependency', provenance: obs(), status: 'ok', stats: { p50Ms: 1, p95Ms: 2, errorRate: 0 } },
-  { id: 'dep:replica', name: 'payments-pg', sub: 'replica', kind: 'dependency', provenance: obs(), status: 'ok', stats: { p50Ms: 7, p95Ms: 18, errorRate: 0 } },
-  { id: 'dep:kafka', name: 'payments.events', sub: 'topic', kind: 'dependency', provenance: obs(), status: 'ok', stats: { p50Ms: 9, p95Ms: 25, errorRate: 0 } },
+  { id: 'dep:replica', name: 'payments-pg', sub: 'replica', kind: 'dependency', entityId: 'pg-payments-prod', provenance: obs(), status: 'ok', stats: { p50Ms: 7, p95Ms: 18, errorRate: 0 } },
+  { id: 'dep:kafka', name: 'payments.events', sub: 'topic', kind: 'dependency', entityId: 'topic-payments-events-prod', provenance: obs(), status: 'ok', stats: { p50Ms: 9, p95Ms: 25, errorRate: 0 } },
 ];
 
 const RES = 'resilience.yaml';

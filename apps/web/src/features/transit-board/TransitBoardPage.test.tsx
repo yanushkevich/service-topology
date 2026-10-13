@@ -68,7 +68,7 @@ describe('transit board (ADR-021, spec Phase 1)', () => {
     expect(within(stops).getAllByRole('listitem').map((li) => li.textContent)).toEqual(
       expect.arrayContaining([expect.stringContaining('card client'), expect.stringContaining('retry ×3'), expect.stringContaining('Card Processor')]),
     );
-    expect(within(strip()).getByRole('list', { name: 'Branch of line A2 from Capture' })).toHaveTextContent('payments-pg');
+    expect(within(strip()).getByRole('list', { name: 'Branch of line A2 from Capture' })).toHaveTextContent('payments-db');
     expect(lineRow('A2')).toHaveAttribute('aria-current', 'true');
     // The selected line is drawn in the overlay; every other line is dimmed.
     expect(mapOf().querySelector('[data-selected-line="A2"]')).not.toBeNull();

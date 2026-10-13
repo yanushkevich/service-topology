@@ -25,6 +25,8 @@ export interface Station {
   sub?: string;
   kind: StationKind;
   provenance: Provenance;
+  /** Dependencies: the canonical topology entity (service definition or resource ID), ADR-027. */
+  entityId?: string;
   status?: 'ok' | 'degraded' | 'down';
   /** Dependencies only. */
   stats?: { p50Ms: number; p95Ms: number; errorRate: number };
