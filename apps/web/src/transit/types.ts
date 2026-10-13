@@ -75,6 +75,10 @@ export interface Branch {
   kind: 'sequential' | 'alternative';
   /** 0.06 = 6% of requests take it */
   share?: number;
+  /** When an alternative branch runs, as declared (e.g. 'cache miss'); shown in the process view. */
+  condition?: string;
+  /** Runs at the same time as the rest of the line from the fork (declared; ADR-028). */
+  parallel?: boolean;
 }
 
 export interface Finding {
@@ -110,6 +114,10 @@ export interface Line {
   route: Branch[];
   /** Pattern catalog IDs shown on the line card. */
   patterns: PatternId[];
+  /** How the line repeats, as declared (e.g. 'every 200 ms' for a polling relay); ADR-028. */
+  repeat?: string;
+  /** Table writes the line commits together, per database station (declared; ADR-028). */
+  transactions?: { stationId: string; tableIds: string[] }[];
   findings: Finding[];
   provenance: { entry: Provenance; route: Provenance };
   /** Per-step stats keyed by station id (typical mode). */

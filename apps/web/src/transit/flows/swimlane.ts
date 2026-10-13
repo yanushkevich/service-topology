@@ -140,7 +140,7 @@ export function computeSwimlanes(flow: BusinessFlow, serviceName: (id: string) =
 }
 
 /** Services in the order a breadth-first walk from the start first reaches them; outcomes last. */
-function laneOrder(flow: BusinessFlow): string[] {
+export function laneOrder(flow: BusinessFlow): string[] {
   const serviceOf = new Map(flow.steps.map((s) => [s.id, s.serviceDefinitionId]));
   const order: string[] = [];
   const add = (service: string | undefined) => {

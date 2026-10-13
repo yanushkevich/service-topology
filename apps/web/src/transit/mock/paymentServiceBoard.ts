@@ -108,6 +108,7 @@ const lines: Line[] = [
     stats: stats(190, 240, 0.003, 176_000, 41_208),
     route: [seq('caller:order-service', 'gate:grpc', 'mod:capture', 'cli:card', 'dep:card'), seq('mod:capture', 'cli:pg', 'dep:pg')],
     patterns: ['mtls', 'idempotency', 'transaction', 'outbox', 'bulkhead', 'timeout', 'retry', 'breaker'],
+    transactions: [{ stationId: 'dep:pg', tableIds: ['payments', 'payment_outbox'] }],
     findings: [
       { severity: 'warn', text: 'Card retries can run past the 3 s deadline', stationIds: ['cli:card'], ruleId: 'timeout-budget' },
       { severity: 'warn', text: 'Order Service also retries Capture: up to 12 processor calls per checkout', stationIds: ['caller:order-service', 'cli:card'], ruleId: 'retry-amplification' },
@@ -134,7 +135,7 @@ const lines: Line[] = [
   {
     id: 'A5', code: 'A5', name: 'GetPayment', group: 'grpc', signature: 'rpc GetPayment(GetPaymentRequest) returns (Payment)', caller: 'Order Service', deadlineMs: 500,
     stats: stats(2, 9, 0.0001, 2_300_000, 503_100),
-    route: [seq('caller:order-service', 'gate:grpc', 'mod:query', 'cli:cache', 'dep:redis'), { stations: ['mod:query', 'cli:replica', 'dep:replica'], kind: 'alternative', share: 0.06 }],
+    route: [seq('caller:order-service', 'gate:grpc', 'mod:query', 'cli:cache', 'dep:redis'), { stations: ['mod:query', 'cli:replica', 'dep:replica'], kind: 'alternative', share: 0.06, condition: 'cache miss' }],
     patterns: ['cache', 'read-replica', 'timeout'],
     findings: [
       { severity: 'ok', text: '94% of reads come from the cache; misses go to the replica', stationIds: ['cli:cache'] },
@@ -155,6 +156,7 @@ const lines: Line[] = [
     stats: stats(38, 60, 0.001, 190_000, 44_020),
     route: [seq('caller:card-processor', 'gate:webhook', 'mod:saga', 'cli:ledger', 'dep:ledger'), seq('mod:saga', 'cli:pg', 'dep:pg')],
     patterns: ['hmac-signature', 'inbox', 'saga', 'outbox', 'retry'],
+    transactions: [{ stationId: 'dep:pg', tableIds: ['processed_webhooks', 'payments', 'payment_outbox'] }],
     findings: [
       { severity: 'warn', text: 'Ledger calls are retried without an idempotency key', stationIds: ['cli:ledger'], ruleId: 'retry-without-idempotency' },
       { severity: 'info', text: 'PaymentSaga is inferred from a code scan, not from spans', stationIds: ['mod:saga'] },
@@ -180,7 +182,7 @@ const lines: Line[] = [
   {
     id: 'J2', code: 'J2', name: 'ReconcileSettlements', group: 'scheduled', signature: 'cron 15 2 * * *', caller: 'Scheduler',
     stats: stats(360_000, 360_000, 0, 1, 7),
-    route: [seq('gate:scheduler', 'mod:reconcile', 'cli:card', 'dep:card'), seq('mod:reconcile', 'cli:ledger', 'dep:ledger')],
+    route: [seq('gate:scheduler', 'mod:reconcile', 'cli:card', 'dep:card'), { ...seq('mod:reconcile', 'cli:ledger', 'dep:ledger'), parallel: true }],
     patterns: ['scheduled-job', 'leader-lock'],
     findings: [],
     provenance: entry('scheduler.go'),
@@ -190,6 +192,7 @@ const lines: Line[] = [
     stats: stats(11, 15, 0, 0, 0),
     route: [seq('mod:outbox', 'cli:pg', 'dep:pg'), seq('mod:outbox', 'cli:producer', 'dep:kafka')],
     patterns: ['outbox', 'polling-publisher', 'idempotent-producer'],
+    repeat: 'every 200 ms',
     findings: [{ severity: 'info', text: 'Not observed in traces: the relay does not carry trace context, so this route comes from a code scan', stationIds: ['mod:outbox'] }],
     provenance: { entry: decl('relay.go'), route: inf() },
   },
