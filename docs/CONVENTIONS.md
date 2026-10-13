@@ -80,7 +80,8 @@ domain/                            canonical types, validation, traversal (pure 
 | Page-local URL parameters | `PAGE_PARAMS` in `state/useUrlStateSync.ts` |
 | A button, field, heading, or panel style used in 2+ places | `shared/ui/` (§3.3) |
 | A piece shared by the transit and flow boards | `features/boards/` |
-| A generic hook (media query, keyboard, `useKeyed` for values rebuilt every tick) | `shared/hooks/`, `shared/keyboard.ts` |
+| A generic hook (media query, keyboard, `useKeyed` for values rebuilt every tick, `useTruncationTitles`) | `shared/hooks/`, `shared/keyboard.ts` |
+| Something the header's quick search should find (ADR-033) | `features/search/quickSearch.ts`: a `SearchTarget` kind, its items, a group, and `locationOf` |
 | Formatting (durations, numbers, labels) | `shared/format.ts`, `shared/mappings.ts` |
 | Saving a generated file (export) | `downloadText` in `shared/download.ts` |
 | Reading or writing JSON/YAML files of app data | `data/bundle/format.ts` (the `yaml` package is used only there) |

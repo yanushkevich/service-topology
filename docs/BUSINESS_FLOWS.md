@@ -189,7 +189,7 @@ These refine sections 2–7. Where they differ, these notes win.
   - The flows are validated as a whole before anything is written, then written one at a time on the revision chain.
 - **Screens and URL state:** `/flows` and `/flows/:flowId`. The flow board keeps `step`, `mode=replay`, `tx`, `t`, and `window` in the URL. A step's drill-down passes its entry point as `line`; the transit board resolves it by name or signature and rewrites it to the line ID.
 - **Typical path:** the unconditional exits of each step; where a step has only conditional exits, the most frequent one.
-- **Flow budget:** each synchronous step on the typical path counts its incoming call timeout × retry attempts, else its own deadline. Waits are excluded.
+- **Response-time budget** (called the flow budget before Milestone 11.6): each synchronous step on the typical path counts its incoming call timeout × retry attempts, else its own deadline, against the response-time target (`target.p95Ms`). Waits and asynchronous hand-offs are excluded; they count toward the end-to-end completion target (`target.completionMs`). The flow card labels both that way.
 - **Findings:**
   - Retry amplification reads the inner retries from the step's service transit board: the clients of the line that implements the step.
   - Missing compensation flags any step that can still reach both a success outcome and a non-success outcome, has no compensation, and is not the start, a decision, a wait, or a compensation step.

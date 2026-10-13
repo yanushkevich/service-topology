@@ -1,6 +1,6 @@
 # Milestone 11.6 — UI polish: defects, quick search, and layout refinements
 
-**Status:** specified 2026-10-13.
+**Status:** implemented 2026-10-13 (closeout in `docs/IMPLEMENTATION_PLAN.md`).
 
 **Source:** a real-browser review of all 30 audited pages at 1440, 768, and 390 px, both themes (2026-10-13). The product owner asked to "implement these recommendations": the defects found, a quick search across everything, the empty inspector, the map's opening zoom, the phone layout, flows on the Overview, clearer flow targets, and stale docs.
 

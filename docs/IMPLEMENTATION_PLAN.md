@@ -214,7 +214,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 11.3 | Implemented (2026-10-12) | Endpoint contracts from OpenAPI on flow steps and process arrows (ADR-029); `docs/milestones/MILESTONE_11_3_ENDPOINT_CONTRACTS.md`. |
 | 11.4 | Implemented (2026-10-13) | Authoring transit boards (declared structure) and flows; backend B10 storage and API; local sandbox for mock data (ADR-031); `docs/milestones/MILESTONE_11_4_AUTHORING.md`. |
 | 11.5 | Implemented (2026-10-13) | Export and import all data as one JSON or YAML bundle from Settings; backend B11 import endpoint (ADR-032); `docs/milestones/MILESTONE_11_5_DATA_BUNDLE.md`. |
-| 11.6 | Specified (2026-10-13) | UI polish: defects from a real-browser review, quick search across everything (ADR-033), inspector only when useful, map opens at the selection, phone header, flows on the Overview, clearer flow targets; `docs/milestones/MILESTONE_11_6_UI_POLISH.md`. |
+| 11.6 | Implemented (2026-10-13) | UI polish: defects from a real-browser review, quick search across everything (ADR-033), inspector only when useful, map opens at the selection, phone header, flows on the Overview, clearer flow targets; `docs/milestones/MILESTONE_11_6_UI_POLISH.md`. |
 | 14 | **On hold** (2026-10-12) | Real data instead of example data: sources, contract freeze, backend observability module, HTTP repository (ADR-030, proposed). Waits for the answers in `docs/REAL_DATA_INTEGRATION.md` §6; `docs/milestones/MILESTONE_14_REAL_DATA.md`. |
 | 12 | Specified (2026-10-12) | Flows in impact analysis and simulation, with backend B9 (ADR-025, proposed). Not started. |
 | 13 | Specified (2026-10-12) | 3D drill-down from a flow into its services (ADR-026, proposed). Not started. |
@@ -746,3 +746,38 @@ Export and import of all data as one JSON or YAML file, from Settings → Data s
 - **Not in the file:** history snapshots, saved layouts, simulation runs, and preferences.
 - **The API is stricter than the browser preview.** It also rejects unknown fields and fails the entity field checks, so a file can pass the preview and still get a 422 from the backend.
 - **Fixed in passing:** the API client dropped the field `path` of problem issues. With `?source=api`, the board editor (Milestone 11.4) could not focus the field of a 422 issue.
+
+### Milestone 11.6 closeout (2026-10-13)
+UI polish from a real-browser review of every page, and a quick search across everything (ADR-033; `docs/milestones/MILESTONE_11_6_UI_POLISH.md`).
+
+**Commits:**
+- `df12dde` spec;
+- `348fdf5` defects (badges, swimlane controls, transit labels, 3D labels, truncation tooltips, account placeholder, test timeout);
+- `767a2f9` layout (inspector when useful, map opens at the selection, flow targets);
+- `3679471` quick search and the phone header;
+- `e949e37` business flows on the Overview;
+- the close-out commit.
+
+**Checks run:**
+- **Frontend (`apps/web`):** `npm run check` at default parallelism: typecheck and lint clean; 84 files, 1,134 passed, 1 skipped; build passes. The 15 s default test timeout removed the earlier load-related timeouts.
+- **Real-browser audit:** `npm run audit:a11y`, 28 pages (with the open quick search) × 2 themes, all pass. The first run found `label-content-name-mismatch` on the new search button (its `aria-label` left out the visible shortcut); the button now takes its name from its visible text.
+- **Screenshots:** all 32 pages at 1440 px (light and dark), 768 px (dark), and 390 px (light): 128 views, none scrolls sideways, no console errors except the `THREE.Clock` warning. Reviewed: the Events badge, the flow board controls, the phone transit map, 3D labels, the map opened at a selection, the Overview, the flow card, the quick search (1440 dark, 390 light), and the phone header.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| No overflow on Events; swimlane controls cover no step; no transit label past the map at 390 px | Pass | Screenshots; `layout.test.ts` (labels inside the map, both projections) |
+| 3D labels do not overlap; no global state from the declutter | Pass | Screenshot of the overview; `labelDeclutter.test.ts`; `frameLoop.test.ts` |
+| Truncated names show their full text as a tooltip | Pass | `useTruncationTitles.test.tsx` |
+| Quick search finds each kind; keys work; ⌘K / Ctrl+K opens it; results open the right page | Pass | `quickSearch.test.ts`; `QuickSearchDialog.test.tsx` |
+| Section pages show no inspector until something is selected | Pass | `sectionPages.test.tsx` |
+| `/map?sel=…` fits the selection's neighbourhood | Pass | `reactFlowAdapter.test.ts`; screenshot |
+| Two-row header at 390 px | Pass | Screenshot |
+| The Overview lists flows with warnings and links | Pass | `sectionPages.test.tsx` |
+| axe in jsdom and the real browser, both themes; `npm run check` | Pass | As listed |
+
+**Known limitations:**
+- **Swimlane zoom.** A 12-step flow still opens at a readable zoom and pans; the minimap and the strip give the overview.
+- **Hidden map labels.** On the phone transit map, labels that fit nowhere stay hidden (5 of 31 on the example board, down from 7); they show when their line is selected.
+- **Tooltips on hover only.** Truncated text gets a native tooltip on pointer hover; keyboard users rely on the full text being in the accessible name.
+- **`THREE.Clock` warning.** From React Three Fiber 9.8.1; not fixable until an upgrade.
+

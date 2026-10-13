@@ -173,6 +173,14 @@ The Events page and inspector explain the new rule automatically.
 - **Testing downloads in jsdom:** stub `URL.createObjectURL` and `HTMLAnchorElement.prototype.click` (see `DataBundleRows.test.tsx`). Upload files with `user.upload` on the "Data file" field.
 - **Against the backend:** export from Settings with `?source=api`, edit the file, and import it on a disposable database. An import replaces everything, boards included.
 
+## 7b.3 Quick search and UI conventions (ADR-033, Milestone 11.6)
+- **Quick search.** `features/search/quickSearch.ts` builds the items (entities in the environment, business flows, event types, board endpoints, pages) and ranks matches; `QuickSearchDialog.tsx` is the combobox. To make a new kind of thing findable, add a `SearchTarget` kind, its items in `searchItems`, a heading in `SEARCH_GROUPS`, and where it opens in `locationOf`.
+- **The header search does not filter.** Pages that filter (map, registry, infrastructure) use their own `FilterBar`; the quick search sets the shared filter only through its "Filter the registry" option.
+- **Truncated text** gets its full text as a tooltip from `useTruncationTitles` (in `AppShell`). Use `truncate` as usual; do not add `title` by hand unless the tooltip should say more than the text.
+- **The inspector** takes `hideWhenEmpty` on pages where selecting is rare.
+- **3D labels** are decluttered by `LabelLayer` (`galaxy/labelLayer.ts`); its overlap rule is the pure `hiddenLabels`.
+- **The real-browser audit** can open a dialog before auditing: a page entry's `then` runs in the page, and `after` is awaited.
+
 ## 7c. Business flows (ADR-022)
 - **Domain:** flows are canonical (`BusinessFlow` in `src/domain/types.ts`). Change the validation rules in `src/domain/validation.ts` and `backend/internal/domain/validation.go` together. Add a case to `CASES` in `src/contract/fixtures.test.ts` and run `npm run fixtures:update`; the Go conformance test then enforces parity.
 - **Layout (ADR-023):** the board draws one flow as swimlanes.
@@ -202,7 +210,7 @@ The Events page and inspector explain the new rule automatically.
 
 ## 8. Known limitations (current)
 - No real integrations, authentication, or tenancy. All data is mock; all telemetry is simulated.
-- Sandbox edits stay in one browser; there is no export to the backend yet.
+- Sandbox edits stay in one browser. To move them to the backend, export a data bundle from Settings → Data source and import it with `?source=api` (ADR-032).
 - Performance: 2D selection response and 3D frame rate need re-measurement on an idle machine or with a GPU (`docs/BENCHMARKS.md`).
 - Grouped 2D mode at full detail fits at a small zoom; read it collapsed or through the Groups panel. Saved positions do not resize groups.
 - 3D: dense 250-node overviews need zooming for member labels; explore deeper than grandchildren by entering further.
@@ -211,3 +219,4 @@ The Events page and inspector explain the new rule automatically.
 - Preferences are per browser (localStorage); there is no user account to sync them.
 - Generated datasets (`?dataset=…`) have no event types, so the Events catalog is empty there. Event types are not part of the snapshot diff.
 - The Infrastructure tree renders every expanded row (no virtualization); at 1,000 entities use search/filters or collapse levels.
+- The 3D view logs a `THREE.Clock` deprecation warning. It comes from React Three Fiber 9.8.1, the latest stable release (only the 10.0 canaries use `THREE.Timer`); it goes away with that upgrade.

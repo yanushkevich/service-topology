@@ -423,7 +423,7 @@ Spec: `docs/BUSINESS_FLOWS.md` Revision 2. Decisions: ADR-023 to ADR-026.
 - **Flow impact:** simulated failures show which flows break, at which step, and the likely outcome. This appears in the inspector, the simulation page, the flow board, and the catalog, and is always labelled simulated.
 - **3D drill-down:** an optional 3D view with the flow above its services' boards. The user flies down into a service and climbs back. The 2D views stay primary.
 
-### Q.2a Milestone 11.1 (in progress)
+### Q.2a Milestone 11.1 (implemented 2026-10-12)
 - **Service board.** Its databases and other dependencies are the topology's entities, with topology health and an inspector link; dependencies the topology lacks are flagged. Tables show where the outbox, inbox, and polling publisher act, in the line's sequence.
 - **Flow board.** Each step shows its service's data stores, and outboxes and inboxes name their database.
 - **Navigation.** The service board shows which flows use it at the top ("Used by"), and lists them even without board data.

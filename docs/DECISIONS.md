@@ -419,7 +419,7 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - Sandbox data can move to the backend through a file.
 
 ## ADR-033 — The header search is a quick search across everything (2026-10-13, Milestone 11.6)
-- **Status:** Accepted (product owner, 2026-10-13: "implement these recommendations"). Spec: `docs/milestones/MILESTONE_11_6_UI_POLISH.md`.
+- **Status:** Accepted (product owner, 2026-10-13: "implement these recommendations"). Implemented 2026-10-13 (Milestone 11.6). Spec: `docs/milestones/MILESTONE_11_6_UI_POLISH.md`.
 - **Context:** the header search only filtered services and resources. Typing on a page other than the map or registry sent the user to the registry on the first keystroke, and it could not find flows, event types, or endpoints. The map, registry, and infrastructure pages already have their own filter box bound to the same shared filter.
 - **Decision:**
   - The header search is a **quick search**, as in the design reference's command palette: a search-styled header button (an icon on phones) opens a dialog with a combobox. Results are grouped by kind (services and resources in the environment, business flows, event types, transit-board endpoints, pages). Choosing a result opens it; typing never navigates.

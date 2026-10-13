@@ -75,12 +75,14 @@ export function Header() {
         onClick={() => setSearchOpen(true)}
         aria-haspopup="dialog"
         aria-keyshortcuts="Meta+K Control+K"
-        aria-label="Search services, flows, events"
         title={`Search (${SHORTCUT})`}
       >
         <Icon name="search" />
-        <span className="min-w-0 flex-1 truncate text-left max-md:hidden">Search services, flows, events…</span>
-        <kbd className="rounded-[5px] border border-line-strong px-1.5 font-mono text-[10.5px] max-md:hidden">{SHORTCUT}</kbd>
+        {/* The visible text is the accessible name (WCAG 2.5.3); on phones only the icon shows. */}
+        <span className="min-w-0 flex-1 truncate text-left max-md:sr-only">Search services, flows, events</span>
+        <kbd className="rounded-[5px] border border-line-strong px-1.5 font-mono text-[10.5px] max-md:hidden" aria-hidden="true">
+          {SHORTCUT}
+        </kbd>
       </button>
       {searchOpen && <QuickSearchDialog pages={SEARCH_PAGES} onClose={() => setSearchOpen(false)} />}
 

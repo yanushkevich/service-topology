@@ -632,3 +632,14 @@ Decision: ADR-032. Spec: `docs/DATA_BUNDLE.md`.
 - **Board listing:** `BoardStore.list()`, and `TransitRepository.boardDefinitions()` (stored definitions plus example boards).
 - **UI:** `features/settings/DataBundleRows.tsx` (`ExportDataRow`, `ImportDataRow`); `features/settings/SettingsRow.tsx`; `shared/download.ts`.
 - **Backend:** `ports.BundleImporter` (`ReplaceAll`: canonical collections and `transitBoards` in one transaction); `application.ImportBundle`; route `POST /api/v1/imports/bundle`.
+
+## Revision 16 — UI polish and quick search (2026-10-13, Milestone 11.6)
+Decision: ADR-033. Spec: `docs/milestones/MILESTONE_11_6_UI_POLISH.md`.
+
+- **Quick search** (`features/search/`): `quickSearch.ts` is pure (items from the topology index, the environment's flows and event types, board definitions, and the navigation pages; ranking; target URLs). `QuickSearchDialog.tsx` reads the data and stores and navigates. The header opens it (button or ⌘K / Ctrl+K). It writes the shared filter only through its explicit option.
+- **Inspector:** `InspectorPanel hideWhenEmpty` on section pages.
+- **Map:** `openingFit` (React Flow adapter) chooses what a new layout fits: the selection and its highlighted neighbours, else the whole graph.
+- **3D labels:** `LabelLayer` holds the label elements and hides overlapping ones from the frame loop, re-measuring only when the camera, size, nodes, hover, or labels change; no React or store state per frame.
+- **Transit map:** `placeLabels` keeps labels inside the map; the flat projection compresses the policy lanes.
+- **Shell:** `useTruncationTitles` gives truncated text a tooltip app-wide.
+
