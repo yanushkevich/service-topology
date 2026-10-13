@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	"servicetopology/backend/internal/adapters/flowformats"
 	"servicetopology/backend/internal/adapters/httpapi"
 	"servicetopology/backend/internal/adapters/mongodb"
 	"servicetopology/backend/internal/application"
@@ -61,6 +62,7 @@ func Run(ctx context.Context, cfg config.Config, logger *slog.Logger, onListen f
 		go init.Run(ctx, 5*time.Second)
 		dbCheck = init
 		api = &application.Service{
+			FlowFormats:  application.FlowFormats{"native": flowformats.Native{}, "bpmn": flowformats.BPMN{}},
 			TopologyRepo: topo,
 			SnapshotRepo: mongodb.NewSnapshotRepository(store),
 			LayoutRepo:   mongodb.NewLayoutRepository(store),

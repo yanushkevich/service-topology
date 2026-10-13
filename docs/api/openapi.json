@@ -1712,6 +1712,62 @@
           }
         }
       }
+    },
+    "/imports/business-flows": {
+      "post": {
+        "operationId": "importBusinessFlows",
+        "tags": [
+          "topology"
+        ],
+        "summary": "Import business flows from a workflow definition",
+        "description": "Decodes a native JSON/YAML flow file or BPMN 2.0 XML into business flows marked imported, validates the whole resulting topology, and writes them. Re-importing an unchanged definition writes nothing (status unchanged). Never overwrites an authored flow (409 import-overwrites-authored). Tasks without a service are rejected by name (422 import-invalid). Needs the editor role when token authentication is on.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlowImport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Imported.",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlowImportResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "x-repository": "Backend only (ADR-022): workflow definitions are imported through the API or make import-flows; the client reads the result through TopologyRepository.getTopology"
+      }
     }
   },
   "components": {
@@ -2779,6 +2835,101 @@
           "event-type",
           "business-flow"
         ]
+      },
+      "FlowImport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "format",
+          "content"
+        ],
+        "description": "Import workflow definitions as business flows (ADR-022, docs/BUSINESS_FLOWS.md §4).",
+        "properties": {
+          "format": {
+            "enum": [
+              "native",
+              "bpmn"
+            ],
+            "description": "native: a BusinessFlow (or {\"flows\": [...]}) as JSON or YAML; bpmn: BPMN 2.0 XML."
+          },
+          "content": {
+            "type": "string",
+            "description": "The definition file."
+          },
+          "ref": {
+            "type": "string",
+            "description": "Source shown on imported flows (file name, repository URL)."
+          },
+          "mapping": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Explicit mapping; nothing is guessed.",
+            "properties": {
+              "tasks": {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "../schemas/topology.v1.schema.json#/$defs/EntityId"
+                },
+                "description": "Task ID → service definition ID."
+              },
+              "events": {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "../schemas/topology.v1.schema.json#/$defs/EntityId"
+                },
+                "description": "Sequence/message flow ID, or message:<messageRef> → event type ID."
+              },
+              "entryPoints": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "Task ID → operation that implements it."
+              }
+            }
+          }
+        }
+      },
+      "FlowImportResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "flows",
+          "revision"
+        ],
+        "properties": {
+          "flows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "name",
+                "status"
+              ],
+              "properties": {
+                "id": {
+                  "$ref": "../schemas/topology.v1.schema.json#/$defs/EntityId"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "status": {
+                  "enum": [
+                    "created",
+                    "updated",
+                    "unchanged"
+                  ]
+                }
+              }
+            }
+          },
+          "revision": {
+            "type": "string",
+            "description": "Topology revision after the import."
+          }
+        }
       }
     },
     "responses": {

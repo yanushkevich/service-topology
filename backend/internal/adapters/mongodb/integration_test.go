@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"servicetopology/backend/internal/adapters/flowformats"
 	"servicetopology/backend/internal/adapters/mongodb"
 	"servicetopology/backend/internal/application"
 	"servicetopology/backend/internal/config"
@@ -685,5 +686,39 @@ func TestBusinessFlowWritesOnTheDatabase(t *testing.T) {
 	final, _, _ := reader.CurrentTopology(ctx)
 	if len(final.BusinessFlows) != len(data.BusinessFlows) || domain.Validate(final) != nil {
 		t.Fatalf("final: %d flows, issues %v", len(final.BusinessFlows), domain.Validate(final))
+	}
+}
+
+func TestImportFlowsOnTheDatabase(t *testing.T) {
+	s, ctx := ready(t)
+	data, _ := mockTopology(t)
+	topo := mongodb.NewTopologyRepository(s)
+	if _, err := topo.ReplaceTopology(ctx, data, "fixture"); err != nil {
+		t.Fatal(err)
+	}
+	dir, _ := fixtures.Dir()
+	raw, err := os.ReadFile(filepath.Join(dir, "flows", "order-cancellation.bpmn"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := &application.Service{TopologyRepo: topo, FlowFormats: application.FlowFormats{"native": flowformats.Native{}, "bpmn": flowformats.BPMN{}}}
+	req := application.FlowImport{Format: "bpmn", Content: string(raw), Ref: "order-cancellation.bpmn"}
+	res, err := svc.ImportFlows(ctx, req)
+	if err != nil || len(res.Flows) != 1 || res.Flows[0].Status != "created" {
+		t.Fatalf("import: %v %+v", err, res)
+	}
+	again, err := svc.ImportFlows(ctx, req)
+	if err != nil || again.Flows[0].Status != "unchanged" || again.Revision != res.Revision {
+		t.Fatalf("re-import must write nothing: %v %+v", err, again)
+	}
+	stored, _, _ := mongodb.NewTopologyRepository(s).CurrentTopology(ctx)
+	var found *domain.BusinessFlow
+	for i := range stored.BusinessFlows {
+		if stored.BusinessFlows[i].ID == "flow-order-cancellation" {
+			found = &stored.BusinessFlows[i]
+		}
+	}
+	if found == nil || found.Source.Kind != "imported" || found.Source.Ref == nil || *found.Source.Ref != "order-cancellation.bpmn" || domain.Validate(stored) != nil {
+		t.Fatalf("stored: %+v, issues %v", found, domain.Validate(stored))
 	}
 }

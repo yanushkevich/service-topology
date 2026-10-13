@@ -43,6 +43,8 @@ type Service struct {
 	// instead of the cached in-memory index (ADR-DB-004: memory is the default, measured faster).
 	TraversalInDatabase bool
 	SimRepo             ports.SimulationRepository
+	// FlowFormats decode workflow definitions for ImportFlows (ADR-022), by format name.
+	FlowFormats FlowFormats
 	// Retention for simulation runs (zero values disable pruning).
 	SimulationRetention time.Duration
 	SimulationMaxRuns   int

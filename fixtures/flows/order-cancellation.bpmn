@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- BPMN 2.0 business flow (docs/BUSINESS_FLOWS.md §4). Services are explicit: st:service on each
+     task. Import: make -C backend import-flows FILE=../fixtures/flows/order-cancellation.bpmn FORMAT=bpmn -->
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:st="https://service-topology.dev/bpmn" id="Definitions_cancel" targetNamespace="https://service-topology.dev/examples">
+  <bpmn:process id="order-cancellation" name="Order cancellation" isExecutable="false">
+    <bpmn:startEvent id="Start" name="Customer cancels" />
+    <bpmn:sequenceFlow id="Flow_start" sourceRef="Start" targetRef="Task_cancel" />
+    <bpmn:serviceTask id="Task_cancel" name="Cancel order" st:service="order-service" st:entryPoint="CancelOrder" />
+    <bpmn:sequenceFlow id="Flow_to_gateway" sourceRef="Task_cancel" targetRef="Gateway_authorized" />
+    <bpmn:exclusiveGateway id="Gateway_authorized" name="Payment authorized?" />
+    <bpmn:sequenceFlow id="Flow_void" name="payment was authorized" sourceRef="Gateway_authorized" targetRef="Task_void" />
+    <bpmn:sequenceFlow id="Flow_release" name="no payment yet" sourceRef="Gateway_authorized" targetRef="Task_release" st:eventType="event-order-cancelled" />
+    <bpmn:serviceTask id="Task_void" name="Void authorization" st:service="payment-service" st:entryPoint="Void" />
+    <bpmn:boundaryEvent id="Timer_void" attachedToRef="Task_void">
+      <bpmn:timerEventDefinition><bpmn:timeDuration>PT30S</bpmn:timeDuration></bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:receiveTask id="Task_release" name="Release stock" st:service="inventory-service" st:entryPoint="OrderCancelled consumer" />
+    <bpmn:sequenceFlow id="Flow_voided" sourceRef="Task_void" targetRef="End_cancelled" />
+    <bpmn:sequenceFlow id="Flow_released" sourceRef="Task_release" targetRef="End_cancelled" />
+    <bpmn:endEvent id="End_cancelled" name="Order cancelled" />
+  </bpmn:process>
+</bpmn:definitions>

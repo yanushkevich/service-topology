@@ -4,6 +4,7 @@ go 1.27.2
 
 require (
 	go.mongodb.org/mongo-driver/v2 v2.9.1
+	go.yaml.in/yaml/v3 v3.0.4
 	golang.org/x/text v0.42.0
 )
 

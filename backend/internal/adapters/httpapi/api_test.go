@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"servicetopology/backend/internal/adapters/flowformats"
 	"servicetopology/backend/internal/adapters/httpapi"
 	"servicetopology/backend/internal/adapters/memory"
 	"servicetopology/backend/internal/application"
@@ -32,7 +33,8 @@ func apiHandler(t *testing.T) (http.Handler, *memory.Store) {
 		t.Fatal(err)
 	}
 	store := memory.New(data)
-	svc := &application.Service{TopologyRepo: store, SnapshotRepo: store, LayoutRepo: store.Layouts(), GraphRepo: store, SimRepo: store.Simulations(), SimulationMaxRuns: 3}
+	svc := &application.Service{TopologyRepo: store, SnapshotRepo: store, LayoutRepo: store.Layouts(), GraphRepo: store, SimRepo: store.Simulations(), SimulationMaxRuns: 3,
+		FlowFormats: application.FlowFormats{"native": flowformats.Native{}, "bpmn": flowformats.BPMN{}}}
 	return httpapi.NewHandler(httpapi.Deps{Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), API: svc}), store
 }
 

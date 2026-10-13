@@ -12,7 +12,7 @@ export MONGODB_DATABASE ?= topology
 export MONGODB_USERNAME ?= root
 export MONGODB_PASSWORD_FILE ?= $(CURDIR)/secrets/mongodb_root_password.txt
 
-.PHONY: check fmt fmt-check vet test test-integration contract-check bench backup restore vulncheck token run seed validate schema-check db-shell db-ui dev-up dev-down reset-local
+.PHONY: check fmt fmt-check vet test test-integration contract-check bench backup restore vulncheck token run seed import-flows validate schema-check db-shell db-ui dev-up dev-down reset-local
 
 ## check: formatting, vet, and unit/conformance tests (the B1 quality gate)
 check: fmt-check vet test
@@ -66,6 +66,11 @@ run:
 ## seed: load the shared mock fixture into MongoDB (idempotent; replaces the stored topology)
 seed:
 	$(GO) run ./cmd/seed load
+
+## import-flows: import a business-flow definition (FILE=…; FORMAT=native|bpmn; MAPPING=mapping.json) — ADR-022
+import-flows:
+	@test -n "$(FILE)" || { echo "usage: make import-flows FILE=path [FORMAT=native|bpmn] [MAPPING=mapping.json]"; exit 2; }
+	$(GO) run ./cmd/importflows $(if $(FORMAT),-format $(FORMAT)) $(if $(MAPPING),-mapping $(MAPPING)) $(FILE)
 
 ## validate: validate the shared mock fixture without a database
 validate:

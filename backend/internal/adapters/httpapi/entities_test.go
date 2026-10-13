@@ -1,12 +1,16 @@
 package httpapi_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"servicetopology/backend/internal/domain"
+	"servicetopology/backend/internal/fixtures"
 )
 
 func callIfMatch(h http.Handler, method, path, body, etag string) result {
@@ -163,5 +167,78 @@ func TestBusinessFlowWrites(t *testing.T) {
 
 	if res = callIfMatch(h, "DELETE", "/api/v1/entities/business-flow/flow-reorder", "", ""); res.code != 204 {
 		t.Fatalf("delete flow: %d %s", res.code, res.body)
+	}
+}
+
+func importBody(t *testing.T, format, file string, mapping string) string {
+	t.Helper()
+	dir, err := fixtures.Dir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(filepath.Join(dir, "flows", file))
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := json.Marshal(map[string]any{"format": format, "content": string(raw), "ref": file, "mapping": json.RawMessage(mapping)})
+	return string(body)
+}
+
+func TestImportBusinessFlows(t *testing.T) {
+	h, _ := apiHandler(t)
+	body := importBody(t, "native", "daily-payout.flow.yaml", "{}")
+	res := callIfMatch(h, "POST", "/api/v1/imports/business-flows", body, "")
+	if res.code != 200 || !strings.Contains(string(res.body), `"status":"created"`) || res.hdr.Get("ETag") == "" {
+		t.Fatalf("import: %d %s", res.code, res.body)
+	}
+	topo := string(call(h, "GET", "/api/v1/topology", "").body)
+	if !strings.Contains(topo, `"flow-daily-payout"`) || !strings.Contains(topo, `"kind":"imported","format":"native","ref":"daily-payout.flow.yaml"`) {
+		t.Fatalf("stored flow must be marked imported: %s", topo[strings.Index(topo, "flow-daily-payout"):][:300])
+	}
+	// Re-importing the same definition writes nothing.
+	etag := call(h, "GET", "/api/v1/topology", "").hdr.Get("ETag")
+	if res = callIfMatch(h, "POST", "/api/v1/imports/business-flows", body, ""); res.code != 200 || !strings.Contains(string(res.body), `"status":"unchanged"`) || res.hdr.Get("ETag") != etag {
+		t.Fatalf("re-import: %d %s (revision %s → %s)", res.code, res.body, etag, res.hdr.Get("ETag"))
+	}
+	// A changed definition replaces the imported flow.
+	changed := strings.Replace(body, "Daily payout", "Daily payouts", 1)
+	if res = callIfMatch(h, "POST", "/api/v1/imports/business-flows", changed, ""); res.code != 200 || !strings.Contains(string(res.body), `"status":"updated"`) {
+		t.Fatalf("update: %d %s", res.code, res.body)
+	}
+	// Imported flows are read-only through the entity API.
+	if res = callIfMatch(h, "DELETE", "/api/v1/entities/business-flow/flow-daily-payout", "", ""); res.code != 409 {
+		t.Fatalf("delete imported: %d %s", res.code, res.body)
+	}
+
+	// An import never overwrites an authored flow with the same ID.
+	authored := strings.Replace(body, "flow-daily-payout", "flow-checkout", 1)
+	if res = callIfMatch(h, "POST", "/api/v1/imports/business-flows", authored, ""); res.code != 409 || !strings.Contains(string(res.body), "import-overwrites-authored") {
+		t.Fatalf("authored: %d %s", res.code, res.body)
+	}
+	// A flow the topology does not back is rejected as a whole; nothing is written.
+	unbacked := strings.Replace(importBody(t, "native", "daily-payout.flow.yaml", "{}"), "serviceDefinitionId: ledger-service", "serviceDefinitionId: catalog-service", 1)
+	unbacked = strings.Replace(unbacked, "flow-daily-payout", "flow-other", 1)
+	if res = callIfMatch(h, "POST", "/api/v1/imports/business-flows", unbacked, ""); res.code != 422 || !strings.Contains(string(res.body), "flow-transition-unbacked") {
+		t.Fatalf("unbacked: %d %s", res.code, res.body)
+	}
+	if strings.Contains(string(call(h, "GET", "/api/v1/topology", "").body), "flow-other") {
+		t.Fatal("a rejected import must not write anything")
+	}
+}
+
+func TestImportBPMN(t *testing.T) {
+	h, _ := apiHandler(t)
+	res := callIfMatch(h, "POST", "/api/v1/imports/business-flows", importBody(t, "bpmn", "order-cancellation.bpmn", "{}"), "")
+	if res.code != 200 || !strings.Contains(string(res.body), `"id":"flow-order-cancellation"`) {
+		t.Fatalf("bpmn import: %d %s", res.code, res.body)
+	}
+	// Tasks without a service are named; nothing is guessed.
+	body := strings.Replace(importBody(t, "bpmn", "order-cancellation.bpmn", "{}"), ` st:service=\"payment-service\"`, "", 1)
+	body = strings.Replace(body, "order-cancellation", "order-cancellation-2", 1)
+	if res = callIfMatch(h, "POST", "/api/v1/imports/business-flows", body, ""); res.code != 422 || !strings.Contains(string(res.body), `"code":"import-invalid","entityId":"Task_void"`) {
+		t.Fatalf("unmapped: %d %s", res.code, res.body)
+	}
+	if res = callIfMatch(h, "POST", "/api/v1/imports/business-flows", `{"format":"visio","content":"x"}`, ""); res.code != 400 {
+		t.Fatalf("unknown format: %d %s", res.code, res.body)
 	}
 }

@@ -21,6 +21,7 @@ const (
 	maxSnapshotBody = 16 << 20
 	maxLayoutBody   = 1 << 20
 	maxEntityBody   = 1 << 20
+	maxImportBody   = 4 << 20 // a workflow definition file plus its mapping
 )
 
 // setETag sets the topology revision as a strong entity tag (RFC 9110).
@@ -120,6 +121,24 @@ func (d Deps) apiRoutes(mux *http.ServeMux) {
 		w.Header().Set("Location", "/api/v1/entities/"+kind+"/"+url.PathEscape(entityIDOf(res.Entity)))
 		setETag(w, res.Revision)
 		writeJSON(w, http.StatusCreated, res.Entity)
+		return nil
+	})
+	// Import workflow definitions as business flows (ADR-022): native JSON/YAML or BPMN 2.0.
+	h("POST /api/v1/imports/business-flows", func(w http.ResponseWriter, r *http.Request) error {
+		raw, err := readBody(w, r, maxImportBody)
+		if err != nil {
+			return err
+		}
+		var req application.FlowImport
+		if err := fixtures.DecodeStrict(raw, &req); err != nil {
+			return &application.ErrInvalid{Param: "body", Reason: "not a valid import request: " + err.Error()}
+		}
+		res, err := s.ImportFlows(r.Context(), req)
+		if err != nil {
+			return err
+		}
+		setETag(w, res.Revision)
+		writeJSON(w, http.StatusOK, res)
 		return nil
 	})
 	h("PUT /api/v1/entities/{kind}/{id}", func(w http.ResponseWriter, r *http.Request) error {
@@ -492,6 +511,9 @@ func (d Deps) writeError(w http.ResponseWriter, r *http.Request, err error) {
 			Detail: "The topology changed since it was read. Reload it and try again."})
 	case errors.Is(err, application.ErrReadOnly):
 		WriteProblem(w, r, Problem{Type: problemBase + "read-only", Title: "Method not allowed", Status: http.StatusMethodNotAllowed, Detail: err.Error()})
+	case errors.Is(err, application.ErrImportOverwritesAuthored):
+		WriteProblem(w, r, Problem{Type: problemBase + "import-overwrites-authored", Title: "Conflict", Status: http.StatusConflict, Detail: err.Error(),
+			Errors: []ProblemError{{Code: "import-overwrites-authored", Message: err.Error()}}})
 	case errors.Is(err, application.ErrImportedFlow):
 		WriteProblem(w, r, Problem{Type: problemBase + "imported-read-only", Title: "Conflict", Status: http.StatusConflict, Detail: err.Error(),
 			Errors: []ProblemError{{Code: "imported-read-only", Message: err.Error()}}})

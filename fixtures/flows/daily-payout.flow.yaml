@@ -1,0 +1,49 @@
+# Native business-flow definition (docs/BUSINESS_FLOWS.md §4, schemas/business-flow.v1.schema.json).
+# Import: make -C backend import-flows FILE=../fixtures/flows/daily-payout.flow.yaml
+id: flow-daily-payout
+name: Daily payout
+description: Pays merchants their settled balance once a day.
+owner: Payments
+team: Payouts
+trigger:
+  kind: schedule
+startStepId: collect-balances
+target:
+  completionMs: 1800000
+steps:
+  - id: collect-balances
+    name: Collect balances
+    serviceDefinitionId: payout-worker
+    kind: task
+    entryPoint: CollectBalances
+  - id: read-ledger
+    name: Read settled balances
+    serviceDefinitionId: ledger-service
+    kind: task
+    entryPoint: GetBalances
+    deadlineMs: 60000
+  - id: send-payouts
+    name: Send payouts
+    serviceDefinitionId: payout-worker
+    kind: task
+    entryPoint: SendPayouts
+transitions:
+  - id: balances
+    from: collect-balances
+    to: read-ledger
+    via: { kind: call }
+    policies:
+      - { type: timeout, label: 60 s, state: exercised, config: { timeoutMs: "60000" } }
+      - { type: retry, label: retry ×3, state: idle, config: { maxAttempts: "3" } }
+  - id: pay
+    from: read-ledger
+    to: send-payouts
+    via: { kind: call }
+    policies: []
+  - id: paid
+    from: send-payouts
+    to: payouts-sent
+    via: { kind: local }
+    policies: []
+outcomes:
+  - { id: payouts-sent, name: Payouts sent, kind: success }

@@ -199,6 +199,20 @@ await check('replace business flow, marked imported', 'put', '/entities/{kind}/{
 });
 await check('delete business flow', 'delete', '/entities/{kind}/{id}', `/entities/business-flow/${flowId}`, { status: 204 });
 
+// Import of workflow definitions (ADR-022): created, then unchanged on re-import; tasks without a service are named.
+const flowFile = (name) => readFileSync(new URL(`../../../fixtures/flows/${name}`, import.meta.url), 'utf8');
+const bpmn = flowFile('order-cancellation.bpmn').replaceAll('order-cancellation', `contract-cancel-${Date.now()}`);
+await check('import BPMN flow', 'post', '/imports/business-flows', '/imports/business-flows', { status: 200, body: { format: 'bpmn', content: bpmn, ref: 'contract.bpmn' } });
+await check('re-import BPMN flow, unchanged', 'post', '/imports/business-flows', '/imports/business-flows', { status: 200, body: { format: 'bpmn', content: bpmn, ref: 'contract.bpmn' } });
+await check('import, task without a service', 'post', '/imports/business-flows', '/imports/business-flows', {
+  status: 422,
+  body: { format: 'bpmn', content: bpmn.replace(' st:service="payment-service"', '').replace('contract-cancel', 'contract-unmapped'), ref: 'contract.bpmn' },
+});
+await check('import native flow over an authored one', 'post', '/imports/business-flows', '/imports/business-flows', {
+  status: 409,
+  body: { format: 'native', content: flowFile('daily-payout.flow.yaml').replace('flow-daily-payout', 'flow-checkout') },
+});
+
 const layout = openapi.paths['/layouts'].post.requestBody.content['application/json'].examples.default.value;
 const mine = { ...layout, id: `contract-${stamp}` };
 await check('create layout', 'post', '/layouts', '/layouts', { status: 201, body: mine });

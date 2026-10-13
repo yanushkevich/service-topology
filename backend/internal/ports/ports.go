@@ -59,6 +59,40 @@ type TopologyWriter interface {
 	ApplyChange(ctx context.Context, change EntityChange, expectedRevision, sourceType string) (string, error)
 }
 
+// FlowMapping makes the import of workflow definitions explicit (ADR-022): which service runs each
+// task, and which event type carries a hand-off. Nothing is guessed.
+type FlowMapping struct {
+	// Tasks maps a definition's task (or activity) ID to a service definition ID.
+	Tasks map[string]string `json:"tasks,omitempty"`
+	// Events maps a sequence- or message-flow ID (or "message:<messageRef>") to an event type ID.
+	Events map[string]string `json:"events,omitempty"`
+	// EntryPoints maps a task ID to the operation that implements it (optional).
+	EntryPoints map[string]string `json:"entryPoints,omitempty"`
+}
+
+// FlowFormat decodes workflow definitions of one format into business flows (ADR-022). Adapters
+// live in internal/adapters/flowformats. Decode returns an *ImportError for content it cannot map.
+type FlowFormat interface {
+	Name() string
+	Decode(content []byte, mapping FlowMapping) ([]domain.BusinessFlow, error)
+}
+
+// ImportProblem is one reason a definition cannot be imported, naming the element at fault.
+type ImportProblem struct {
+	Element string
+	Message string
+}
+
+// ImportError reports why a workflow definition cannot be imported (e.g. tasks without a service).
+type ImportError struct{ Problems []ImportProblem }
+
+func (e *ImportError) Error() string {
+	if len(e.Problems) == 0 {
+		return "the definition cannot be imported"
+	}
+	return e.Problems[0].Element + ": " + e.Problems[0].Message
+}
+
 // TopologyMeta describes the stored topology (GET /meta). SourceType says where it came from
 // ("fixture" for seeded mock data); only observed sources are not mock.
 type TopologyMeta struct {
