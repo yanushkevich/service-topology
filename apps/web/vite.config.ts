@@ -25,5 +25,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     css: true,
+    // Generous for full-suite runs on a busy machine; ELK layouts in jsdom take seconds.
+    testTimeout: 15_000,
   },
 });

@@ -1,14 +1,15 @@
 import { Html, Line, OrbitControls } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import { gsap } from 'gsap';
-import { memo, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ComponentRef, type Ref } from 'react';
+import { memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ComponentRef, type Ref } from 'react';
 import * as THREE from 'three';
 import type { EntityRef } from '../../../domain/types';
 import { healthLabel } from '../../../shared/mappings';
 import { approachPose, CameraMemory, fitPose, focusPose, type CameraPose } from './cameraMath';
 import { ringPoint, type RingLayout, type Vec3 } from './layout3d';
 import { CONTAINMENT_COLOR, NODE_COLOR, ORBIT_RING_COLOR, PARTICLE_TINT, SERVICE_COLOR, STARFIELD_COLOR, type GalaxyColors } from './palette';
-import { NEAR_LABEL_DISTANCE, type MotionPolicy, type SceneEdge, type SceneModel, type SceneNode } from './sceneModel';
+import { LabelLayer } from './labelLayer';
+import { CONTAINER_TYPES, NEAR_LABEL_DISTANCE, type MotionPolicy, type SceneEdge, type SceneModel, type SceneNode } from './sceneModel';
 
 /**
  * Galaxy scene contents (spec §2, §6). Renders view models only; every mesh carries its canonical
@@ -38,12 +39,12 @@ interface GalaxySceneProps {
 }
 
 const LABEL_STATUS: Record<string, string> = { degraded: 'text-warn-fg', unavailable: 'text-crit-fg', unknown: 'text-fg-3' };
-const CONTAINER_TYPES = new Set(['account', 'subscription', 'project', 'region', 'datacenter', 'cluster', 'namespace', 'broker']);
 const DASH: Record<string, [number, number]> = { http: [1, 0], grpc: [9, 4], data: [1.5, 5], event: [9, 4], other: [2, 3] };
 
 export function GalaxyScene(props: GalaxySceneProps) {
   const { scene, policy, showContainment, colors, onSelect, onEnter } = props;
   const [hovered, setHovered] = useState<string | null>(null);
+  const [labels] = useState(() => new LabelLayer());
   return (
     <>
       <ambientLight intensity={0.55} />
@@ -63,8 +64,10 @@ export function GalaxyScene(props: GalaxySceneProps) {
           onHover={setHovered}
           onSelect={onSelect}
           onEnter={onEnter}
+          labels={labels}
         />
       ))}
+      <LabelDeclutter nodes={scene.nodes} labels={labels} hovered={hovered} />
       <CameraRig {...props} />
     </>
   );
@@ -335,6 +338,7 @@ const GalaxyNode = memo(function GalaxyNode({
   onHover,
   onSelect,
   onEnter,
+  labels,
 }: {
   node: SceneNode;
   colors: GalaxyColors;
@@ -342,6 +346,7 @@ const GalaxyNode = memo(function GalaxyNode({
   onHover: (id: string | null) => void;
   onSelect: (ref: EntityRef) => void;
   onEnter: (id: string) => void;
+  labels: LabelLayer;
 }) {
   const color = NODE_COLOR[node.type] ?? SERVICE_COLOR;
   const dimmed = node.emphasis === 'dimmed';
@@ -350,7 +355,15 @@ const GalaxyNode = memo(function GalaxyNode({
   const wire = node.type === 'external-resource' || node.type === 'exchange' || node.type === 'queue';
   const r = node.radius;
   const statusColor = node.health === 'unavailable' ? colors.crit : node.health === 'degraded' ? colors.warn : null;
-  const labelRef = useRef<HTMLDivElement>(null);
+  const labelRef = useRef<HTMLDivElement | null>(null);
+  // drei's Html mounts the label in its own root, later than this component: register it on attach.
+  const attachLabel = useCallback(
+    (el: HTMLDivElement | null) => {
+      labelRef.current = el;
+      labels.attach(node.id, el);
+    },
+    [labels, node.id],
+  );
   const worldPosition = useMemo(() => new THREE.Vector3(...node.position), [node.position]);
   // Camera-aware label density: toggled imperatively when the camera moves, never via React state.
   useFrame(({ camera }) => {
@@ -433,7 +446,7 @@ const GalaxyNode = memo(function GalaxyNode({
       {showLabel && (
         <Html position={[0, r + 8, 0]} center zIndexRange={[30, 0]} style={{ pointerEvents: 'none' }}>
           <div
-            ref={labelRef}
+            ref={attachLabel}
             className={`galaxy-label flex flex-col items-center text-xs leading-tight font-medium whitespace-nowrap text-fg select-none ${dimmed ? 'opacity-35' : ''}`}
           >
             <span className={node.emphasis === 'selected' ? 'rounded-md border border-accent bg-surface-1/80 px-1.5 py-px' : undefined}>{node.name}</span>
@@ -447,6 +460,13 @@ const GalaxyNode = memo(function GalaxyNode({
     </group>
   );
 });
+
+
+/** Hides labels that overlap a more important one, when the camera or the labels change (LabelLayer). */
+function LabelDeclutter({ nodes, labels, hovered }: { nodes: SceneNode[]; labels: LabelLayer; hovered: string | null }) {
+  useFrame(({ camera, size }) => labels.update(camera, size, nodes, hovered));
+  return null;
+}
 
 /**
  * Owns the camera: orbit (drag), pan (right-drag), zoom (wheel), fit, focus, dive-in, and per-scope

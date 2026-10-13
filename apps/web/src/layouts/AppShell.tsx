@@ -7,6 +7,7 @@ import { useUiStore } from '../state/uiStore';
 import { effectiveTheme, usePreferencesStore } from '../state/preferencesStore';
 import { useUrlStateSync } from '../state/useUrlStateSync';
 import { useSimulationTicker } from '../state/useSimulationTicker';
+import { useTruncationTitles } from '../shared/hooks/useTruncationTitles';
 import { HistoryBanner } from './HistoryBanner';
 import { Header } from './Header';
 import { NavRail } from './NavRail';
@@ -17,6 +18,7 @@ export function AppShell() {
   useSimulationTicker();
   useDocumentTitle();
   useAppliedPreferences();
+  useTruncationTitles();
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;

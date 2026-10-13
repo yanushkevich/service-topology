@@ -65,7 +65,9 @@ function Catalog({ index, sourceLabel, isMock }: { index: TopologyIndex; sourceL
           </span>
           <NewEventTypeButton />
         </div>
-        <DataSourceTag sourceLabel={sourceLabel} isMock={isMock} />
+        <div>
+          <DataSourceTag sourceLabel={sourceLabel} isMock={isMock} />
+        </div>
         <label htmlFor={inputId} className="sr-only">
           Search events
         </label>

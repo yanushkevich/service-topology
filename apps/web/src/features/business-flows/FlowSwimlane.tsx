@@ -7,7 +7,7 @@ import { activeTxSteps, type FlowTransaction } from '../../transit/flows/observe
 import type { SwimlaneLayout } from '../../transit/flows/swimlane';
 import { isMotionReduced } from '../../state/motion';
 import { Icon } from '../../shared/ui/Icon';
-import { buttonClass, cx, floatClass } from '../../shared/ui/classes';
+import { buttonClass } from '../../shared/ui/classes';
 import { usePlayback, type Playback } from '../boards/playback';
 import { flowColor } from './flowVisuals';
 import { applyView, swimlaneElements, type RoutedEdge, type StoreRef, type SwimlaneNode, type SwimlaneView } from './swimlaneAdapter';
@@ -81,44 +81,46 @@ function Canvas({ fx, flow, layout, serviceName, eventName, shares, storesOf, vi
   };
 
   return (
-    <div ref={box} className="flow-swimlane relative" style={{ height: Math.min(780, Math.max(320, Math.round(layout.height * opened.zoom + 24))) }}>
-      <ReactFlow
-        nodes={elements.nodes}
-        edges={elements.edges}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        defaultEdgeOptions={{ markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14 } }}
-        onNodeClick={(_, node) => steps.has(node.id) && onSelectStep(node.id)}
-        onKeyDown={onKeyDown}
-        nodesDraggable={false}
-        nodesConnectable={false}
-        elementsSelectable={false}
-        edgesFocusable={false}
-        zoomOnScroll={false}
-        panOnScroll={false}
-        preventScrolling={false}
-        onInit={openAtStart}
-        minZoom={0.2}
-        maxZoom={1.6}
-        proOptions={{ hideAttribution: true }}
-        aria-label={`Swimlanes of ${flow.name}: ${flow.steps.length} steps in ${services} services and ${flow.outcomes.length} outcomes. Use the step strip for details.`}
-      >
-        {!opened.fitsWidth && (
-          <MiniMap
-            position="bottom-right"
-            pannable
-            zoomable
-            ariaLabel={`${flow.name} overview`}
-            className="swimlane-minimap max-md:hidden"
-            style={{ width: 168, height: 96 }}
-            nodeColor={(n) => (n.type === 'lane' ? 'transparent' : 'var(--color-indigo)')}
-            nodeStrokeColor={(n) => (n.type === 'lane' ? 'var(--color-line)' : 'transparent')}
-          />
-        )}
-      </ReactFlow>
-      <Captions layout={layout} />
+    <>
       <Controls />
-    </div>
+      <div ref={box} className="flow-swimlane relative" style={{ height: Math.min(780, Math.max(320, Math.round(layout.height * opened.zoom + 24))) }}>
+        <ReactFlow
+          nodes={elements.nodes}
+          edges={elements.edges}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          defaultEdgeOptions={{ markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14 } }}
+          onNodeClick={(_, node) => steps.has(node.id) && onSelectStep(node.id)}
+          onKeyDown={onKeyDown}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          elementsSelectable={false}
+          edgesFocusable={false}
+          zoomOnScroll={false}
+          panOnScroll={false}
+          preventScrolling={false}
+          onInit={openAtStart}
+          minZoom={0.2}
+          maxZoom={1.6}
+          proOptions={{ hideAttribution: true }}
+          aria-label={`Swimlanes of ${flow.name}: ${flow.steps.length} steps in ${services} services and ${flow.outcomes.length} outcomes. Use the step strip for details.`}
+        >
+          {!opened.fitsWidth && (
+            <MiniMap
+              position="bottom-right"
+              pannable
+              zoomable
+              ariaLabel={`${flow.name} overview`}
+              className="swimlane-minimap max-md:hidden"
+              style={{ width: 168, height: 96 }}
+              nodeColor={(n) => (n.type === 'lane' ? 'transparent' : 'var(--color-indigo)')}
+              nodeStrokeColor={(n) => (n.type === 'lane' ? 'var(--color-line)' : 'transparent')}
+            />
+          )}
+        </ReactFlow>
+        <Captions layout={layout} />
+      </div>
+    </>
   );
 }
 
@@ -166,11 +168,12 @@ function replayView(replay: SwimlaneReplay | null, cursor: string): SwimlaneView
   return { active, traversed, divergence: off && divergence && divergence.stepIndex <= at ? { stepId: off.stepId, transitionId: off.transitionId ?? null } : null };
 }
 
+/** Zoom controls in a row above the canvas, so they never cover a step. */
 function Controls() {
   const reactFlow = useReactFlow();
   const duration = isMotionReduced() ? 0 : 200;
   return (
-    <div className={cx(floatClass, 'top-3 right-3 flex gap-0.5 p-1 max-md:top-auto max-md:bottom-3')} role="toolbar" aria-label="Map controls">
+    <div className="flex justify-end gap-0.5 border-b border-line px-2 py-1" role="toolbar" aria-label="Map controls">
       <button type="button" className={buttonClass('icon')} onClick={() => void reactFlow.zoomOut({ duration })} aria-label="Zoom out" title="Zoom out">
         <Icon name="minus" />
       </button>

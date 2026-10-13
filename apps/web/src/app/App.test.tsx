@@ -55,8 +55,7 @@ describe('application shell', () => {
     await user.click(screen.getByRole('button', { name: 'Open the 2D map' }));
     expect(useUiStore.getState()).toMatchObject({ activeView: '2d', selection: { id: 'order-service.production' } });
     expect(await screen.findByLabelText(/^Order Service, api/)).toBeInTheDocument();
-    // Two real ELK layouts plus the 3D fallback: ~1–2 s alone, but it can pass 5 s under full-suite load.
-  }, 15_000);
+  });
 
   it('preserves the active view across route changes', async () => {
     const user = userEvent.setup();

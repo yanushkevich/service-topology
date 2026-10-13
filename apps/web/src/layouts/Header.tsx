@@ -97,9 +97,6 @@ export function Header() {
         >
           <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
         </button>
-        <button type="button" className="size-7.5 rounded-full border border-line-strong bg-surface-3 text-xs font-semibold text-fg-2 disabled:cursor-default" aria-label="Account menu (placeholder)" disabled>
-          <span aria-hidden="true">—</span>
-        </button>
       </div>
     </header>
   );

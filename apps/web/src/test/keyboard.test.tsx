@@ -36,7 +36,7 @@ describe('keyboard access', () => {
     expect(screen.getByRole('button', { name: /Switch to (light|dark) theme/ })).toHaveFocus();
     await user.keyboard('{Enter}');
     expect(useUiStore.getState().theme).toBe('light');
-    await user.tab(); // account placeholder is disabled → next is navigation
+    await user.tab();
     expect(screen.getByRole('link', { name: 'Overview' })).toHaveFocus();
     await user.keyboard('{Enter}');
     expect(router.state.location.pathname).toBe('/overview');

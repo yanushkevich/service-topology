@@ -252,6 +252,9 @@ export interface Projection {
 export const TILT = 1.02;
 /** Horizontal squeeze of the flat projection. */
 export const FLAT_SQUEEZE = 0.55;
+/** Extra squeeze of the flat projection right of the clients (the policy lanes), leaving room for dependency names. */
+export const FLAT_RIGHT_SQUEEZE = 0.6;
+const flatU = (u: number) => (u > COLUMN_U.client ? COLUMN_U.client + (u - COLUMN_U.client) * FLAT_RIGHT_SQUEEZE : u);
 export const DISTANCE = 2000;
 
 /**
@@ -259,17 +262,19 @@ export const DISTANCE = 2000;
  * screen = (cx + u·k, cy − y1·k)) with F and the centre fitted to the viewBox; or a flat top-down
  * projection for narrow screens. Plane coordinates are centred on the content first.
  */
-export function fitProjection(points: PlanePoint[], options: { width: number; height: number; flat: boolean; padX?: number; padY?: number }): Projection {
+export function fitProjection(points: PlanePoint[], options: { width: number; height: number; flat: boolean; padX?: number; padRight?: number; padY?: number }): Projection {
   const { width, flat } = options;
   const padX = options.padX ?? 150;
+  const padRight = options.padRight ?? padX;
   const padY = options.padY ?? 46;
+  const inner = width - padX - padRight;
   const us = points.map((p) => p.u);
   const vs = points.map((p) => p.v);
   const uc = (Math.min(...us) + Math.max(...us)) / 2;
   const vc = (Math.min(...vs) + Math.max(...vs)) / 2;
   const unit = (u: number, v: number, h: number) => {
     // Flat (phone) mode squeezes the columns so the map is taller and its labels larger.
-    if (flat) return { x: (u - uc) * FLAT_SQUEEZE, y: v - vc - h, k: 1 };
+    if (flat) return { x: (flatU(u) - flatU(uc)) * FLAT_SQUEEZE, y: v - vc - h, k: 1 };
     const y1 = h * Math.cos(TILT) - (v - vc) * Math.sin(TILT);
     const z1 = h * Math.sin(TILT) + (v - vc) * Math.cos(TILT);
     const k = 1 / (DISTANCE - z1);
@@ -281,9 +286,9 @@ export function fitProjection(points: PlanePoint[], options: { width: number; he
   const bw = Math.max(...xs) - Math.min(...xs) || 1;
   const bh = Math.max(...ys) - Math.min(...ys) || 1;
   // Flat mode keeps the plane's aspect: the height follows the content.
-  const height = flat ? Math.round((bh / bw) * (width - 2 * padX) + 2 * padY) : options.height;
-  const f = Math.min((width - 2 * padX) / bw, (height - 2 * padY) / bh);
-  const cx = width / 2 - (f * (Math.min(...xs) + Math.max(...xs))) / 2;
+  const height = flat ? Math.round((bh / bw) * inner + 2 * padY) : options.height;
+  const f = Math.min(inner / bw, (height - 2 * padY) / bh);
+  const cx = padX + inner / 2 - (f * (Math.min(...xs) + Math.max(...xs))) / 2;
   const cy = height / 2 - (f * (Math.min(...ys) + Math.max(...ys))) / 2;
   return {
     width,
@@ -318,6 +323,7 @@ export interface Box {
 }
 
 export const overlaps = (a: Box, b: Box) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+const inside = (a: Box, b: Box) => a.x0 >= b.x0 && a.x1 <= b.x1 && a.y0 >= b.y0 && a.y1 <= b.y1;
 
 /** Rough rendered width of text: Geist averages a little over half its size per character. */
 const textWidth = (text: string, size: number) => text.length * size * 0.6;
@@ -379,11 +385,11 @@ export interface LabelMarker {
 }
 
 /**
- * Label placement with collision avoidance, shared by the service and flow boards: in priority
- * order, each label takes its hinted position, else the other side, else the right; a label that
+ * Label placement with collision avoidance: in priority order, each label takes its hinted
+ * position, else the other side, else the right, staying inside `bounds` (the map); a label that
  * fits nowhere is hidden (it shows when its line is selected, and tooltips and strips name it).
  */
-export function placeLabels(markers: LabelMarker[], nameSize: number): Map<string, StationGeometry['label']> {
+export function placeLabels(markers: LabelMarker[], nameSize: number, bounds?: Box): Map<string, StationGeometry['label']> {
   type Candidate = Omit<StationGeometry['label'], 'hidden'>;
   const candidates = (m: LabelMarker): Candidate[] => {
     const { x, y, reach } = m;
@@ -401,13 +407,19 @@ export function placeLabels(markers: LabelMarker[], nameSize: number): Map<strin
   for (const m of [...markers].sort((a, b) => a.priority - b.priority || a.y - b.y)) {
     const choices = candidates(m);
     const others = markers.filter((o) => o !== m).map((o) => o.box);
-    const fit = choices.find((c) => !placed.some((b) => overlaps(b, c.box)) && !others.some((b) => overlaps(b, c.box)));
+    const fit = choices.find((c) => (!bounds || inside(c.box, bounds)) && !placed.some((b) => overlaps(b, c.box)) && !others.some((b) => overlaps(b, c.box)));
     const chosen = fit ?? choices[0];
     if (!chosen) continue;
     if (fit) placed.push(fit.box);
     labels.set(m.id, { ...chosen, hidden: !fit });
   }
   return labels;
+}
+
+/** Widest dependency label (name or sub-line) on the flat map. */
+function dependencyLabelWidth(index: BoardIndex): number {
+  const widths = index.board.stations.filter((s) => s.kind === 'dependency').flatMap((s) => [textWidth(s.name, LABEL_SIZE.flatName), s.sub ? textWidth(s.sub, LABEL_SIZE.sub) : 0]);
+  return Math.max(0, ...widths);
 }
 
 export const round = (n: number) => Math.round(n * 10) / 10;
@@ -421,7 +433,9 @@ export function computeMapGeometry(index: BoardIndex, options: { flat: boolean; 
   const bottom = Math.max(...vs) + 60;
   // Fit the column bands (which frame every node), not just the nodes.
   const frame = [-720, 640].flatMap((u) => [top, bottom].map((v) => ({ u, v })));
-  const projection = fitProjection(frame, { width: options.width ?? (options.flat ? 520 : 1100), height: options.height ?? 660, flat: options.flat, padX: options.flat ? 84 : 70, padY: 24 });
+  // The flat (phone) map keeps room on the right for dependency names, which sit to the right.
+  const padRight = options.flat ? Math.max(84, dependencyLabelWidth(index) + 26) : 70;
+  const projection = fitProjection(frame, { width: options.width ?? (options.flat ? 520 : 1100), height: options.height ?? 660, flat: options.flat, padX: options.flat ? 84 : 70, padRight, padY: 24 });
   const ribbonHeights = [0, 2, 4, 6, 8];
   const flatten = (points: PlanePoint[], h: number) => pathOf(points.map((p) => projection.at(p.u, p.v, options.flat ? 0 : h)));
 
@@ -461,6 +475,7 @@ export function computeMapGeometry(index: BoardIndex, options: { flat: boolean; 
       box: m.box,
     })),
     nameSize,
+    { x0: 0, y0: 0, x1: projection.width, y1: projection.height },
   );
 
   const stations: StationGeometry[] = markers.map(({ s, p, capsule, radius }) => {

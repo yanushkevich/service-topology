@@ -172,6 +172,10 @@ describe('transit layout: labels', () => {
     // Most stations keep a label; every dependency does.
     expect(visible.length).toBeGreaterThanOrEqual(geometry.stations.length * 0.75);
     expect(geometry.stations.filter((s) => s.id.startsWith('dep:')).every((s) => !s.label.hidden)).toBe(true);
+    // Labels stay inside the map: on a phone, dependency names used to run past its right edge.
+    for (const { id, label } of visible) {
+      expect(label.box.x0 >= 0 && label.box.y0 >= 0 && label.box.x1 <= geometry.width && label.box.y1 <= geometry.height, id).toBe(true);
+    }
   });
 });
 
