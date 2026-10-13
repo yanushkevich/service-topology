@@ -125,6 +125,8 @@ func (s *Service) Neighborhood(ctx context.Context, id domain.EntityID, depth in
 type ImpactResult struct {
 	Roots   []domain.FailureRoot `json:"roots"`
 	Impacts []domain.Impact      `json:"impacts"`
+	// Flows maps the result onto business flows, per environment (ADR-025, B9).
+	Flows []domain.FlowImpact `json:"flows"`
 }
 
 // Impact is a read-only what-if: the entities affected if the roots failed, per the propagation
@@ -148,7 +150,8 @@ func (s *Service) Impact(ctx context.Context, roots []domain.FailureRoot) (*Impa
 			return nil, &NotFound{Detail: fmt.Sprintf("No service instance or resource with ID %q.", r.EntityID)}
 		}
 	}
-	return &ImpactResult{Roots: roots, Impacts: ix.AnalyzeImpact(roots)}, nil
+	impacts := ix.AnalyzeImpact(roots)
+	return &ImpactResult{Roots: roots, Impacts: impacts, Flows: ix.FlowImpacts(roots, impacts)}, nil
 }
 
 // EventTypes lists the event flows present in an environment, by name.

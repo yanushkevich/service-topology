@@ -118,3 +118,15 @@ func TestEventFlowConformance(t *testing.T) {
 		same(t, c.EnvironmentID, ix.EventFlowsIn(c.EnvironmentID), c.Expected)
 	}
 }
+
+func TestFlowImpactConformance(t *testing.T) {
+	ix, cases := loadCases(t, "conformance/impact/flows.json")
+	for _, raw := range cases {
+		var c struct {
+			Roots    []domain.FailureRoot
+			Expected json.RawMessage
+		}
+		_ = json.Unmarshal(raw, &c)
+		same(t, "flow impact", ix.FlowImpacts(c.Roots, ix.AnalyzeImpact(c.Roots)), c.Expected)
+	}
+}

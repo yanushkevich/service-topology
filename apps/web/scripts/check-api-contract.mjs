@@ -124,6 +124,15 @@ await check('neighborhood', 'get', '/topology/neighborhood', '/topology/neighbor
 await check('neighborhood, depth too large', 'get', '/topology/neighborhood', '/topology/neighborhood?entityId=topic-orders-events-prod&depth=4', { status: 400 });
 await check('impact', 'get', '/topology/impact', '/topology/impact?entityId=eks-commerce-prod,rds-orders-prod&mode=unavailable', { status: 200 });
 await check('impact, unknown entity', 'get', '/topology/impact', '/topology/impact?entityId=ghost', { status: 404 });
+// Flows in impact analysis (ADR-025): the example scenario.
+const cardProcessor = await check('impact with business flows', 'get', '/topology/impact', '/topology/impact?entityId=ext-card-processor&mode=unavailable', { status: 200 });
+const stops = Object.fromEntries((cardProcessor?.flows ?? []).filter((f) => f.environmentId === 'production').map((f) => [f.flowId, `${f.firstAffectedStepId} → ${f.likelyOutcome?.outcomeId}`]));
+checks++;
+if (stops['flow-checkout'] === 'authorize-payment → order-cancelled' && stops['flow-refund'] === 'refund-payment → refund-rejected') console.log('PASS  impact flows: Checkout stops at Authorize payment (Cancelled), Refund at Refund payment (Rejected)');
+else {
+  failures++;
+  console.log(`FAIL  impact flows: ${JSON.stringify(stops)}`);
+}
 await check('propagation rules', 'get', '/propagation-rules', '/propagation-rules', { status: 200 });
 await check('event types', 'get', '/event-types', '/event-types?environmentId=production', { status: 200 });
 await check('event type', 'get', '/event-types/{id}', '/event-types/event-notification-requested?environmentId=production', { status: 200 });

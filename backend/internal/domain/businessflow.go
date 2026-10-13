@@ -252,3 +252,54 @@ func (f *BusinessFlow) ReachableFrom(start string) map[string]bool {
 	}
 	return seen
 }
+
+// TypicalPath is the typical path from the start, like typicalPath in TypeScript without observed
+// shares: every unconditional transition (they run in parallel); where a step has only conditional
+// exits, the first declared one. Compensation steps are never typical.
+func (f *BusinessFlow) TypicalPath() (steps, transitions []string) {
+	queue := []string{f.StartStepID}
+	seen := map[string]bool{}
+	for len(queue) > 0 {
+		id := queue[0]
+		queue = queue[1:]
+		if seen[id] || f.Step(id) == nil {
+			continue
+		}
+		seen[id] = true
+		steps = append(steps, id)
+		var unconditional, conditional []*FlowTransition
+		for i := range f.Transitions {
+			t := &f.Transitions[i]
+			if t.From != id {
+				continue
+			}
+			if to := f.Step(t.To); to != nil && to.Kind == "compensation" {
+				continue
+			}
+			if t.Condition == nil {
+				unconditional = append(unconditional, t)
+			} else {
+				conditional = append(conditional, t)
+			}
+		}
+		taken := unconditional
+		if len(taken) == 0 && len(conditional) > 0 {
+			taken = conditional[:1]
+		}
+		for _, t := range taken {
+			transitions = append(transitions, t.ID)
+			queue = append(queue, t.To)
+		}
+	}
+	return steps, transitions
+}
+
+// Outcome returns the outcome with this ID, or nil.
+func (f *BusinessFlow) Outcome(id string) *FlowOutcome {
+	for i := range f.Outcomes {
+		if f.Outcomes[i].ID == id {
+			return &f.Outcomes[i]
+		}
+	}
+	return nil
+}

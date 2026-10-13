@@ -2530,7 +2530,7 @@
           "roots",
           "impacts"
         ],
-        "description": "Read-only what-if per the propagation rules (simulated reasoning, not a prediction).",
+        "description": "Read-only what-if per the propagation rules (simulated reasoning, not a prediction). `flows` (ADR-025, Milestone 12 / B9) maps the result onto business flows, per environment.",
         "properties": {
           "roots": {
             "type": "array",
@@ -2543,6 +2543,128 @@
             "items": {
               "$ref": "#/components/schemas/Impact"
             }
+          },
+          "flows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FlowImpact"
+            },
+            "description": "Business flows with an affected step, per environment (by ID), flows by ID. Additive to contract v1."
+          }
+        }
+      },
+      "FlowImpact": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "flowId",
+          "environmentId",
+          "steps",
+          "firstAffectedStepId",
+          "likelyOutcome"
+        ],
+        "description": "One business flow in one environment under a simulated failure (docs/BUSINESS_FLOWS.md §12).",
+        "properties": {
+          "flowId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "environmentId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AffectedFlowStep"
+            },
+            "description": "Affected steps in the flow's step order."
+          },
+          "firstAffectedStepId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The first affected step on the typical path; null when the typical path is untouched."
+          },
+          "likelyOutcome": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LikelyFlowOutcome"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AffectedFlowStep": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stepId",
+          "effect",
+          "entityId",
+          "path",
+          "reason"
+        ],
+        "properties": {
+          "stepId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "effect": {
+            "enum": [
+              "unavailable",
+              "degraded"
+            ]
+          },
+          "entityId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The failing entity behind the step: its service instance, or the channel its input arrives on."
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Failure root → … → entityId."
+          },
+          "reason": {
+            "enum": [
+              "service",
+              "input-channel"
+            ]
+          }
+        }
+      },
+      "LikelyFlowOutcome": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind"
+        ],
+        "description": "`outcome`: where the failure path ends (`outcomeId`), and whether compensation runs. `delayed`: entered by an event with redelivery or a dead-letter queue on a channel that is not unavailable (`transitionId`). `unknown`: no failure path is modelled.",
+        "properties": {
+          "kind": {
+            "enum": [
+              "outcome",
+              "delayed",
+              "unknown"
+            ]
+          },
+          "outcomeId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "compensated": {
+            "type": "boolean"
+          },
+          "transitionId": {
+            "type": "string",
+            "minLength": 1
           }
         }
       },
