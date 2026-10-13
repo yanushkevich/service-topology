@@ -404,7 +404,7 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - The transit repository becomes a composition: stored or sandbox definitions plus observed or example data.
 
 ## ADR-032 — One data bundle for export and import, JSON or YAML (2026-10-13, Milestone 11.5 / B11)
-- **Status:** Accepted (product owner, 2026-10-13: export and import; everything; in Settings → Data source). Spec: `docs/DATA_BUNDLE.md`.
+- **Status:** Accepted (product owner, 2026-10-13: export and import; everything; in Settings → Data source). Implemented 2026-10-13 (Milestone 11.5 and backend B11). Spec: `docs/DATA_BUNDLE.md`.
 - **Decision:**
   - **One file.** A versioned bundle (`docs/schemas/data-bundle.v1.schema.json`) holds every topology module plus transit board definitions, with module keys at the top level. It contains declared data only.
   - **Two formats.** JSON and YAML have the same structure; the frontend reads and writes both. The API takes JSON.

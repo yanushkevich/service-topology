@@ -623,3 +623,12 @@ Decision: ADR-031. Spec: `docs/TRANSIT_BOARD.md` Revision 2.
 - **Shared change logic:** `domain/topologyChanges.ts` (`applyChange`, `idTaken`) is used by the sandbox writer and the entity forms.
 - **Editor UI** (`features/transit-board/editor/`): `BoardEditorDialog` (sections plus a preview `TransitMap`), `BoardSections`, `boardForm.ts` (pure helpers), `BoardEditActions`, `useStoredBoard` and `boardSourceLabel`. The Settings page has the sandbox row.
 - **Backend:** `transitBoards` collection (schema version 2), `ports.BoardRepository` (MongoDB and memory), `application/boards.go`, `httpapi/routes_boards.go`.
+
+## Revision 15 — Data bundle export and import (2026-10-13, Milestone 11.5 and B11)
+Decision: ADR-032. Spec: `docs/DATA_BUNDLE.md`.
+
+- **Bundle** (`apps/web/src/data/bundle/`, pure except the YAML library): `DataBundle`, `bundleOf`, `topologyOf`, `countsOf`, `validateBundle` (codes and paths shared with `backend/internal/domain/bundle.go`), `serializeBundle` / `readBundle`, `collectBundle`.
+- **Importing:** `TopologyRepository.importer` (`BundleImporter`). The sandbox replaces its state; the HTTP repository calls `POST /imports/bundle` with the topology revision. `TopologyEditing.importer` exposes it to the UI.
+- **Board listing:** `BoardStore.list()`, and `TransitRepository.boardDefinitions()` (stored definitions plus example boards).
+- **UI:** `features/settings/DataBundleRows.tsx` (`ExportDataRow`, `ImportDataRow`); `features/settings/SettingsRow.tsx`; `shared/download.ts`.
+- **Backend:** `ports.BundleImporter` (`ReplaceAll`: canonical collections and `transitBoards` in one transaction); `application.ImportBundle`; route `POST /api/v1/imports/bundle`.

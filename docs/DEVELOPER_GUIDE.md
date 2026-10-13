@@ -163,6 +163,16 @@ The Events page and inspector explain the new rule automatically.
 - **Sandbox in the browser.** Its data lives under `service-topology.sandbox.v1`; Settings → "Reset sandbox" clears it. It resets itself when the built-in mock changes.
 - **Against the backend:** create, edit, and delete a board on a disposable database (`MONGODB_DATABASE=…`, password only through `MONGODB_PASSWORD_FILE`), then drop it with `backend/scripts/mongosh.sh`.
 
+## 7b.2 Data bundles (ADR-032)
+- **A new data module** (a new top-level kind of data) must be added to:
+  - `BUNDLE_MODULES` (`data/bundle/bundle.ts`);
+  - the bundle schema (`docs/schemas/data-bundle.v1.schema.json`; the contract test compares the keys);
+  - `bundleModules` in `backend/internal/domain/bundle.go`, and the MongoDB `ReplaceAll`.
+
+  Then add a case to `bundleCases()` and run `npm run fixtures:update`.
+- **Testing downloads in jsdom:** stub `URL.createObjectURL` and `HTMLAnchorElement.prototype.click` (see `DataBundleRows.test.tsx`). Upload files with `user.upload` on the "Data file" field.
+- **Against the backend:** export from Settings with `?source=api`, edit the file, and import it on a disposable database. An import replaces everything, boards included.
+
 ## 7c. Business flows (ADR-022)
 - **Domain:** flows are canonical (`BusinessFlow` in `src/domain/types.ts`). Change the validation rules in `src/domain/validation.ts` and `backend/internal/domain/validation.go` together. Add a case to `CASES` in `src/contract/fixtures.test.ts` and run `npm run fixtures:update`; the Go conformance test then enforces parity.
 - **Layout (ADR-023):** the board draws one flow as swimlanes.

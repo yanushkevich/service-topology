@@ -20,7 +20,7 @@ The stored model maps 1:1 to the canonical domain (`DOMAIN_MODEL.md`, `TopologyD
 | Schema version | `schemaInfo` | one document `{_id: "schema", version}` |
 | TopologySnapshot | `snapshots` | `{_id, takenAt, summary, payload}`; immutable, validated before insert |
 | SavedLayout | `savedLayouts` | `{_id, createdAt, payload}`; presentation only |
-| Transit board definition (B10, ADR-031) | `transitBoards` | `{_id: serviceDefinitionId, revision, updatedAt, payload}`; declared structure only, validated against the topology before every write; the revision guards `PUT`/`DELETE` (`If-Match`) |
+| Transit board definition (B10, ADR-031; replaced as a whole by a bundle import, B11) | `transitBoards` | `{_id: serviceDefinitionId, revision, updatedAt, payload}`; declared structure only, validated against the topology before every write; the revision guards `PUT`/`DELETE` (`If-Match`) |
 | SimulationRun (B5) | `simulationRuns` | `{_id, createdAt, payload}` |
 | StoredEvent, TelemetryObservation (B5) | `simulationEvents`, `telemetryObservations` | `{simulationId, seq, <filter fields>, payload}`; unique `(simulationId, seq)`; removed with their run by retention |
 
@@ -49,7 +49,7 @@ Documents are built from the domain values' canonical JSON (the contract's field
 ## Transaction and write flow
 1. Parse and validate commands at the HTTP boundary.
 2. Apply domain invariants in Go (`domain.Validate`, `ValidateSnapshot`, layout normalization).
-3. Write related documents in one multi-document transaction (snapshot read concern, majority write concern): topology imports (delete and re-insert the canonical collections, then a new revision), simulation runs (run + events + telemetry), and retention (run + its records). Transactions need a replica set; local development runs a single-node set.
+3. Write related documents in one multi-document transaction (snapshot read concern, majority write concern): topology imports (delete and re-insert the canonical collections, then a new revision), data bundle imports (the same, plus every `transitBoards` document, with an optional revision check; `sourceType: "import"`, ADR-032), simulation runs (run + events + telemetry), and retention (run + its records). Transactions need a replica set; local development runs a single-node set.
 4. The driver retries a transaction on transient errors, so transaction bodies must be safe to repeat (they are: they build their documents beforehand and replace whole sets).
 5. Single-document writes (snapshot save, layout create/replace/remove) rely on `_id` uniqueness: duplicates → `ErrConflict`; replace/remove of a missing ID → `ErrNotFound`.
 

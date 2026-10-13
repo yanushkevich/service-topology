@@ -1,6 +1,6 @@
 # Data bundle: export and import of all data (Milestone 11.5, backend B11)
 
-**Status:** specified 2026-10-13. Decision: ADR-032.
+**Status:** implemented 2026-10-13 (closeout in `docs/IMPLEMENTATION_PLAN.md`). Decision: ADR-032.
 
 **Source:** the product owner asked for "another option, to export json or yaml file from frontend, that would contain all data modules, and it would be visible in UI ... infra, services, flows, events, etc.". Their answers:
 1. **Scope:** export and import.
@@ -88,3 +88,18 @@ The checks run in this order, and the first two groups stop the check. Conforman
   - `412` for a stale `If-Match`;
   - `422` with `errors[]` (codes and paths of section 4);
   - `503` when there is no database.
+
+## 6. Implementation notes (2026-10-13)
+
+- **Code:**
+  - `apps/web/src/data/bundle/`: `bundle.ts` (types, `bundleOf`, `validateBundle`, `BundleImporter`), `format.ts` (JSON/YAML via `yaml` 2.9.1, file names), `collect.ts` (the export of what is loaded);
+  - `features/settings/DataBundleRows.tsx` (the two Settings rows);
+  - `backend/internal/domain/bundle.go`, `application/bundle.go`, and `ReplaceAll` in the MongoDB and memory adapters.
+- **What the export uses.** The stored data (`baseline`), not the data as the browser simulation changes it.
+- **Boards in an export:**
+  - `TransitRepository.boardDefinitions()` lists the boards: stored ones, then examples for other services.
+  - Boards for services outside the topology are left out, for example the example board in a generated dataset.
+  - If sandbox edits break the example board (say, its database was deleted), the export still contains the board, and importing the file reports the issue.
+- **After an import into the backend,** the source label reads "Backend API · import" (`sourceType: "import"`). The data is still labelled mock and simulated.
+- **Sandbox import and the built-in data.** Imported sandbox data follows the sandbox rules (ADR-031): if the built-in mock data changes in a new app version, the sandbox resets and says so.
+- **The API is stricter than the browser.** It also rejects unknown fields and fails the entity field checks (`invalid-field`). The browser preview shows only the checks of section 4.

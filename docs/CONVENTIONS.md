@@ -82,6 +82,8 @@ domain/                            canonical types, validation, traversal (pure 
 | A piece shared by the transit and flow boards | `features/boards/` |
 | A generic hook (media query, keyboard, `useKeyed` for values rebuilt every tick) | `shared/hooks/`, `shared/keyboard.ts` |
 | Formatting (durations, numbers, labels) | `shared/format.ts`, `shared/mappings.ts` |
+| Saving a generated file (export) | `downloadText` in `shared/download.ts` |
+| Reading or writing JSON/YAML files of app data | `data/bundle/format.ts` (the `yaml` package is used only there) |
 | A new colour | `styles/tokens.css`, both themes (§3.4) |
 | A page | `features/<feature>/…Page.tsx`, a route in `app/routes.tsx`, and a case in `test/a11y.test.tsx` |
 

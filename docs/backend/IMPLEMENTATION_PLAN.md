@@ -216,3 +216,16 @@ Delivered with frontend Milestone 11.4 (closeout in `docs/IMPLEMENTATION_PLAN.md
 | Revision-guarded writes on the database | Pass | `TestBoardRepositoryOnTheDatabase` (`make test-integration`) |
 | API matches the contract | Pass | `httpapi/boards_test.go`; `make contract-check` 91/91 |
 | End to end with the UI | Pass | Milestone 11.4 closeout |
+
+## Milestone B11 closeout — data bundle import (2026-10-13, ADR-032)
+Delivered with frontend Milestone 11.5 (closeout in `docs/IMPLEMENTATION_PLAN.md`):
+- **Domain:** `internal/domain/bundle.go` holds the bundle type and `ParseBundle`, a port of `validateBundle` with the same codes, order, and paths. Unknown fields are rejected.
+- **Port:** `ports.BundleImporter.ReplaceAll`. In MongoDB it is one transaction (canonical collections, `transitBoards`, a new revision with `sourceType: "import"`), with an optional revision check. Memory implements it too.
+- **Application:** `ImportBundle` runs the bundle checks, then the entity field checks; boards are normalised.
+- **API:** `POST /api/v1/imports/bundle` (16 MB, editor role, `If-Match`). Responses: 200 with counts and `ETag`; 400, 412, 422, and 503. Documented in `docs/api/openapi.json`.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Parity with the TypeScript checks | Pass | `TestBundleValidationConformance` (11 cases) |
+| Atomic replace and revision guard on the database | Pass | `TestReplaceAllOnTheDatabase` |
+| API behaviour and contract | Pass | `bundle_test.go`; `make contract-check` 96/96 |

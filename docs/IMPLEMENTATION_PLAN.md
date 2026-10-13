@@ -213,7 +213,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 11.2 | Implemented (2026-10-12) | Process view (sequence diagram with alt/opt/loop/par/transaction/compensation) for lines and flows, and visible endpoints (ADR-028); `docs/milestones/MILESTONE_11_2_PROCESS_VIEW.md`. |
 | 11.3 | Implemented (2026-10-12) | Endpoint contracts from OpenAPI on flow steps and process arrows (ADR-029); `docs/milestones/MILESTONE_11_3_ENDPOINT_CONTRACTS.md`. |
 | 11.4 | Implemented (2026-10-13) | Authoring transit boards (declared structure) and flows; backend B10 storage and API; local sandbox for mock data (ADR-031); `docs/milestones/MILESTONE_11_4_AUTHORING.md`. |
-| 11.5 | In progress (2026-10-13) | Export and import all data as one JSON or YAML bundle from Settings; backend B11 import endpoint (ADR-032); `docs/milestones/MILESTONE_11_5_DATA_BUNDLE.md`. |
+| 11.5 | Implemented (2026-10-13) | Export and import all data as one JSON or YAML bundle from Settings; backend B11 import endpoint (ADR-032); `docs/milestones/MILESTONE_11_5_DATA_BUNDLE.md`. |
 | 14 | **On hold** (2026-10-12) | Real data instead of example data: sources, contract freeze, backend observability module, HTTP repository (ADR-030, proposed). Waits for the answers in `docs/REAL_DATA_INTEGRATION.md` §6; `docs/milestones/MILESTONE_14_REAL_DATA.md`. |
 | 12 | Specified (2026-10-12) | Flows in impact analysis and simulation, with backend B9 (ADR-025, proposed). Not started. |
 | 13 | Specified (2026-10-12) | 3D drill-down from a flow into its services (ADR-026, proposed). Not started. |
@@ -694,3 +694,54 @@ Authoring transit boards (declared structure) and flows, backend B10 storage and
 - **Browser-only sandbox.** Edits stay in one browser. There is no export or import of sandbox changes, and no board-definition file import.
 - **Map-only preview.** The editor previews the map, not the process view.
 - **Not observed until Milestone 14.** Authored boards have no observed data, except where the example board's IDs match.
+
+### Milestone 11.5 closeout (2026-10-13)
+Export and import of all data as one JSON or YAML file, from Settings → Data source, with backend B11 (ADR-032; `docs/DATA_BUNDLE.md`, implementation notes in §6).
+
+**Commits:**
+- `9b0a698` spec;
+- `fc7bd84` bundle, JSON/YAML files, validation, and shared fixtures;
+- `e4d9ca7` backend B11;
+- `47784f2` importers, board listing, and export collection;
+- `e5dc906` Settings rows;
+- the close-out commit.
+
+**Checks run:**
+- **Frontend (`apps/web`):**
+  - `npx tsc -b` and `npx eslint .` are clean. `npm run build` passes.
+  - `npx vitest run --maxWorkers=3`: 78 files, 1,097 passed, 1 skipped.
+  - `npm run check` at default parallelism: 2 tests timed out at 5 s (`Topology2D.test.tsx`, `BoardEditor.test.tsx`). The load average was about 9. Both files pass when run alone (19/19).
+- **Backend:**
+  - `make check` passes, including the bundle conformance cases (11) and the HTTP tests.
+  - `make test-integration` passes, including `TestReplaceAllOnTheDatabase`.
+  - `make contract-check`: 96/96.
+- **Real-browser audit:** `npm run audit:a11y`, 27 pages × 2 themes, all pass, including Settings with the new rows. The preview states are covered in jsdom (`a11y.test.tsx`).
+- **End to end against the backend** (`?source=api`, a temporary database). In the browser:
+  - exported YAML: every module, and the example board;
+  - edited the file (a new environment, a renamed flow) and imported it with the file picker;
+  - the backend then had both changes, and the example board was stored at revision 1;
+  - a file with a duplicate board was previewed with `transitBoards[1].serviceDefinitionId` and could not be imported;
+  - no console errors.
+
+  The first import attempt got a 503: the API logged "mongodb: operation timed out". The local MongoDB container was unhealthy (health checks timing out, slow `hello` commands; no OOM kill). The retry succeeded.
+- **Screenshots** reviewed:
+  - the import preview at 1440 px (light) and 390 px (both themes);
+  - an invalid file (dark);
+  - export counts (dark).
+
+  No horizontal scroll; no console errors.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| JSON and YAML round trips give identical data; files validate against the schema | Pass | `bundle.test.ts`; `importExport.test.ts`; `contract.test.ts` |
+| The export contains every module, stored boards, and the example board | Pass | `importExport.test.ts`; `DataBundleRows.test.tsx`; end to end |
+| Invalid files show issues and cannot be imported; codes identical in TypeScript and Go | Pass | `fixtures/conformance/bundles` (11 cases) in both suites; `DataBundleRows.test.tsx` |
+| `?source=api`: atomic replace; 412 stale; 422 invalid with nothing written; contract check | Pass | `bundle_test.go`; `TestReplaceAllOnTheDatabase`; contract check 96/96; end to end |
+| Generated datasets export only, and say so | Pass | `DataBundleRows.test.tsx` |
+| axe in jsdom and the real browser, both themes; the checks | Pass, with the timeout note above | As listed |
+
+**Known limitations:**
+- **Replace only.** There is no merge or partial import.
+- **Not in the file:** history snapshots, saved layouts, simulation runs, and preferences.
+- **The API is stricter than the browser preview.** It also rejects unknown fields and fails the entity field checks, so a file can pass the preview and still get a 422 from the backend.
+- **Fixed in passing:** the API client dropped the field `path` of problem issues. With `?source=api`, the board editor (Milestone 11.4) could not focus the field of a 422 issue.

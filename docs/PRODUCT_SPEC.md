@@ -438,3 +438,14 @@ Those of `docs/milestones/MILESTONE_11_FLOW_SWIMLANES_PATTERNS.md`, `MILESTONE_1
 - **Mock data is editable in a local sandbox.** With the built-in data, entities, business flows, and boards are editable. The changes stay in this browser, are validated like the server, and are always labelled as the local sandbox. Settings can reset the sandbox to the built-in data.
 - **With the backend** (`?source=api`), boards are stored by the API under the same revision rules as entities (412 on stale writes, 422 with codes on invalid ones).
 - Imported flows stay read-only; generated datasets stay read-only.
+
+## Revision S — Export and import all data (2026-10-13, Milestone 11.5)
+**Source:** product owner: "export json or yaml file from frontend, that would contain all data modules ... infra, services, flows, events, etc.". Their answers: export and import; everything; in Settings → Data source. Decision: ADR-032. Spec: `docs/DATA_BUNDLE.md`.
+
+- **Export.** Settings → Data source → **Export data** saves everything the app has loaded as one JSON or YAML file. The file holds environments, services, instances, infrastructure, relationships, event types, business flows, and transit boards (declared structure). The row shows the counts per module.
+- **Import.** **Import data** reads such a file, checks it with the editing rules, and shows the counts (now against the file) or the issues. After a confirmation, it replaces all data:
+  - in the local sandbox, with the built-in data;
+  - on the backend, with `?source=api`.
+
+  Generated datasets export only.
+- **Mock labelling.** Statistics and traces are never in the file. Imported data is labelled as mock, like any other data.

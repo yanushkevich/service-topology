@@ -1,6 +1,6 @@
 # Milestone 11.5 — Export and import all data as JSON or YAML (with backend B11)
 
-**Status:** in progress (2026-10-13).
+**Status:** implemented 2026-10-13 (closeout in `docs/IMPLEMENTATION_PLAN.md`).
 
 **Read first:** `docs/DATA_BUNDLE.md`; `docs/DECISIONS.md` ADR-032 (and ADR-031); `docs/CONVENTIONS.md`.
 
