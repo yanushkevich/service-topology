@@ -345,3 +345,57 @@ These refine sections 9–11. Where they differ, these notes win.
   - The example Checkout settlement hand-off declares `polling-publisher` (the `OutboxRelay`) and `inbox`.
   - "At-least-once delivery without deduplication" replaces the separate missing-policy note for a missing idempotent consumer or inbox.
 - **Navigation.** A step's drill-down passes `flow`, so the service board opens with that flow highlighted. The line card's links keep the environment and window.
+
+---
+
+# Revision 3 — Data stores on both boards, and flows you can find (2026-10-12, Milestone 11.1)
+
+**Source:** product owner, after Milestone 11: "the transit board is kind of a sequence diagram, and I think we need a DB, like the inbox pattern talks to the DB", and "I don't see on the transit board interactions or links to the flows". Decision: ADR-027.
+
+**Why.** Read as a sequence diagram, a line is a conversation, and the reliability patterns talk to the database:
+- the outbox writes its row in the same transaction as the state change;
+- the relay polls that table;
+- the inbox records each message before handling it.
+
+The service board drew databases only as anonymous endpoints (`payments-pg`), not linked to the topology. The flow board drew no data stores at all. The links to flows were at the bottom of the line index, and absent on services without board data.
+
+## 14. Dependencies are topology entities (service board)
+
+- **The link.** A dependency station may name its canonical entity (`entityId`): a service definition, or a resource such as `pg-payments-prod`. The board resolves it in the current environment:
+  - its name, kind, and **health from the topology** (which includes a running simulation, so a simulated `payments-db` outage shows on the board);
+  - a link to the inspector.
+- **Missing links.** A dependency with no `entityId`, or whose entity is not in the environment, is shown as **"not in the topology"**, and the board lists it under "Needs review" (rule `dependency-not-in-topology`). It is never matched by name.
+- **Example data.** The example Payment Service board links Fraud Scoring, the card processor, Ledger, `payments-db` (both its primary and its replica station) and `payments.events`. The Redis cache is not in the topology, and says so.
+
+## 15. Tables: where patterns meet the database (service board)
+
+- **The model.** A board declares the **tables** of its database dependencies. Each table has:
+  - a name;
+  - the pattern it serves, if any (`outbox`, `inbox`; or none for plain state);
+  - the lines that write it and the lines that read it.
+
+  A table's writers and readers must reach its station on their route (tested).
+- **Where tables show.** In the sequence order of a line:
+  - the stop strip shows, under the database stop, what this line does there, e.g. "writes payment_outbox · Transactional outbox";
+  - the line card gets a "Data" section;
+  - the database station's tooltip lists its tables, with their writers and readers.
+- **Example tables** on `payments-db`:
+  - `payments` (state): written by Capture, the webhook, and ExpireAuthorizations;
+  - `payment_outbox` (outbox): written by Capture and the webhook, polled by OutboxRelay;
+  - `processed_webhooks` (inbox): written and read by the webhook, because processor callbacks are redelivered.
+- **Rule `store-pattern-without-table`** (warn): a line that declares the outbox, inbox, or polling-publisher pattern has no table for it on any database on its route.
+
+## 16. Data stores on the flow board, and flows you can find
+
+- **Data stores on steps.** Each step shows the data stores (databases, caches, search indexes) its service uses in the environment, from the topology's relationships, with their health. The flow card gets a **"Data stores"** section listing each store and the steps that use it.
+
+  Limit: the topology links stores to services, not to operations. The UI says "used by this step's service".
+- **Patterns name their store.**
+  - An outbox or polling publisher on a transition is kept in the source service's database.
+  - An inbox is kept in the target service's database.
+
+  Tooltips name the store. Rule `store-pattern-without-store` (warn): the service has no database in the topology.
+- **Finding flows on the service board.**
+  - A **"Used by"** row of flow chips under the header toggles a flow, the same as the index's flow group.
+  - That group moves to the top of the index, after "All lines".
+  - A service with no board data still lists the flows that use it, with links to their steps.

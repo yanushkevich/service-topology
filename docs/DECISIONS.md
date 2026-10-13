@@ -325,3 +325,22 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - Built with React Three Fiber and drei (`CameraControls`, `Text`, `Line`, `Instances`, `Bvh`), plus two new pinned dependencies: `@react-three/postprocessing` (selective Bloom) and `maath` (easing).
   - The 2D views and lists stay primary and accessible.
 - **Alternatives:** a 3D flow board in place of the swimlane. Rejected: 3D adds nothing for one process. Its value is showing the drill-down between levels.
+
+## ADR-027 — Data stores as topology entities on both boards; tables carry the database patterns (2026-10-12, Milestone 11.1)
+- **Status:** Accepted (product owner, 2026-10-12: "we need a DB, like the inbox pattern talks to the DB … proceed with milestone 11.1"). Spec: `docs/BUSINESS_FLOWS.md` Revision 3. Amends ADR-021 (the transit read model gains links and tables) and ADR-023.
+- **Context:**
+  - The service board reads like a sequence diagram, but its databases were names without identity, and its health came from example data.
+  - The flow board showed no data stores.
+  - Patterns that live in a database (outbox, inbox, polling publisher) could not show where they act.
+- **Decision:**
+  - **Linked dependencies.** Transit dependency stations carry an optional canonical `entityId`, resolved per environment for name, kind, and health (topology or simulation). Unlinked dependencies are flagged; they are never matched by name.
+  - **Tables.** The transit board declares tables on database dependencies (name, pattern, writer and reader lines), checked against the routes. Strip, card, and tooltip show the database conversation, and a rule flags store patterns without a table.
+  - **Data stores on flows.** The flow board shows the data stores of each step's service from topology relationships, and names the store an outbox or inbox lives in.
+  - **Findable flows.** "Used by" chips on the service board, and the flow group at the top of the index.
+- **Alternatives:**
+  - Databases as swimlane lanes. Rejected: they are not steps, and they would double the height.
+  - Matching dependencies to resources by name. Rejected: it guesses (`payments-pg` vs `payments-db`).
+  - Per-operation data access from traces. Deferred: it needs `db.*` span attributes from real ingestion.
+- **Consequences:**
+  - The transit read model changes additively (`entityId`, `tables`), frontend only. Real adapters must fill them from service catalogues and traces.
+  - Flow impact (ADR-025, Milestone 12) can start from a database.
