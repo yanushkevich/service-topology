@@ -1,0 +1,198 @@
+import { reachableFrom, stepById } from '../../domain/businessFlow';
+import type { BusinessFlow, FlowStep, FlowTransition } from '../../domain/types';
+import { flowRanks } from './flowLayout';
+
+/**
+ * Flow-level reading of a business flow (docs/BUSINESS_FLOWS.md §3, §5): the typical path, the
+ * end-to-end budget, and the findings that only show at flow level. Pure.
+ */
+
+/** Columns of the strip: steps and outcomes at each rank, in rank order. */
+export function stages(flow: BusinessFlow): { rank: number; steps: FlowStep[]; outcomes: BusinessFlow['outcomes'] }[] {
+  const ranks = flowRanks(flow);
+  const max = Math.max(0, ...ranks.values());
+  return Array.from({ length: max + 1 }, (_, rank) => ({
+    rank,
+    steps: flow.steps.filter((s) => ranks.get(s.id) === rank),
+    outcomes: flow.outcomes.filter((o) => ranks.get(o.id) === rank),
+  })).filter((s) => s.steps.length + s.outcomes.length > 0);
+}
+
+/**
+ * The typical path: from the start, every unconditional transition (they run in parallel); where a
+ * step has only conditional exits, the one with the highest observed share (else the first).
+ * Compensation steps are never typical.
+ */
+export function typicalPath(flow: BusinessFlow, shares: ReadonlyMap<string, number> = new Map()): { steps: string[]; transitions: string[] } {
+  const steps: string[] = [];
+  const transitions: string[] = [];
+  const queue = [flow.startStepId];
+  const seen = new Set<string>();
+  while (queue.length) {
+    const id = queue.shift() ?? '';
+    if (seen.has(id) || !stepById(flow, id)) continue;
+    seen.add(id);
+    steps.push(id);
+    const out = flow.transitions.filter((t) => t.from === id && stepById(flow, t.to)?.kind !== 'compensation');
+    const unconditional = out.filter((t) => t.condition === undefined);
+    const conditional = out.filter((t) => t.condition !== undefined).sort((a, b) => (shares.get(b.id) ?? 0) - (shares.get(a.id) ?? 0));
+    // Unconditional exits always run; conditional ones are then exceptions. A decision with only
+    // conditional exits takes its most frequent one.
+    const taken = unconditional.length ? unconditional : conditional.slice(0, 1);
+    for (const t of taken) {
+      transitions.push(t.id);
+      queue.push(t.to);
+    }
+  }
+  return { steps, transitions };
+}
+
+const num = (v: string | undefined) => (v !== undefined && Number.isFinite(Number(v)) ? Number(v) : undefined);
+const attemptsOf = (t: FlowTransition) => num(t.policies.find((p) => p.type === 'retry' && p.state !== 'missing')?.config?.maxAttempts) ?? 1;
+const timeoutOf = (t: FlowTransition) => num(t.policies.find((p) => p.type === 'timeout' && p.state !== 'missing')?.config?.timeoutMs);
+
+export interface FlowBudgetSegment {
+  stepId: string;
+  name: string;
+  ms: number;
+  /** How the segment was counted. */
+  basis: string;
+}
+
+/**
+ * The flow budget (spec §3): the end-to-end target against what the typical path may take. Each
+ * synchronous step counts its incoming call timeout × retry attempts, else its own deadline; waits
+ * and asynchronous hand-offs are not part of the response-time budget. Null without a p95 target.
+ */
+export function flowBudget(flow: BusinessFlow, shares?: ReadonlyMap<string, number>): { targetMs: number; segments: FlowBudgetSegment[]; totalMs: number; overflowMs: number } | null {
+  const targetMs = flow.target?.p95Ms;
+  if (!targetMs) return null;
+  const { steps, transitions } = typicalPath(flow, shares);
+  const segments: FlowBudgetSegment[] = [];
+  for (const id of steps) {
+    const step = stepById(flow, id);
+    if (!step || step.kind === 'wait') continue;
+    const incoming = flow.transitions.find((t) => t.to === id && transitions.includes(t.id) && t.via.kind === 'call');
+    const timeout = incoming ? timeoutOf(incoming) : undefined;
+    if (incoming && timeout !== undefined) {
+      const attempts = attemptsOf(incoming);
+      segments.push({ stepId: id, name: step.name, ms: timeout * attempts, basis: attempts > 1 ? `${timeout / 1000} s timeout × ${attempts} attempts` : `${timeout / 1000} s timeout` });
+    } else if (step.deadlineMs !== undefined) {
+      segments.push({ stepId: id, name: step.name, ms: step.deadlineMs, basis: 'step deadline' });
+    }
+  }
+  const totalMs = segments.reduce((n, s) => n + s.ms, 0);
+  return { targetMs, segments, totalMs, overflowMs: Math.max(0, totalMs - targetMs) };
+}
+
+export interface FlowFinding {
+  ruleId: 'retry-amplification' | 'missing-compensation' | 'event-without-dead-letter' | 'deadline-over-target' | 'missing-policy';
+  severity: 'warn' | 'info';
+  text: string;
+  stepIds: string[];
+  transitionIds: string[];
+}
+
+const fmt = (ms: number) => (ms >= 60_000 ? `${Math.round(ms / 60_000)} min` : ms >= 1000 ? `${Number((ms / 1000).toFixed(1))} s` : `${ms} ms`);
+
+/**
+ * Findings that need the flow level (spec §3). `innerAttempts` reports retries inside a step (e.g.
+ * from the service's transit board: the card client's attempts behind "Authorize"), so retries can
+ * be multiplied across levels.
+ */
+export function flowFindings(
+  flow: BusinessFlow,
+  options: { eventName?: (eventTypeId: string) => string; serviceName?: (id: string) => string; innerAttempts?: (step: FlowStep) => { attempts: number; what: string } | null; shares?: ReadonlyMap<string, number> } = {},
+): FlowFinding[] {
+  const out: FlowFinding[] = [];
+  const name = (id: string) => stepById(flow, id)?.name ?? flow.outcomes.find((o) => o.id === id)?.name ?? id;
+  const service = (id: string) => options.serviceName?.(id) ?? id;
+
+  // Retries multiplied across levels: a retried call into a step that retries inside.
+  for (const t of flow.transitions) {
+    const to = stepById(flow, t.to);
+    if (!to || t.via.kind !== 'call') continue;
+    const outer = attemptsOf(t);
+    const inner = options.innerAttempts?.(to);
+    if (outer > 1 && inner && outer * inner.attempts >= 6) {
+      const caller = t.via.callerServiceId ?? stepById(flow, t.from)?.serviceDefinitionId ?? '';
+      out.push({
+        ruleId: 'retry-amplification',
+        severity: 'warn',
+        text: `${to.name}: ${service(caller)} retries ${outer}× and ${inner.what} retries ${inner.attempts}× inside: up to ${outer * inner.attempts} calls per ${flow.name.toLowerCase()}.`,
+        stepIds: [to.id],
+        transitionIds: [t.id],
+      });
+    }
+  }
+
+  // Side effects that are not undone when the flow fails: steps that can still reach both a success
+  // and a non-success outcome, are not the start, a decision, a wait, or a compensation, and have no
+  // compensation step.
+  const success = new Set(flow.outcomes.filter((o) => o.kind === 'success').map((o) => o.id));
+  const failure = flow.outcomes.filter((o) => o.kind !== 'success');
+  for (const step of flow.steps) {
+    if (step.id === flow.startStepId || step.compensatedBy || ['decision', 'wait', 'compensation'].includes(step.kind)) continue;
+    const reach = reachableFrom(flow, step.id);
+    const failsTo = failure.filter((o) => reach.has(o.id));
+    if (failsTo.length && [...success].some((id) => reach.has(id))) {
+      out.push({
+        ruleId: 'missing-compensation',
+        severity: 'warn',
+        text: `${step.name} is not undone when the flow ends ${failsTo.map((o) => o.name).join(' or ')}: it has no compensation step.`,
+        stepIds: [step.id],
+        transitionIds: [],
+      });
+    }
+  }
+
+  // Asynchronous hand-offs without a dead-letter queue.
+  for (const t of flow.transitions) {
+    if (t.via.kind !== 'event') continue;
+    const dlq = t.policies.find((p) => p.type === 'dead-letter');
+    if (!dlq || dlq.state === 'missing') {
+      out.push({
+        ruleId: 'event-without-dead-letter',
+        severity: 'warn',
+        text: `${options.eventName?.(t.via.eventTypeId) ?? t.via.eventTypeId} (${name(t.from)} → ${name(t.to)}) has no dead-letter queue: a message that keeps failing is lost or blocks the consumer.`,
+        stepIds: [t.from, t.to],
+        transitionIds: [t.id],
+      });
+    }
+  }
+
+  // The typical path's timeouts and deadlines against the target.
+  const budget = flowBudget(flow, options.shares);
+  if (budget && budget.overflowMs > 0) {
+    out.push({
+      ruleId: 'deadline-over-target',
+      severity: 'warn',
+      text: `Timeouts and deadlines on the typical path add up to ${fmt(budget.totalMs)}, above the ${fmt(budget.targetMs)} target.`,
+      stepIds: budget.segments.map((s) => s.stepId),
+      transitionIds: [],
+    });
+  }
+  const completion = flow.target?.completionMs;
+  for (const step of flow.steps) {
+    if (completion !== undefined && step.deadlineMs !== undefined && step.deadlineMs > completion) {
+      out.push({ ruleId: 'deadline-over-target', severity: 'warn', text: `${step.name} may take ${fmt(step.deadlineMs)}, longer than the flow's ${fmt(completion)} completion target.`, stepIds: [step.id], transitionIds: [] });
+    }
+  }
+
+  // Expected policies that are absent (declared as missing by the rule list).
+  for (const t of flow.transitions) {
+    for (const p of t.policies) {
+      if (p.state !== 'missing' || p.type === 'dead-letter') continue;
+      out.push({ ruleId: 'missing-policy', severity: 'info', text: `No ${p.type.replace(/-/g, ' ')} on ${name(t.from)} → ${name(t.to)} (“${p.label}”).`, stepIds: [t.from, t.to], transitionIds: [t.id] });
+    }
+  }
+  return out;
+}
+
+/** Lowercase search text: flow name, owner, services, step names, and event names. */
+export function flowSearchText(flow: BusinessFlow, serviceName: (id: string) => string, eventName: (id: string) => string): string {
+  const parts = [flow.name, flow.description ?? '', flow.owner ?? '', flow.team ?? ''];
+  for (const s of flow.steps) parts.push(s.name, serviceName(s.serviceDefinitionId), s.entryPoint ?? '');
+  for (const t of flow.transitions) if (t.via.kind === 'event') parts.push(eventName(t.via.eventTypeId));
+  return parts.join(' ').toLowerCase();
+}

@@ -78,7 +78,7 @@ describe.each(['dark', 'light'] as const)('%s theme contrast (WCAG 2.2 AA)', (th
 });
 
 const TRANSIT_LINES = Array.from({ length: 12 }, (_, i) => `--transit-line-${i + 1}`);
-const TRANSIT_POLICIES = ['timeout', 'retry', 'bulkhead', 'breaker', 'fallback', 'cache', 'idempotency'].map((p) => `--transit-policy-${p}`);
+const TRANSIT_POLICIES = ['timeout', 'retry', 'bulkhead', 'breaker', 'fallback', 'cache', 'idempotency', 'redelivery', 'dead-letter', 'idempotent-consumer', 'outbox', 'step-deadline', 'compensation', 'manual-intervention'].map((p) => `--transit-policy-${p}`);
 
 describe.each(['dark', 'light'] as const)('%s theme transit board contrast (ADR-021)', (theme) => {
   it('line colours are at least 3:1 on the map', () => {

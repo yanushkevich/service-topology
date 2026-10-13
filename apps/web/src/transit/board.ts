@@ -180,3 +180,9 @@ export function stepTint(index: BoardIndex, line: Line, stationId: string, stats
   return index.stations.get(stationId)?.kind === 'dependency' && stats.p99Ms > line.deadlineMs / deps ? 'slow' : null;
 }
 
+/** A line by ID, or by name or signature (case-insensitive): flow steps link here by entry point. */
+export function findLine<T extends { id: string; name: string; signature: string }>(lines: readonly T[], idOrName: string | null): T | null {
+  if (!idOrName) return null;
+  const wanted = idOrName.toLowerCase();
+  return lines.find((l) => l.id === idOrName) ?? lines.find((l) => l.name.toLowerCase() === wanted || l.signature.toLowerCase() === wanted) ?? null;
+}

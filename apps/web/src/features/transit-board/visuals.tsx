@@ -1,7 +1,7 @@
 import type { BoardIndex } from '../../transit/board';
-import type { Finding, PolicyStop, ProvenanceKind } from '../../transit/types';
+import type { Finding, ProvenanceKind } from '../../transit/types';
 import { cx } from '../../shared/ui/classes';
-import { lineColor, policyColor } from './colors';
+import { lineColor, policyColor, type PolicyMarker } from './colors';
 
 /** Line code badge: token colour with contrast-tested text. */
 export function LineBadge({ index, lineId, code, large }: { index: BoardIndex; lineId: string; code: string; large?: boolean }) {
@@ -58,10 +58,10 @@ export function SeverityMark({ severity }: { severity: Finding['severity'] }) {
 }
 
 /** Policy stop marker in SVG coordinates centred on (x, y): fill and outline encode its state. */
-export function PolicyDiamond({ stop, x, y, size = 12 }: { stop: PolicyStop; x: number; y: number; size?: number }) {
+export function PolicyDiamond({ stop, x, y, size = 12 }: { stop: PolicyMarker; x: number; y: number; size?: number }) {
   const half = size / 2;
   const common = { x: x - half, y: y - half, width: size, height: size, transform: `rotate(45 ${x} ${y})` };
-  switch (stop.state) {
+  switch (stop.state ?? 'idle') {
     case 'exercised':
       return <rect {...common} fill={policyColor(stop)} stroke="var(--transit-station-ring)" strokeWidth={2} />;
     case 'idle':

@@ -41,7 +41,7 @@ export function useTransitBoard(serviceDefinitionId: string, environmentId: stri
 export type Loaded<T> = { status: 'loading' } | { status: 'ready'; value: T } | { status: 'error'; message: string };
 
 /** One repository read keyed by `key` (null = nothing to load). */
-function useRepositoryRead<T>(key: string | null, read: (repository: TransitRepository, signal: AbortSignal) => Promise<T>): Loaded<T> {
+export function useRepositoryRead<T>(key: string | null, read: (repository: TransitRepository, signal: AbortSignal) => Promise<T>): Loaded<T> {
   const repository = useContext(TransitRepositoryContext);
   const [state, setState] = useState<{ key: string | null; loaded: Loaded<T> }>({ key: null, loaded: { status: 'loading' } });
   useEffect(() => {

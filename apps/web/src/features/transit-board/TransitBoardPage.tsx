@@ -2,7 +2,7 @@ import { useContext, useEffect, useId, useMemo, useRef, useState, useSyncExterna
 import { Link, useLocation, useParams, useSearchParams } from 'react-router';
 import { useTopology } from '../../data/topologyContext';
 import type { ServiceDefinition } from '../../domain/types';
-import { DEFAULT_WINDOW, indexBoard, isUnobserved, isWindow, matchingLines, windowLabel, WINDOWS } from '../../transit/board';
+import { DEFAULT_WINDOW, findLine, indexBoard, isUnobserved, isWindow, matchingLines, windowLabel, WINDOWS } from '../../transit/board';
 import { computeMapGeometry } from '../../transit/layout';
 import { TransitRepositoryContext } from '../../transit/repository';
 import { divergence as divergenceOf, sampleTraces, stepIndexAt, traceMsPerFrameMs } from '../../transit/trace';
@@ -102,7 +102,7 @@ function Board({ definition, environmentId, environmentName }: { definition: Ser
   const state = useTransitBoard(definition.id, environmentId, url.window, attempt);
   const repository = useContext(TransitRepositoryContext);
   const board = state.status === 'ready' ? state.board : state.status === 'error' ? state.last : null;
-  const line = (url.lineId && board?.lines.find((l) => l.id === url.lineId)) || null;
+  const line = board ? findLine(board.lines, url.lineId) : null;
   const mode: Mode = url.mode === 'trace' && line && !isUnobserved(line) ? 'trace' : 'typical';
   const setMode = (next: Mode) =>
     url.update((p) => {
@@ -218,7 +218,7 @@ function BoardView({ board, definition, mode, onMode, url }: { board: TransitBoa
   // Computed once per data load (and per projection mode); selection, search, and playback never rebuild it.
   const geometry = useMemo(() => computeMapGeometry(index, { flat: narrow }), [index, narrow]);
   const { search } = useLocation();
-  const line = url.lineId ? (index.lineById.get(url.lineId) ?? null) : null;
+  const line = findLine(index.lines, url.lineId);
   const [query, setQuery] = useState('');
   const [focus, setFocus] = useState<{ lineId: string; at: number } | null>(null);
   const [indexOpen, setIndexOpen] = useState(true);
@@ -237,6 +237,11 @@ function BoardView({ board, definition, mode, onMode, url }: { board: TransitBoa
   const [playback] = useState(() => createPlayback());
   const playing = usePlayback(playback, (s) => s.playing);
   const pausedT = usePlayback(playback, (s) => (s.playing ? null : Math.round(s.t)));
+
+  // A line named by entry point (a flow step's drill-down) is rewritten to its ID.
+  useEffect(() => {
+    if (line && url.lineId !== line.id) url.update((p) => p.set('line', line.id), true);
+  }, [line, url]);
 
   // A pasted trace of another line switches to that line.
   useEffect(() => {

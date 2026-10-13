@@ -7,7 +7,14 @@ export function lineColor(index: BoardIndex, lineId: string): string {
   return `var(--transit-line-${(Math.max(0, position) % 12) + 1})`;
 }
 
-export const policyColor = (stop: PolicyStop) => `var(--transit-policy-${stop.type})`;
+/** What a policy marker needs: a transit policy stop or a business-flow policy (ADR-022). */
+export interface PolicyMarker {
+  type: string;
+  /** Absent means declared without observations (drawn like 'idle'). */
+  state?: PolicyStop['state'] | undefined;
+}
+
+export const policyColor = (stop: PolicyMarker) => `var(--transit-policy-${stop.type})`;
 
 export const POLICY_STATE_LABEL: Record<PolicyStop['state'], string> = {
   exercised: 'declared and observed',
@@ -17,7 +24,7 @@ export const POLICY_STATE_LABEL: Record<PolicyStop['state'], string> = {
 };
 
 /** One-line policy summary for tooltips, e.g. 'retry ×3 · 4 attempts · 200 ms backoff'. */
-export function policySummary(stop: PolicyStop): string {
+export function policySummary(stop: { label: string; type: string; config?: Record<string, string> | undefined }): string {
   const config = stop.config ?? {};
   const parts = [stop.label];
   if (config.maxAttempts) parts.push(`${config.maxAttempts} attempts`);

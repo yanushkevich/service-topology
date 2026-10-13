@@ -320,7 +320,7 @@ export interface Box {
 export const overlaps = (a: Box, b: Box) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
 
 /** Rough rendered width of text: Geist averages a little over half its size per character. */
-const textWidth = (text: string, size: number) => text.length * size * 0.56;
+const textWidth = (text: string, size: number) => text.length * size * 0.6;
 /** Label font sizes in viewBox units (TransitMap renders with these). */
 export const LABEL_SIZE = { name: 15, flatName: 13, sub: 11.5, subLine: 14 } as const;
 const LABEL_PRIORITY: Record<StationKind, number> = { dependency: 0, gate: 1, client: 2, caller: 3, module: 4 };
@@ -349,8 +349,6 @@ export interface MapGeometry {
   grid: string[];
 }
 
-const round = (n: number) => Math.round(n * 10) / 10;
-const pathOf = (points: { x: number; y: number }[]) => points.map((p, i) => `${i ? 'L' : 'M'}${round(p.x)} ${round(p.y)}`).join('');
 
 /** Plane position of a policy stop: spread along its lane between client and dependency. */
 export function stopPosition(index: BoardIndex, positions: Map<string, PlanePoint>, stopId: string): PlanePoint | null {
@@ -363,6 +361,57 @@ export function stopPosition(index: BoardIndex, positions: Map<string, PlanePoin
   const rank = index.policiesByClient.get(stop.clientId)?.indexOf(stop) ?? 0;
   return { u: start + ((rank + 1) * (end - start)) / (count + 1), v: client.v };
 }
+
+/** A station marker whose label needs a place. */
+export interface LabelMarker {
+  id: string;
+  name: string;
+  sub?: string;
+  hint: 'above' | 'below' | 'right';
+  /** Lower places first. */
+  priority: number;
+  x: number;
+  y: number;
+  /** Distance from the centre to the marker's edge plus a gap. */
+  reach: number;
+  /** The marker's own box (labels avoid every other marker). */
+  box: Box;
+}
+
+/**
+ * Label placement with collision avoidance, shared by the service and flow boards: in priority
+ * order, each label takes its hinted position, else the other side, else the right; a label that
+ * fits nowhere is hidden (it shows when its line is selected, and tooltips and strips name it).
+ */
+export function placeLabels(markers: LabelMarker[], nameSize: number): Map<string, StationGeometry['label']> {
+  type Candidate = Omit<StationGeometry['label'], 'hidden'>;
+  const candidates = (m: LabelMarker): Candidate[] => {
+    const { x, y, reach } = m;
+    const name = textWidth(m.name, nameSize);
+    const sub = m.sub ? textWidth(m.sub, LABEL_SIZE.sub) : 0;
+    const subHeight = m.sub ? LABEL_SIZE.subLine : 0;
+    const above: Candidate = { x, y: y - reach - 5, anchor: 'middle', withSub: false, box: { x0: x - name / 2, x1: x + name / 2, y0: y - reach - 5 - nameSize, y1: y - reach - 2 } };
+    const belowY = y + reach + nameSize;
+    const below: Candidate = { x, y: belowY, anchor: 'middle', withSub: true, box: { x0: x - Math.max(name, sub) / 2, x1: x + Math.max(name, sub) / 2, y0: belowY - nameSize, y1: belowY + subHeight + 3 } };
+    const right: Candidate = { x: x + 18, y: y + 5, anchor: 'start', withSub: true, box: { x0: x + 18, x1: x + 18 + Math.max(name, sub), y0: y + 5 - nameSize, y1: y + 5 + subHeight + 3 } };
+    return m.hint === 'right' ? [right, below, above] : m.hint === 'below' ? [below, above, right] : [above, below, right];
+  };
+  const placed: Box[] = [];
+  const labels = new Map<string, StationGeometry['label']>();
+  for (const m of [...markers].sort((a, b) => a.priority - b.priority || a.y - b.y)) {
+    const choices = candidates(m);
+    const others = markers.filter((o) => o !== m).map((o) => o.box);
+    const fit = choices.find((c) => !placed.some((b) => overlaps(b, c.box)) && !others.some((b) => overlaps(b, c.box)));
+    const chosen = fit ?? choices[0];
+    if (!chosen) continue;
+    if (fit) placed.push(fit.box);
+    labels.set(m.id, { ...chosen, hidden: !fit });
+  }
+  return labels;
+}
+
+export const round = (n: number) => Math.round(n * 10) / 10;
+export const pathOf = (points: { x: number; y: number }[]) => points.map((p, i) => `${i ? 'L' : 'M'}${round(p.x)} ${round(p.y)}`).join('');
 
 export function computeMapGeometry(index: BoardIndex, options: { flat: boolean; width?: number; height?: number }): MapGeometry {
   const positions = placeStations(index);
@@ -399,34 +448,20 @@ export function computeMapGeometry(index: BoardIndex, options: { flat: boolean; 
     return { s, p, capsule, radius, box: { x0: p.x - (capsule ? 9 : radius), x1: p.x + (capsule ? 9 : radius), y0: p.y - half, y1: p.y + half } };
   });
 
-  // Label placement with collision avoidance: in priority order, each label takes its hinted
-  // position, else the other side, else the right; a label that fits nowhere is hidden (it shows
-  // when its line is selected, and the station's tooltip and the strip always name it).
-  type Candidate = Omit<StationGeometry['label'], 'hidden'>;
-  const candidates = (m: (typeof markers)[number]): Candidate[] => {
-    const { s, p } = m;
-    const reach = (m.capsule ? m.capsule / 2 : m.radius) + 6;
-    const name = textWidth(s.name, nameSize);
-    const sub = s.sub ? textWidth(s.sub, LABEL_SIZE.sub) : 0;
-    const subHeight = s.sub ? LABEL_SIZE.subLine : 0;
-    const above: Candidate = { x: p.x, y: p.y - reach - 5, anchor: 'middle', withSub: false, box: { x0: p.x - name / 2, x1: p.x + name / 2, y0: p.y - reach - 5 - nameSize, y1: p.y - reach - 2 } };
-    const belowY = p.y + reach + nameSize;
-    const below: Candidate = { x: p.x, y: belowY, anchor: 'middle', withSub: true, box: { x0: p.x - Math.max(name, sub) / 2, x1: p.x + Math.max(name, sub) / 2, y0: belowY - nameSize, y1: belowY + subHeight + 3 } };
-    const right: Candidate = { x: p.x + 18, y: p.y + 5, anchor: 'start', withSub: true, box: { x0: p.x + 18, x1: p.x + 18 + Math.max(name, sub), y0: p.y + 5 - nameSize, y1: p.y + 5 + subHeight + 3 } };
-    const hint = s.labelHint ?? (s.kind === 'dependency' ? 'right' : 'above');
-    return hint === 'right' ? [right, below, above] : hint === 'below' ? [below, above, right] : [above, below, right];
-  };
-  const placed: Box[] = [];
-  const labels = new Map<string, StationGeometry['label']>();
-  for (const m of [...markers].sort((a, b) => LABEL_PRIORITY[a.s.kind] - LABEL_PRIORITY[b.s.kind] || a.p.y - b.p.y)) {
-    const choices = candidates(m);
-    const others = markers.filter((o) => o !== m).map((o) => o.box);
-    const fit = choices.find((c) => !placed.some((b) => overlaps(b, c.box)) && !others.some((b) => overlaps(b, c.box)));
-    const chosen = fit ?? choices[0];
-    if (!chosen) continue;
-    if (fit) placed.push(fit.box);
-    labels.set(m.s.id, { ...chosen, hidden: !fit });
-  }
+  const labels = placeLabels(
+    markers.map((m) => ({
+      id: m.s.id,
+      name: m.s.name,
+      ...(m.s.sub ? { sub: m.s.sub } : {}),
+      hint: m.s.labelHint ?? (m.s.kind === 'dependency' ? 'right' : 'above'),
+      priority: LABEL_PRIORITY[m.s.kind],
+      x: m.p.x,
+      y: m.p.y,
+      reach: (m.capsule ? m.capsule / 2 : m.radius) + 6,
+      box: m.box,
+    })),
+    nameSize,
+  );
 
   const stations: StationGeometry[] = markers.map(({ s, p, capsule, radius }) => {
     const label = labels.get(s.id) ?? { x: p.x, y: p.y, anchor: 'middle' as const, withSub: false, box: { x0: p.x, x1: p.x, y0: p.y, y1: p.y }, hidden: true };

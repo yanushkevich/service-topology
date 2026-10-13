@@ -1,6 +1,9 @@
 import { createContext } from 'react';
 import { paymentServiceBoard } from './mock/paymentServiceBoard';
 import { paymentServiceTraces } from './mock/paymentServiceTraces';
+import { exampleFlowStats, exampleTransactions } from './flows/exampleFlows';
+import type { FlowStats, FlowTransaction } from './flows/observed';
+import type { BusinessFlow } from '../domain/types';
 import type { TraceDetail, TraceSummary, TransitBoard, TransitWindow } from './types';
 
 /**
@@ -17,6 +20,12 @@ export interface TransitRepository {
   getTraces(serviceDefinitionId: string, lineId: string, window: TransitWindow, signal?: AbortSignal): Promise<TraceSummary[]>;
   /** One trace mapped to station ids; null when the id is unknown for this service. */
   getTrace(serviceDefinitionId: string, traceId: string, signal?: AbortSignal): Promise<TraceDetail | null>;
+  /** Observed statistics of a business flow (ADR-022); null when none are known. */
+  getFlowStats(flow: BusinessFlow, environmentId: string, window: TransitWindow, signal?: AbortSignal): Promise<FlowStats | null>;
+  /** Business transactions of a flow in the window, newest first. */
+  getTransactions(flow: BusinessFlow, window: TransitWindow, signal?: AbortSignal): Promise<FlowTransaction[]>;
+  /** One business transaction by its business key; null when unknown. */
+  getTransaction(flow: BusinessFlow, key: string, signal?: AbortSignal): Promise<FlowTransaction | null>;
 }
 
 const WINDOW_MS: Record<TransitWindow, number> = { '1h': 3_600_000, '24h': 86_400_000, '7d': 604_800_000 };
@@ -47,6 +56,22 @@ export function createExampleTransitRepository(services: Record<string, ExampleS
       signal?.throwIfAborted();
       const trace = services[serviceDefinitionId]?.traces().get(traceId.trim());
       return trace ? structuredClone(trace) : null;
+    },
+    async getFlowStats(flow, _environmentId, window, signal) {
+      signal?.throwIfAborted();
+      return exampleFlowStats(flow.id, window);
+    },
+    async getTransactions(flow, window, signal) {
+      signal?.throwIfAborted();
+      return exampleTransactions(flow)
+        .filter((t) => EXAMPLE_NOW - Date.parse(t.startedAt) <= WINDOW_MS[window])
+        .map((t) => structuredClone(t));
+    },
+    async getTransaction(flow, key, signal) {
+      signal?.throwIfAborted();
+      const wanted = key.trim().toLowerCase();
+      const tx = exampleTransactions(flow).find((t) => t.key.toLowerCase() === wanted);
+      return tx ? structuredClone(tx) : null;
     },
   };
 }

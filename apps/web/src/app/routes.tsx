@@ -12,6 +12,8 @@ import { DependenciesPage } from '../features/dependencies/DependenciesPage';
 import { InfrastructurePage } from '../features/infrastructure/InfrastructurePage';
 import { SettingsPage } from '../features/settings/SettingsPage';
 import { TransitBoardPage } from '../features/transit-board/TransitBoardPage';
+import { FlowsCatalogPage } from '../features/business-flows/FlowsCatalogPage';
+import { FlowBoardPage } from '../features/business-flows/FlowBoardPage';
 
 export const routes: RouteObject[] = [
   {
@@ -30,6 +32,8 @@ export const routes: RouteObject[] = [
       { path: 'infrastructure', element: <InfrastructurePage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'services/:serviceId/transit', element: <TransitBoardPage /> },
+      { path: 'flows', element: <FlowsCatalogPage /> },
+      { path: 'flows/:flowId', element: <FlowBoardPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

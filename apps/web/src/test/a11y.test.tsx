@@ -102,6 +102,28 @@ describe('accessibility audit (axe-core)', () => {
     expect(await audit()).toEqual([]);
   });
 
+  it('business flows catalog', async () => {
+    renderApp('/flows');
+    await screen.findByRole('list', { name: 'Business flows' });
+    expect(await audit()).toEqual([]);
+  });
+
+  it('flow board with a selected step, a focused finding, and a tooltip', async () => {
+    const user = userEvent.setup();
+    renderApp('/flows/flow-checkout?v=1&env=production&step=authorize-payment');
+    const card = await screen.findByLabelText('Flow card');
+    await user.click(within(card).getAllByRole('button', { pressed: false })[0]!);
+    const station = document.querySelector('[data-station^="step:payment-service:Capture"]');
+    if (station) fireEvent.pointerEnter(station);
+    expect(await audit()).toEqual([]);
+  });
+
+  it('business-transaction replay', async () => {
+    renderApp('/flows/flow-checkout?v=1&env=production&mode=replay&tx=order%204466');
+    await screen.findByRole('list', { name: /^Steps of order / });
+    expect(await audit()).toEqual([]);
+  });
+
   it('history mode banner', async () => {
     renderApp('/registry?v=1&env=production&asof=fixture-0600');
     await screen.findByText(/Viewing history:/);
