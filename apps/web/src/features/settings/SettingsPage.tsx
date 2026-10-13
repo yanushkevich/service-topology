@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { useTopology, useTopologyEditing } from '../../data/topologyContext';
 import { useSavedLayoutRepository } from '../../data/savedLayouts/savedLayoutContext';
 import type { SavedLayout } from '../../data/savedLayouts/savedLayout';
@@ -8,6 +8,8 @@ import { usePreferencesStore, type Preferences } from '../../state/preferencesSt
 import { SIMULATION_SPEEDS, useSimulationStore } from '../../state/simulationStore';
 import { useUiStore } from '../../state/uiStore';
 import { Card, Note } from '../pages/PageShell';
+import { ExportDataRow, ImportDataRow } from './DataBundleRows';
+import { Row } from './SettingsRow';
 
 /**
  * Settings (PRODUCT_SPEC Revision 5 §K.4): local display preferences, saved layouts, and the data
@@ -39,18 +41,6 @@ function Choice<T extends string>({ label, value, options, onChange }: { label: 
         ))}
       </Segmented>
     </Row>
-  );
-}
-
-function Row({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-line py-2.5 first:border-t-0">
-      <div className="min-w-[200px] flex-1">
-        <div className="font-semibold">{label}</div>
-        {hint && <div className="text-sm text-fg-2">{hint}</div>}
-      </div>
-      {children}
-    </div>
   );
 }
 
@@ -242,6 +232,8 @@ function DataCard() {
         </ul>
       </Row>
       <SandboxRow />
+      <ExportDataRow />
+      <ImportDataRow />
       <Row label="Backend contract" hint="The Go + MongoDB backend in backend/ implements docs/api/openapi.json (OpenAPI 3.1).">
         <code className="font-mono text-sm text-fg-2">docs/API_CONTRACT.md</code>
       </Row>

@@ -10,6 +10,7 @@ import { mockTopology } from '../data/mock/topology';
 import { createSandbox } from '../data/sandbox/sandbox';
 import { createSandboxStorage } from '../data/sandbox/storage';
 import { createTransitRepository } from '../data/transitRepository';
+import { bundleOf } from '../data/bundle/bundle';
 
 /**
  * Automated accessibility audit (axe-core, WCAG 2.0–2.2 A/AA rules) of every page and key state.
@@ -144,6 +145,20 @@ describe('accessibility audit (axe-core)', () => {
     renderApp('/settings', sandbox.topology);
     await user.click(await screen.findByRole('button', { name: 'Reset sandbox' }));
     await screen.findByRole('button', { name: 'Confirm reset' });
+    expect(await audit()).toEqual([]);
+  });
+
+  it('settings with export counts and an import preview, ready and invalid (ADR-032)', async () => {
+    const user = userEvent.setup();
+    const sandbox = createSandbox(mockTopology, createSandboxStorage(null));
+    renderApp('/settings', sandbox.topology, undefined, undefined, createTransitRepository(sandbox.boards));
+    const input = await screen.findByLabelText(/^Data file/);
+    await user.upload(input, new File(['format: service-topology.bundle\nversion: 2\n'], 'broken.yaml'));
+    await screen.findByRole('list', { name: 'Issues' });
+    expect(await audit()).toEqual([]);
+    const bundle = bundleOf(mockTopology, [], { exportedAt: '2026-10-13T09:30:00Z', source: { label: 'Elsewhere', isMock: true } });
+    await user.upload(input, new File([JSON.stringify(bundle)], 'data.json'));
+    await screen.findByRole('button', { name: 'Replace data' });
     expect(await audit()).toEqual([]);
   });
 

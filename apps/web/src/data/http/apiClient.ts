@@ -66,8 +66,8 @@ export function createApiClient(baseUrl = '/api/v1', fetchImpl: FetchLike = (...
       json = undefined;
     }
     if (!res.ok) {
-      const problem = (json ?? {}) as { title?: string; detail?: string; requestId?: string; errors?: { code?: string; entityId?: string; message?: string }[] };
-      const issues = (problem.errors ?? []).map((e) => ({ code: e.code ?? '', message: e.message ?? '', ...(e.entityId ? { entityId: e.entityId } : {}) }));
+      const problem = (json ?? {}) as { title?: string; detail?: string; requestId?: string; errors?: { code?: string; entityId?: string; path?: string; message?: string }[] };
+      const issues = (problem.errors ?? []).map((e) => ({ code: e.code ?? '', message: e.message ?? '', ...(e.entityId ? { entityId: e.entityId } : {}), ...(e.path ? { path: e.path } : {}) }));
       throw new ApiError(res.status, problem.title ?? res.statusText ?? 'Request failed', problem.requestId ?? res.headers.get('X-Request-ID') ?? undefined,
         issues.map((e) => e.code).filter(Boolean), problem.detail, issues);
     }

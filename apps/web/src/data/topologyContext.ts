@@ -6,6 +6,7 @@ import type { TopologyData } from '../domain/types';
 import type { TopologyRepository, TopologyWriter } from './repositories/TopologyRepository';
 import { createMockTopologyRepository } from './repositories/mockTopologyRepository';
 import type { SandboxControls } from './sandbox/sandbox';
+import type { BundleImporter } from './bundle/bundle';
 
 export type TopologyState =
   | { status: 'loading' }
@@ -40,9 +41,11 @@ export interface TopologyEditing {
   reload(): Promise<void>;
   /** The local sandbox's controls when edits stay in this browser (ADR-031); null otherwise. */
   sandbox: SandboxControls | null;
+  /** Replaces all data with a data bundle (ADR-032); null for generated datasets. */
+  importer: BundleImporter | null;
 }
 
-export const TopologyEditingContext = createContext<TopologyEditing>({ writer: null, baseline: null, reload: async () => {}, sandbox: null });
+export const TopologyEditingContext = createContext<TopologyEditing>({ writer: null, baseline: null, reload: async () => {}, sandbox: null, importer: null });
 
 export function useTopologyEditing(): TopologyEditing {
   return useContext(TopologyEditingContext);

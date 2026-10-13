@@ -91,4 +91,11 @@ describe('export and import of all data (ADR-032)', () => {
     expect(counts).toMatchObject({ environments: 3, serviceDefinitions: 9, eventTypes: 0, transitBoards: 1 });
     expect(calls).toContain('POST /api/v1/imports/bundle "rev-1"');
   });
+
+  it('keeps the field path of the API’s issues (422)', async () => {
+    const problem = { type: 'x', title: 'Validation failed', status: 422, errors: [{ code: 'bundle-duplicate-board', path: 'transitBoards[1].serviceDefinitionId', message: 'Two transit boards' }] };
+    const api = createApiClient('/api/v1', async () => new Response(JSON.stringify(problem), { status: 422, headers: { 'Content-Type': 'application/problem+json' } }));
+    const error = await createHttpTopologyRepository(api).importer!.importBundle({} as never).catch((e: unknown) => e as ApiError);
+    expect((error as ApiError).issues).toEqual([{ code: 'bundle-duplicate-board', path: 'transitBoards[1].serviceDefinitionId', message: 'Two transit boards' }]);
+  });
 });
