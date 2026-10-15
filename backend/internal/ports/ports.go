@@ -226,6 +226,69 @@ type TopologySource interface {
 	Observe(ctx context.Context) (*Observation, error)
 	// Check runs every query once and reports what came back, for diagnosing a connection.
 	Check(ctx context.Context) []SourceCheck
+	// Describe returns the source's configuration, without secrets.
+	Describe() SourceDescription
+}
+
+// ErrSourceFailed reports that a topology source could not answer. Errors wrapping it have
+// messages that are safe to show (no credentials, no response bodies). HTTP maps it to 502.
+var ErrSourceFailed = errors.New("topology source failed")
+
+// SourceDescription is a source's configuration as shown to users: tenant hosts, how each
+// authenticates, and how environments are matched. Never secrets.
+type SourceDescription struct {
+	IsExample              bool                `json:"isExample"`
+	Tenants                []SourceTenant      `json:"tenants"`
+	Environments           []SourceEnvironment `json:"environments"`
+	RefreshIntervalSeconds int                 `json:"refreshIntervalSeconds"`
+}
+
+// SourceTenant is one connected tenant.
+type SourceTenant struct {
+	ID        string `json:"id"`
+	Host      string `json:"host"`
+	Auth      string `json:"auth"` // "platform-token" or "oauth"
+	IsExample bool   `json:"isExample"`
+}
+
+// SourceEnvironment is how one of our environments is matched in a tenant.
+type SourceEnvironment struct {
+	ID     domain.EntityID `json:"id"`
+	Name   string          `json:"name"`
+	Kind   string          `json:"kind"`
+	Tenant string          `json:"tenant"`
+	Match  string          `json:"match"`
+}
+
+// SourceWriter applies a topology source's reconciled changes (ADR-034). Every canonical document
+// remembers the source that created it; replacing a document never changes that.
+type SourceWriter interface {
+	// SourceTypes returns the creating source of every canonical entity, by ID.
+	SourceTypes(ctx context.Context) (map[domain.EntityID]string, error)
+	// ApplyChanges applies every change in one transaction, only if the stored revision is still
+	// expectedRevision (else ErrPreconditionFailed), and stores one new revision. Created entities
+	// record sourceType.
+	ApplyChanges(ctx context.Context, changes []EntityChange, expectedRevision, sourceType string) (string, error)
+}
+
+// SyncRecord is the last applied sync of a source.
+type SyncRecord struct {
+	AppliedAt string                    `json:"appliedAt"`
+	Revision  string                    `json:"revision"`
+	Summary   map[string]map[string]int `json:"summary"`
+}
+
+// IntegrationStore keeps per-source state: the alias list (revision-guarded) and the last sync.
+type IntegrationStore interface {
+	// Aliases returns the source's aliases (source service name → service definition ID) and their
+	// revision ("0" before the first save).
+	Aliases(ctx context.Context, source string) (map[string]domain.EntityID, string, error)
+	// SaveAliases replaces the aliases if ifRevision is current (else ErrPreconditionFailed) and
+	// returns the new revision.
+	SaveAliases(ctx context.Context, source string, aliases map[string]domain.EntityID, ifRevision string) (string, error)
+	// LastSync returns the last applied sync, or nil.
+	LastSync(ctx context.Context, source string) (*SyncRecord, error)
+	SaveLastSync(ctx context.Context, source string, sync *SyncRecord) error
 }
 
 // Discovery is a source's structure as canonical entities (environments, service definitions and

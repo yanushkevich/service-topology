@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	"servicetopology/backend/internal/adapters/dynatrace"
 	"servicetopology/backend/internal/adapters/flowformats"
 	"servicetopology/backend/internal/adapters/httpapi"
 	"servicetopology/backend/internal/adapters/mongodb"
@@ -26,6 +27,21 @@ type notConfigured struct{}
 func (notConfigured) Name() string { return "database" }
 func (notConfigured) Check(context.Context) error {
 	return errors.New("not configured (MONGODB_URI is unset)")
+}
+
+// newDynatrace loads the connector configuration and reads its secrets (ADR-034). The log names
+// tenants by ID only.
+func newDynatrace(path string, logger *slog.Logger) (*dynatrace.Connector, error) {
+	cfg, err := dynatrace.LoadConfig(path)
+	if err != nil {
+		return nil, err
+	}
+	conn, err := dynatrace.NewConnector(cfg, nil, logger)
+	if err != nil {
+		return nil, err
+	}
+	logger.Info("dynatrace connector enabled", "tenants", len(cfg.Tenants), "environments", len(cfg.Environments), "example", conn.IsExample())
+	return conn, nil
 }
 
 // Run serves HTTP until ctx is done. onListen, if set, receives the bound address (tests use
@@ -76,6 +92,16 @@ func Run(ctx context.Context, cfg config.Config, logger *slog.Logger, onListen f
 			SimulationMaxRuns:   cfg.SimulationMaxRuns,
 			Logger:              logger,
 		}
+		if cfg.DynatraceConfigFile != "" {
+			source, err := newDynatrace(cfg.DynatraceConfigFile, logger)
+			if err != nil {
+				return err
+			}
+			api.Sync = application.NewSourceSync(source, mongodb.NewIntegrationRepository(store))
+		}
+	}
+	if cfg.DynatraceConfigFile != "" && cfg.MongoDB == nil {
+		logger.Warn("DYNATRACE_CONFIG_FILE is ignored: the Dynatrace connector needs a database (MONGODB_URI)")
 	}
 	handler := httpapi.NewHandler(httpapi.Deps{
 		Logger:        logger,

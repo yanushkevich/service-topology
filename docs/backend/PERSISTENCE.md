@@ -21,10 +21,12 @@ The stored model maps 1:1 to the canonical domain (`DOMAIN_MODEL.md`, `TopologyD
 | TopologySnapshot | `snapshots` | `{_id, takenAt, summary, payload}`; immutable, validated before insert |
 | SavedLayout | `savedLayouts` | `{_id, createdAt, payload}`; presentation only |
 | Transit board definition (B10, ADR-031; replaced as a whole by a bundle import, B11) | `transitBoards` | `{_id: serviceDefinitionId, revision, updatedAt, payload}`; declared structure only, validated against the topology before every write; the revision guards `PUT`/`DELETE` (`If-Match`) |
+| Topology source state (B12, ADR-034) | `integrations` | one document per source `{_id: "dynatrace", aliases: [{name, id}], aliasesRevision, lastSync}`; aliases are pairs because source names may contain `.` or `$`; `aliasesRevision` guards `PUT /integrations/dynatrace/aliases` |
+| Observed health and metrics (B12, ADR-034) | `observations` | one document per source, replaced by each refresh and merged onto entities on read; never a topology revision |
 | SimulationRun (B5) | `simulationRuns` | `{_id, createdAt, payload}` |
 | StoredEvent, TelemetryObservation (B5) | `simulationEvents`, `telemetryObservations` | `{simulationId, seq, <filter fields>, payload}`; unique `(simulationId, seq)`; removed with their run by retention |
 
-`_meta` holds backend-only bookkeeping and is stripped on read: `ord` (position in the canonical collection, so reads keep the original order), `recordedAt`, `sourceType`, and on relationships `endpoints` (`[sourceEntityId, targetEntityId]`, for undirected traversal). Nothing in `_meta` is returned unless it is added to the contract.
+`_meta` holds backend-only bookkeeping and is stripped on read: `ord` (position in the canonical collection, so reads keep the original order), `recordedAt`, `sourceType` (the source that created the document: `fixture`, `import`, `manual`, or `dynatrace`; a replace keeps it, which is how a topology source knows what it owns, ADR-034), and on relationships `endpoints` (`[sourceEntityId, targetEntityId]`, for undirected traversal). Nothing in `_meta` is returned unless it is added to the contract.
 
 ### References instead of edges
 Containment and references are the canonical fields themselves: `parentResourceId` (containment), `resourceId` (hosting), `serviceDefinitionId`, `environmentId` (explicit only; inherited environments are computed), and an event type's `channelResourceIds`, `producerServiceIds`, `consumerServiceIds`. There are no separate edge collections and nothing is stored twice. `validateTopology` (Go port) guarantees every reference resolves before an import writes anything. Communication is the `relationships` collection, one document per `CommunicationRelationship`. Semantic names such as "publishes" or "consumes" are derived from `pattern`, `protocol`, and endpoint types when presenting data.
@@ -42,14 +44,14 @@ Documents are built from the domain values' canonical JSON (the contract's field
 - creates missing collections;
 - sets a `$jsonSchema` validator on canonical collections (`_id` and `id` strings, `_meta` with `ord`, `recordedAt`, `sourceType`), `validationLevel: strict`;
 - creates named indexes: `_meta.ord_1` on canonical collections; `sourceEntityId_1`, `targetEntityId_1`, `_meta.endpoints_1` on `relationships`; `environmentId_1`; `type_1`, `parentResourceId_1`; `takenAt_1`; `createdAt_1`; unique `simulationId_1_seq_1` on run records;
-- records `schemaInfo.version` (currently 2: version 2 added `transitBoards`) and refuses a database with a newer version.
+- records `schemaInfo.version` (currently 3: version 2 added `transitBoards`, version 3 `integrations` and `observations`) and refuses a database with a newer version.
 
 `make schema-check` verifies every collection, validator, index, and the version. Changes are additive; breaking ones need an ADR.
 
 ## Transaction and write flow
 1. Parse and validate commands at the HTTP boundary.
 2. Apply domain invariants in Go (`domain.Validate`, `ValidateSnapshot`, layout normalization).
-3. Write related documents in one multi-document transaction (snapshot read concern, majority write concern): topology imports (delete and re-insert the canonical collections, then a new revision), data bundle imports (the same, plus every `transitBoards` document, with an optional revision check; `sourceType: "import"`, ADR-032), simulation runs (run + events + telemetry), and retention (run + its records). Transactions need a replica set; local development runs a single-node set.
+3. Write related documents in one multi-document transaction (snapshot read concern, majority write concern): topology imports (delete and re-insert the canonical collections, then a new revision), data bundle imports (the same, plus every `transitBoards` document, with an optional revision check; `sourceType: "import"`, ADR-032), source syncs (every change of a preview, then one new revision, with a revision check; ADR-034), simulation runs (run + events + telemetry), and retention (run + its records). Transactions need a replica set; local development runs a single-node set.
 4. The driver retries a transaction on transient errors, so transaction bodies must be safe to repeat (they are: they build their documents beforehand and replace whole sets).
 5. Single-document writes (snapshot save, layout create/replace/remove) rely on `_id` uniqueness: duplicates → `ErrConflict`; replace/remove of a missing ID → `ErrNotFound`.
 

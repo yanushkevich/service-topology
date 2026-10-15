@@ -63,6 +63,11 @@ The simulation engine is pure TypeScript and runs in the browser (ADR-010); capt
 ### Entity writes (implemented in B7, ADR-020)
 - `POST /entities/{kind}`, `PUT /entities/{kind}/{id}`, `DELETE /entities/{kind}/{id}` (kinds: the selection kinds plus `event-type`). The application builds the resulting topology, runs `domain.ValidateEntityFields` (schema enums, required fields, ID shape; code `invalid-field`) and `domain.Validate`, then calls `ports.TopologyWriter.ApplyChange`, which re-checks the revision in the MongoDB transaction. Errors: 400 (kind, malformed body), 404, 409, 412 (stale `If-Match`), 413 (body over 1 MB), 415, 422. `GET /topology` sets `ETag`.
 
+### Topology sources (implemented in B12, ADR-034)
+- `GET /integrations/dynatrace`, `POST /integrations/dynatrace/check`, `POST /integrations/dynatrace/preview`, `POST /integrations/dynatrace/apply`, `GET`/`PUT /integrations/dynatrace/aliases`. Spec: `docs/DYNATRACE_CONNECTOR.md` §6.
+- The preview reconciles a Dynatrace discovery with the stored topology (`application/reconcile.go`), validates the result, and is held for 10 minutes. Apply calls `ports.SourceWriter.ApplyChanges`: one transaction and one revision, guarded by the preview's base revision.
+- Errors: 404 `integration-not-configured` (no `DYNATRACE_CONFIG_FILE`), 409 `integration-busy` (a preview or check is running), 410 `preview-expired`, 412 (stale `If-Match`), 422 (the result does not validate), 502 `source-failed` (Dynatrace could not answer; the detail is a fixed, safe message).
+
 ### Not added
 `/services`, `/service-definitions/{id}`, `/relationships/{id}`, `/resources` from the v4 pack duplicate `/registry` and `/entities/{kind}/{id}`. Do not add them unless a concrete client need is shown.
 

@@ -46,6 +46,17 @@ func (d Deps) problemFor(r *http.Request, err error) Problem {
 		return problem("unavailable", "Service unavailable", http.StatusServiceUnavailable, "This deployment cannot import data bundles.", "")
 	case errors.Is(err, application.ErrNoBoardStore):
 		return problem("unavailable", "Service unavailable", http.StatusServiceUnavailable, "This deployment does not store transit boards.", "")
+	case errors.Is(err, application.ErrSourceNotConfigured):
+		return problem("integration-not-configured", "Not found", http.StatusNotFound, "No Dynatrace connection is configured on this server (DYNATRACE_CONFIG_FILE).", "integration-not-configured")
+	case errors.Is(err, application.ErrSourceBusy):
+		return problem("integration-busy", "Conflict", http.StatusConflict, err.Error(), "integration-busy")
+	case errors.Is(err, application.ErrPreviewExpired):
+		return problem("preview-expired", "Gone", http.StatusGone, "The preview expired. Preview the sync again.", "preview-expired")
+	case errors.Is(err, application.ErrNoSourceWrites):
+		return problem("unavailable", "Service unavailable", http.StatusServiceUnavailable, "This deployment cannot apply source syncs.", "")
+	case errors.Is(err, ports.ErrSourceFailed):
+		// The message is safe by construction (ports.ErrSourceFailed): no credentials or bodies.
+		return problem("source-failed", "Bad gateway", http.StatusBadGateway, err.Error(), "source-failed")
 	case errors.Is(err, ports.ErrConflict):
 		return problem("conflict", "Conflict", http.StatusConflict, "An item with this ID already exists.", "")
 	case errors.As(err, &tooLarge):

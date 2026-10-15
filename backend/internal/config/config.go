@@ -36,6 +36,8 @@ type Config struct {
 	CORSAllowedOrigins   []string
 	MetricsAddr          string // "" disables /metrics
 	TraversalSource      string // "memory" (default) or "database" (ADR-DB-003)
+	// DynatraceConfigFile names the Dynatrace connector configuration (ADR-034); "" disables it.
+	DynatraceConfigFile string
 	// MongoDB is nil when MONGODB_URI is unset (the API then runs without a database).
 	MongoDB *MongoDB
 }
@@ -80,6 +82,7 @@ func (c Config) LogValue() slog.Value {
 		slog.Float64("rateLimitRPS", c.RateLimitRPS),
 		slog.Any("corsAllowedOrigins", c.CORSAllowedOrigins),
 		slog.Bool("metrics", c.MetricsAddr != ""),
+		slog.Bool("dynatrace", c.DynatraceConfigFile != ""),
 	}
 	if c.MongoDB != nil {
 		attrs = append(attrs, slog.Group("mongodb",
@@ -170,6 +173,7 @@ func Load(getenv func(string) string) (Config, error) {
 		cfg.CORSAllowedOrigins = append(cfg.CORSAllowedOrigins, o)
 	}
 	cfg.TraversalSource = oneOf("TRAVERSAL_SOURCE", "memory", "memory", "database")
+	cfg.DynatraceConfigFile = get("DYNATRACE_CONFIG_FILE", "")
 	cfg.MetricsAddr = get("METRICS_ADDR", "")
 	if cfg.MetricsAddr != "" && !IsLoopback(cfg.MetricsAddr) && !cfg.AllowUnauthenticated {
 		errs = append(errs, fmt.Errorf("METRICS_ADDR: %q must be a loopback address (metrics are unauthenticated)", cfg.MetricsAddr))

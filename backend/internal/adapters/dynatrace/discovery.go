@@ -261,17 +261,24 @@ func (m *discoveryMapper) result() ports.Discovery {
 
 func (m *discoveryMapper) notes() []ports.DiscoveryNote {
 	notes := []ports.DiscoveryNote{}
-	add := func(code string, ids []string, format string) {
+	add := func(code string, ids []string, one, many string) {
 		if len(ids) == 0 {
 			return
 		}
 		sort.Strings(ids)
-		notes = append(notes, ports.DiscoveryNote{Code: code, Message: fmt.Sprintf(format, len(ids)), IDs: ids[:min(len(ids), maxNoteIDs)]})
+		message := one
+		if len(ids) > 1 {
+			message = fmt.Sprintf(many, len(ids))
+		}
+		notes = append(notes, ports.DiscoveryNote{Code: code, Message: message, IDs: ids[:min(len(ids), maxNoteIDs)]})
 	}
-	add(ports.NoteServiceWithoutEnvironment, m.unmatched, "%d services match no environment rule and were skipped.")
-	add(ports.NoteDuplicateService, m.duplicates, "%d services share a name with another service in the same environment and were merged into it.")
-	add(ports.NoteCrossEnvironmentCall, m.crossEnv, "%d calls cross environments and were dropped.")
-	add(ports.NoteTruncatedResult, m.truncated, "%d query results hit limits.maxRecords and may be incomplete.")
+	add(ports.NoteServiceWithoutEnvironment, m.unmatched,
+		"1 service matches no environment rule and was skipped.", "%d services match no environment rule and were skipped.")
+	add(ports.NoteDuplicateService, m.duplicates,
+		"1 service shares its name with another service in the same environment and was merged into it.",
+		"%d services share a name with another service in the same environment and were merged into it.")
+	add(ports.NoteCrossEnvironmentCall, m.crossEnv, "1 call crosses environments and was dropped.", "%d calls cross environments and were dropped.")
+	add(ports.NoteTruncatedResult, m.truncated, "1 query result hit limits.maxRecords and may be incomplete.", "%d query results hit limits.maxRecords and may be incomplete.")
 	return notes
 }
 

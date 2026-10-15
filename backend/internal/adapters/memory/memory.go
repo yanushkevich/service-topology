@@ -25,11 +25,53 @@ type Store struct {
 	Err error
 	// writes counts applied changes; the revision is derived from it.
 	writes int
+	// sources records the source that created each entity (ports.SourceWriter).
+	sources      map[domain.EntityID]string
+	integrations map[string]*integration
 }
 
-// New returns a store holding data.
+// New returns a store holding data, recorded as created by "fixture".
 func New(data *domain.TopologyData) *Store {
-	return &Store{Data: data, snapshots: map[string]domain.Snapshot{}, layouts: map[string]domain.SavedLayout{}, boards: map[domain.EntityID]domain.StoredBoard{}}
+	s := &Store{Data: data, snapshots: map[string]domain.Snapshot{}, layouts: map[string]domain.SavedLayout{}, boards: map[domain.EntityID]domain.StoredBoard{},
+		integrations: map[string]*integration{}}
+	s.recordSources(data, "fixture")
+	return s
+}
+
+func (s *Store) recordSources(data *domain.TopologyData, source string) {
+	s.sources = map[domain.EntityID]string{}
+	if data == nil {
+		return
+	}
+	for _, id := range entityIDs(data) {
+		s.sources[id] = source
+	}
+}
+
+func entityIDs(d *domain.TopologyData) []domain.EntityID {
+	var out []domain.EntityID
+	for _, e := range d.Environments {
+		out = append(out, e.ID)
+	}
+	for _, e := range d.ServiceDefinitions {
+		out = append(out, e.ID)
+	}
+	for _, e := range d.ServiceInstances {
+		out = append(out, e.ID)
+	}
+	for _, e := range d.Resources {
+		out = append(out, e.ID)
+	}
+	for _, e := range d.Relationships {
+		out = append(out, e.ID)
+	}
+	for _, e := range d.EventTypes {
+		out = append(out, e.ID)
+	}
+	for _, e := range d.BusinessFlows {
+		out = append(out, e.ID)
+	}
+	return out
 }
 
 func clone[T any](v T) T {
@@ -343,7 +385,14 @@ func applyTo[T any](items []T, change ports.EntityChange, idOf func(*T) string) 
 }
 
 // ApplyChange implements ports.TopologyWriter (no validation here: the application validates).
-func (s *Store) ApplyChange(_ context.Context, change ports.EntityChange, expectedRevision, _ string) (string, error) {
+func (s *Store) ApplyChange(ctx context.Context, change ports.EntityChange, expectedRevision, sourceType string) (string, error) {
+	return s.ApplyChanges(ctx, []ports.EntityChange{change}, expectedRevision, sourceType)
+}
+
+var _ ports.SourceWriter = (*Store)(nil)
+
+// ApplyChanges implements ports.SourceWriter: all changes or none, one new revision.
+func (s *Store) ApplyChanges(_ context.Context, changes []ports.EntityChange, expectedRevision, sourceType string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.Err != nil {
@@ -353,6 +402,39 @@ func (s *Store) ApplyChange(_ context.Context, change ports.EntityChange, expect
 		return "", ports.ErrPreconditionFailed
 	}
 	d := clone(s.Data)
+	for _, change := range changes {
+		if err := applyOne(d, change); err != nil {
+			return "", err
+		}
+	}
+	for _, change := range changes {
+		switch change.Op {
+		case ports.OpCreate:
+			s.sources[change.ID] = sourceType
+		case ports.OpDelete:
+			delete(s.sources, change.ID)
+		}
+	}
+	s.Data = d
+	s.writes++
+	return s.revisionLocked(), nil
+}
+
+// SourceTypes implements ports.SourceWriter.
+func (s *Store) SourceTypes(context.Context) (map[domain.EntityID]string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.Err != nil {
+		return nil, s.Err
+	}
+	out := make(map[domain.EntityID]string, len(s.sources))
+	for id, source := range s.sources {
+		out[id] = source
+	}
+	return out, nil
+}
+
+func applyOne(d *domain.TopologyData, change ports.EntityChange) error {
 	var err error
 	switch change.Kind {
 	case domain.KindEnvironment:
@@ -372,18 +454,13 @@ func (s *Store) ApplyChange(_ context.Context, change ports.EntityChange, expect
 	default:
 		err = fmt.Errorf("memory: kind %q is not writable", change.Kind)
 	}
-	if err != nil {
-		return "", err
-	}
-	s.Data = d
-	s.writes++
-	return s.revisionLocked(), nil
+	return err
 }
 
 var _ ports.BundleImporter = (*Store)(nil)
 
 // ReplaceAll implements ports.BundleImporter (no validation here: the application validates).
-func (s *Store) ReplaceAll(_ context.Context, data *domain.TopologyData, defs []domain.BoardDefinition, expectedRevision, _, updatedAt string) (*ports.ReplaceResult, error) {
+func (s *Store) ReplaceAll(_ context.Context, data *domain.TopologyData, defs []domain.BoardDefinition, expectedRevision, sourceType, updatedAt string) (*ports.ReplaceResult, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.Err != nil {
@@ -393,6 +470,7 @@ func (s *Store) ReplaceAll(_ context.Context, data *domain.TopologyData, defs []
 		return nil, ports.ErrPreconditionFailed
 	}
 	s.Data = clone(data)
+	s.recordSources(data, sourceType)
 	s.boards = map[domain.EntityID]domain.StoredBoard{}
 	for _, def := range defs {
 		s.boards[def.ServiceDefinitionID] = domain.StoredBoard{Definition: clone(def), Revision: "1", UpdatedAt: updatedAt}
@@ -494,5 +572,58 @@ func (b boards) Remove(_ context.Context, id domain.EntityID, ifRevision string)
 		return ports.ErrPreconditionFailed
 	}
 	delete(b.s.boards, id)
+	return nil
+}
+
+// integration is one source's state (ports.IntegrationStore).
+type integration struct {
+	aliases   map[string]domain.EntityID
+	aliasesAt int
+	lastSync  *ports.SyncRecord
+}
+
+// Integrations adapts the store to ports.IntegrationStore.
+func (s *Store) Integrations() ports.IntegrationStore { return integrations{s} }
+
+type integrations struct{ s *Store }
+
+func (i integrations) state(source string) *integration {
+	st, ok := i.s.integrations[source]
+	if !ok {
+		st = &integration{aliases: map[string]domain.EntityID{}}
+		i.s.integrations[source] = st
+	}
+	return st
+}
+
+func (i integrations) Aliases(_ context.Context, source string) (map[string]domain.EntityID, string, error) {
+	i.s.mu.Lock()
+	defer i.s.mu.Unlock()
+	st := i.state(source)
+	return clone(st.aliases), strconv.Itoa(st.aliasesAt), nil
+}
+
+func (i integrations) SaveAliases(_ context.Context, source string, aliases map[string]domain.EntityID, ifRevision string) (string, error) {
+	i.s.mu.Lock()
+	defer i.s.mu.Unlock()
+	st := i.state(source)
+	if ifRevision != strconv.Itoa(st.aliasesAt) {
+		return "", ports.ErrPreconditionFailed
+	}
+	st.aliases = clone(aliases)
+	st.aliasesAt++
+	return strconv.Itoa(st.aliasesAt), nil
+}
+
+func (i integrations) LastSync(_ context.Context, source string) (*ports.SyncRecord, error) {
+	i.s.mu.Lock()
+	defer i.s.mu.Unlock()
+	return i.state(source).lastSync, nil
+}
+
+func (i integrations) SaveLastSync(_ context.Context, source string, sync *ports.SyncRecord) error {
+	i.s.mu.Lock()
+	defer i.s.mu.Unlock()
+	i.state(source).lastSync = sync
 	return nil
 }

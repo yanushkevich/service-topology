@@ -17,7 +17,8 @@ import (
 //
 // History: 1 = MongoDB layout (ADR-019): canonical collections, history, layouts, simulation runs.
 // 2 = transitBoards: authored transit board definitions (ADR-031; additive).
-const SchemaVersion = 2
+// 3 = integrations and observations: topology source state and observed health (ADR-034; additive).
+const SchemaVersion = 3
 
 // Canonical topology collections, in TopologyData order. Each document is the entity's canonical
 // JSON plus _id (= the entity's stable ID) and _meta (backend-only bookkeeping).
@@ -41,12 +42,14 @@ const (
 	collEvents        = "simulationEvents"
 	collTelemetry     = "telemetryObservations"
 	collBoards        = "transitBoards"
+	collIntegrations  = "integrations" // one document per topology source: aliases, last sync
+	collObservations  = "observations" // one document per topology source: observed health and metrics
 )
 
 var canonicalCollections = []string{collEnvironments, collServiceDefinitions, collServiceInstances, collResources, collRelationships, collEventTypes, collBusinessFlows}
 
 func allCollections() []string {
-	return append(slices.Clone(canonicalCollections), collTopologyState, collSchemaInfo, collSnapshots, collLayouts, collRuns, collEvents, collTelemetry, collBoards)
+	return append(slices.Clone(canonicalCollections), collTopologyState, collSchemaInfo, collSnapshots, collLayouts, collRuns, collEvents, collTelemetry, collBoards, collIntegrations, collObservations)
 }
 
 type indexSpec struct {

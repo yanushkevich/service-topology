@@ -55,6 +55,8 @@ type Service struct {
 	NewID func() string
 	// Logger receives non-fatal problems such as failed retention pruning.
 	Logger *slog.Logger
+	// Sync is the configured topology source (ADR-034); nil disables /integrations.
+	Sync *SourceSync
 }
 
 func (s *Service) index(ctx context.Context) (*domain.Index, error) {

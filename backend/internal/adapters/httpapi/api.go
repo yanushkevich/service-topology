@@ -10,6 +10,7 @@ const (
 	maxImportBody   = 4 << 20  // a workflow definition file plus its mapping
 	maxBundleBody   = 16 << 20 // a data bundle: every module (ADR-032)
 	maxRequestBody  = 1 << 20  // simulation requests
+	maxSmallBody    = 4 << 10  // a sync apply: one preview ID
 )
 
 // handlerFunc is an API handler: it writes the response, or returns an error that writeError maps
@@ -19,8 +20,8 @@ type handlerFunc func(http.ResponseWriter, *http.Request) error
 // apiRoutes registers the contract v1 operations from docs/api/openapi.json under /api/v1. The
 // handlers live by area: routes_read.go (topology, registry, traversal, event types),
 // routes_entities.go (writes and imports), routes_history.go (snapshots and layouts),
-// routes_simulations.go (runs, events, telemetry), and routes_boards.go (transit board
-// definitions). Request parsing is in request.go.
+// routes_simulations.go (runs, events, telemetry), routes_boards.go (transit board definitions),
+// and routes_integrations.go (topology sources). Request parsing is in request.go.
 func (d Deps) apiRoutes(mux *http.ServeMux) {
 	h := func(pattern string, fn handlerFunc) {
 		mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
@@ -68,6 +69,14 @@ func (d Deps) apiRoutes(mux *http.ServeMux) {
 	h("GET /api/v1/transit-boards/{serviceId}", d.getBoard)
 	h("PUT /api/v1/transit-boards/{serviceId}", d.replaceBoard)
 	h("DELETE /api/v1/transit-boards/{serviceId}", d.deleteBoard)
+
+	// Topology sources (ADR-034): Dynatrace.
+	h("GET /api/v1/integrations/dynatrace", d.getIntegration)
+	h("POST /api/v1/integrations/dynatrace/check", d.checkIntegration)
+	h("POST /api/v1/integrations/dynatrace/preview", d.previewIntegrationSync)
+	h("POST /api/v1/integrations/dynatrace/apply", d.applyIntegrationSync)
+	h("GET /api/v1/integrations/dynatrace/aliases", d.getIntegrationAliases)
+	h("PUT /api/v1/integrations/dynatrace/aliases", d.replaceIntegrationAliases)
 
 	h("POST /api/v1/simulations", d.runSimulation)
 	h("GET /api/v1/simulations", d.listSimulations)

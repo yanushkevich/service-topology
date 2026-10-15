@@ -24,7 +24,8 @@ import (
 //
 //	ord         position in the canonical collection, so reads preserve order
 //	recordedAt  when this backend stored the record
-//	sourceType  where the record came from: "fixture", later adapter names
+//	sourceType  the source that created the record ("fixture", "import", "manual", "dynatrace"); a
+//	            replace keeps it, so a topology source owns what it created (ADR-034)
 //	endpoints   relationships only: [sourceEntityId, targetEntityId], for undirected traversal
 var stripped = map[string]bool{"_id": true, "_meta": true}
 
@@ -337,26 +338,25 @@ var collectionOf = map[string]string{
 	domain.KindBusinessFlow: collBusinessFlows,
 }
 
-// ApplyChange applies one validated change in a transaction (ports.TopologyWriter): it checks that
-// the stored revision is still expectedRevision, writes the entity (a new one goes last in canonical
-// order; a replaced one keeps its position), and stores a new revision.
+// ApplyChange applies one validated change (ports.TopologyWriter); see ApplyChanges.
 func (r *TopologyRepository) ApplyChange(ctx context.Context, change ports.EntityChange, expectedRevision, sourceType string) (string, error) {
-	collName, ok := collectionOf[change.Kind]
-	if !ok {
-		return "", fmt.Errorf("mongodb: kind %q is not writable", change.Kind)
+	return r.ApplyChanges(ctx, []ports.EntityChange{change}, expectedRevision, sourceType)
+}
+
+var _ ports.SourceWriter = (*TopologyRepository)(nil)
+
+// ApplyChanges applies validated changes in one transaction (ports.SourceWriter): it checks that
+// the stored revision is still expectedRevision, writes each entity (a new one goes last in
+// canonical order; a replaced one keeps its position and the source that created it), and stores
+// one new revision.
+func (r *TopologyRepository) ApplyChanges(ctx context.Context, changes []ports.EntityChange, expectedRevision, sourceType string) (string, error) {
+	for _, c := range changes {
+		if _, ok := collectionOf[c.Kind]; !ok {
+			return "", fmt.Errorf("mongodb: kind %q is not writable", c.Kind)
+		}
 	}
 	recordedAt := r.now().UTC().Format(time.RFC3339)
-	var b [16]byte
-	_, _ = rand.Read(b[:])
-	revision := hex.EncodeToString(b[:])
-	coll := r.s.coll(collName)
-	meta := func(ord int64) bson.D {
-		m := bson.D{{Key: "ord", Value: ord}, {Key: "recordedAt", Value: recordedAt}, {Key: "sourceType", Value: sourceType}}
-		if rel, ok := change.Entity.(*domain.CommunicationRelationship); ok {
-			m = append(m, bson.E{Key: "endpoints", Value: bson.A{rel.SourceEntityID, rel.TargetEntityID}})
-		}
-		return m
-	}
+	revision := newRevisionID()
 	err := r.s.inTx(ctx, func(ctx context.Context) error {
 		st, err := readState(ctx, r.s)
 		if err != nil {
@@ -365,58 +365,11 @@ func (r *TopologyRepository) ApplyChange(ctx context.Context, change ports.Entit
 		if st.Revision != expectedRevision {
 			return ports.ErrPreconditionFailed
 		}
-		switch change.Op {
-		case ports.OpCreate:
-			var last struct {
-				Meta struct {
-					Ord int64 `bson:"ord"`
-				} `bson:"_meta"`
-			}
-			ord := int64(0)
-			err := coll.FindOne(ctx, bson.D{}, options.FindOne().SetSort(bson.D{{Key: "_meta.ord", Value: -1}}).SetProjection(bson.D{{Key: "_meta.ord", Value: 1}})).Decode(&last)
-			switch {
-			case err == nil:
-				ord = last.Meta.Ord + 1
-			case !errors.Is(err, mongo.ErrNoDocuments):
+		w := &changeWriter{s: r.s, recordedAt: recordedAt, sourceType: sourceType, nextOrd: map[string]int64{}}
+		for _, change := range changes {
+			if err := w.apply(ctx, change); err != nil {
 				return err
 			}
-			doc, err := canonicalDoc(change.ID, change.Entity, meta(ord))
-			if err != nil {
-				return err
-			}
-			if _, err := coll.InsertOne(ctx, doc); err != nil {
-				return err
-			}
-		case ports.OpReplace:
-			var old struct {
-				Meta struct {
-					Ord int64 `bson:"ord"`
-				} `bson:"_meta"`
-			}
-			err := coll.FindOne(ctx, byID(change.ID), options.FindOne().SetProjection(bson.D{{Key: "_meta.ord", Value: 1}})).Decode(&old)
-			if errors.Is(err, mongo.ErrNoDocuments) {
-				return ports.ErrNotFound
-			}
-			if err != nil {
-				return err
-			}
-			doc, err := canonicalDoc(change.ID, change.Entity, meta(old.Meta.Ord))
-			if err != nil {
-				return err
-			}
-			if _, err := coll.ReplaceOne(ctx, byID(change.ID), doc); err != nil {
-				return err
-			}
-		case ports.OpDelete:
-			res, err := coll.DeleteOne(ctx, byID(change.ID))
-			if err != nil {
-				return err
-			}
-			if res.DeletedCount == 0 {
-				return ports.ErrNotFound
-			}
-		default:
-			return fmt.Errorf("mongodb: unknown operation %q", change.Op)
 		}
 		// The source of the topology as a whole (e.g. "fixture") is kept; a first write into an empty
 		// database records its own.
@@ -433,6 +386,123 @@ func (r *TopologyRepository) ApplyChange(ctx context.Context, change ports.Entit
 		return "", err
 	}
 	return revision, nil
+}
+
+// changeWriter writes the changes of one transaction.
+type changeWriter struct {
+	s                      *Store
+	recordedAt, sourceType string
+	// nextOrd is the next canonical position per collection, once read.
+	nextOrd map[string]int64
+}
+
+// storedMeta is the part of _meta a write keeps.
+type storedMeta struct {
+	Meta struct {
+		Ord        int64  `bson:"ord"`
+		SourceType string `bson:"sourceType"`
+	} `bson:"_meta"`
+}
+
+func (w *changeWriter) apply(ctx context.Context, change ports.EntityChange) error {
+	coll := w.s.coll(collectionOf[change.Kind])
+	switch change.Op {
+	case ports.OpCreate:
+		ord, err := w.next(ctx, coll)
+		if err != nil {
+			return err
+		}
+		doc, err := canonicalDoc(change.ID, change.Entity, w.meta(change, ord, w.sourceType))
+		if err != nil {
+			return err
+		}
+		_, err = coll.InsertOne(ctx, doc)
+		return err
+	case ports.OpReplace:
+		var old storedMeta
+		err := coll.FindOne(ctx, byID(change.ID), options.FindOne().SetProjection(bson.D{{Key: "_meta.ord", Value: 1}, {Key: "_meta.sourceType", Value: 1}})).Decode(&old)
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return ports.ErrNotFound
+		}
+		if err != nil {
+			return err
+		}
+		// Persisting never changes provenance: the creating source stays (ADR-034 ownership).
+		source := old.Meta.SourceType
+		if source == "" {
+			source = w.sourceType
+		}
+		doc, err := canonicalDoc(change.ID, change.Entity, w.meta(change, old.Meta.Ord, source))
+		if err != nil {
+			return err
+		}
+		_, err = coll.ReplaceOne(ctx, byID(change.ID), doc)
+		return err
+	case ports.OpDelete:
+		res, err := coll.DeleteOne(ctx, byID(change.ID))
+		if err != nil {
+			return err
+		}
+		if res.DeletedCount == 0 {
+			return ports.ErrNotFound
+		}
+		return nil
+	default:
+		return fmt.Errorf("mongodb: unknown operation %q", change.Op)
+	}
+}
+
+func (w *changeWriter) meta(change ports.EntityChange, ord int64, sourceType string) bson.D {
+	m := bson.D{{Key: "ord", Value: ord}, {Key: "recordedAt", Value: w.recordedAt}, {Key: "sourceType", Value: sourceType}}
+	if rel, ok := change.Entity.(*domain.CommunicationRelationship); ok {
+		m = append(m, bson.E{Key: "endpoints", Value: bson.A{rel.SourceEntityID, rel.TargetEntityID}})
+	}
+	return m
+}
+
+// next returns the position after the last document of coll (read once per transaction).
+func (w *changeWriter) next(ctx context.Context, coll *mongo.Collection) (int64, error) {
+	name := coll.Name()
+	if ord, ok := w.nextOrd[name]; ok {
+		w.nextOrd[name] = ord + 1
+		return ord, nil
+	}
+	var last storedMeta
+	ord := int64(0)
+	err := coll.FindOne(ctx, bson.D{}, options.FindOne().SetSort(bson.D{{Key: "_meta.ord", Value: -1}}).SetProjection(bson.D{{Key: "_meta.ord", Value: 1}})).Decode(&last)
+	switch {
+	case err == nil:
+		ord = last.Meta.Ord + 1
+	case !errors.Is(err, mongo.ErrNoDocuments):
+		return 0, err
+	}
+	w.nextOrd[name] = ord + 1
+	return ord, nil
+}
+
+// SourceTypes returns the creating source of every canonical entity (ports.SourceWriter).
+func (r *TopologyRepository) SourceTypes(ctx context.Context) (map[domain.EntityID]string, error) {
+	out := map[domain.EntityID]string{}
+	projection := options.Find().SetProjection(bson.D{{Key: "_meta.sourceType", Value: 1}})
+	for _, name := range canonicalCollections {
+		cur, err := r.s.coll(name).Find(ctx, bson.D{}, projection)
+		if err != nil {
+			return nil, mapErr(err)
+		}
+		var docs []struct {
+			ID   string `bson:"_id"`
+			Meta struct {
+				SourceType string `bson:"sourceType"`
+			} `bson:"_meta"`
+		}
+		if err := cur.All(ctx, &docs); err != nil {
+			return nil, mapErr(err)
+		}
+		for _, d := range docs {
+			out[d.ID] = d.Meta.SourceType
+		}
+	}
+	return out, nil
 }
 
 var byOrd = options.Find().SetSort(bson.D{{Key: "_meta.ord", Value: 1}})

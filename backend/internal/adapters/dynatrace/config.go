@@ -251,6 +251,20 @@ func (a AuthConfig) validate(at string, allowInsecureLoopback bool) []error {
 	return errs
 }
 
+// describe states the rule in words: "tag environment = production".
+func (m MatchRule) describe() string {
+	switch {
+	case m.Tag != nil:
+		return "tag " + m.Tag.Key + " = " + m.Tag.Value
+	case m.K8sCluster != "":
+		return "Kubernetes cluster " + m.K8sCluster
+	case len(m.K8sNamespaces) > 0:
+		return "Kubernetes namespaces " + strings.Join(m.K8sNamespaces, ", ")
+	default:
+		return "every service"
+	}
+}
+
 func (m MatchRule) criteria() int {
 	n := 0
 	for _, set := range []bool{m.Tag != nil, m.K8sCluster != "", len(m.K8sNamespaces) > 0, m.All} {

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"sync"
 	"time"
 
 	"servicetopology/backend/internal/domain"
@@ -66,6 +67,26 @@ func (c *Connector) Config() *Config { return c.cfg }
 // IsExample reports whether any tenant is an example tenant; its data is then never observed.
 func (c *Connector) IsExample() bool {
 	return slices.ContainsFunc(c.cfg.Tenants, func(t TenantConfig) bool { return t.Example })
+}
+
+// Describe returns the configuration without secrets: tenant hosts, auth kinds, environment rules.
+func (c *Connector) Describe() ports.SourceDescription {
+	out := ports.SourceDescription{IsExample: c.IsExample(), RefreshIntervalSeconds: int(c.cfg.Refresh.Interval.Seconds())}
+	for _, t := range c.cfg.Tenants {
+		auth := "platform-token"
+		if t.Auth.OAuth != nil {
+			auth = "oauth"
+		}
+		host := t.URL
+		if u, err := url.Parse(t.URL); err == nil {
+			host = u.Host
+		}
+		out.Tenants = append(out.Tenants, ports.SourceTenant{ID: t.ID, Host: host, Auth: auth, IsExample: t.Example})
+	}
+	for _, e := range c.cfg.Environments {
+		out.Environments = append(out.Environments, ports.SourceEnvironment{ID: e.ID, Name: e.Name, Kind: e.Kind, Tenant: e.Tenant, Match: e.Match.describe()})
+	}
+	return out
 }
 
 // Discover runs the structure queries on every tenant and maps them. Any failed query fails the
@@ -144,19 +165,32 @@ func (c *Connector) Check(ctx context.Context) []ports.SourceCheck {
 	return out
 }
 
-// runAll runs queries on one tenant, logging each (name, records, scanned bytes; never results).
+// runAll runs queries on one tenant in parallel, so a preview stays within the server's write
+// timeout. It logs each query (name, records, scanned bytes; never results) and returns the first
+// failure in query order.
 func (c *Connector) runAll(ctx context.Context, t tenantClient, queries []Query, now time.Time) (map[string]*queryResult, error) {
+	results := make([]*queryResult, len(queries))
+	errs := make([]error, len(queries))
+	var wg sync.WaitGroup
+	for i, q := range queries {
+		wg.Go(func() {
+			start := time.Now()
+			results[i], errs[i] = t.client.run(ctx, q, c.cfg, now)
+			if errs[i] != nil {
+				c.log.WarnContext(ctx, "dynatrace query failed", "tenant", t.cfg.ID, "query", q.Name, "error", errorMessage(errs[i]))
+				return
+			}
+			c.log.DebugContext(ctx, "dynatrace query", "tenant", t.cfg.ID, "query", q.Name, "records", len(results[i].Records),
+				"scannedBytes", results[i].ScannedBytes, "ms", time.Since(start).Milliseconds())
+		})
+	}
+	wg.Wait()
 	out := map[string]*queryResult{}
-	for _, q := range queries {
-		start := time.Now()
-		res, err := t.client.run(ctx, q, c.cfg, now)
-		if err != nil {
-			c.log.WarnContext(ctx, "dynatrace query failed", "tenant", t.cfg.ID, "query", q.Name, "error", errorMessage(err))
-			return nil, &SourceError{Tenant: t.cfg.ID, Query: q.Name, Err: err}
+	for i, q := range queries {
+		if errs[i] != nil {
+			return nil, &SourceError{Tenant: t.cfg.ID, Query: q.Name, Err: errs[i]}
 		}
-		c.log.DebugContext(ctx, "dynatrace query", "tenant", t.cfg.ID, "query", q.Name, "records", len(res.Records),
-			"scannedBytes", res.ScannedBytes, "ms", time.Since(start).Milliseconds())
-		out[q.Name] = res
+		out[q.Name] = results[i]
 	}
 	return out, nil
 }
@@ -170,7 +204,9 @@ type SourceError struct {
 func (e *SourceError) Error() string {
 	return "Dynatrace tenant " + e.Tenant + ", query " + e.Query + ": " + errorMessage(e.Err)
 }
-func (e *SourceError) Unwrap() error { return e.Err }
+
+// Unwrap lets callers match both the cause and ports.ErrSourceFailed.
+func (e *SourceError) Unwrap() []error { return []error{e.Err, ports.ErrSourceFailed} }
 
 // errorMessage returns a QueryError's safe message, or a fixed text for anything else.
 func errorMessage(err error) string {

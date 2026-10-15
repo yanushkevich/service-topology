@@ -37,6 +37,7 @@ How the container works:
 | `TRAVERSAL_SOURCE` | `memory` | `database` runs dependency/neighborhood traversals with `$graphLookup` (ADR-DB-004) |
 | `SIMULATION_RETENTION` | `168h` | simulation runs, events, telemetry older than this are pruned after each run (ADR-017) |
 | `SIMULATION_MAX_RUNS` | `200` | keep at most this many runs |
+| `DYNATRACE_CONFIG_FILE` | unset | the Dynatrace connector's YAML configuration (ADR-034, `docs/DYNATRACE_CONNECTOR.md` §3); secrets are files it names. Needs a database. Example: `dynatrace.example.yaml` (the fake tenant) |
 | `MONGODB_URI` | unset | e.g. `mongodb://127.0.0.1:27017/?replicaSet=rs0`; `mongodb+srv://` works too. When unset the API runs without a database and `/readyz` is 503. Credentials in the URI are rejected |
 | `MONGODB_DATABASE` | `topology` | letters, digits, `_` |
 | `MONGODB_USERNAME` | — | set together with `MONGODB_PASSWORD_FILE`, or neither for a server without authentication |
@@ -55,6 +56,7 @@ The Makefile uses `go` from `PATH`, else `/usr/local/go/bin/go`; override with `
 | `make dev-up` / `make dev-down` | start / stop MongoDB (data stays in the `backend_mongodb_data` volume) |
 | `make seed` | create collections/indexes if needed, load `fixtures/topology/mock.v1.json` and the snapshot fixtures (idempotent) |
 | `make import-flows FILE=../fixtures/flows/order-cancellation.bpmn` | import business flows from a native flow file or BPMN 2.0 (`FORMAT`, `MAPPING` optional; ADR-022) |
+| `make fake-dynatrace` | serve an invented Dynatrace tenant on `127.0.0.1:8099` (creates `secrets/dynatrace_example_token.txt`); then `DYNATRACE_CONFIG_FILE=dynatrace.example.yaml make run` (ADR-034) |
 | `make validate` | validate the mock fixture without a database |
 | `make schema-check` | verify collections, validators, indexes, and schema version |
 | `make test-integration` | integration tests; each uses and drops its own temporary database |

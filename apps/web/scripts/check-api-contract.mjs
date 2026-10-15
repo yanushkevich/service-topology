@@ -273,5 +273,26 @@ await check('import bundle, stale If-Match', 'post', '/imports/bundle', '/import
 await check('import bundle, invalid', 'post', '/imports/bundle', '/imports/bundle', { status: 422, body: { ...dataBundle, version: 2 } });
 await check('import bundle', 'post', '/imports/bundle', '/imports/bundle', { status: 200, body: dataBundle, headers: topologyTag ? { 'If-Match': topologyTag } : {} });
 
+// Dynatrace connector (ADR-034), against the fake tenant that contract-check.sh starts: status,
+// connection check, aliases, preview, and apply (last: the apply changes the seeded topology).
+const dynatrace = await check('dynatrace status', 'get', '/integrations/dynatrace', '/integrations/dynatrace', { status: undefined });
+if (dynatrace?.source === 'dynatrace') {
+  await check('dynatrace check', 'post', '/integrations/dynatrace/check', '/integrations/dynatrace/check', { status: 200 });
+  await check('dynatrace aliases', 'get', '/integrations/dynatrace/aliases', '/integrations/dynatrace/aliases', { status: 200 });
+  const aliasTag = lastHeaders.get('etag');
+  await check('replace dynatrace aliases', 'put', '/integrations/dynatrace/aliases', '/integrations/dynatrace/aliases', { status: 200, body: { aliases: { FraudScoring: 'fraud-scoring' } }, headers: { 'If-Match': aliasTag } });
+  await check('replace dynatrace aliases, stale If-Match', 'put', '/integrations/dynatrace/aliases', '/integrations/dynatrace/aliases', { status: 412, body: { aliases: {} }, headers: { 'If-Match': aliasTag } });
+  await check('replace dynatrace aliases, invalid', 'put', '/integrations/dynatrace/aliases', '/integrations/dynatrace/aliases', { status: 422, body: { aliases: { x: 'has/slash' } }, headers: { 'If-Match': '"1"' } });
+  const preview = await check('preview dynatrace sync', 'post', '/integrations/dynatrace/preview', '/integrations/dynatrace/preview', { status: 200 });
+  const base = lastHeaders.get('etag');
+  await check('apply dynatrace sync, stale If-Match', 'post', '/integrations/dynatrace/apply', '/integrations/dynatrace/apply', { status: 412, body: { previewId: preview?.id }, headers: { 'If-Match': '"stale"' } });
+  const again = await check('preview dynatrace sync again', 'post', '/integrations/dynatrace/preview', '/integrations/dynatrace/preview', { status: 200 });
+  await check('apply dynatrace sync', 'post', '/integrations/dynatrace/apply', '/integrations/dynatrace/apply', { status: 200, body: { previewId: again?.id }, headers: { 'If-Match': base } });
+  await check('apply dynatrace sync, used preview', 'post', '/integrations/dynatrace/apply', '/integrations/dynatrace/apply', { status: 404, body: { previewId: again?.id } });
+  await check('apply dynatrace sync, no preview ID', 'post', '/integrations/dynatrace/apply', '/integrations/dynatrace/apply', { status: 400, body: {} });
+} else {
+  console.log('SKIP  dynatrace: not configured on this server (DYNATRACE_CONFIG_FILE)');
+}
+
 console.log(`\n${checks - failures}/${checks} checks passed against ${BASE}`);
 process.exit(failures ? 1 : 0);

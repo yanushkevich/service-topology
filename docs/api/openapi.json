@@ -29,6 +29,10 @@
     {
       "name": "transit-boards",
       "description": "Authored transit board definitions (ADR-031): the declared structure of a service's board. Observed data is never part of a definition."
+    },
+    {
+      "name": "integrations",
+      "description": "Topology sources (ADR-034): the Dynatrace connector's status, connection check, sync preview and apply, and aliases. Every operation answers 404 integration-not-configured when the server has no DYNATRACE_CONFIG_FILE."
     }
   ],
   "paths": {
@@ -2119,6 +2123,476 @@
           }
         }
       }
+    },
+    "/integrations/dynatrace": {
+      "get": {
+        "operationId": "getDynatraceIntegration",
+        "tags": [
+          "integrations"
+        ],
+        "summary": "The Dynatrace connection: tenants, environment rules, and the last sync",
+        "description": "Configuration as shown to users: tenant hosts and how each authenticates (never secrets or file paths), how environments are matched, the refresh interval, the last applied sync, and how many aliases are stored. isExample is true for the fake tenant: its data is example data, never observed.",
+        "responses": {
+          "200": {
+            "description": "The connection.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationStatus"
+                },
+                "examples": {
+                  "configured": {
+                    "value": {
+                      "source": "dynatrace",
+                      "isExample": false,
+                      "tenants": [
+                        {
+                          "id": "main",
+                          "host": "abc12345.apps.dynatrace.com",
+                          "auth": "oauth",
+                          "isExample": false
+                        }
+                      ],
+                      "environments": [
+                        {
+                          "id": "production",
+                          "name": "Production",
+                          "kind": "production",
+                          "tenant": "main",
+                          "match": "tag environment = production"
+                        }
+                      ],
+                      "refreshIntervalSeconds": 60,
+                      "lastSync": {
+                        "appliedAt": "2026-10-15T08:45:00Z",
+                        "revision": "5f2c9d0e8a7b4c1d9e3f2a6b7c8d9e0f",
+                        "summary": {
+                          "service-instance": {
+                            "create": 4,
+                            "link": 3
+                          }
+                        }
+                      },
+                      "aliasCount": 2
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "x-repository": "IntegrationStore (ADR-034); frontend: Settings → Data source → Dynatrace"
+      }
+    },
+    "/integrations/dynatrace/check": {
+      "post": {
+        "operationId": "checkDynatraceConnection",
+        "tags": [
+          "integrations"
+        ],
+        "summary": "Run every Dynatrace query once and report what came back",
+        "description": "For diagnosing a connection: per tenant and query, whether it succeeded, the record count, expected fields that no record carries (the field names are taken from public documentation and must be confirmed on a real tenant), missing scopes, scanned bytes, and duration. Never fails as a whole. Needs the editor role when token authentication is on. 409 integration-busy while a preview or check runs.",
+        "responses": {
+          "200": {
+            "description": "One entry per tenant and query.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SourceCheck"
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "checked": {
+                    "value": {
+                      "items": [
+                        {
+                          "tenant": "main",
+                          "query": "services",
+                          "ok": true,
+                          "records": 214,
+                          "scannedBytes": 0,
+                          "durationMs": 412
+                        },
+                        {
+                          "tenant": "main",
+                          "query": "problems",
+                          "ok": false,
+                          "records": 0,
+                          "missingScopes": [
+                            "storage:events:read"
+                          ],
+                          "scannedBytes": 0,
+                          "durationMs": 96,
+                          "message": "Missing scopes: storage:events:read"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "x-repository": "TopologySource.check (ADR-034)"
+      }
+    },
+    "/integrations/dynatrace/preview": {
+      "post": {
+        "operationId": "previewDynatraceSync",
+        "tags": [
+          "integrations"
+        ],
+        "summary": "Discover the topology in Dynatrace and preview the changes a sync would make",
+        "description": "Reads Smartscape on Grail, maps it onto canonical entities, and reconciles it with the stored topology (docs/DYNATRACE_CONNECTOR.md §4): entities Dynatrace created are created, updated, or deleted; authored entities with the same ID, the same service and environment, or an alias are linked and never overwritten; entities that disappeared but are still used are kept and flagged. The whole result is validated. The preview is held for 10 minutes; apply it by ID. The ETag is the topology revision it is based on. Needs the editor role when token authentication is on. 502 source-failed when Dynatrace cannot answer; 409 integration-busy while a preview or check runs.",
+        "responses": {
+          "200": {
+            "description": "The preview.",
+            "headers": {
+              "ETag": {
+                "description": "The topology revision the preview is based on; send it as If-Match when applying.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncPreview"
+                },
+                "examples": {
+                  "preview": {
+                    "value": {
+                      "id": "preview-3f9a1c0e8b7d4a6f",
+                      "source": "dynatrace",
+                      "baseRevision": "5f2c9d0e8a7b4c1d9e3f2a6b7c8d9e0f",
+                      "createdAt": "2026-10-15T08:45:00Z",
+                      "expiresAt": "2026-10-15T08:55:00Z",
+                      "discoveredAt": "2026-10-15T08:45:00Z",
+                      "isExample": false,
+                      "summary": {
+                        "service-definition": {
+                          "create": 1,
+                          "link": 1
+                        },
+                        "service-instance": {
+                          "create": 1
+                        }
+                      },
+                      "changes": [
+                        {
+                          "op": "create",
+                          "kind": "service-definition",
+                          "id": "checkout-service",
+                          "name": "checkout-service"
+                        },
+                        {
+                          "op": "link",
+                          "kind": "service-definition",
+                          "id": "payment-service",
+                          "name": "Payment Service"
+                        },
+                        {
+                          "op": "create",
+                          "kind": "service-instance",
+                          "id": "checkout-service.production",
+                          "name": "checkout-service.production"
+                        }
+                      ],
+                      "notes": [
+                        {
+                          "code": "cross-environment-call",
+                          "message": "1 call crosses environments and was dropped.",
+                          "ids": [
+                            "SERVICE-1C12FA511D52194A → SERVICE-30E45F0274EFB653"
+                          ]
+                        }
+                      ],
+                      "issues": [],
+                      "canApply": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "502": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "x-repository": "TopologySource.discover + reconcile (ADR-034)"
+      }
+    },
+    "/integrations/dynatrace/apply": {
+      "post": {
+        "operationId": "applyDynatraceSync",
+        "tags": [
+          "integrations"
+        ],
+        "summary": "Apply a held sync preview",
+        "description": "Applies every change of the preview in one transaction, only if the topology revision is still the one the preview was based on, and records one new revision. A preview applies once. Needs the editor role when token authentication is on.",
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "description": "The revision the write is based on; a stale value fails with 412.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncApplyRequest"
+              },
+              "examples": {
+                "apply": {
+                  "value": {
+                    "previewId": "preview-3f9a1c0e8b7d4a6f"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Applied; the ETag is the new topology revision.",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SyncResult"
+                },
+                "examples": {
+                  "applied": {
+                    "value": {
+                      "revision": "9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d",
+                      "summary": {
+                        "service-instance": {
+                          "create": 1
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "410": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "412": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "x-repository": "SourceWriter.applyChanges (ADR-034)"
+      }
+    },
+    "/integrations/dynatrace/aliases": {
+      "get": {
+        "operationId": "getDynatraceAliases",
+        "tags": [
+          "integrations"
+        ],
+        "summary": "The alias list: Dynatrace service names mapped to service definition IDs",
+        "description": "Aliases are applied before a name's slug when discovering, so a Dynatrace service joins an existing definition (for example PaymentService → payment-service). The ETag is the list's revision.",
+        "responses": {
+          "200": {
+            "description": "The aliases.",
+            "headers": {
+              "ETag": {
+                "description": "The alias list revision; send it as If-Match when replacing.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AliasList"
+                },
+                "examples": {
+                  "aliases": {
+                    "value": {
+                      "aliases": {
+                        "PaymentService": "payment-service"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "x-repository": "IntegrationStore.aliases (ADR-034)"
+      },
+      "put": {
+        "operationId": "replaceDynatraceAliases",
+        "tags": [
+          "integrations"
+        ],
+        "summary": "Replace the alias list",
+        "description": "If-Match is required (the list's ETag; \"0\" before the first save). At most 1,000 aliases; each target must be a valid entity ID. Needs the editor role when token authentication is on.",
+        "parameters": [
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "description": "The revision the write is based on; a stale value fails with 412.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AliasList"
+              },
+              "examples": {
+                "aliases": {
+                  "value": {
+                    "aliases": {
+                      "PaymentService": "payment-service",
+                      "FraudScoring": "fraud-scoring"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stored; the ETag is the new revision.",
+            "headers": {
+              "ETag": {
+                "description": "The alias list revision.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AliasList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "404": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "412": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "413": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "415": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "422": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "x-repository": "IntegrationStore.saveAliases (ADR-034)"
+      }
     }
   },
   "components": {
@@ -3433,6 +3907,392 @@
             "type": "integer",
             "minimum": 0,
             "description": "Transit board definitions stored."
+          }
+        }
+      },
+      "IntegrationStatus": {
+        "type": "object",
+        "required": [
+          "source",
+          "isExample",
+          "tenants",
+          "environments",
+          "refreshIntervalSeconds",
+          "lastSync",
+          "aliasCount"
+        ],
+        "properties": {
+          "source": {
+            "type": "string",
+            "const": "dynatrace"
+          },
+          "isExample": {
+            "type": "boolean",
+            "description": "True when a tenant is an example (fake) tenant: its data is mock, never observed."
+          },
+          "tenants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "host",
+                "auth",
+                "isExample"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "host": {
+                  "type": "string"
+                },
+                "auth": {
+                  "type": "string",
+                  "enum": [
+                    "platform-token",
+                    "oauth"
+                  ]
+                },
+                "isExample": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "environments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "kind",
+                "tenant",
+                "match"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "tenant": {
+                  "type": "string"
+                },
+                "match": {
+                  "type": "string",
+                  "description": "The rule in words, e.g. \"tag environment = production\"."
+                }
+              }
+            }
+          },
+          "refreshIntervalSeconds": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "lastSync": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "appliedAt",
+                  "revision",
+                  "summary"
+                ],
+                "properties": {
+                  "appliedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "revision": {
+                    "type": "string"
+                  },
+                  "summary": {
+                    "type": "object",
+                    "description": "Changes per entity kind and operation.",
+                    "additionalProperties": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "aliasCount": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "SourceCheck": {
+        "type": "object",
+        "required": [
+          "tenant",
+          "query",
+          "ok",
+          "records",
+          "scannedBytes",
+          "durationMs"
+        ],
+        "properties": {
+          "tenant": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string",
+            "enum": [
+              "services",
+              "service-calls",
+              "service-belongs-to",
+              "k8s-nodes",
+              "databases",
+              "service-metrics",
+              "problems"
+            ]
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "records": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "missingFields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Expected fields that no record carries."
+          },
+          "missingScopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "scannedBytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "durationMs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "Dynatrace's (shortened) explanation of a failure, or a limit note. Never credentials."
+          }
+        }
+      },
+      "SyncChange": {
+        "type": "object",
+        "required": [
+          "op",
+          "kind",
+          "id",
+          "name"
+        ],
+        "properties": {
+          "op": {
+            "type": "string",
+            "enum": [
+              "create",
+              "update",
+              "link",
+              "keep",
+              "delete"
+            ],
+            "description": "create: new, owned by Dynatrace; update: owned, changed in Dynatrace; link: authored, linked (nothing overwritten); keep: owned, gone from Dynatrace but still used (health unknown, relationships inactive); delete: owned and gone."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "environment",
+              "service-definition",
+              "service-instance",
+              "resource",
+              "relationship"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "usedBy": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "For keep: the entities, flows, or boards (transit-board:<service>) that use it."
+          }
+        }
+      },
+      "SyncPreview": {
+        "type": "object",
+        "required": [
+          "id",
+          "source",
+          "baseRevision",
+          "createdAt",
+          "expiresAt",
+          "discoveredAt",
+          "isExample",
+          "summary",
+          "changes",
+          "notes",
+          "issues",
+          "canApply"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "baseRevision": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "discoveredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isExample": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "object",
+            "description": "Changes per entity kind and operation.",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SyncChange"
+            }
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "code",
+                "message"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "enum": [
+                    "service-without-environment",
+                    "duplicate-service",
+                    "cross-environment-call",
+                    "truncated-result"
+                  ]
+                },
+                "message": {
+                  "type": "string"
+                },
+                "ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Dynatrace IDs (at most 20)."
+                }
+              }
+            }
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Problem/properties/errors/items"
+            },
+            "description": "Validation of the resulting topology; any error makes canApply false."
+          },
+          "canApply": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SyncApplyRequest": {
+        "type": "object",
+        "required": [
+          "previewId"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "previewId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "SyncResult": {
+        "type": "object",
+        "required": [
+          "revision",
+          "summary"
+        ],
+        "properties": {
+          "revision": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "object",
+            "description": "Changes per entity kind and operation.",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      },
+      "AliasList": {
+        "type": "object",
+        "required": [
+          "aliases"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "aliases": {
+            "type": "object",
+            "maxProperties": 1000,
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
           }
         }
       }

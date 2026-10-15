@@ -79,7 +79,8 @@ func TestDiscoverThroughTheQueryAPI(t *testing.T) {
 			if len(d.Data.ServiceInstances) != 7 || len(d.Data.Relationships) != 10 || d.IsExample {
 				t.Errorf("instances=%d relationships=%d example=%v", len(d.Data.ServiceInstances), len(d.Data.Relationships), d.IsExample)
 			}
-			if !slices.Equal(tenant.Executed, []string{"services", "service-calls", "service-belongs-to", "k8s-nodes", "databases"}) {
+			// The queries run in parallel; each runs once.
+			if executed := slices.Sorted(slices.Values(tenant.Executed)); !slices.Equal(executed, []string{"databases", "k8s-nodes", "service-belongs-to", "service-calls", "services"}) {
 				t.Errorf("executed = %v", tenant.Executed)
 			}
 			if strings.Contains(logs.String(), platformToken) || strings.Contains(logs.String(), "fake-client-secret") {
