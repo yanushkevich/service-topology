@@ -14,7 +14,7 @@ var (
 	HealthValues               = []string{"healthy", "degraded", "unavailable", "unknown"}
 	EnvironmentKindValues      = []string{"development", "staging", "production", "other"}
 	ServiceCategoryValues      = []string{"api", "gateway", "application", "worker", "scheduled-job", "other"}
-	ResourceTypeValues         = []string{"account", "subscription", "project", "region", "datacenter", "cluster", "namespace", "workload", "database", "cache", "search-index", "broker", "topic", "queue", "exchange", "external-resource", "other"}
+	ResourceTypeValues         = []string{"account", "subscription", "project", "region", "datacenter", "host", "cluster", "namespace", "workload", "database", "cache", "search-index", "broker", "topic", "queue", "exchange", "external-resource", "other"}
 	ProtocolValues             = []string{"http", "https", "graphql", "grpc", "websocket", "kafka", "rabbitmq", "tcp", "tls", "postgresql", "mysql", "mongodb", "redis", "other"}
 	CommunicationPatternValues = []string{"synchronous", "asynchronous", "streaming", "scheduled", "database", "unknown"}
 	DirectionValues            = []string{"unidirectional", "bidirectional"}

@@ -36,7 +36,7 @@
     "ServiceCategory": { "enum": ["api", "gateway", "application", "worker", "scheduled-job", "other"] },
     "ResourceType": {
       "enum": [
-        "account", "subscription", "project", "region", "datacenter", "cluster", "namespace", "workload",
+        "account", "subscription", "project", "region", "datacenter", "host", "cluster", "namespace", "workload",
         "database", "cache", "search-index", "broker", "topic", "queue", "exchange", "external-resource", "other"
       ]
     },

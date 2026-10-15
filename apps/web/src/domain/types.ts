@@ -33,6 +33,7 @@ export const RESOURCE_TYPES = [
   'project',
   'region',
   'datacenter',
+  'host',
   'cluster',
   'namespace',
   'workload',
@@ -56,6 +57,7 @@ export const CONTAINMENT_ONLY_RESOURCE_TYPES: ReadonlySet<ResourceType> = new Se
   'project',
   'region',
   'datacenter',
+  'host',
   'cluster',
   'namespace',
 ]);

@@ -9,7 +9,7 @@ type EntityID = string
 // Containment-only resource types can never be communication endpoints (ADR-008).
 var containmentOnlyResourceTypes = map[string]bool{
 	"account": true, "subscription": true, "project": true, "region": true,
-	"datacenter": true, "cluster": true, "namespace": true,
+	"datacenter": true, "host": true, "cluster": true, "namespace": true,
 }
 
 // Resource types that can carry event types (ADR-014).

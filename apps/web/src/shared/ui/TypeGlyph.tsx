@@ -10,6 +10,7 @@ const GLYPH: Record<string, string> = {
   broker: 'glyph-cl',
   cluster: 'glyph-cl',
   namespace: 'glyph-ns',
+  host: 'glyph-ns',
   'external-resource': 'glyph-ex',
   connection: 'glyph-cn',
 };

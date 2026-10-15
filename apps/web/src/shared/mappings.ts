@@ -42,6 +42,7 @@ const TYPE_LABELS: Record<ServiceCategory | ResourceType, string> = {
   project: 'Project',
   region: 'Region',
   datacenter: 'Datacenter',
+  host: 'Host',
   cluster: 'Cluster',
   namespace: 'Namespace',
   workload: 'Workload',

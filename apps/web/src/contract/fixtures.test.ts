@@ -133,6 +133,13 @@ const CASES: Record<string, { description: string; mutate: Mutate }> = {
   'parent-cycle': { description: 'Containment cycle account → cluster → namespace → account', mutate: (d) => void (resource(d, 'acct').parentResourceId = 'ns') },
   'missing-relationship-endpoint': { description: 'Relationship target does not exist', mutate: (d) => void (relationship(d, 'r-saas').targetEntityId = 'ghost') },
   'invalid-relationship-endpoint-containment': { description: 'Relationship targets a containment-only resource', mutate: (d) => void (relationship(d, 'r-saas').targetEntityId = 'cluster') },
+  'invalid-relationship-endpoint-host': {
+    description: 'Relationship targets a host, which is containment only (ADR-034)',
+    mutate: (d) => {
+      d.resources.push({ id: 'host-1', name: 'vm-1', type: 'host', provider: 'on-prem', environmentId: 'prod' });
+      relationship(d, 'r-saas').targetEntityId = 'host-1';
+    },
+  },
   'invalid-relationship-endpoint-kind': { description: 'Relationship targets a service definition, not an instance or resource', mutate: (d) => void (relationship(d, 'r-saas').targetEntityId = 'svc-worker') },
   'self-relationship': { description: 'Relationship connects an entity to itself', mutate: (d) => void (relationship(d, 'r-saas').targetEntityId = 'api.prod') },
   'environment-mismatch': { description: 'Staging instance runs in a production namespace', mutate: (d) => void (instance(d, 'api.stg').resourceId = 'ns') },

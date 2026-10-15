@@ -81,7 +81,7 @@ export const AUTO_LABEL_LIMIT = 16;
 export const NEAR_LABEL_DISTANCE = 560;
 
 /** Resource types drawn as containers (rings around their members). */
-export const CONTAINER_TYPES: ReadonlySet<string> = new Set(['account', 'subscription', 'project', 'region', 'datacenter', 'cluster', 'namespace', 'broker']);
+export const CONTAINER_TYPES: ReadonlySet<string> = new Set(['account', 'subscription', 'project', 'region', 'datacenter', 'host', 'cluster', 'namespace', 'broker']);
 export const CURVE_SEGMENTS = 16;
 
 const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];

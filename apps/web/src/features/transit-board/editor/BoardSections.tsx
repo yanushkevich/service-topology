@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import { PATTERN_IDS, patternLabel } from '../../../domain/patterns';
-import type { TopologyData } from '../../../domain/types';
+import { CONTAINMENT_ONLY_RESOURCE_TYPES, type TopologyData } from '../../../domain/types';
 import { LINE_GROUPS, STATION_KINDS, type BoardDefinition, type LineDefinition } from '../../../transit/definition';
 import { GROUP_LABELS } from '../../../transit/board';
 import { POLICY_TYPES, type StationKind } from '../../../transit/types';
@@ -26,7 +26,7 @@ const rowClass = 'flex flex-col gap-2 rounded-lg border border-line p-2.5';
 export function StationsSection({ def, update, errors, topology }: SectionProps & { topology: TopologyData }) {
   const entities = [
     ...topology.serviceDefinitions.map((d) => ({ value: d.id, label: `${d.name} (service)` })),
-    ...topology.resources.filter((r) => !['account', 'subscription', 'project', 'region', 'datacenter', 'cluster', 'namespace'].includes(r.type)).map((r) => ({ value: r.id, label: `${r.name} (${r.type})` })),
+    ...topology.resources.filter((r) => !CONTAINMENT_ONLY_RESOURCE_TYPES.has(r.type)).map((r) => ({ value: r.id, label: `${r.name} (${r.type})` })),
   ].sort((a, b) => a.label.localeCompare(b.label, 'en'));
   return (
     <FieldGroup legend={`Stations · ${def.stations.length}`}>
