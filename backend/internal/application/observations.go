@@ -32,6 +32,8 @@ type ObservationMeta struct {
 	IsExample  bool   `json:"isExample"`
 	Entities   int    `json:"entities"`
 	Stale      bool   `json:"stale"`
+	// RefreshIntervalSeconds is how often the overlay is refreshed (clients refetch as often).
+	RefreshIntervalSeconds int `json:"refreshIntervalSeconds"`
 }
 
 // RefreshObservations observes the source now and replaces the overlay.
@@ -126,7 +128,8 @@ func (s *Service) observationMeta() *ObservationMeta {
 	if overlay == nil {
 		return nil
 	}
-	return &ObservationMeta{Source: overlay.Source, ObservedAt: overlay.ObservedAt, IsExample: overlay.IsExample, Entities: len(overlay.Entities), Stale: s.isStale(overlay)}
+	return &ObservationMeta{Source: overlay.Source, ObservedAt: overlay.ObservedAt, IsExample: overlay.IsExample, Entities: len(overlay.Entities), Stale: s.isStale(overlay),
+		RefreshIntervalSeconds: s.Sync.Source.Describe().RefreshIntervalSeconds}
 }
 
 // observed returns data with the current overlay merged on: health, metrics (instances), and the

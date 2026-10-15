@@ -9,6 +9,7 @@ import { SIMULATION_SPEEDS, useSimulationStore } from '../../state/simulationSto
 import { useUiStore } from '../../state/uiStore';
 import { Card, Note } from '../pages/PageShell';
 import { ExportDataRow, ImportDataRow } from './DataBundleRows';
+import { DynatraceRows } from './DynatraceRows';
 import { Row } from './SettingsRow';
 
 /**
@@ -212,7 +213,7 @@ function DataCard() {
   };
   return (
     <Card title="Data source">
-      <Row label="Current source" hint="All data is mock and all telemetry is simulated, including data served by the backend (seeded from the same fixtures).">
+      <Row label="Current source" hint="Mock data and simulated telemetry unless the backend syncs from Dynatrace: then entities and metrics observed there are labelled observed.">
         {topology.status === 'ready' ? <DataSourceTag sourceLabel={topology.sourceLabel} isMock={topology.isMock} /> : <span className="text-sm text-fg-2">Loading…</span>}
       </Row>
       <Row label="Dataset" hint="Switching reloads the app.">
@@ -232,6 +233,7 @@ function DataCard() {
         </ul>
       </Row>
       <SandboxRow />
+      <DynatraceRows />
       <ExportDataRow />
       <ImportDataRow />
       <Row label="Backend contract" hint="The Go + MongoDB backend in backend/ implements docs/api/openapi.json (OpenAPI 3.1).">

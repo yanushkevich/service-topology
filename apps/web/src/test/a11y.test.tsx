@@ -6,6 +6,7 @@ import { useSimulationStore } from '../state/simulationStore';
 import { useUiStore } from '../state/uiStore';
 import { renderApp, resetUiStore } from './renderApp';
 import { createWritableRepository } from './writableRepository';
+import { createFakeIntegration, readyPreview, repositoryWithIntegration } from './fakeIntegration';
 import { mockTopology } from '../data/mock/topology';
 import { createSandbox } from '../data/sandbox/sandbox';
 import { createSandboxStorage } from '../data/sandbox/storage';
@@ -160,6 +161,19 @@ describe('accessibility audit (axe-core)', { timeout: 30_000 }, () => {
     const bundle = bundleOf(mockTopology, [], { exportedAt: '2026-10-13T09:30:00Z', source: { label: 'Elsewhere', isMock: true } });
     await user.upload(input, new File([JSON.stringify(bundle)], 'data.json'));
     await screen.findByRole('button', { name: 'Replace data' });
+    expect(await audit()).toEqual([]);
+  });
+
+  it('settings with the Dynatrace connection: check results, a sync preview with an invalid result, and aliases (ADR-034)', async () => {
+    const user = userEvent.setup();
+    const fake = createFakeIntegration({ preview: { ...readyPreview, canApply: false, issues: [{ code: 'cross-environment-relationship', entityId: 'rel:x', message: 'Relationship crosses environments' }] } });
+    renderApp('/settings', repositoryWithIntegration(fake.integration));
+    await user.click(await screen.findByRole('button', { name: 'Check connection' }));
+    await screen.findByRole('table', { name: 'Connection check' });
+    await user.click(screen.getByRole('button', { name: 'Preview sync' }));
+    await screen.findByRole('alert');
+    await user.click(screen.getByText('Every change (5)'));
+    await user.click(screen.getByRole('button', { name: 'Add alias' }));
     expect(await audit()).toEqual([]);
   });
 

@@ -5,6 +5,7 @@ import { usePreferencesStore } from './preferencesStore';
 import {
   createSimulation,
   injectFailure,
+  rebase,
   recover,
   recoverAll,
   reset,
@@ -31,6 +32,8 @@ interface SimulationStore {
   speed: SimulationSpeed;
   /** Start (or restart) from freshly loaded data. Keeps the current simulation if the baseline is the same object. */
   initialize: (baseline: TopologyData) => void;
+  /** Continue the current run on refreshed data (observations, ADR-034); starts one if there is none. */
+  refresh: (baseline: TopologyData) => void;
   step: () => void;
   inject: (entityId: EntityId, mode: FailureMode, durationTicks?: number) => void;
   recover: (entityId: EntityId) => void;
@@ -52,6 +55,10 @@ export const useSimulationStore = create<SimulationStore>()((set, get) => {
     initialize: (baseline) => {
       if (get().sim?.baseline === baseline) return;
       set({ sim: createSimulation(baseline), running: false });
+    },
+    refresh: (baseline) => {
+      const { sim } = get();
+      set({ sim: sim ? rebase(sim, baseline) : createSimulation(baseline) });
     },
     step: () => update((sim) => step(sim)),
     inject: (entityId, mode, durationTicks) =>

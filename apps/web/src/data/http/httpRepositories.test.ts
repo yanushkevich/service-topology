@@ -3,7 +3,7 @@ import { mockSnapshots } from '../mock/snapshots';
 import { mockTopology } from '../mock/topology';
 import { selectRepository } from '../selectRepository';
 import { ApiError, createApiClient } from './apiClient';
-import { createHttpSavedLayoutRepository, createHttpSnapshotRepository, createHttpTopologyRepository } from './httpRepositories';
+import { createHttpSavedLayoutRepository, createHttpSnapshotRepository, createHttpTopologyRepository, describeSource } from './httpRepositories';
 
 type Route = (init: RequestInit | undefined) => { status: number; body?: unknown; headers?: Record<string, string> };
 
@@ -155,5 +155,35 @@ describe('HTTP topology writer (ADR-020)', () => {
     // Generated datasets stay read-only.
     expect(selectRepository('?dataset=scale-250').topology.writer).toBeUndefined();
     expect(selectRepository('?dataset=scale-250').transit.boards).toBeUndefined();
+  });
+});
+
+describe('describeSource (ADR-034)', () => {
+  const observations = { source: 'dynatrace', observedAt: '2026-10-15T08:46:00Z', isExample: false, entities: 12, stale: false, refreshIntervalSeconds: 60 };
+
+  it('names Dynatrace observations with their time', () => {
+    const { sourceLabel, isMock } = describeSource({ topology: { sourceType: 'dynatrace', isMock: false }, observations });
+    expect(sourceLabel).toMatch(/^Backend API · dynatrace · observed by Dynatrace at .+$/);
+    expect(isMock).toBe(false);
+  });
+
+  it('never calls an example tenant observed, and says when observations are out of date', () => {
+    expect(describeSource({ topology: { sourceType: 'fixture', isMock: true }, observations: { ...observations, isExample: true } })).toMatchObject({
+      sourceLabel: expect.stringMatching(/^Backend API · mock inventory · example Dynatrace tenant \(.+\)$/),
+      isMock: true,
+    });
+    expect(describeSource({ topology: { sourceType: 'fixture', isMock: true }, observations: { ...observations, stale: true } }).sourceLabel).toMatch(/Dynatrace observations out of date \(last .+\)$/);
+  });
+
+  it('asks for a refetch as often as the backend refreshes', async () => {
+    const { fn } = fakeFetch({
+      'GET /api/v1/meta': () => ({ status: 200, body: { topology: { sourceType: 'fixture', isMock: true }, observations } }),
+      'GET /api/v1/topology': () => ({ status: 200, body: mockTopology }),
+    });
+    const repo = createHttpTopologyRepository(createApiClient('/api/v1', fn));
+    expect(repo.refreshMs).toBeNull();
+    await repo.getTopology();
+    expect(repo.refreshMs).toBe(60_000);
+    expect(repo.integration).toBeDefined();
   });
 });

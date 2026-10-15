@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { endpointName, kindOfId, resourceAncestors, type TopologyIndex } from '../../domain/topologyIndex';
+import { DYNATRACE_LINK_KEY, sourceLinkOf, type SourceLink } from '../../domain/sourceLink';
 import type { CommunicationRelationship, EntityId, EntityRef, HealthStatus, Metrics } from '../../domain/types';
 import { formatMetadataValue, formatNumber, formatTimestamp } from '../../shared/format';
 import { healthLabel, protocolLabel, relationshipStatusHealth, typeLabel } from '../../shared/mappings';
@@ -232,8 +233,39 @@ export function MetricsSection({ metrics }: { metrics: Metrics | undefined }) {
   );
 }
 
+/**
+ * Where an entity's data comes from in Dynatrace (ADR-034): its Smartscape ID, when its health was
+ * observed and the open Davis problems, or that Dynatrace no longer sees it but it is kept because
+ * something here uses it. Nothing for entities without a link.
+ */
+export function SourceLinkSection({ metadata, observable }: { metadata: Record<string, unknown> | undefined; observable: boolean }) {
+  const link = sourceLinkOf(metadata);
+  if (!link) return null;
+  return (
+    <Section title="Dynatrace">
+      {link.id && <KeyValue label="Entity" value={link.id} />}
+      {link.name && <KeyValue label="Service name" value={link.name} />}
+      {link.missingSince && (
+        <p className="m-0 px-2 py-1 text-sm text-warn-fg">Not seen in Dynatrace since {formatTimestamp(link.missingSince)}. Kept because something here still uses it.</p>
+      )}
+      {observable && !link.missingSince && <ObservedLine link={link} />}
+    </Section>
+  );
+}
+
+function ObservedLine({ link }: { link: SourceLink }) {
+  if (!link.observedAt) return <p className="m-0 px-2 py-1 text-sm text-fg-3">Health not observed yet, or the last observation is out of date.</p>;
+  return (
+    <p className="m-0 px-2 py-1 text-sm text-fg-2">
+      Health observed at {formatTimestamp(link.observedAt)} ·{' '}
+      {link.problems.length > 0 ? <span className="text-warn-fg">open problems: {link.problems.join(', ')}</span> : 'no open problems'}
+    </p>
+  );
+}
+
 export function Metadata({ metadata }: { metadata: Record<string, unknown> | undefined }) {
-  const entries = Object.entries(metadata ?? {}).filter(([key]) => key !== 'note');
+  // The Dynatrace link has its own section (SourceLinkSection).
+  const entries = Object.entries(metadata ?? {}).filter(([key]) => key !== 'note' && key !== DYNATRACE_LINK_KEY);
   if (entries.length === 0) return null;
   return (
     <Section title="Metadata">

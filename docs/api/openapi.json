@@ -2184,7 +2184,8 @@
                         "observedAt": "2026-10-15T08:46:00Z",
                         "isExample": false,
                         "entities": 12,
-                        "stale": false
+                        "stale": false,
+                        "refreshIntervalSeconds": 60
                       }
                     }
                   }
@@ -4367,7 +4368,8 @@
           "observedAt",
           "isExample",
           "entities",
-          "stale"
+          "stale",
+          "refreshIntervalSeconds"
         ],
         "properties": {
           "source": {
@@ -4388,6 +4390,11 @@
           "stale": {
             "type": "boolean",
             "description": "Older than three refresh intervals: not merged onto topology reads."
+          },
+          "refreshIntervalSeconds": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "How often the overlay is refreshed; clients refetch the topology as often."
           }
         }
       }

@@ -6,6 +6,8 @@ import type { SnapshotRepository } from '../snapshots/SnapshotRepository';
 import { parseSavedLayout, type SavedLayout } from '../savedLayouts/savedLayout';
 import type { SavedLayoutRepository } from '../savedLayouts/SavedLayoutRepository';
 import { ApiError, createApiClient, type ApiClient } from './apiClient';
+import { createHttpSourceIntegration } from './httpIntegration';
+import type { ObservationMeta } from '../integrations/sourceIntegration';
 
 /**
  * HTTP implementations of the frontend repositories (Milestone B6). They talk to the Go backend
@@ -15,6 +17,24 @@ import { ApiError, createApiClient, type ApiClient } from './apiClient';
 
 interface Meta {
   topology?: { sourceType?: string; isMock?: boolean } | null;
+  observations?: ObservationMeta | null;
+}
+
+const clockTime = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+/**
+ * The data-source label and mock flag from GET /meta. Mock unless the topology is observed; a
+ * topology source's observations (ADR-034) are named with their time, and an example tenant is
+ * never called observed.
+ */
+export function describeSource(meta: Meta): { sourceLabel: string; isMock: boolean } {
+  const source = meta.topology?.sourceType || 'unknown source';
+  const parts = [`Backend API · ${source === 'fixture' ? 'mock inventory' : source}`];
+  const o = meta.observations;
+  if (o?.isExample) parts.push(`example Dynatrace tenant (${clockTime(o.observedAt)})`);
+  else if (o?.stale) parts.push(`Dynatrace observations out of date (last ${clockTime(o.observedAt)})`);
+  else if (o) parts.push(`observed by Dynatrace at ${clockTime(o.observedAt)}`);
+  return { sourceLabel: parts.join(' · '), isMock: meta.topology?.isMock !== false };
 }
 
 /**
@@ -25,6 +45,7 @@ interface Meta {
 export function createHttpTopologyRepository(api: ApiClient = createApiClient()): TopologyRepository {
   let sourceLabel = 'Backend API';
   let isMock = true;
+  let refreshMs: number | null = null;
   let revision: string | null = null;
   const path = (kind: WritableKind, id?: string) => `/entities/${kind}${id === undefined ? '' : `/${encodeURIComponent(id)}`}`;
   const writer: TopologyWriter = {
@@ -53,19 +74,22 @@ export function createHttpTopologyRepository(api: ApiClient = createApiClient())
   return {
     writer,
     importer,
+    integration: createHttpSourceIntegration(api),
     get sourceLabel() {
       return sourceLabel;
     },
     get isMock() {
       return isMock;
     },
+    get refreshMs() {
+      return refreshMs;
+    },
     async getTopology(signal?: AbortSignal): Promise<TopologyData> {
       const [meta, tagged] = await Promise.all([api.get<Meta>('/meta', signal), api.getTagged<TopologyData>('/topology', signal)]);
       const data = tagged.data;
       revision = tagged.etag;
-      const source = meta.topology?.sourceType || 'unknown source';
-      isMock = meta.topology?.isMock !== false;
-      sourceLabel = `Backend API · ${source === 'fixture' ? 'mock inventory' : source}`;
+      ({ sourceLabel, isMock } = describeSource(meta));
+      refreshMs = meta.observations ? meta.observations.refreshIntervalSeconds * 1000 : null;
       return data;
     },
   };

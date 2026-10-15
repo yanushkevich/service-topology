@@ -4,7 +4,7 @@ import { formatTimestamp } from '../../shared/format';
 import { protocolLabel, providerLabel, typeLabel } from '../../shared/mappings';
 import { StatusShape } from '../../shared/ui/StatusShape';
 import { EnvironmentNotice, MapActions, SimulationSection, TransitBoardLink } from './InspectorActions';
-import { Body, ContainmentPath, EntityButton, Field, Fields, Header, KeyValue, Metadata, MetricsSection, Relationships, Section } from './InspectorParts';
+import { Body, ContainmentPath, EntityButton, Field, Fields, Header, KeyValue, Metadata, MetricsSection, Relationships, Section, SourceLinkSection } from './InspectorParts';
 import { noteOf } from './inspectorText';
 
 /** Inspector details of a service instance. */
@@ -78,6 +78,7 @@ export function InstanceDetails({ index, instance }: { index: TopologyIndex; ins
           ))}
         </Section>
 
+        <SourceLinkSection metadata={instance.metadata} observable={true} />
         <Metadata metadata={instance.metadata} />
       </Body>
     </>

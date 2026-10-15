@@ -3,7 +3,7 @@ import { mockTopology } from '../data/mock/topology';
 import { diffTopology } from '../domain/snapshot';
 import type { TopologyData } from '../domain/types';
 import { validateTopology } from '../domain/validation';
-import { createSimulation, injectFailure, MAX_EVENTS, recover, recoverAll, reset, step, TICK_SECONDS } from './engine';
+import { createSimulation, injectFailure, MAX_EVENTS, rebase, recover, recoverAll, reset, step, TICK_SECONDS } from './engine';
 
 function deepFreeze<T>(value: T): T {
   if (value && typeof value === 'object') {
@@ -117,5 +117,37 @@ describe('simulation engine', () => {
     const sim = injectFailure(createSimulation(baseline()), 'payment-service.production', 'unavailable');
     expect(() => injectFailure(sim, 'ghost', 'unavailable')).toThrow();
     expect(reset(sim)).toEqual(createSimulation(sim.baseline, { seed: sim.seed }));
+  });
+});
+
+describe('observed metrics and refreshed baselines (ADR-034)', () => {
+  const observed = (): TopologyData =>
+    deepFreeze({
+      ...structuredClone(mockTopology),
+      serviceInstances: mockTopology.serviceInstances.map((i) => (i.id === 'payment-service.production' && i.metrics ? { ...i, metrics: { ...i.metrics, isSimulated: false } } : i)),
+    });
+  const metricsOf = (data: TopologyData, id: string) => data.serviceInstances.find((i) => i.id === id)?.metrics;
+
+  it('leaves observed metrics as observed while nothing simulated affects them', () => {
+    const base = observed();
+    const later = step(createSimulation(base, { seed: 3 }), 20);
+    expect(metricsOf(later.data, 'payment-service.production')).toEqual(metricsOf(base, 'payment-service.production'));
+    expect(later.drift['payment-service.production']).toBeUndefined();
+    const failed = injectFailure(later, 'payment-service.production', 'degraded');
+    expect(metricsOf(failed.data, 'payment-service.production')?.isSimulated).toBe(true);
+  });
+
+  it('continues a run on a refreshed baseline, keeping its failures, clock, and drift', () => {
+    const run = step(injectFailure(createSimulation(baseline(), { seed: 5 }), 'rds-orders-prod', 'unavailable'), 4);
+    const refreshed = deepFreeze({ ...structuredClone(mockTopology), serviceInstances: mockTopology.serviceInstances.map((i) => (i.id === 'cart-service.production' ? { ...i, health: 'degraded' as const } : i)) });
+    const next = rebase(run, refreshed);
+    expect(next.baseline).toBe(refreshed);
+    expect(next.failures).toEqual(run.failures);
+    expect([next.tick, next.clock, next.drift]).toEqual([run.tick, run.clock, run.drift]);
+    expect(health(next.data, 'rds-orders-prod')).toBe('unavailable');
+    expect(health(next.data, 'cart-service.production')).toBe('degraded');
+    // A failure on an entity that is gone from the new baseline ends.
+    const without = deepFreeze({ ...structuredClone(mockTopology), resources: mockTopology.resources.filter((r) => r.id !== 'rds-orders-prod'), relationships: mockTopology.relationships.filter((r) => r.sourceEntityId !== 'rds-orders-prod' && r.targetEntityId !== 'rds-orders-prod') });
+    expect(rebase(run, without).failures).toEqual([]);
   });
 });

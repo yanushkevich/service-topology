@@ -13,6 +13,7 @@ import type {
 
 import type { BundleImporter } from '../bundle/bundle';
 import type { SandboxControls } from '../sandbox/sandbox';
+import type { SourceIntegration } from '../integrations/sourceIntegration';
 
 /**
  * Data access boundary. Features depend on this interface, never on mock arrays directly, so a
@@ -33,6 +34,13 @@ export interface TopologyRepository {
   readonly importer?: BundleImporter;
   /** Present for the local sandbox (ADR-031): its storage state and reset. */
   readonly sandbox?: SandboxControls;
+  /** Present on the backend API: the Dynatrace connector (ADR-034); its status says whether it is configured. */
+  readonly integration?: SourceIntegration;
+  /**
+   * How often to refetch so observed health and metrics stay current (ADR-034); null when nothing
+   * is observed. Known after the first getTopology.
+   */
+  readonly refreshMs?: number | null;
 }
 
 /** Entity kinds that can be created, updated, and deleted (ADR-020): the selection kinds plus event types and business flows (ADR-022). */

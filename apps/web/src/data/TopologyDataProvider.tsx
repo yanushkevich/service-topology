@@ -19,8 +19,9 @@ type Load =
   | { status: 'loaded'; baseline: TopologyData; issues: readonly ValidationIssue[] };
 
 /**
- * Loads topology once from the active repository, starts the simulation from it, and exposes one
- * index for every view: the current (simulated) state, or a snapshot while browsing history.
+ * Loads topology from the active repository, starts the simulation from it, and exposes one index
+ * for every view: the current (simulated) state, or a snapshot while browsing history. Observed
+ * data is refetched as often as the backend refreshes it.
  */
 export function TopologyDataProvider({ children }: { children: ReactNode }) {
   const repository = useContext(RepositoryContext);
@@ -63,6 +64,30 @@ export function TopologyDataProvider({ children }: { children: ReactNode }) {
       });
     return () => controller.abort();
   }, [repository, version]);
+
+  // Observed health and metrics refresh on the server (ADR-034): refetch as often (not while the
+  // tab is hidden), and continue the simulation on the new data instead of restarting it.
+  const refreshMs = load.status === 'loaded' ? (repository.refreshMs ?? null) : null;
+  useEffect(() => {
+    if (!refreshMs) return;
+    const controller = new AbortController();
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'hidden') return;
+      repository
+        .getTopology(controller.signal)
+        .then((data) => {
+          if (controller.signal.aborted) return;
+          useSimulationStore.getState().refresh(data);
+          setLoad({ status: 'loaded', baseline: data, issues: validateTopology(data) });
+        })
+        // Keep what is shown; the next interval tries again.
+        .catch(() => undefined);
+    }, refreshMs);
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+    };
+  }, [repository, refreshMs]);
 
   const reload = useCallback(
     () =>

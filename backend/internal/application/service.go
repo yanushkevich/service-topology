@@ -94,6 +94,10 @@ func (s *Service) Meta(ctx context.Context, schemaVersion int, authMode string) 
 		if err != nil {
 			return nil, err
 		}
+		// A topology first written by a real topology source is observed, not mock (ADR-034).
+		if s.Sync != nil && tm.SourceType == s.Sync.Source.Name() {
+			tm.IsMock = s.Sync.Source.Describe().IsExample
+		}
 		m.Topology = tm
 	}
 	return m, nil

@@ -5,7 +5,7 @@ import { providerLabel, typeLabel } from '../../shared/mappings';
 import { StatusShape } from '../../shared/ui/StatusShape';
 import { TypeGlyph } from '../../shared/ui/TypeGlyph';
 import { EnvironmentNotice, MapActions, SimulationSection } from './InspectorActions';
-import { Body, ContainmentPath, EntityButton, Field, Fields, Header, Metadata, MetricsSection, Relationships, Section } from './InspectorParts';
+import { Body, ContainmentPath, EntityButton, Field, Fields, Header, Metadata, MetricsSection, Relationships, Section, SourceLinkSection } from './InspectorParts';
 import { noteOf } from './inspectorText';
 
 /** Inspector details of an infrastructure resource, including the event types a channel carries. */
@@ -71,6 +71,7 @@ export function ResourceDetails({ index, resource }: { index: TopologyIndex; res
         <EventsCarried index={index} channelId={resource.id} />
         <MetricsSection metrics={resource.metrics} />
         <Relationships index={index} entityId={resource.id} />
+        <SourceLinkSection metadata={resource.metadata} observable={true} />
         <Metadata metadata={resource.metadata} />
       </Body>
     </>

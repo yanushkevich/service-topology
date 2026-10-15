@@ -4,7 +4,7 @@ import { formatTimestamp } from '../../shared/format';
 import { patternLabel, protocolLabel, relationshipStatusHealth, relationshipStatusLabel } from '../../shared/mappings';
 import { StatusShape } from '../../shared/ui/StatusShape';
 import { TypeGlyph } from '../../shared/ui/TypeGlyph';
-import { Body, EntityButton, Field, Fields, Header, KeyValue, Metadata, MetricsSection, Section } from './InspectorParts';
+import { Body, EntityButton, Field, Fields, Header, KeyValue, Metadata, MetricsSection, Section, SourceLinkSection } from './InspectorParts';
 import { noteOf } from './inspectorText';
 
 /** Inspector details of a communication relationship (connection). */
@@ -39,6 +39,7 @@ export function RelationshipDetails({ index, relationship }: { index: TopologyIn
         </Fields>
         {relationship.endpoint && <KeyValue label="Endpoint" value={relationship.endpoint} />}
         <MetricsSection metrics={relationship.metrics} />
+        <SourceLinkSection metadata={relationship.metadata} observable={false} />
         <Metadata metadata={relationship.metadata} />
       </Body>
     </>

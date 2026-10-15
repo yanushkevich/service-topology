@@ -365,6 +365,18 @@ export function step(state: SimulationState, ticks = 1): SimulationState {
   return current;
 }
 
+/**
+ * Continue the run on a fresh baseline (observed health and metrics refreshed, ADR-034): failures
+ * on entities that still exist, the clock, drift, and events are kept. Frontend-only (the Go port
+ * runs scripted, bounded runs and has no refresh).
+ */
+export function rebase(state: SimulationState, baseline: TopologyData): SimulationState {
+  const ids = new Set<EntityId>([...baseline.serviceInstances.map((i) => i.id), ...baseline.resources.map((r) => r.id)]);
+  const failures = state.failures.filter((f) => ids.has(f.entityId));
+  const { data, impacts } = derive(baseline, failures, state.drift, state.clock);
+  return { ...state, baseline, failures, data, impacts };
+}
+
 /** Reset to the baseline at the original start time, keeping the seed. */
 export function reset(state: SimulationState, startAt?: string): SimulationState {
   return createSimulation(state.baseline, { seed: state.seed, ...(startAt ? { startAt } : {}) });

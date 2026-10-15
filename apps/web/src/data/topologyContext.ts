@@ -7,6 +7,7 @@ import type { TopologyRepository, TopologyWriter } from './repositories/Topology
 import { createMockTopologyRepository } from './repositories/mockTopologyRepository';
 import type { SandboxControls } from './sandbox/sandbox';
 import type { BundleImporter } from './bundle/bundle';
+import type { SourceIntegration } from './integrations/sourceIntegration';
 
 export type TopologyState =
   | { status: 'loading' }
@@ -49,4 +50,9 @@ export const TopologyEditingContext = createContext<TopologyEditing>({ writer: n
 
 export function useTopologyEditing(): TopologyEditing {
   return useContext(TopologyEditingContext);
+}
+
+/** The backend's Dynatrace connector (ADR-034); null with built-in or generated data. */
+export function useSourceIntegration(): SourceIntegration | null {
+  return useContext(RepositoryContext).integration ?? null;
 }

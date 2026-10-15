@@ -3,7 +3,7 @@ import type { ServiceDefinition } from '../../domain/types';
 import { protocolLabel, providerLabel, typeLabel } from '../../shared/mappings';
 import { StatusShape } from '../../shared/ui/StatusShape';
 import { TransitBoardLink } from './InspectorActions';
-import { Body, EntityButton, Field, Fields, Header, Metadata, Section } from './InspectorParts';
+import { Body, EntityButton, Field, Fields, Header, Metadata, Section, SourceLinkSection } from './InspectorParts';
 
 /** Inspector details of a logical service definition. */
 export function DefinitionDetails({ index, definition }: { index: TopologyIndex; definition: ServiceDefinition }) {
@@ -38,6 +38,7 @@ export function DefinitionDetails({ index, definition }: { index: TopologyIndex;
             </EntityButton>
           ))}
         </Section>
+        <SourceLinkSection metadata={definition.metadata} observable={false} />
         <Metadata metadata={definition.metadata} />
       </Body>
     </>
