@@ -459,3 +459,5 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - New endpoints under `/integrations/dynatrace`, a batch write port, and an `observations` document merged on read.
   - The field names are taken from public documentation and must be confirmed on the first real connection; the connection check reports any differences.
   - Hosts, queues, and topics are not mapped yet.
+- **Amendment (2026-10-15, Milestone 15.1):** a `host` resource type is added as a containment level (domain change in TypeScript, Go, and the schema), so services outside Kubernetes run in their host. Topics and queues come from the documented messaging metrics (`dt.service.messaging.publish.count` and `.receive.count` by destination and system), because Smartscape has no channel nodes. Service metrics join on `dt.smartscape.service`, as Dynatrace's service docs do. Metrics on calls stay out: they need spans.
+
