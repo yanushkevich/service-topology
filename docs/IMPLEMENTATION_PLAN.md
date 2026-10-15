@@ -216,7 +216,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 11.5 | Implemented (2026-10-13) | Export and import all data as one JSON or YAML bundle from Settings; backend B11 import endpoint (ADR-032); `docs/milestones/MILESTONE_11_5_DATA_BUNDLE.md`. |
 | 11.6 | Implemented (2026-10-13) | UI polish: defects from a real-browser review, quick search across everything (ADR-033), inspector only when useful, map opens at the selection, phone header, flows on the Overview, clearer flow targets; `docs/milestones/MILESTONE_11_6_UI_POLISH.md`. |
 | 14 | **On hold** (2026-10-12) | Real data instead of example data: sources, contract freeze, backend observability module, HTTP repository (ADR-030, proposed). Waits for the answers in `docs/REAL_DATA_INTEGRATION.md` §6; `docs/milestones/MILESTONE_14_REAL_DATA.md`. |
-| 12 | Implemented (2026-10-13) | Flows in impact analysis and simulation, with backend B9 (ADR-025); see the Milestone 12 closeout. `make test-integration` and `make contract-check` not yet run. |
+| 12 | Implemented (2026-10-13) | Flows in impact analysis and simulation, with backend B9 (ADR-025); see the Milestone 12 closeout. `make test-integration` and `make contract-check` pass (2026-10-15). |
 | 13 | Removed (2026-10-13) | 3D drill-down from a flow into its services (ADR-026); see the Milestone 13 closeout. |
 | 13.1 | Removed (2026-10-13) | 3D drill-down refinement: the flow's lines only, planes under their steps, pads for services without a board, the 2D board's visual language; `docs/milestones/MILESTONE_13_1_DRILLDOWN_REFINEMENT.md`. |
 | 13.2 | Implemented (2026-10-13) | Which lines each step uses: a Lines strip on the flow board and an Inside-the-service block in the step card (the 2D step-to-service drill-down); `docs/milestones/MILESTONE_13_2_FLOW_LINES.md`. |
@@ -799,7 +799,7 @@ Flows in impact analysis and simulation, with backend B9 (ADR-025; `docs/BUSINES
 - **Backend (`backend`):** `make check` passes (gofmt, vet, tests). `TestFlowImpactConformance` checks all 126 cases; a deliberately mutated fixture made 18 cases fail, so the comparison is real.
 - **Real-browser audit:** `npm run audit:a11y`, 29 pages × 2 themes, all pass, including the flow board with a simulated card-processor failure.
 - **Screenshots** with the failure injected, at 1440 px (light and dark) and 390 px: the flow board banner and marked steps, the simulation page, the catalog, and the inspector. No horizontal scroll, no console errors.
-- **Not run:** `make test-integration` and `make contract-check`. The Rancher Desktop VM was stopped; the product owner chose to run them later. The contract check now asserts the example scenario on `GET /topology/impact`.
+- **Run later (2026-10-15):** `make test-integration` passes, and `make contract-check` passes 110/110, including the example scenario on `GET /topology/impact` (`impact with business flows`).
 
 | Criterion | Result | Evidence |
 |---|---|---|
@@ -807,7 +807,7 @@ Flows in impact analysis and simulation, with backend B9 (ADR-025; `docs/BUSINES
 | Card processor unavailable: Checkout at Authorize payment → Cancelled; Refund at Refund payment → Rejected | Pass | `flowImpact.test.ts`; `api_test.go` (HTTP); `flowImpactSurfaces.test.tsx` (UI) |
 | Every surface labels the result as simulated; nothing is called live | Pass | `flowImpactSurfaces.test.tsx`; `a11y.test.tsx`; screenshots |
 | `npm run check`, `make check` | Pass | As listed |
-| `make test-integration`, `make contract-check` | Not run | Local MongoDB VM stopped; to run later |
+| `make test-integration`, `make contract-check` | Pass (2026-10-15) | run after the VM was started; contract check 110/110 |
 
 **Known limitations:**
 - **Per service, not per operation.** A step is affected when its service is, unless the failure arrives over the flow's own hand-off. A degraded service may not affect every one of its steps in reality.
@@ -913,7 +913,7 @@ Services, databases, Kubernetes containment, calls, health, and metrics from Dyn
 | No secret in logs, responses, or errors; DQL never holds configuration | Pass | `TestDiscoverThroughTheQueryAPI` (logs); `TestIntegrationStatusAndCheck`; `TestIntegrationSourceFailureIsABadGateway`; constant queries, matched by the fake |
 | The UI never calls example-tenant data observed; axe passes in jsdom; `npm run check` and `make check` pass | Pass | `describeSource` tests; `a11y.test.tsx` |
 | axe in the real browser, both themes | Not run | the rows appear only with the backend, which needs MongoDB (Rancher VM stopped) |
-| `make test-integration`, `make contract-check` | Not run | MongoDB VM stopped. Written: `sourcesync_integration_test.go` (batch, ownership, aliases, observations); the contract check now starts the fake tenant and runs the sync flow |
+| `make test-integration`, `make contract-check` | Pass (2026-10-15) | `sourcesync_integration_test.go` on MongoDB 8.0.30 (atomic batch with rollback, ownership kept on replace, aliases with `.` and `$`, observations with dotted IDs); `make contract-check` 110/110, including every `/integrations/dynatrace` operation against the fake tenant |
 
 **Found and fixed on the way:** the browser simulation and its Go port turned every metric into a drifting simulated value at load, which would have relabelled Dynatrace metrics simulated. Observed metrics now stay observed unless a simulated failure changes the entity.
 

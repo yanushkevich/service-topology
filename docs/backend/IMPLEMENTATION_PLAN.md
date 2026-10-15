@@ -247,7 +247,7 @@ Delivered with frontend Milestone 12 (closeout in `docs/IMPLEMENTATION_PLAN.md`)
 |---|---|---|
 | Parity with TypeScript on shared fixtures | Pass | `TestFlowImpactConformance` (126 cases) |
 | Example scenario over HTTP | Pass | `api_test.go` |
-| Contract check against a running API | Not run | MongoDB VM stopped; `make contract-check` asserts the scenario when run |
+| Contract check against a running API | Pass (2026-10-15) | `make contract-check` 110/110, including `impact with business flows` |
 
 ## Milestone B12 closeout — Dynatrace connector (2026-10-15, ADR-034)
 Delivered with frontend Milestone 15 (closeout in `docs/IMPLEMENTATION_PLAN.md`):
@@ -259,6 +259,6 @@ Delivered with frontend Milestone 15 (closeout in `docs/IMPLEMENTATION_PLAN.md`)
 | Criterion | Result | Evidence |
 |---|---|---|
 | Unit, API, and conformance tests | Pass | `make check` |
-| Database behaviour (batch, ownership, aliases, observations) | Not run | MongoDB VM stopped; `sourcesync_integration_test.go` compiles (`go vet -tags integration`) |
-| Contract check against a running API with the fake tenant | Not run | MongoDB VM stopped; `scripts/contract-check.sh` starts the fake tenant |
+| Database behaviour (batch, ownership, aliases, observations) | Pass (2026-10-15) | `make test-integration`; `sourcesync_integration_test.go` on MongoDB 8.0.30 |
+| Contract check against a running API with the fake tenant | Pass (2026-10-15) | `make contract-check` 110/110 |
 
