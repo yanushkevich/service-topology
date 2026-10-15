@@ -254,12 +254,13 @@ a raw policy or pattern ID in the UI.
 ### 4.1 Layers
 
 ```
-cmd/<tool>/                     entry points: api, seed, importflows, apibench, token
+cmd/<tool>/                     entry points: api, seed, importflows, apibench, token, fakedynatrace
 internal/app                    wiring: config → adapters → application → HTTP server
 internal/adapters/httpapi       REST contract v1, problems, security middleware
 internal/adapters/mongodb       persistence (sole database, ADR-019)
 internal/adapters/memory        in-memory repositories (tests, no-DB mode)
 internal/adapters/flowformats   native JSON/YAML and BPMN 2.0 flow decoders
+internal/adapters/dynatrace      Dynatrace Smartscape on Grail connector, and its fake tenant (ADR-034)
 internal/application            use cases: queries, writes, imports, simulation runs
 internal/ports                  repository and decoder interfaces, sentinel errors
 internal/simulation             deterministic engine (port of src/simulation)

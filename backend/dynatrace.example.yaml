@@ -1,0 +1,26 @@
+# Dynatrace connector configuration (docs/DYNATRACE_CONNECTOR.md §3; ADR-034).
+# This example points at the local fake tenant (make fake-dynatrace), which serves invented data:
+#   DYNATRACE_CONFIG_FILE=dynatrace.example.yaml make run
+# For a real tenant, copy this file, set the platform URL (https://<id>.apps.dynatrace.com),
+# remove `example` and `allowInsecureLoopback`, and put the platform token in a file under secrets/.
+tenants:
+  - id: example
+    url: http://127.0.0.1:8099
+    example: true
+    allowInsecureLoopback: true
+    auth:
+      platformTokenFile: secrets/dynatrace_example_token.txt
+environments:
+  - id: production
+    name: Production
+    kind: production
+    tenant: example
+    match: { tag: { key: environment, value: production } }
+  - id: staging
+    name: Staging
+    kind: staging
+    tenant: example
+    match: { tag: { key: environment, value: staging } }
+refresh: { interval: 60s, metricsWindow: 5m }
+discovery: { window: 24h }
+limits: { maxRecords: 10000, queryTimeout: 30s }

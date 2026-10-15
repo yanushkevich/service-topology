@@ -44,11 +44,11 @@ All queries are constants: no configuration value or user input is ever put into
 
 | Name | DQL | Used by |
 |---|---|---|
-| `services` | `smartscapeNodes SERVICE \| fields id, name, tags, id_classic` | structure |
+| `services` | `smartscapeNodes SERVICE \| fields id, name, tags, id_classic` | structure, refresh |
 | `service-calls` | `smartscapeEdges calls \| filter source_type == "SERVICE" \| fields source_id, target_id, target_type` | structure |
 | `service-belongs-to` | `smartscapeEdges belongs_to \| filter source_type == "SERVICE" \| fields source_id, target_id, target_type` | structure |
-| `k8s-nodes` | `smartscapeNodes "K8S_*" \| fields id, name, type` | structure |
-| `databases` | `smartscapeNodes "DB_*" \| fields id, name, type` | structure |
+| `k8s-nodes` | `smartscapeNodes "K8S_*" \| fields id, name, type, id_classic` | structure, refresh |
+| `databases` | `smartscapeNodes "DB_*" \| fields id, name, type, id_classic` | structure, refresh |
 | `service-metrics` | `timeseries { rt = avg(dt.service.request.response_time), n = sum(dt.service.request.count), f = sum(dt.service.request.failure_count) }, by: { dt.entity.service } \| fieldsAdd rt = arrayAvg(rt), n = arraySum(n), f = arraySum(f)` | refresh |
 | `problems` | `fetch dt.davis.problems \| filter not(dt.davis.is_duplicate) \| dedup event.id, sort: { timestamp desc } \| filter event.status == "ACTIVE" \| fields event.id, display_id, event.name, event.category, affected_entity_ids` | refresh |
 
@@ -119,7 +119,7 @@ limits: { maxRecords: 10000, queryTimeout: 30s }
 ## 5. Health and metrics: refreshed on their own
 
 - **Overlay, not revisions.** Observations live in their own document (`observations`, one per source) and are merged onto instances and resources on read. A refresh never creates a topology revision, so it never conflicts with an edit (If-Match) and never needs a preview.
-- **Loop.** Every `refresh.interval` (default 60 s), the metric and problem queries run, and the overlay is replaced in one write. It covers only entities with a Dynatrace link.
+- **Loop.** Every `refresh.interval` (default 60 s), the refresh queries run (the three node queries, for what is present now, plus metrics and problems), and the overlay is replaced in one write. Every node present is `healthy` unless a problem affects it. Only entities with a Dynatrace link use the overlay.
 - **Freshness.** An observation older than three intervals is dropped on read, so stale health is never shown as current.
 - **Provenance.** Observed metrics have `isSimulated: false` and `observedAt`. The topology meta gains `observedAt` and the source label "Dynatrace".
 - **Clients.** With `?source=api`, the frontend refetches the topology every refresh interval.

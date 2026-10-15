@@ -213,3 +213,71 @@ type BoardRepository interface {
 	// Remove deletes the board; ErrNotFound, or ErrPreconditionFailed when ifRevision is stale.
 	Remove(ctx context.Context, serviceID domain.EntityID, ifRevision string) error
 }
+
+// TopologySource discovers topology in an external observability system (ADR-034: Dynatrace). It
+// never writes there. Discovered entities carry their link to the source in metadata[Name()].
+type TopologySource interface {
+	// Name is the source type recorded on the entities it creates ("dynatrace").
+	Name() string
+	// Discover maps the source's current structure onto canonical entities. Aliases map a source
+	// service name to an existing service definition ID.
+	Discover(ctx context.Context, aliases map[string]domain.EntityID) (*Discovery, error)
+	// Observe returns the current health and metrics of every entity the source can see.
+	Observe(ctx context.Context) (*Observation, error)
+	// Check runs every query once and reports what came back, for diagnosing a connection.
+	Check(ctx context.Context) []SourceCheck
+}
+
+// Discovery is a source's structure as canonical entities (environments, service definitions and
+// instances, resources, relationships; never event types or flows), with notes on what it skipped.
+type Discovery struct {
+	Data         domain.TopologyData `json:"data"`
+	Notes        []DiscoveryNote     `json:"notes"`
+	DiscoveredAt string              `json:"discoveredAt"`
+	// IsExample is true for an example tenant: its data is mock, never observed.
+	IsExample bool `json:"isExample"`
+}
+
+// Discovery note codes.
+const (
+	NoteServiceWithoutEnvironment = "service-without-environment"
+	NoteDuplicateService          = "duplicate-service"
+	NoteCrossEnvironmentCall      = "cross-environment-call"
+	NoteTruncatedResult           = "truncated-result"
+)
+
+// DiscoveryNote explains something a discovery skipped or merged. IDs are source IDs.
+type DiscoveryNote struct {
+	Code    string   `json:"code"`
+	Message string   `json:"message"`
+	IDs     []string `json:"ids,omitempty"`
+}
+
+// Observation is the health and metrics of what a source sees now, per tenant and source entity ID
+// (the ID kept in metadata[source].id).
+type Observation struct {
+	ObservedAt string                              `json:"observedAt"`
+	IsExample  bool                                `json:"isExample"`
+	Tenants    map[string]map[string]ObservedState `json:"tenants"`
+}
+
+// ObservedState is one entity's observed health, metrics (services only), and open problems.
+type ObservedState struct {
+	Health   string          `json:"health"`
+	Metrics  *domain.Metrics `json:"metrics,omitempty"`
+	Problems []string        `json:"problems,omitempty"`
+}
+
+// SourceCheck is the outcome of one query in a connection check. Message is the source's own
+// error text (never credentials), shortened.
+type SourceCheck struct {
+	Tenant        string   `json:"tenant"`
+	Query         string   `json:"query"`
+	OK            bool     `json:"ok"`
+	Records       int      `json:"records"`
+	MissingFields []string `json:"missingFields,omitempty"`
+	MissingScopes []string `json:"missingScopes,omitempty"`
+	ScannedBytes  int64    `json:"scannedBytes"`
+	DurationMs    int64    `json:"durationMs"`
+	Message       string   `json:"message,omitempty"`
+}

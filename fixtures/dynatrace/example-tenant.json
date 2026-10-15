@@ -1,0 +1,466 @@
+{
+  "$comment": "An invented Dynatrace tenant (Smartscape on Grail records) for tests and local demos (docs/DYNATRACE_CONNECTOR.md \u00a77). Example data, never observed. Each key is a query name from backend/internal/adapters/dynatrace/queries.go; the fake returns its records for that query.",
+  "results": {
+    "services": [
+      {
+        "id": "SERVICE-BDAF1ECA33D4619E",
+        "name": "storefront-bff",
+        "tags": {
+          "environment": "production",
+          "owner": "Commerce",
+          "team": "Storefront"
+        },
+        "id_classic": "SERVICE-9F9C4770EFDBCE71"
+      },
+      {
+        "id": "SERVICE-F0B89EE9977FB93B",
+        "name": "checkout-service",
+        "tags": {
+          "environment": "production",
+          "team": "Checkout"
+        },
+        "id_classic": "SERVICE-F19D667B71C30B59"
+      },
+      {
+        "id": "SERVICE-30E45F0274EFB653",
+        "name": "payment-service",
+        "tags": {
+          "environment": "production",
+          "owner": "Payments",
+          "team": "Payments Core"
+        },
+        "id_classic": "SERVICE-98D9199D08C8BBAD"
+      },
+      {
+        "id": "SERVICE-8E5C07EECB7B6ADD",
+        "name": "FraudScoring",
+        "tags": {
+          "environment": "production",
+          "team": "Risk"
+        },
+        "id_classic": "SERVICE-B9FFB37C90A53193"
+      },
+      {
+        "id": "SERVICE-C10F5A2E123650C6",
+        "name": "inventory-service",
+        "tags": {
+          "environment": "production"
+        },
+        "id_classic": "SERVICE-75A801DAD89803EB"
+      },
+      {
+        "id": "SERVICE-0699DCD58EBF8BD4",
+        "name": "checkout-service",
+        "tags": {
+          "environment": "production",
+          "team": "Checkout"
+        },
+        "id_classic": "SERVICE-286E632657FBDDA8"
+      },
+      {
+        "id": "SERVICE-D23519D9A286F5D5",
+        "name": "legacy-batch",
+        "tags": {},
+        "id_classic": "SERVICE-7C09B9033345023F"
+      },
+      {
+        "id": "SERVICE-1C12FA511D52194A",
+        "name": "checkout-service",
+        "tags": {
+          "environment": "staging",
+          "team": "Checkout"
+        },
+        "id_classic": "SERVICE-C0C13CE43CF97A9C"
+      },
+      {
+        "id": "SERVICE-474C9BC027EE3EF2",
+        "name": "payment-service",
+        "tags": {
+          "environment": "staging",
+          "team": "Payments Core"
+        },
+        "id_classic": "SERVICE-6B787E433D542C07"
+      }
+    ],
+    "service-calls": [
+      {
+        "source_id": "SERVICE-BDAF1ECA33D4619E",
+        "target_id": "SERVICE-F0B89EE9977FB93B",
+        "target_type": "SERVICE"
+      },
+      {
+        "source_id": "SERVICE-F0B89EE9977FB93B",
+        "target_id": "SERVICE-30E45F0274EFB653",
+        "target_type": "SERVICE"
+      },
+      {
+        "source_id": "SERVICE-F0B89EE9977FB93B",
+        "target_id": "SERVICE-C10F5A2E123650C6",
+        "target_type": "SERVICE"
+      },
+      {
+        "source_id": "SERVICE-30E45F0274EFB653",
+        "target_id": "SERVICE-8E5C07EECB7B6ADD",
+        "target_type": "SERVICE"
+      },
+      {
+        "source_id": "SERVICE-F0B89EE9977FB93B",
+        "target_id": "DB_DATABASE_POSTGRES-CC9A0D8481459987",
+        "target_type": "DB_DATABASE_POSTGRES"
+      },
+      {
+        "source_id": "SERVICE-30E45F0274EFB653",
+        "target_id": "DB_DATABASE_POSTGRES-4A80BAAD4013C4D9",
+        "target_type": "DB_DATABASE_POSTGRES"
+      },
+      {
+        "source_id": "SERVICE-C10F5A2E123650C6",
+        "target_id": "DB_DATABASE_MYSQL-D4153F68D8476E76",
+        "target_type": "DB_DATABASE_MYSQL"
+      },
+      {
+        "source_id": "SERVICE-30E45F0274EFB653",
+        "target_id": "DB_INSTANCE_ORACLE-D5183BF933292863",
+        "target_type": "DB_INSTANCE_ORACLE"
+      },
+      {
+        "source_id": "SERVICE-0699DCD58EBF8BD4",
+        "target_id": "SERVICE-30E45F0274EFB653",
+        "target_type": "SERVICE"
+      },
+      {
+        "source_id": "SERVICE-1C12FA511D52194A",
+        "target_id": "SERVICE-474C9BC027EE3EF2",
+        "target_type": "SERVICE"
+      },
+      {
+        "source_id": "SERVICE-1C12FA511D52194A",
+        "target_id": "DB_DATABASE_POSTGRES-0A7D078D9F39506F",
+        "target_type": "DB_DATABASE_POSTGRES"
+      },
+      {
+        "source_id": "SERVICE-1C12FA511D52194A",
+        "target_id": "SERVICE-30E45F0274EFB653",
+        "target_type": "SERVICE"
+      },
+      {
+        "source_id": "SERVICE-BDAF1ECA33D4619E",
+        "target_id": "HOST-0000000000000ABC",
+        "target_type": "HOST"
+      },
+      {
+        "source_id": "SERVICE-D23519D9A286F5D5",
+        "target_id": "SERVICE-F0B89EE9977FB93B",
+        "target_type": "SERVICE"
+      }
+    ],
+    "service-belongs-to": [
+      {
+        "source_id": "SERVICE-BDAF1ECA33D4619E",
+        "target_id": "K8S_CLUSTER-28C27031FE7162D7",
+        "target_type": "K8S_CLUSTER"
+      },
+      {
+        "source_id": "SERVICE-BDAF1ECA33D4619E",
+        "target_id": "K8S_NAMESPACE-0604B491F5FA41CF",
+        "target_type": "K8S_NAMESPACE"
+      },
+      {
+        "source_id": "SERVICE-BDAF1ECA33D4619E",
+        "target_id": "K8S_DEPLOYMENT-66ED715004FBBBC0",
+        "target_type": "K8S_DEPLOYMENT"
+      },
+      {
+        "source_id": "SERVICE-F0B89EE9977FB93B",
+        "target_id": "K8S_CLUSTER-28C27031FE7162D7",
+        "target_type": "K8S_CLUSTER"
+      },
+      {
+        "source_id": "SERVICE-F0B89EE9977FB93B",
+        "target_id": "K8S_NAMESPACE-0604B491F5FA41CF",
+        "target_type": "K8S_NAMESPACE"
+      },
+      {
+        "source_id": "SERVICE-F0B89EE9977FB93B",
+        "target_id": "K8S_DEPLOYMENT-0EF18B502E0CFB98",
+        "target_type": "K8S_DEPLOYMENT"
+      },
+      {
+        "source_id": "SERVICE-30E45F0274EFB653",
+        "target_id": "K8S_CLUSTER-28C27031FE7162D7",
+        "target_type": "K8S_CLUSTER"
+      },
+      {
+        "source_id": "SERVICE-30E45F0274EFB653",
+        "target_id": "K8S_NAMESPACE-65BB4FC755E8BB11",
+        "target_type": "K8S_NAMESPACE"
+      },
+      {
+        "source_id": "SERVICE-30E45F0274EFB653",
+        "target_id": "K8S_DEPLOYMENT-6F3FFE45946F3F96",
+        "target_type": "K8S_DEPLOYMENT"
+      },
+      {
+        "source_id": "SERVICE-8E5C07EECB7B6ADD",
+        "target_id": "K8S_CLUSTER-28C27031FE7162D7",
+        "target_type": "K8S_CLUSTER"
+      },
+      {
+        "source_id": "SERVICE-8E5C07EECB7B6ADD",
+        "target_id": "K8S_NAMESPACE-65BB4FC755E8BB11",
+        "target_type": "K8S_NAMESPACE"
+      },
+      {
+        "source_id": "SERVICE-8E5C07EECB7B6ADD",
+        "target_id": "K8S_STATEFULSET-E8A09AC066FF41CE",
+        "target_type": "K8S_STATEFULSET"
+      },
+      {
+        "source_id": "SERVICE-C10F5A2E123650C6",
+        "target_id": "K8S_CLUSTER-28C27031FE7162D7",
+        "target_type": "K8S_CLUSTER"
+      },
+      {
+        "source_id": "SERVICE-C10F5A2E123650C6",
+        "target_id": "K8S_NAMESPACE-0604B491F5FA41CF",
+        "target_type": "K8S_NAMESPACE"
+      },
+      {
+        "source_id": "SERVICE-C10F5A2E123650C6",
+        "target_id": "K8S_DEPLOYMENT-C8D9792E99EA4F7E",
+        "target_type": "K8S_DEPLOYMENT"
+      },
+      {
+        "source_id": "SERVICE-0699DCD58EBF8BD4",
+        "target_id": "K8S_CLUSTER-28C27031FE7162D7",
+        "target_type": "K8S_CLUSTER"
+      },
+      {
+        "source_id": "SERVICE-0699DCD58EBF8BD4",
+        "target_id": "K8S_NAMESPACE-0604B491F5FA41CF",
+        "target_type": "K8S_NAMESPACE"
+      },
+      {
+        "source_id": "SERVICE-0699DCD58EBF8BD4",
+        "target_id": "K8S_DEPLOYMENT-0EF18B502E0CFB98",
+        "target_type": "K8S_DEPLOYMENT"
+      },
+      {
+        "source_id": "SERVICE-1C12FA511D52194A",
+        "target_id": "K8S_CLUSTER-CB7D29F43F4A81FF",
+        "target_type": "K8S_CLUSTER"
+      },
+      {
+        "source_id": "SERVICE-1C12FA511D52194A",
+        "target_id": "K8S_NAMESPACE-70C7D4C52124C93B",
+        "target_type": "K8S_NAMESPACE"
+      },
+      {
+        "source_id": "SERVICE-1C12FA511D52194A",
+        "target_id": "K8S_DEPLOYMENT-293AD8BCD561FCE9",
+        "target_type": "K8S_DEPLOYMENT"
+      },
+      {
+        "source_id": "SERVICE-474C9BC027EE3EF2",
+        "target_id": "K8S_CLUSTER-CB7D29F43F4A81FF",
+        "target_type": "K8S_CLUSTER"
+      },
+      {
+        "source_id": "SERVICE-474C9BC027EE3EF2",
+        "target_id": "K8S_NAMESPACE-CE71D863E71837E0",
+        "target_type": "K8S_NAMESPACE"
+      },
+      {
+        "source_id": "SERVICE-474C9BC027EE3EF2",
+        "target_id": "K8S_DEPLOYMENT-DA1A116CD8465012",
+        "target_type": "K8S_DEPLOYMENT"
+      }
+    ],
+    "k8s-nodes": [
+      {
+        "id": "K8S_CLUSTER-28C27031FE7162D7",
+        "name": "prod-eu-1",
+        "type": "K8S_CLUSTER",
+        "id_classic": "KUBERNETES_CLUSTER-998C3CC6BC74AFC7"
+      },
+      {
+        "id": "K8S_CLUSTER-CB7D29F43F4A81FF",
+        "name": "staging-eu-1",
+        "type": "K8S_CLUSTER",
+        "id_classic": "KUBERNETES_CLUSTER-F0FEE1E35F1A8FDF"
+      },
+      {
+        "id": "K8S_NAMESPACE-0604B491F5FA41CF",
+        "name": "shop",
+        "type": "K8S_NAMESPACE",
+        "id_classic": "CLOUD-2198AB5A749E85E8"
+      },
+      {
+        "id": "K8S_NAMESPACE-65BB4FC755E8BB11",
+        "name": "payments",
+        "type": "K8S_NAMESPACE",
+        "id_classic": "CLOUD-8DAE0C15F25F9DDF"
+      },
+      {
+        "id": "K8S_NAMESPACE-70C7D4C52124C93B",
+        "name": "shop",
+        "type": "K8S_NAMESPACE",
+        "id_classic": "CLOUD-88B2E1E0F7770492"
+      },
+      {
+        "id": "K8S_NAMESPACE-CE71D863E71837E0",
+        "name": "payments",
+        "type": "K8S_NAMESPACE",
+        "id_classic": "CLOUD-A4407AF4DD67F484"
+      },
+      {
+        "id": "K8S_NAMESPACE-309CE9C18E2FA8EC",
+        "name": "kube-system",
+        "type": "K8S_NAMESPACE",
+        "id_classic": "CLOUD-A90C32AAD873E689"
+      },
+      {
+        "id": "K8S_DEPLOYMENT-66ED715004FBBBC0",
+        "name": "storefront-bff",
+        "type": "K8S_DEPLOYMENT",
+        "id_classic": "CLOUD-1B9CDF4813BE9E00"
+      },
+      {
+        "id": "K8S_DEPLOYMENT-0EF18B502E0CFB98",
+        "name": "checkout",
+        "type": "K8S_DEPLOYMENT",
+        "id_classic": "CLOUD-3DC2120A7007997A"
+      },
+      {
+        "id": "K8S_DEPLOYMENT-6F3FFE45946F3F96",
+        "name": "payment",
+        "type": "K8S_DEPLOYMENT",
+        "id_classic": "CLOUD-4C60FFF87F6B6A8B"
+      },
+      {
+        "id": "K8S_STATEFULSET-E8A09AC066FF41CE",
+        "name": "fraud-scoring",
+        "type": "K8S_STATEFULSET",
+        "id_classic": "CLOUD-3465B56D0DE8836F"
+      },
+      {
+        "id": "K8S_DEPLOYMENT-C8D9792E99EA4F7E",
+        "name": "inventory",
+        "type": "K8S_DEPLOYMENT",
+        "id_classic": "CLOUD-3487B67080B607B5"
+      },
+      {
+        "id": "K8S_DEPLOYMENT-293AD8BCD561FCE9",
+        "name": "checkout",
+        "type": "K8S_DEPLOYMENT",
+        "id_classic": "CLOUD-44121A059DC0A9B7"
+      },
+      {
+        "id": "K8S_DEPLOYMENT-DA1A116CD8465012",
+        "name": "payment",
+        "type": "K8S_DEPLOYMENT",
+        "id_classic": "CLOUD-68031260A4AF7A44"
+      }
+    ],
+    "databases": [
+      {
+        "id": "DB_DATABASE_POSTGRES-CC9A0D8481459987",
+        "name": "orders",
+        "type": "DB_DATABASE_POSTGRES"
+      },
+      {
+        "id": "DB_DATABASE_POSTGRES-4A80BAAD4013C4D9",
+        "name": "payments",
+        "type": "DB_DATABASE_POSTGRES"
+      },
+      {
+        "id": "DB_DATABASE_MYSQL-D4153F68D8476E76",
+        "name": "inventory",
+        "type": "DB_DATABASE_MYSQL"
+      },
+      {
+        "id": "DB_DATABASE_POSTGRES-0A7D078D9F39506F",
+        "name": "orders",
+        "type": "DB_DATABASE_POSTGRES"
+      },
+      {
+        "id": "DB_INSTANCE_ORACLE-D5183BF933292863",
+        "name": "ledger-ora",
+        "type": "DB_INSTANCE_ORACLE"
+      }
+    ],
+    "service-metrics": [
+      {
+        "dt.entity.service": "SERVICE-9F9C4770EFDBCE71",
+        "rt": 42000,
+        "n": 36000,
+        "f": 18
+      },
+      {
+        "dt.entity.service": "SERVICE-F19D667B71C30B59",
+        "rt": 180000,
+        "n": 9000,
+        "f": 45
+      },
+      {
+        "dt.entity.service": "SERVICE-98D9199D08C8BBAD",
+        "rt": 210000,
+        "n": 6000,
+        "f": 30
+      },
+      {
+        "dt.entity.service": "SERVICE-B9FFB37C90A53193",
+        "rt": 35000,
+        "n": 6000,
+        "f": 0
+      },
+      {
+        "dt.entity.service": "SERVICE-75A801DAD89803EB",
+        "rt": 25000,
+        "n": 12000,
+        "f": 6
+      },
+      {
+        "dt.entity.service": "SERVICE-C0C13CE43CF97A9C",
+        "rt": 150000,
+        "n": 300,
+        "f": 3
+      },
+      {
+        "dt.entity.service": "SERVICE-6B787E433D542C07",
+        "rt": 160000,
+        "n": 240,
+        "f": 0
+      }
+    ],
+    "problems": [
+      {
+        "event.id": "-5732190032251683417_1729000000000V2",
+        "display_id": "P-24101501",
+        "event.name": "Response time degradation",
+        "event.category": "SLOWDOWN",
+        "affected_entity_ids": [
+          "SERVICE-98D9199D08C8BBAD"
+        ]
+      },
+      {
+        "event.id": "-1182736450987123456_1729000300000V2",
+        "display_id": "P-24101502",
+        "event.name": "Failure rate increase",
+        "event.category": "ERROR",
+        "affected_entity_ids": [
+          "DB_DATABASE_POSTGRES-4A80BAAD4013C4D9"
+        ]
+      },
+      {
+        "event.id": "-9001827364510293847_1729000600000V2",
+        "display_id": "P-24101503",
+        "event.name": "Host unavailable",
+        "event.category": "AVAILABILITY",
+        "affected_entity_ids": [
+          "HOST-0000000000000ABC"
+        ]
+      }
+    ]
+  }
+}

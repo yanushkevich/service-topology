@@ -12,7 +12,7 @@ export MONGODB_DATABASE ?= topology
 export MONGODB_USERNAME ?= root
 export MONGODB_PASSWORD_FILE ?= $(CURDIR)/secrets/mongodb_root_password.txt
 
-.PHONY: check fmt fmt-check vet test test-integration contract-check bench backup restore vulncheck token run seed import-flows validate schema-check db-shell db-ui dev-up dev-down reset-local
+.PHONY: check fmt fmt-check vet test test-integration contract-check bench backup restore vulncheck token run seed import-flows fake-dynatrace validate schema-check db-shell db-ui dev-up dev-down reset-local
 
 ## check: formatting, vet, and unit/conformance tests (the B1 quality gate)
 check: fmt-check vet test
@@ -71,6 +71,11 @@ seed:
 import-flows:
 	@test -n "$(FILE)" || { echo "usage: make import-flows FILE=path [FORMAT=native|bpmn] [MAPPING=mapping.json]"; exit 2; }
 	$(GO) run ./cmd/importflows $(if $(FORMAT),-format $(FORMAT)) $(if $(MAPPING),-mapping $(MAPPING)) $(FILE)
+
+## fake-dynatrace: serve the invented Dynatrace tenant on 127.0.0.1:8099 for local demos (ADR-034); creates its token file
+fake-dynatrace:
+	@test -s secrets/dynatrace_example_token.txt || { mkdir -p secrets && umask 077 && openssl rand -hex 24 > secrets/dynatrace_example_token.txt; }
+	$(GO) run ./cmd/fakedynatrace
 
 ## validate: validate the shared mock fixture without a database
 validate:
