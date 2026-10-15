@@ -435,3 +435,27 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
   - **Search on the backend.** Not needed at the scale target (1,000 entities); the data is already loaded.
 - **Consequences:** the shared filter changes only from the page filter bars and the explicit option; the registry no longer opens by itself while typing.
 
+
+## ADR-034 — A Dynatrace connector for the topology: Smartscape on Grail, owned and authored data, preview then apply (2026-10-15, Milestone 15 / B12)
+- **Status:** Accepted (product owner, 2026-10-15: Grail / Smartscape; "Dynatrace owns what it finds"; structure previewed and applied by hand, with health and metrics refreshed on their own). Spec: `docs/DYNATRACE_CONNECTOR.md`. Answers ADR-030's open source question for the topology. ADR-030 itself stays proposed and on hold for transit boards, flow statistics, and traces.
+- **Context:**
+  - The product owner can connect a Dynatrace SaaS tenant and wants its services, databases, and infrastructure in the app.
+  - Authored data must survive syncs: flows, event types, and boards reference services by ID, and owners and teams are edited here.
+- **Decision:**
+  - **Source.** A backend connector reads Smartscape on Grail through the platform query API (`query:execute`, `query:poll`), with a platform token or an OAuth client read from secret files. Queries are constants, and configuration only selects tenants and matches environments, in Go.
+  - **Mapping.** Services become definitions plus instances per environment. Kubernetes clusters, namespaces, and workloads become containment. Databases become `database` resources. Calls become relationships. Every entity keeps its Dynatrace link in `metadata.dynatrace`.
+  - **Ownership.** Entities the connector creates are owned (`_meta.sourceType: "dynatrace"`) and follow Dynatrace: created, replaced, deleted. Authored entities with the same ID, or an alias, are linked and never overwritten. Owned entities that are gone but still referenced are kept and flagged.
+  - **Structure is previewed, then applied** in one transaction guarded by the topology revision.
+  - **Health and metrics are an overlay,** refreshed every minute outside the topology revision, so refreshes never conflict with edits.
+  - **The fake tenant is example data:** the connector labels a tenant marked `example` as mock, never observed.
+- **Alternatives:**
+  - **Classic Environment API v2** (`/api/v2/entities`, an API token). Not chosen by the product owner. It works on Managed as well, but it is being replaced on SaaS. It can be added behind the same interface.
+  - **Dynatrace replaces the whole topology on each sync.** Rejected: authored flows and event types would break when names change.
+  - **Fully automatic structure sync.** Rejected for now: a reviewed preview builds trust and catches mapping surprises.
+  - **Health and metrics as topology revisions.** Rejected: a revision every minute would make every edit's If-Match fail and flood history.
+  - **The browser calls Dynatrace.** Rejected: tokens would reach the browser (ADR-018), and the platform API does not allow it from another origin.
+- **Consequences:**
+  - New backend configuration (`DYNATRACE_CONFIG_FILE`) and secret files.
+  - New endpoints under `/integrations/dynatrace`, a batch write port, and an `observations` document merged on read.
+  - The field names are taken from public documentation and must be confirmed on the first real connection; the connection check reports any differences.
+  - Hosts, queues, and topics are not mapped yet.

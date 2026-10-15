@@ -1,0 +1,157 @@
+# Dynatrace connector: topology from Smartscape on Grail (Milestone 15, backend B12)
+
+**Status:** accepted 2026-10-15; in progress. Decision: ADR-034. Milestone: `docs/milestones/MILESTONE_15_DYNATRACE.md`.
+
+**Source:** the product owner asked for "a feature that would allow us to get data, services, databases, etc. from dynatrace, and lets say i can connect it to dynatrace". Their answers:
+1. **API:** Grail / Smartscape (the SaaS platform), not the classic Environment API v2.
+2. **Ownership:** Dynatrace owns what it finds. Authored data (flows, event types, boards, owners) stays and links by ID. Names match existing services, with an editable alias list. A service that disappears but is still used is kept and flagged, not deleted.
+3. **Sync:** structure changes are previewed and applied by hand; health and metrics refresh on their own.
+
+This answers `docs/REAL_DATA_INTEGRATION.md` §6 for the **topology** (entities, relationships, health, instance metrics): the source is Dynatrace. Transit boards, flow statistics, and traces stay with Milestone 14, which remains on hold.
+
+> **Unverified against a real tenant.** The queries and field names below come from Dynatrace's public documentation (Smartscape on Grail, the semantic dictionary, the Grail query API). They are recorded in one place (`backend/internal/adapters/dynatrace/queries.go`), and the connection check (§6) reports every expected field a tenant does not return. Confirm them on the first connection to a real tenant, and correct the fixtures if they differ.
+
+---
+
+## 1. What comes from Dynatrace, and what it becomes
+
+| Dynatrace (Smartscape on Grail) | Canonical entity | ID |
+|---|---|---|
+| `SERVICE` node, in an environment (§3) | a service definition (logical, shared across environments) and one service instance per environment | definition: the alias (§4), else a slug of the service name; instance: `<definition>.<environment>` (the existing convention) |
+| `K8S_CLUSTER` | resource `cluster` | `dt-<tenant>-<Dynatrace ID, lowercase>` |
+| `K8S_NAMESPACE` | resource `namespace`, parent: its cluster | as above |
+| `K8S_DEPLOYMENT`, `K8S_STATEFULSET`, `K8S_DAEMONSET`, `K8S_CRONJOB`, `K8S_JOB` | resource `workload`, parent: its namespace; the instance's `resourceId` | as above |
+| `DB_DATABASE_<VENDOR>` and `DB_INSTANCE_<VENDOR>` (when a service calls the instance directly) | resource `database` | as above |
+| `SERVICE` `calls` `SERVICE` (in the same environment) | relationship, `synchronous`, protocol `other` unless an authored relationship says otherwise | `rel:<source>-><target>` (the existing convention) |
+| `SERVICE` `calls` `DB_*` | relationship, `database`; protocol from the vendor (`POSTGRES` → `postgresql`; `MYSQL`, `MARIADB` → `mysql`; others → `other`) | as above |
+| Open Davis problems on an entity | health (§5): `AVAILABILITY` → `unavailable`; `ERROR`, `SLOWDOWN`, `RESOURCE_CONTENTION`, `CUSTOM_ALERT` → `degraded`; `MONITORING_UNAVAILABLE` → `unknown`; none → `healthy` | — |
+| `dt.service.request.response_time`, `.count`, `.failure_count` | instance metrics: latency (ms), throughput (/s), error rate (%), `isSimulated: false`, `observedAt` | — |
+
+- **Containment** comes from the service's own `belongs_to` edges (to its cluster, namespace, and workload). The namespace's parent is the cluster the same service belongs to, and the workload's parent is its namespace.
+- **Owner and team** come from the service's `owner` and `team` tags, when present.
+- **Category** is `application` when the connector creates a definition; Dynatrace gives no reliable signal for `api`, `gateway`, or `worker`. Authors can change it, and syncs keep the change (§4).
+- **The Dynatrace link** is kept on every entity as `metadata.dynatrace`: `{tenant, id, idClassic}`. Metrics and problems are joined through it.
+
+**Not mapped (documented gaps):**
+- **Hosts, processes, containers, and pods.** Below the workload the domain has no containment level, and VM hosts have no resource type. Services on VMs have no containment until a `host` resource type is added (a domain change in TypeScript, Go, schemas, and fixtures).
+- **Queues and topics.** Smartscape's core model documents no messaging node types. Channels and event types stay authored.
+- **Calls across environments.** Validation rejects them (`cross-environment-relationship`); the preview lists them as dropped.
+- **Edge metrics.** Relationships get no metrics yet.
+
+## 2. Queries
+
+All queries are constants: no configuration value or user input is ever put into DQL. Environment matching (§3) runs in Go on the results. The time window is passed through the query API's `defaultTimeframeStart` and `defaultTimeframeEnd`, not in the query text.
+
+| Name | DQL | Used by |
+|---|---|---|
+| `services` | `smartscapeNodes SERVICE \| fields id, name, tags, id_classic` | structure |
+| `service-calls` | `smartscapeEdges calls \| filter source_type == "SERVICE" \| fields source_id, target_id, target_type` | structure |
+| `service-belongs-to` | `smartscapeEdges belongs_to \| filter source_type == "SERVICE" \| fields source_id, target_id, target_type` | structure |
+| `k8s-nodes` | `smartscapeNodes "K8S_*" \| fields id, name, type` | structure |
+| `databases` | `smartscapeNodes "DB_*" \| fields id, name, type` | structure |
+| `service-metrics` | `timeseries { rt = avg(dt.service.request.response_time), n = sum(dt.service.request.count), f = sum(dt.service.request.failure_count) }, by: { dt.entity.service } \| fieldsAdd rt = arrayAvg(rt), n = arraySum(n), f = arraySum(f)` | refresh |
+| `problems` | `fetch dt.davis.problems \| filter not(dt.davis.is_duplicate) \| dedup event.id, sort: { timestamp desc } \| filter event.status == "ACTIVE" \| fields event.id, display_id, event.name, event.category, affected_entity_ids` | refresh |
+
+- **Windows:** structure uses the last 24 hours (`discoveryWindow`), metrics the last 5 minutes (`metricsWindow`), and problems the last 7 days.
+- **Units:** response time is in microseconds. Throughput is `n` divided by the window in seconds. The error rate is `f / n` × 100, and absent when `n` is 0.
+- **Joining.** Metrics are keyed by the classic service ID (`dt.entity.service`) and problems by classic IDs (`affected_entity_ids`). Both are matched against `id_classic`, falling back to `id`.
+- **Cost.** Smartscape queries are included in the DPS licence. Metric and problem queries scan data, so their windows are short. Every query's scanned bytes are logged and shown in the connection check.
+
+## 3. Configuration
+
+The connector is configured by an operator in a YAML file named by `DYNATRACE_CONFIG_FILE`. Secrets are never in that file: it names secret files, as the MongoDB settings do. Example: `backend/dynatrace.example.yaml`.
+
+```yaml
+tenants:
+  - id: main                                   # short ID: letters, digits, '-'
+    url: https://abc12345.apps.dynatrace.com   # the platform URL, not *.live.dynatrace.com
+    auth:
+      platformTokenFile: secrets/dynatrace_platform_token.txt
+      # or an OAuth client (client credentials):
+      # oauth:
+      #   clientId: dt0s02.EXAMPLE
+      #   clientSecretFile: secrets/dynatrace_client_secret.txt
+      #   accountUrn: urn:dtaccount:00000000-0000-0000-0000-000000000000   # optional
+environments:
+  - id: production
+    name: Production
+    kind: production
+    tenant: main
+    match: { tag: { key: environment, value: production } }
+  - id: staging
+    name: Staging
+    kind: staging
+    tenant: main
+    match: { tag: { key: environment, value: staging } }
+refresh: { interval: 60s, metricsWindow: 5m }
+discovery: { window: 24h }
+limits: { maxRecords: 10000, queryTimeout: 30s }
+```
+
+- **Environments.** Each environment names a tenant and one rule, so one tenant split by tags and one tenant per environment both work:
+  - `tag: {key, value}`: a service tag;
+  - `k8sCluster: <name>` or `k8sNamespaces: [<name>, …]`: the cluster or namespaces the service belongs to;
+  - `all: true`: every service in the tenant.
+
+  The first matching environment wins. A service that matches none is skipped, and the preview counts it.
+- **Required scopes** (platform token or OAuth client): `storage:smartscape:read`, `storage:entities:read`, `storage:metrics:read`, `storage:events:read`, `storage:buckets:read`. Without `storage:buckets:read`, queries succeed but return no records; the check warns when every query is empty.
+- **Validation.** Loading fails fast on any problem: the URL must be `https` (plain `http` only on a loopback host with `allowInsecureLoopback: true`, for the fake tenant); IDs must be unique; every environment must name a known tenant and exactly one rule.
+- **Example tenants.** A tenant with `example: true` (the fake tenant, §7) gives entities and metrics `mock` provenance, and the UI says "Example Dynatrace tenant", never "observed".
+
+## 4. Sync: preview, then apply
+
+1. **Discover.** The structure queries run per tenant, and their results map to a *discovered topology* (§1).
+2. **Reconcile** (pure Go, tested). The discovered topology is compared with the stored one. Entities the connector created are *owned* (stored `_meta.sourceType: "dynatrace"`); everything else is *authored*.
+
+   | Case | Change |
+   |---|---|
+   | Discovered, not stored | create, owned |
+   | Discovered, stored and owned | replace with the discovered values, keeping what Dynatrace does not provide: description, category (set only on create), owner and team unless tagged, and other `metadata` keys |
+   | Discovered, stored and authored (same ID, or an alias) | **link**: add `metadata.dynatrace`; fill the instance's `resourceId` if empty. Nothing authored is overwritten |
+   | Owned, not discovered, not referenced by authored data | delete |
+   | Owned, not discovered, referenced by a flow, event type, authored relationship, or board link | keep, with health `unknown` or status `inactive`, and flag it in the preview with what uses it |
+
+   **Aliases** map a Dynatrace service name to an existing service definition ID (for example `PaymentService` → `payment-service`). They are stored in the backend, editable from the preview, and applied before the slug. Without an alias, a service whose slug equals an existing definition ID links to it.
+3. **Validate** the whole resulting topology with the existing rules. A preview with errors cannot be applied.
+4. **Preview.** The result is held for 10 minutes: counts per kind and change, every change with its entity, notes (skipped services, dropped calls, kept-because-used, truncated results), and validation issues.
+5. **Apply.** One transaction applies the held change set, if the topology revision is still the one the preview was built on, and records one new revision with source `dynatrace`.
+
+## 5. Health and metrics: refreshed on their own
+
+- **Overlay, not revisions.** Observations live in their own document (`observations`, one per source) and are merged onto instances and resources on read. A refresh never creates a topology revision, so it never conflicts with an edit (If-Match) and never needs a preview.
+- **Loop.** Every `refresh.interval` (default 60 s), the metric and problem queries run, and the overlay is replaced in one write. It covers only entities with a Dynatrace link.
+- **Freshness.** An observation older than three intervals is dropped on read, so stale health is never shown as current.
+- **Provenance.** Observed metrics have `isSimulated: false` and `observedAt`. The topology meta gains `observedAt` and the source label "Dynatrace".
+- **Clients.** With `?source=api`, the frontend refetches the topology every refresh interval.
+
+## 6. API
+
+| Method and path | Role | Purpose |
+|---|---|---|
+| `GET /integrations/dynatrace` | reader | configuration (tenant hosts, environments, auth kind; never secrets), last sync, last refresh, last error |
+| `POST /integrations/dynatrace/check` | editor | runs every query once; per query: records, missing expected fields, missing scopes, scanned bytes, duration |
+| `POST /integrations/dynatrace/preview` | editor | discover and reconcile; returns the held preview (§4) |
+| `POST /integrations/dynatrace/apply` | editor | `{previewId}` with `If-Match: <base revision>`; 412 if the topology moved, 410 if the preview expired |
+| `GET`, `PUT /integrations/dynatrace/aliases` | reader, editor | the alias list, revision-guarded |
+
+Without a configuration, every endpoint returns 404 `integration-not-configured`. Only one preview or check runs at a time (409 `integration-busy` otherwise).
+
+## 7. The fake tenant
+
+A Go fake of the platform endpoints (`/platform/storage/query/v1/query:execute`, `query:poll`, and the SSO token endpoint) serves recorded records from `fixtures/dynatrace/example-tenant.json`. It answers the first poll with `RUNNING` to exercise polling, and it checks the bearer token.
+- Tests use it through `httptest`.
+- `make fake-dynatrace` serves it on `127.0.0.1:8099` for local demos, with `backend/dynatrace.example.yaml`. It is marked `example: true` (§3).
+
+## 8. Security
+
+- The platform token or OAuth secret is read from a file, cached in memory, and never logged, returned, or sent anywhere but the tenant and the SSO endpoint. OAuth access tokens are refreshed 30 s before they expire.
+- Requests use `https`, a timeout, a response-size cap (64 MiB), and a record cap (`limits.maxRecords`; a truncated result is a preview note). Redirects are not followed, and polling is bounded by the query timeout.
+- Dynatrace errors reach clients as fixed messages (for example "Dynatrace rejected the credentials (401)" or "Missing scopes: storage:smartscape:read"), never as response bodies.
+- The sync endpoints need the editor role when `AUTH_MODE=token` (ADR-018).
+
+## 9. Hard parts
+
+- **Names.** One service can have different names per environment or tenant. Aliases make the join explicit.
+- **Duplicate names in one environment** (for example, two process groups exposing `checkout`) map to one instance. The preview notes it and keeps both Dynatrace IDs in `metadata.dynatrace`.
+- **Unverified field names** (see the note at the top). The connection check exists for this.
+- **After a bundle import,** every entity is authored (source `import`). Dynatrace links to it but never deletes it.

@@ -45,6 +45,14 @@ Acceptance:
 ## Future milestone — provider integrations
 Cloud, Kubernetes, Kafka and other adapters are out of initial milestones. Introduce them only behind normalized source adapters and provenance rules.
 
+## Milestone B12 — Dynatrace connector (ADR-034, in progress)
+The first provider integration, for frontend Milestone 15. Spec: `docs/DYNATRACE_CONNECTOR.md`.
+- **Adapter:** `internal/adapters/dynatrace`: the Grail query client, constant DQL queries, and the mapping to a discovered topology. A fake tenant serves `fixtures/dynatrace/example-tenant.json`.
+- **Application:** a pure reconcile (owned, authored, linked, kept), aliases, held previews, an atomic apply (`ApplyChanges`), and a refresh loop writing the observation overlay.
+- **API:** `/integrations/dynatrace` (status, check, preview, apply, aliases).
+
+Acceptance: the criteria in `docs/milestones/MILESTONE_15_DYNATRACE.md`; `make check`, `make test-integration`, and `make contract-check` pass.
+
 ## Delivery rules
 - Implement only the current milestone unless explicitly instructed otherwise.
 - Do not invent provider data or represent illustrative traffic as observed telemetry.

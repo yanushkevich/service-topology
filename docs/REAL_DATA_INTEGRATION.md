@@ -140,3 +140,5 @@ OpenAPI files (JSON and YAML) uploaded by CI or read from a registry (Apicurio, 
 6. **Environments:** is one trace and metric store shared by every environment, or is there one per environment?
 
 Phase 1 (contract freeze and HTTP repository) does not depend on these answers and can start as soon as the product owner says so.
+
+**Partial answer (2026-10-15).** The product owner's observability platform is **Dynatrace** (SaaS, Grail / Smartscape). For the topology (entities, relationships, health, instance metrics), Milestone 15 builds a Dynatrace connector (ADR-034, `docs/DYNATRACE_CONNECTOR.md`). Transit boards, flow statistics, and traces stay on hold here. When they resume, questions 1, 2, and 5 point to Dynatrace spans, metrics, and Davis problems, while 3, 4, and 6 are still open.
