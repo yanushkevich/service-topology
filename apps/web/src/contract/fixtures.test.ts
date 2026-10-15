@@ -410,9 +410,14 @@ type SimAction =
   | { type: 'step'; ticks: number }
   | { type: 'reset' };
 
+/** The topology with the listed instances' metrics marked observed (as a topology source sends them). */
+function withObservedMetrics(data: TopologyData, ids: readonly string[]): TopologyData {
+  return { ...data, serviceInstances: data.serviceInstances.map((i) => (ids.includes(i.id) && i.metrics ? { ...i, metrics: { ...i.metrics, isSimulated: false } } : i)) };
+}
+
 /** Scripted runs of the deterministic engine; every action's resulting state is recorded. */
 function simulationScenarios() {
-  const scripts: { name: string; seed: number; startAt?: string; actions: SimAction[] }[] = [
+  const scripts: { name: string; seed: number; startAt?: string; observed?: string[]; actions: SimAction[] }[] = [
     { name: 'drift-only', seed: 7, actions: [{ type: 'step', ticks: 60 }] },
     {
       name: 'failures-and-recovery',
@@ -433,10 +438,23 @@ function simulationScenarios() {
       ],
     },
     { name: 'explicit-start', seed: 123456789, startAt: '2026-10-11T12:00:00Z', actions: [{ type: 'inject', entityId: 'notification-service.production', mode: 'degraded' }, { type: 'step', ticks: 120 }] },
+    // Observed metrics (ADR-034) neither drift nor turn simulated, except while a simulated failure changes the entity.
+    {
+      name: 'observed-metrics',
+      seed: 9,
+      observed: ['payment-service.production', 'order-service.production'],
+      actions: [
+        { type: 'step', ticks: 5 },
+        { type: 'inject', entityId: 'payment-service.production', mode: 'degraded' },
+        { type: 'step', ticks: 3 },
+        { type: 'recover', entityId: 'payment-service.production' },
+        { type: 'step', ticks: 2 },
+      ],
+    },
   ];
   const view = (s: SimulationState) => ({ tick: s.tick, clock: s.clock, rng: s.rng, drift: s.drift, anomalies: s.anomalies, failures: s.failures, impacts: s.impacts, events: s.events, eventSeq: s.eventSeq, data: s.data });
   return scripts.map((script) => {
-    let state = createSimulation(mockTopology, { seed: script.seed, ...(script.startAt ? { startAt: script.startAt } : {}) });
+    let state = createSimulation(withObservedMetrics(mockTopology, script.observed ?? []), { seed: script.seed, ...(script.startAt ? { startAt: script.startAt } : {}) });
     const states = [view(state)];
     for (const a of script.actions) {
       if (a.type === 'inject') state = injectFailure(state, a.entityId, a.mode, a.durationTicks !== undefined ? { durationTicks: a.durationTicks } : {});

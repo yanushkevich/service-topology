@@ -174,6 +174,12 @@ func scaleMetrics(m *domain.Metrics, factor float64, clock, overlay string) *dom
 	if m == nil {
 		return nil
 	}
+	// Observed metrics (a topology source, ADR-034) stay observed: no drift, no relabelling. Only a
+	// simulated failure that changes the entity replaces them, with simulated values.
+	if !m.IsSimulated && overlay == "none" {
+		observed := *m
+		return &observed
+	}
 	round := func(v float64) float64 { return jsRound(float64(v*10)) / 10 }
 	out := &domain.Metrics{IsSimulated: true, ObservedAt: &clock}
 	if m.LatencyMs != nil {
@@ -510,19 +516,20 @@ func (s *State) Step(ticks int) *State {
 		}
 		var ids []string
 		instanceIDs := map[string]bool{}
+		// Only simulated metrics drift; observed ones are what the source measured.
 		for _, i := range cur.Baseline.ServiceInstances {
 			instanceIDs[i.ID] = true
-			if i.Metrics != nil {
+			if i.Metrics != nil && i.Metrics.IsSimulated {
 				ids = append(ids, i.ID)
 			}
 		}
 		for _, r := range cur.Baseline.Resources {
-			if r.Metrics != nil {
+			if r.Metrics != nil && r.Metrics.IsSimulated {
 				ids = append(ids, r.ID)
 			}
 		}
 		for _, r := range cur.Baseline.Relationships {
-			if r.Metrics != nil {
+			if r.Metrics != nil && r.Metrics.IsSimulated {
 				ids = append(ids, r.ID)
 			}
 		}

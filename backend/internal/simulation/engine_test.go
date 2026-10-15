@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"servicetopology/backend/internal/domain"
@@ -41,11 +42,12 @@ func TestEngineConformance(t *testing.T) {
 	var file struct {
 		Topology  string
 		Scenarios []struct {
-			Name    string
-			Seed    uint32
-			StartAt string `json:"startAt"`
-			Actions []action
-			States  []map[string]json.RawMessage
+			Name     string
+			Seed     uint32
+			StartAt  string `json:"startAt"`
+			Observed []string
+			Actions  []action
+			States   []map[string]json.RawMessage
 		}
 	}
 	if err := json.Unmarshal(raw, &file); err != nil {
@@ -57,7 +59,7 @@ func TestEngineConformance(t *testing.T) {
 	}
 	for _, sc := range file.Scenarios {
 		t.Run(sc.Name, func(t *testing.T) {
-			state := simulation.Create(baseline, sc.Seed, sc.StartAt)
+			state := simulation.Create(withObservedMetrics(t, baseline, sc.Observed), sc.Seed, sc.StartAt)
 			check := func(step int) {
 				want := sc.States[step]
 				got := map[string]any{"tick": state.Tick, "clock": state.Clock, "rng": state.RNG, "drift": state.Drift, "anomalies": state.Anomalies,
@@ -90,6 +92,25 @@ func TestEngineConformance(t *testing.T) {
 			}
 		})
 	}
+}
+
+// withObservedMetrics marks the listed instances' metrics observed, as the fixture generator does.
+func withObservedMetrics(t *testing.T, data *domain.TopologyData, ids []string) *domain.TopologyData {
+	t.Helper()
+	raw, err := json.Marshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := &domain.TopologyData{}
+	if err := json.Unmarshal(raw, out); err != nil {
+		t.Fatal(err)
+	}
+	for i := range out.ServiceInstances {
+		if m := out.ServiceInstances[i].Metrics; m != nil && slices.Contains(ids, out.ServiceInstances[i].ID) {
+			m.IsSimulated = false
+		}
+	}
+	return out
 }
 
 func TestDiffConformance(t *testing.T) {

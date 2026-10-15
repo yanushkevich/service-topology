@@ -108,6 +108,9 @@ const worseStatus = (a: RelationshipStatus, b: RelationshipStatus) => (STATUS_RA
 
 function scaleMetrics(m: Metrics | undefined, factor: number, clock: string, overlay: 'none' | 'degraded' | 'down'): Metrics | undefined {
   if (!m) return undefined;
+  // Observed metrics (a topology source, ADR-034) stay observed: no drift, no relabelling. Only a
+  // simulated failure that changes the entity replaces them, with simulated values.
+  if (!m.isSimulated && overlay === 'none') return m;
   const round = (v: number) => Math.round(v * 10) / 10;
   const latency = m.latencyMs === undefined ? undefined : round(m.latencyMs * factor * (overlay === 'degraded' ? 3 : 1));
   const throughput =
@@ -314,7 +317,7 @@ export function recoverAll(state: SimulationState): SimulationState {
 
 /**
  * Advance the simulated clock: scheduled recoveries, then metric drift (random walk per entity
- * with metrics) and latency-anomaly events. Health only changes through failures/recoveries.
+ * with simulated metrics) and latency-anomaly events. Health only changes through failures/recoveries.
  */
 export function step(state: SimulationState, ticks = 1): SimulationState {
   let current = state;
@@ -329,10 +332,11 @@ export function step(state: SimulationState, ticks = 1): SimulationState {
 
     let rng = current.rng;
     const drift: Record<EntityId, number> = { ...current.drift };
+    // Only simulated metrics drift; observed ones are what the source measured.
     const ids = [
-      ...current.baseline.serviceInstances.filter((i) => i.metrics).map((i) => i.id),
-      ...current.baseline.resources.filter((r) => r.metrics).map((r) => r.id),
-      ...current.baseline.relationships.filter((r) => r.metrics).map((r) => r.id),
+      ...current.baseline.serviceInstances.filter((i) => i.metrics?.isSimulated).map((i) => i.id),
+      ...current.baseline.resources.filter((r) => r.metrics?.isSimulated).map((r) => r.id),
+      ...current.baseline.relationships.filter((r) => r.metrics?.isSimulated).map((r) => r.id),
     ].sort();
     for (const id of ids) {
       const [r, next] = nextRandom(rng);
