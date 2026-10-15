@@ -482,3 +482,11 @@ Those of `docs/milestones/MILESTONE_11_FLOW_SWIMLANES_PATTERNS.md`, `MILESTONE_1
 
 ## Revision X — No 3D in business flows (2026-10-13, Milestone 13.3)
 **Source:** product owner: "i dont need 3d in business flows". Revision V no longer applies: the flow board has no 3D view. How a flow lands on its services is shown in 2D (Revision W): the Lines strip and the step card's Inside block. The map's 3D galaxy is unaffected.
+
+## Revision Y — Topology from Dynatrace (2026-10-15, Milestone 15)
+**Source:** product owner: "a feature that would allow us to get data, services, databases, etc. from dynatrace". Choices: Grail / Smartscape; Dynatrace owns what it finds; preview and apply by hand, with health and metrics refreshed on their own. Spec: `docs/DYNATRACE_CONNECTOR.md`.
+
+- With the backend connected to Dynatrace, **Settings → Data source → Dynatrace** shows the connection, checks it, previews a sync (what would be added, changed, linked, kept, or removed, and why), and applies it. Aliases join a Dynatrace service to a service that already exists here.
+- Services, their deployments per environment, Kubernetes clusters, namespaces, and workloads, databases, and calls come from Dynatrace. Flows, event types, boards, owners, and descriptions authored here are kept; a service still used by a flow is never deleted, only flagged.
+- Health (from open Davis problems) and metrics refresh about every minute. They are labelled observed with their time; out-of-date observations are not shown; an example tenant's data is never called observed. Simulated failures still work on top of observed data and are labelled simulated.
+

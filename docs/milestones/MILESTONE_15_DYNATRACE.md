@@ -1,6 +1,6 @@
 # Milestone 15 — Dynatrace connector: services, databases, and Kubernetes from Smartscape on Grail
 
-**Status:** accepted 2026-10-15; in progress. Backend milestone: B12. Decision: ADR-034. Spec: `docs/DYNATRACE_CONNECTOR.md`.
+**Status:** implemented 2026-10-15 (closeout in `docs/IMPLEMENTATION_PLAN.md`); not yet verified against a real tenant. Backend milestone: B12. Decision: ADR-034. Spec: `docs/DYNATRACE_CONNECTOR.md`.
 
 **Source:** the product owner asked to get "data, services, databases, etc. from dynatrace", and answered:
 - Grail / Smartscape (SaaS platform);

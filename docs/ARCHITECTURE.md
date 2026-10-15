@@ -668,3 +668,11 @@ The product owner does not need 3D in business flows. Revision 18 (and Revision 
 - `features/business-flows/drilldown/`, the flow board's Swimlane | 3D switch, and the `scene` / `drill` page parameters are gone.
 - The pinned `@react-three/postprocessing`, `postprocessing`, and `maath` dependencies are removed. Three.js is again only in the galaxy's lazy chunk.
 - The galaxy keeps the generic `LabelLayer` (anchors) introduced for the drill-down.
+
+## Revision 21 — A topology source: the Dynatrace connector (2026-10-15, Milestone 15 / B12)
+ADR-034; spec `docs/DYNATRACE_CONNECTOR.md`.
+- **Port and adapter:** `ports.TopologySource` (Discover, Observe, Check, Describe), implemented by `adapters/dynatrace` over the Grail query API. Constant DQL; configuration only selects tenants and matches environments in Go. Secrets are files read by the adapter.
+- **Ownership:** every canonical document remembers the source that created it (`_meta.sourceType`, kept on replace). A sync reconciles discovered with stored data in the application layer (pure `reconcile`), validates the whole result, and writes it in one transaction (`SourceWriter.ApplyChanges`) guarded by the revision the preview was built on.
+- **Declared vs observed:** structure goes through previews and revisions; health and metrics are an observation overlay merged on read while fresh, never a revision and never writable. This extends ADR-031's rule (observed data merges onto declared data by ID) to the topology.
+- **Frontend:** the HTTP topology repository exposes `integration` and `refreshMs`; the data provider refetches and continues the simulation (`rebase`). The engine leaves observed metrics alone unless a simulated failure changes the entity.
+

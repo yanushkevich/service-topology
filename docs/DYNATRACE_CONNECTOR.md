@@ -1,6 +1,6 @@
 # Dynatrace connector: topology from Smartscape on Grail (Milestone 15, backend B12)
 
-**Status:** accepted 2026-10-15; in progress. Decision: ADR-034. Milestone: `docs/milestones/MILESTONE_15_DYNATRACE.md`.
+**Status:** implemented 2026-10-15 (closeout in `docs/IMPLEMENTATION_PLAN.md`); not yet verified against a real tenant. Decision: ADR-034. Milestone: `docs/milestones/MILESTONE_15_DYNATRACE.md`.
 
 **Source:** the product owner asked for "a feature that would allow us to get data, services, databases, etc. from dynatrace, and lets say i can connect it to dynatrace". Their answers:
 1. **API:** Grail / Smartscape (the SaaS platform), not the classic Environment API v2.
@@ -159,3 +159,16 @@ A Go fake of the platform endpoints (`/platform/storage/query/v1/query:execute`,
 - **Duplicate names in one environment** (for example, two process groups exposing `checkout`) map to one instance. The preview notes it and keeps both Dynatrace IDs in `metadata.dynatrace`.
 - **Unverified field names** (see the note at the top). The connection check exists for this.
 - **After a bundle import,** every entity is authored (source `import`). Dynatrace links to it but never deletes it.
+
+## 10. In the app
+
+- **Settings → Data source → Dynatrace** (with `?source=api`; `features/settings/DynatraceRows.tsx`):
+  - the connection: tenant hosts and auth kind, environment rules, last sync, and how current health and metrics are;
+  - **Check connection**: one row per query, with missing fields and scopes;
+  - **Preview sync**: changes by kind, notes, validation issues, and every change; **Apply** when the result validates;
+  - **Aliases**: Dynatrace names mapped to existing services.
+- **Inspector:** a Dynatrace section on linked entities: the Smartscape ID, when health was observed and the open Davis problems, or "Not seen in Dynatrace since …" for kept entities. Telemetry says Observed or Simulated per entity, as before.
+- **Data-source label:** "observed by Dynatrace at 08:46", "Dynatrace observations out of date", or "example Dynatrace tenant", never observed for the fake tenant.
+- **Refetch:** the app refetches the topology every refresh interval (not while the tab is hidden) and continues a running simulation on the new data (`rebase`) instead of restarting it.
+- **Simulation:** observed metrics neither drift nor turn simulated; only a simulated failure that changes an entity replaces them, with simulated values (TypeScript and Go engines; conformance scenario `observed-metrics`).
+

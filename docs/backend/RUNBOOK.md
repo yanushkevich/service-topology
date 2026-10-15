@@ -50,3 +50,16 @@ To switch the API to the restored database: set `MONGODB_DATABASE=topology_resto
 
 ## Tokens (AUTH_MODE=token)
 `make token NAME=ci ROLE=editor` prints a token once and the line to append to the file named by `AUTH_TOKENS_FILE`. To revoke, delete the line and restart the API.
+
+## Dynatrace connector (ADR-034)
+Spec: `docs/DYNATRACE_CONNECTOR.md`.
+1. **Credentials.** In Dynatrace, create a platform token or an OAuth client with the read scopes `storage:smartscape:read`, `storage:entities:read`, `storage:metrics:read`, `storage:events:read`, `storage:buckets:read`. Without `storage:buckets:read`, queries succeed and return nothing.
+2. **Secret.** Put the token (or the client secret) in a file under `backend/secrets/` (gitignored), readable by the API only. Never pass it on a command line or in the YAML.
+3. **Configuration.** Copy `backend/dynatrace.example.yaml`. Set the platform URL (`https://<id>.apps.dynatrace.com`), remove `example` and `allowInsecureLoopback`, point `platformTokenFile` (or `oauth.clientSecretFile`) at the secret, and write one rule per environment (`tag`, `k8sCluster`, `k8sNamespaces`, or `all`).
+4. **Start** the API with `DYNATRACE_CONFIG_FILE=<file>`. A configuration problem stops the start with every problem listed. The log says `dynatrace connector enabled`.
+5. **Check** in Settings → Data source → Dynatrace → Check connection, or `POST /api/v1/integrations/dynatrace/check` (editor role). Every query should answer, with no missing fields. A missing field means the tenant's schema differs from the documentation: fix `internal/adapters/dynatrace/queries.go` and the mapping.
+6. **Sync:** Preview, read the notes and changes, add aliases for services that should link, preview again, and Apply. A 412 means someone edited the topology after the preview: preview again.
+7. **Refresh:** health and metrics refresh every `refresh.interval`. `GET /api/v1/integrations/dynatrace` shows the last refresh and its error. Observations older than three intervals are not shown.
+
+**Troubleshooting:** 502 `source-failed` carries a safe message (credentials rejected, missing scopes, rate limited, a rejected query with Dynatrace's reason). 409 `integration-busy` means a preview or check is running. To try everything without a tenant, run `make fake-dynatrace` and `DYNATRACE_CONFIG_FILE=dynatrace.example.yaml make run`: the example tenant's data is labelled example data.
+

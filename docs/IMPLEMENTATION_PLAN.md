@@ -221,7 +221,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 13.1 | Removed (2026-10-13) | 3D drill-down refinement: the flow's lines only, planes under their steps, pads for services without a board, the 2D board's visual language; `docs/milestones/MILESTONE_13_1_DRILLDOWN_REFINEMENT.md`. |
 | 13.2 | Implemented (2026-10-13) | Which lines each step uses: a Lines strip on the flow board and an Inside-the-service block in the step card (the 2D step-to-service drill-down); `docs/milestones/MILESTONE_13_2_FLOW_LINES.md`. |
 | 13.3 | Implemented (2026-10-13) | The 3D drill-down removed from business flows (product owner: "i dont need 3d in business flows"); the 2D Lines strip and step card replace it. ADR-026 withdrawn. |
-| 15 | In progress (2026-10-15) | Dynatrace connector: services, databases, Kubernetes containment, calls, health, and metrics from Smartscape on Grail; preview and apply, observation overlay, backend B12 (ADR-034); `docs/milestones/MILESTONE_15_DYNATRACE.md`, `docs/DYNATRACE_CONNECTOR.md`. |
+| 15 | Implemented (2026-10-15); not yet verified against a real tenant | Dynatrace connector: services, databases, Kubernetes containment, calls, health, and metrics from Smartscape on Grail; preview and apply, observation overlay, backend B12 (ADR-034); `docs/milestones/MILESTONE_15_DYNATRACE.md`, `docs/DYNATRACE_CONNECTOR.md`. |
 | 9 | Implemented (2026-10-12) | Transit board on example data (ADR-021): spec Phase 1 plus the Phase 4 replay UI, hover tooltips, windows, and per-step stats; see the Milestone 9 closeout and follow-up below. Real data sources (phases 2, 3, and 5) are not started. |
 | B1 (backend) | Implemented (2026-10-11) | Go foundation in `backend/`; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
 | B2 (backend) | Implemented (2026-10-11) | ArcadeDB adapter, schema, idempotent seed, integration tests; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. The database was replaced by MongoDB afterwards (ADR-019). |
@@ -890,3 +890,35 @@ Product owner: "i dont need 3d in business flows". ADR-026 is withdrawn; Milesto
 - Real-browser audit: 30 pages × 2 themes, all pass.
 - Screenshot: the flow board without the 3D switch.
 - `git grep` finds no reference to the drill-down in `apps/web/src` or the scripts.
+
+### Milestone 15 closeout (2026-10-15): the Dynatrace connector
+Services, databases, Kubernetes containment, calls, health, and metrics from Dynatrace Smartscape on Grail, with backend B12 (ADR-034, `docs/DYNATRACE_CONNECTOR.md`, `docs/milestones/MILESTONE_15_DYNATRACE.md`). Product owner's choices: Grail / Smartscape; Dynatrace owns what it finds; structure is previewed and applied by hand, and health and metrics refresh on their own.
+
+**Commits:** `e521aba` spec; `ece1c7c` client, queries, mapping, fake tenant; `eb010d0` reconcile, preview, apply, aliases, API; `62577e7` observation overlay; `33700e5` simulation engine keeps observed metrics; `11f4c7f` Settings, inspector, refetch; the close-out commit.
+
+**Checks run:**
+- `make check` (backend): passes. New: `adapters/dynatrace` (config, mapping of the example tenant, observations, the query API through the fake tenant with a platform token and an OAuth client, 403 scopes, 401, 429 retry, missing fields, no redirects), `application` (reconcile: create, update keeping edits, link, relationship and instance matching, keep and delete with references, boards; previews, apply with revision guard, expiry, busy, aliases; the overlay, staleness, write guard, restart), `httpapi` (every `/integrations/dynatrace` operation, the preview over the mock topology, 502 without leaking the token, observations on `GET /topology` and `/meta`), and `TestEngineConformance` with the new `observed-metrics` scenario. Mutation checks: disabling the redirect guard, the observed-value write guard, and the simulation rebase each fail their test.
+- `npm run check`: 92 files, 1,220 passed, 1 skipped; build passes. jsdom axe passes on Settings with the check, an invalid preview, and the alias editor.
+- `go test -race` on `dynatrace`, `application`, `httpapi`: pass. `go vet -tags integration ./...`: passes.
+- A local run of `cmd/fakedynatrace`: execute, poll, record cap, and a rejected token over real HTTP.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| A preview of the fake tenant lists its services, instances, containment, databases, and calls; applying stores them; a second preview is empty | Pass | `TestDiscoveryMapsTheExampleTenant`; `TestPreviewAndApplySync`; `TestIntegrationPreviewAndApplyOverTheMockTopology` |
+| An authored service with the same slug or an alias is linked, not duplicated, and keeps its owner, team, and description | Pass | `TestReconcileLinksAuthoredEntitiesWithoutOverwriting`; `TestIntegrationAliases` |
+| A disappeared owned service is deleted unless a flow uses it; then kept, flagged, health unknown | Pass | `TestReconcileDeletesWhatDisappearedUnlessUsed` |
+| A cross-environment call is dropped and noted; the applied topology validates | Pass | `TestDiscoveryRelationshipsAndNotes`; `syncIssues` |
+| Apply fails with 412 after the topology changed | Pass | `TestApplyRefusesAMovedTopology`; HTTP test |
+| A refresh updates health and metrics without a revision; observed metrics are `isSimulated: false`; stale observations are dropped | Pass | `TestObservationsOverlayReadsWithoutARevision`; `TestStaleObservationsAreNotShown` |
+| No secret in logs, responses, or errors; DQL never holds configuration | Pass | `TestDiscoverThroughTheQueryAPI` (logs); `TestIntegrationStatusAndCheck`; `TestIntegrationSourceFailureIsABadGateway`; constant queries, matched by the fake |
+| The UI never calls example-tenant data observed; axe passes in jsdom; `npm run check` and `make check` pass | Pass | `describeSource` tests; `a11y.test.tsx` |
+| axe in the real browser, both themes | Not run | the rows appear only with the backend, which needs MongoDB (Rancher VM stopped) |
+| `make test-integration`, `make contract-check` | Not run | MongoDB VM stopped. Written: `sourcesync_integration_test.go` (batch, ownership, aliases, observations); the contract check now starts the fake tenant and runs the sync flow |
+
+**Found and fixed on the way:** the browser simulation and its Go port turned every metric into a drifting simulated value at load, which would have relabelled Dynatrace metrics simulated. Observed metrics now stay observed unless a simulated failure changes the entity.
+
+**Known limitations:**
+- Not verified against a real tenant. Field names come from Dynatrace's public documentation; run the connection check on the first connection and correct `queries.go` and the fixture if needed.
+- Hosts, processes, containers, pods, queues, and topics are not mapped; relationships get no metrics; calls across environments are dropped.
+- Each API process refreshes on its own (no leader election); the observation overlay is per source.
+- Transit boards, flow statistics, and traces from Dynatrace remain Milestone 14 (on hold).

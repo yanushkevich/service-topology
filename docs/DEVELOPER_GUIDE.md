@@ -217,8 +217,14 @@ The Events page and inspector explain the new rule automatically.
 - **Read model:** `transit/flows/flowLines.ts` (`flowLineRows`, `flowLinesSummary`) from the flow, the service boards (`useFlowBoards` → `useBoardIndexes`), and the typical path. Matching is `lineForStep` (entry point = a line's name or signature).
 - **UI:** the flow board's Lines strip (`strip=lines`, `FlowLinesView`) and the step card's Inside block (`StepInside`), both in `features/business-flows/FlowLines.tsx`; wording and links in `flowLinesText.ts`. A line's ordered stops are `lineStops` in `transit/board.ts`, shared with the service board's stop strip.
 
+## 7e. Dynatrace connector (ADR-034, Milestone 15)
+- **Try it locally:** `make dev-up`, `make seed`, `make fake-dynatrace` (one terminal), `DYNATRACE_CONFIG_FILE=dynatrace.example.yaml make run` (another), then the app with `?source=api` → Settings → Data source → Dynatrace. The fake tenant's data is example data.
+- **Backend:** queries and field names in `internal/adapters/dynatrace/queries.go` (the only place to correct them), mapping in `discovery.go` and `observe.go`, reconcile rules in `internal/application/reconcile_kinds.go`. The fixture is `fixtures/dynatrace/example-tenant.json`; the fake answers only the connector's own queries.
+- **Frontend:** `data/http/httpIntegration.ts` (client), `features/settings/Dynatrace*.tsx`, `domain/sourceLink.ts` (reads `metadata.dynatrace`), the inspector's `SourceLinkSection`. Tests use `test/fakeIntegration.ts`.
+- **Provenance rules:** observed metrics keep `isSimulated: false` and are never drifted; writes never store observed health or the link's observation fields; an example tenant is never called observed.
+
 ## 8. Known limitations (current)
-- No real integrations, authentication, or tenancy. All data is mock; all telemetry is simulated.
+- No authentication provider or tenancy. One real integration: the Dynatrace connector (ADR-034), not yet verified against a real tenant. Without it, all data is mock and all telemetry is simulated.
 - Sandbox edits stay in one browser. To move them to the backend, export a data bundle from Settings → Data source and import it with `?source=api` (ADR-032).
 - Performance: 2D selection response and 3D frame rate need re-measurement on an idle machine or with a GPU (`docs/BENCHMARKS.md`).
 - Grouped 2D mode at full detail fits at a small zoom; read it collapsed or through the Groups panel. Saved positions do not resize groups.

@@ -45,7 +45,7 @@ Acceptance:
 ## Future milestone — provider integrations
 Cloud, Kubernetes, Kafka and other adapters are out of initial milestones. Introduce them only behind normalized source adapters and provenance rules.
 
-## Milestone B12 — Dynatrace connector (ADR-034, in progress)
+## Milestone B12 — Dynatrace connector (ADR-034, implemented 2026-10-15)
 The first provider integration, for frontend Milestone 15. Spec: `docs/DYNATRACE_CONNECTOR.md`.
 - **Adapter:** `internal/adapters/dynatrace`: the Grail query client, constant DQL queries, and the mapping to a discovered topology. A fake tenant serves `fixtures/dynatrace/example-tenant.json`.
 - **Application:** a pure reconcile (owned, authored, linked, kept), aliases, held previews, an atomic apply (`ApplyChanges`), and a refresh loop writing the observation overlay.
@@ -248,3 +248,17 @@ Delivered with frontend Milestone 12 (closeout in `docs/IMPLEMENTATION_PLAN.md`)
 | Parity with TypeScript on shared fixtures | Pass | `TestFlowImpactConformance` (126 cases) |
 | Example scenario over HTTP | Pass | `api_test.go` |
 | Contract check against a running API | Not run | MongoDB VM stopped; `make contract-check` asserts the scenario when run |
+
+## Milestone B12 closeout — Dynatrace connector (2026-10-15, ADR-034)
+Delivered with frontend Milestone 15 (closeout in `docs/IMPLEMENTATION_PLAN.md`):
+- **Adapter:** `internal/adapters/dynatrace` (configuration, platform token or OAuth client, the Grail query client, seven constant queries, the mapping, observations, the connection check) and `dynatracefake` with `cmd/fakedynatrace` (`make fake-dynatrace`).
+- **Application:** `reconcile.go` and `reconcile_kinds.go` (owned, authored, linked, kept, deleted), `sourcesync.go` (status, check, held previews, apply, aliases), `observations.go` (overlay, freshness, write guard).
+- **Ports and storage:** `TopologySource`, `SourceWriter` (`ApplyChanges`, `SourceTypes`; a replace keeps the creating `_meta.sourceType`), `IntegrationStore`; collections `integrations` and `observations` (schema version 3).
+- **API:** `/integrations/dynatrace` (status, check, preview, apply, aliases); `GET /meta` gains `observations`. Documented in `docs/api/openapi.json`.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Unit, API, and conformance tests | Pass | `make check` |
+| Database behaviour (batch, ownership, aliases, observations) | Not run | MongoDB VM stopped; `sourcesync_integration_test.go` compiles (`go vet -tags integration`) |
+| Contract check against a running API with the fake tenant | Not run | MongoDB VM stopped; `scripts/contract-check.sh` starts the fake tenant |
+

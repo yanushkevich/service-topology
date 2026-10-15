@@ -437,7 +437,7 @@ Do not silently overwrite an accepted decision. Mark it superseded and record th
 
 
 ## ADR-034 — A Dynatrace connector for the topology: Smartscape on Grail, owned and authored data, preview then apply (2026-10-15, Milestone 15 / B12)
-- **Status:** Accepted (product owner, 2026-10-15: Grail / Smartscape; "Dynatrace owns what it finds"; structure previewed and applied by hand, with health and metrics refreshed on their own). Spec: `docs/DYNATRACE_CONNECTOR.md`. Answers ADR-030's open source question for the topology. ADR-030 itself stays proposed and on hold for transit boards, flow statistics, and traces.
+- **Status:** Accepted (product owner, 2026-10-15: Grail / Smartscape; "Dynatrace owns what it finds"; structure previewed and applied by hand, with health and metrics refreshed on their own). Implemented 2026-10-15 (Milestone 15 / B12; closeout in `docs/IMPLEMENTATION_PLAN.md`); not yet verified against a real tenant. Spec: `docs/DYNATRACE_CONNECTOR.md`. Answers ADR-030's open source question for the topology. ADR-030 itself stays proposed and on hold for transit boards, flow statistics, and traces.
 - **Context:**
   - The product owner can connect a Dynatrace SaaS tenant and wants its services, databases, and infrastructure in the app.
   - Authored data must survive syncs: flows, event types, and boards reference services by ID, and owners and teams are edited here.
