@@ -2131,7 +2131,7 @@
           "integrations"
         ],
         "summary": "The Dynatrace connection: tenants, environment rules, and the last sync",
-        "description": "Configuration as shown to users: tenant hosts and how each authenticates (never secrets or file paths), how environments are matched, the refresh interval, the last applied sync, and how many aliases are stored. isExample is true for the fake tenant: its data is example data, never observed.",
+        "description": "Configuration as shown to users: tenant hosts and how each authenticates (never secrets or file paths), how environments are matched, the refresh interval, the last applied sync, and how many aliases are stored. isExample is true for the fake tenant: its data is example data, never observed. lastRefresh and observations describe the health and metrics refresh: its overlay is merged onto topology reads while it is fresh (three intervals).",
         "responses": {
           "200": {
             "description": "The connection.",
@@ -2173,7 +2173,19 @@
                           }
                         }
                       },
-                      "aliasCount": 2
+                      "aliasCount": 2,
+                      "lastRefresh": {
+                        "at": "2026-10-15T08:46:00Z",
+                        "ok": true,
+                        "entities": 12
+                      },
+                      "observations": {
+                        "source": "dynatrace",
+                        "observedAt": "2026-10-15T08:46:00Z",
+                        "isExample": false,
+                        "entities": 12,
+                        "stale": false
+                      }
                     }
                   }
                 }
@@ -3772,6 +3784,14 @@
             "additionalProperties": {
               "type": "integer"
             }
+          },
+          "observations": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ObservationMeta"
+              }
+            ],
+            "description": "A topology source's observation overlay (ADR-034): health and metrics merged onto service instances and resources on read, without a topology revision. Absent when no source is configured or nothing was observed yet."
           }
         }
       },
@@ -3919,7 +3939,9 @@
           "environments",
           "refreshIntervalSeconds",
           "lastSync",
-          "aliasCount"
+          "aliasCount",
+          "lastRefresh",
+          "observations"
         ],
         "properties": {
           "source": {
@@ -4033,6 +4055,48 @@
           "aliasCount": {
             "type": "integer",
             "minimum": 0
+          },
+          "lastRefresh": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "at",
+                  "ok",
+                  "entities"
+                ],
+                "properties": {
+                  "at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "ok": {
+                    "type": "boolean"
+                  },
+                  "entities": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "error": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The last health and metrics refresh (every refreshIntervalSeconds)."
+          },
+          "observations": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ObservationMeta"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -4293,6 +4357,37 @@
               "minLength": 1,
               "maxLength": 200
             }
+          }
+        }
+      },
+      "ObservationMeta": {
+        "type": "object",
+        "required": [
+          "source",
+          "observedAt",
+          "isExample",
+          "entities",
+          "stale"
+        ],
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isExample": {
+            "type": "boolean",
+            "description": "True for the fake tenant: its states and metrics are example data (metrics keep isSimulated: true)."
+          },
+          "entities": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "stale": {
+            "type": "boolean",
+            "description": "Older than three refresh intervals: not merged onto topology reads."
           }
         }
       }

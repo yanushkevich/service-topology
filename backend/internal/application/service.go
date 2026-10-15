@@ -64,7 +64,7 @@ func (s *Service) index(ctx context.Context) (*domain.Index, error) {
 	if err != nil {
 		return nil, err
 	}
-	return domain.BuildIndex(data), nil
+	return domain.BuildIndex(s.observed(data)), nil
 }
 
 // Meta describes the API and the stored topology (GET /meta).
@@ -72,7 +72,9 @@ type Meta struct {
 	APIVersion    string              `json:"apiVersion"`
 	SchemaVersion int                 `json:"schemaVersion"`
 	Topology      *ports.TopologyMeta `json:"topology"`
-	Auth          struct {
+	// Observations describes a topology source's overlay (ADR-034); absent without one.
+	Observations *ObservationMeta `json:"observations,omitempty"`
+	Auth         struct {
 		Mode string `json:"mode"`
 	} `json:"auth"`
 	Limits map[string]int `json:"limits"`
@@ -86,6 +88,7 @@ func (s *Service) Meta(ctx context.Context, schemaVersion int, authMode string) 
 		"simulationActionsMax": MaxSimulationActions, "simulationTicksMax": MaxSimulationTicks, "simulationWatchMax": MaxWatchedEntities,
 	}}
 	m.Auth.Mode = authMode
+	m.Observations = s.observationMeta()
 	if repo, ok := s.TopologyRepo.(ports.TopologyMetaRepository); ok {
 		tm, err := repo.TopologyMeta(ctx)
 		if err != nil {

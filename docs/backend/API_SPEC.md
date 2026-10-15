@@ -66,6 +66,7 @@ The simulation engine is pure TypeScript and runs in the browser (ADR-010); capt
 ### Topology sources (implemented in B12, ADR-034)
 - `GET /integrations/dynatrace`, `POST /integrations/dynatrace/check`, `POST /integrations/dynatrace/preview`, `POST /integrations/dynatrace/apply`, `GET`/`PUT /integrations/dynatrace/aliases`. Spec: `docs/DYNATRACE_CONNECTOR.md` §6.
 - The preview reconciles a Dynatrace discovery with the stored topology (`application/reconcile.go`), validates the result, and is held for 10 minutes. Apply calls `ports.SourceWriter.ApplyChanges`: one transaction and one revision, guarded by the preview's base revision.
+- Health and metrics refresh every `refresh.interval` in the API process (`app.refreshObservations`) into an overlay merged onto topology reads while fresh, without a revision (`application/observations.go`); `GET /meta` gains `observations`.
 - Errors: 404 `integration-not-configured` (no `DYNATRACE_CONFIG_FILE`), 409 `integration-busy` (a preview or check is running), 410 `preview-expired`, 412 (stale `If-Match`), 422 (the result does not validate), 502 `source-failed` (Dynatrace could not answer; the detail is a fixed, safe message).
 
 ### Not added

@@ -122,6 +122,10 @@ limits: { maxRecords: 10000, queryTimeout: 30s }
 - **Loop.** Every `refresh.interval` (default 60 s), the refresh queries run (the three node queries, for what is present now, plus metrics and problems), and the overlay is replaced in one write. Every node present is `healthy` unless a problem affects it. Only entities with a Dynatrace link use the overlay.
 - **Freshness.** An observation older than three intervals is dropped on read, so stale health is never shown as current.
 - **Provenance.** Observed metrics have `isSimulated: false` and `observedAt`. The topology meta gains `observedAt` and the source label "Dynatrace".
+- **What a read shows.** Service instances and resources take the observed health; instances take the metrics. `metadata.dynatrace` gains `problems` (Davis display IDs) and `observedAt`. Reads through the index (registry, traversal, impact, single entities) see the same values. `GET /meta` and `GET /integrations/dynatrace` describe the overlay (`observedAt`, `entities`, `isExample`, `stale`).
+- **Writes never store observations.** An edit of a linked entity keeps its stored health and its stored `metadata.dynatrace` link, whatever the client sends; metrics were never writable.
+- **Restarts.** The overlay is also stored (`observations`, one document per source) and restored at start-up, so recent states survive a restart. Each API process refreshes on its own.
+- **Example tenants.** Their metrics keep `isSimulated: true`.
 - **Clients.** With `?source=api`, the frontend refetches the topology every refresh interval.
 
 ## 6. API

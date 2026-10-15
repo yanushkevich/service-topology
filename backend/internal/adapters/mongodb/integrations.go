@@ -106,3 +106,52 @@ func (r *IntegrationRepository) SaveLastSync(ctx context.Context, source string,
 func sortedNames(m map[string]domain.EntityID) []string {
 	return slices.Sorted(maps.Keys(m))
 }
+
+// observedEntity stores one entity's state; the overlay's map becomes a list because entity IDs
+// may contain '.' (e.g. "payment-service.production").
+type observedEntity struct {
+	ID    string              `json:"id"`
+	State ports.ObservedState `json:"state"`
+}
+
+type observationsPayload struct {
+	Source     string           `json:"source"`
+	ObservedAt string           `json:"observedAt"`
+	IsExample  bool             `json:"isExample"`
+	Entities   []observedEntity `json:"entities"`
+}
+
+// LoadObservations returns the source's stored overlay, or nil.
+func (r *IntegrationRepository) LoadObservations(ctx context.Context, source string) (*ports.ObservationOverlay, error) {
+	raw, err := r.s.coll(collObservations).FindOne(ctx, byID(source)).Raw()
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, mapErr(err)
+	}
+	var p observationsPayload
+	if err := fromField(raw, "payload", &p); err != nil {
+		return nil, err
+	}
+	out := &ports.ObservationOverlay{Source: p.Source, ObservedAt: p.ObservedAt, IsExample: p.IsExample, Entities: map[domain.EntityID]ports.ObservedState{}}
+	for _, e := range p.Entities {
+		out.Entities[e.ID] = e.State
+	}
+	return out, nil
+}
+
+// SaveObservations replaces the source's overlay in one document.
+func (r *IntegrationRepository) SaveObservations(ctx context.Context, overlay *ports.ObservationOverlay) error {
+	p := observationsPayload{Source: overlay.Source, ObservedAt: overlay.ObservedAt, IsExample: overlay.IsExample, Entities: []observedEntity{}}
+	for _, id := range slices.Sorted(maps.Keys(overlay.Entities)) {
+		p.Entities = append(p.Entities, observedEntity{ID: id, State: overlay.Entities[id]})
+	}
+	payload, err := toDocument(p)
+	if err != nil {
+		return err
+	}
+	doc := bson.D{{Key: "_id", Value: overlay.Source}, {Key: "observedAt", Value: overlay.ObservedAt}, {Key: "payload", Value: payload}}
+	_, err = r.s.coll(collObservations).ReplaceOne(ctx, byID(overlay.Source), doc, options.Replace().SetUpsert(true))
+	return mapErr(err)
+}

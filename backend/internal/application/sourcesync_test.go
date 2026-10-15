@@ -11,9 +11,11 @@ import (
 	"servicetopology/backend/internal/ports"
 )
 
-// stubSource returns a fixed discovery (or an error), recording the aliases it was given.
+// stubSource returns a fixed discovery and observation (or an error), recording the aliases it
+// was given.
 type stubSource struct {
 	data    *domain.TopologyData
+	obs     *ports.Observation
 	err     error
 	aliases map[string]domain.EntityID
 	block   chan struct{}
@@ -30,9 +32,16 @@ func (s *stubSource) Discover(_ context.Context, aliases map[string]domain.Entit
 	}
 	return &ports.Discovery{Data: *cloneTopology(s.data), Notes: []ports.DiscoveryNote{}, DiscoveredAt: now}, nil
 }
-func (s *stubSource) Observe(context.Context) (*ports.Observation, error) { return nil, nil }
-func (s *stubSource) Check(context.Context) []ports.SourceCheck           { return nil }
-func (s *stubSource) Describe() ports.SourceDescription                   { return ports.SourceDescription{} }
+func (s *stubSource) Observe(context.Context) (*ports.Observation, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	return s.obs, nil
+}
+func (s *stubSource) Check(context.Context) []ports.SourceCheck { return nil }
+func (s *stubSource) Describe() ports.SourceDescription {
+	return ports.SourceDescription{RefreshIntervalSeconds: 60}
+}
 
 func syncService(t *testing.T, stored *domain.TopologyData) (*Service, *memory.Store, *stubSource) {
 	t.Helper()

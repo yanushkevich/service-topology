@@ -44,6 +44,36 @@ func newDynatrace(path string, logger *slog.Logger) (*dynatrace.Connector, error
 	return conn, nil
 }
 
+// refreshObservations keeps the observation overlay current (ADR-034): it restores the stored
+// overlay, then observes every interval until ctx ends. A failure is logged when it first occurs
+// or changes, and is always shown in GET /integrations/dynatrace.
+func refreshObservations(ctx context.Context, api *application.Service, interval time.Duration, logger *slog.Logger) {
+	if err := api.LoadObservations(ctx); err != nil {
+		logger.Debug("no stored observations restored", "error", err.Error())
+	}
+	tick := time.NewTicker(interval)
+	defer tick.Stop()
+	lastError := ""
+	for {
+		refreshCtx, cancel := context.WithTimeout(ctx, interval)
+		err := api.RefreshObservations(refreshCtx)
+		cancel()
+		switch {
+		case err != nil && ctx.Err() == nil && err.Error() != lastError:
+			logger.Warn("dynatrace refresh failed", "error", err.Error())
+			lastError = err.Error()
+		case err == nil && lastError != "":
+			logger.Info("dynatrace refresh recovered")
+			lastError = ""
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-tick.C:
+		}
+	}
+}
+
 // Run serves HTTP until ctx is done. onListen, if set, receives the bound address (tests use
 // HTTP_ADDR=127.0.0.1:0).
 func Run(ctx context.Context, cfg config.Config, logger *slog.Logger, onListen func(addr string)) error {
@@ -98,6 +128,7 @@ func Run(ctx context.Context, cfg config.Config, logger *slog.Logger, onListen f
 				return err
 			}
 			api.Sync = application.NewSourceSync(source, mongodb.NewIntegrationRepository(store))
+			go refreshObservations(ctx, api, time.Duration(source.Describe().RefreshIntervalSeconds)*time.Second, logger)
 		}
 	}
 	if cfg.DynatraceConfigFile != "" && cfg.MongoDB == nil {

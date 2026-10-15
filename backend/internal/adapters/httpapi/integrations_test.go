@@ -1,6 +1,7 @@
 package httpapi_test
 
 import (
+	"context"
 	"io"
 	"log/slog"
 	"net/http"
@@ -24,6 +25,11 @@ const fakeToken = "dt0s16.HTTP-TEST-TOKEN"
 
 // dynatraceHandler serves the API over the mock topology with a connector to the fake tenant.
 func dynatraceHandler(t *testing.T) (http.Handler, *memory.Store, *dynatracefake.Tenant) {
+	h, store, tenant, _ := dynatraceService(t)
+	return h, store, tenant
+}
+
+func dynatraceService(t *testing.T) (http.Handler, *memory.Store, *dynatracefake.Tenant, *application.Service) {
 	t.Helper()
 	dir, err := fixtures.Dir()
 	if err != nil {
@@ -64,7 +70,7 @@ func dynatraceHandler(t *testing.T) (http.Handler, *memory.Store, *dynatracefake
 	svc := &application.Service{TopologyRepo: store, SnapshotRepo: store, LayoutRepo: store.Layouts(), BoardRepo: store.Boards(), GraphRepo: store, SimRepo: store.Simulations(),
 		FlowFormats: application.FlowFormats{"native": flowformats.Native{}, "bpmn": flowformats.BPMN{}}}
 	svc.Sync = application.NewSourceSync(conn, store.Integrations())
-	return httpapi.NewHandler(httpapi.Deps{Logger: logger, API: svc}), store, tenant
+	return httpapi.NewHandler(httpapi.Deps{Logger: logger, API: svc}), store, tenant, svc
 }
 
 func TestIntegrationNotConfigured(t *testing.T) {
@@ -194,5 +200,62 @@ func TestIntegrationAliases(t *testing.T) {
 	preview := call(h, "POST", "/api/v1/integrations/dynatrace/preview", "")
 	if strings.Contains(string(preview.body), `"id":"fraudscoring"`) {
 		t.Errorf("the alias was not applied: %s", preview.body)
+	}
+}
+
+func TestObservationsReachTopologyReadsAndMeta(t *testing.T) {
+	h, _, _, svc := dynatraceService(t)
+	var preview struct {
+		ID string `json:"id"`
+	}
+	call(h, "POST", "/api/v1/integrations/dynatrace/preview", "").json(t, &preview)
+	if res := call(h, "POST", "/api/v1/integrations/dynatrace/apply", `{"previewId":"`+preview.ID+`"}`); res.code != 200 {
+		t.Fatalf("apply: %d %s", res.code, res.body)
+	}
+	if err := svc.RefreshObservations(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	var topology struct {
+		ServiceInstances []struct {
+			ID      string `json:"id"`
+			Health  string `json:"health"`
+			Metrics *struct {
+				LatencyMs   float64 `json:"latencyMs"`
+				IsSimulated bool    `json:"isSimulated"`
+			} `json:"metrics"`
+			Metadata map[string]any `json:"metadata"`
+		} `json:"serviceInstances"`
+	}
+	call(h, "GET", "/api/v1/topology", "").json(t, &topology)
+	found := false
+	for _, inst := range topology.ServiceInstances {
+		if inst.ID != "payment-service.production" {
+			continue
+		}
+		found = true
+		// The mock's own instance, linked: Davis's SLOWDOWN problem and the tenant's metrics. The fake
+		// tenant is an example, so its metrics stay simulated.
+		if inst.Health != "degraded" || inst.Metrics == nil || inst.Metrics.LatencyMs != 210 || !inst.Metrics.IsSimulated {
+			t.Errorf("payment-service.production = %+v", inst)
+		}
+		link, _ := inst.Metadata["dynatrace"].(map[string]any)
+		if problems, _ := link["problems"].([]any); len(problems) != 1 || problems[0] != "P-24101501" {
+			t.Errorf("problems = %v", inst.Metadata["dynatrace"])
+		}
+	}
+	if !found {
+		t.Fatal("payment-service.production is missing")
+	}
+	var meta struct {
+		Observations *struct {
+			Source    string `json:"source"`
+			IsExample bool   `json:"isExample"`
+			Stale     bool   `json:"stale"`
+			Entities  int    `json:"entities"`
+		} `json:"observations"`
+	}
+	call(h, "GET", "/api/v1/meta", "").json(t, &meta)
+	if o := meta.Observations; o == nil || o.Source != "dynatrace" || !o.IsExample || o.Stale || o.Entities == 0 {
+		t.Errorf("meta observations = %+v", o)
 	}
 }

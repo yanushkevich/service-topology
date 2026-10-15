@@ -56,10 +56,11 @@ func (s *Service) TopologyRevision(ctx context.Context, environmentID string) (*
 		data, err := s.Topology(ctx, environmentID)
 		return data, "", err
 	}
-	data, rev, err := w.CurrentTopology(ctx)
+	stored, rev, err := w.CurrentTopology(ctx)
 	if err != nil {
 		return nil, "", err
 	}
+	data := s.observed(stored)
 	if environmentID == "" {
 		return data, rev, nil
 	}
@@ -159,6 +160,7 @@ func (s *Service) write(ctx context.Context, op, kind, pathID string, entity any
 	}
 	if entity != nil {
 		s.setServerFields(candidate, existing, entity)
+		s.keepObserved(candidate, existing, entity)
 	}
 	applyChange(candidate, kind, op, existing, entity)
 	if issues := domain.Validate(candidate); len(issues) > 0 {

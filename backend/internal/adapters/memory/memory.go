@@ -577,9 +577,10 @@ func (b boards) Remove(_ context.Context, id domain.EntityID, ifRevision string)
 
 // integration is one source's state (ports.IntegrationStore).
 type integration struct {
-	aliases   map[string]domain.EntityID
-	aliasesAt int
-	lastSync  *ports.SyncRecord
+	aliases      map[string]domain.EntityID
+	aliasesAt    int
+	lastSync     *ports.SyncRecord
+	observations *ports.ObservationOverlay
 }
 
 // Integrations adapts the store to ports.IntegrationStore.
@@ -625,5 +626,21 @@ func (i integrations) SaveLastSync(_ context.Context, source string, sync *ports
 	i.s.mu.Lock()
 	defer i.s.mu.Unlock()
 	i.state(source).lastSync = sync
+	return nil
+}
+
+func (i integrations) LoadObservations(_ context.Context, source string) (*ports.ObservationOverlay, error) {
+	i.s.mu.Lock()
+	defer i.s.mu.Unlock()
+	if o := i.state(source).observations; o != nil {
+		return clone(o), nil
+	}
+	return nil, nil
+}
+
+func (i integrations) SaveObservations(_ context.Context, overlay *ports.ObservationOverlay) error {
+	i.s.mu.Lock()
+	defer i.s.mu.Unlock()
+	i.state(overlay.Source).observations = clone(overlay)
 	return nil
 }

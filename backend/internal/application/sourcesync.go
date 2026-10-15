@@ -9,6 +9,7 @@ import (
 	"maps"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"servicetopology/backend/internal/domain"
@@ -40,6 +41,21 @@ type SourceSync struct {
 	running  sync.Mutex
 	mu       sync.Mutex
 	previews map[string]*SyncPreview
+	// overlay is the latest observation overlay; refresh is the last refresh's outcome.
+	overlay atomic.Pointer[ports.ObservationOverlay]
+	refresh *RefreshRecord
+}
+
+func (ss *SourceSync) setRefresh(r *RefreshRecord) {
+	ss.mu.Lock()
+	defer ss.mu.Unlock()
+	ss.refresh = r
+}
+
+func (ss *SourceSync) lastRefresh() *RefreshRecord {
+	ss.mu.Lock()
+	defer ss.mu.Unlock()
+	return ss.refresh
 }
 
 // NewSourceSync returns the sync state for one source.
@@ -68,8 +84,11 @@ type SyncPreview struct {
 type SourceStatus struct {
 	Source string `json:"source"`
 	ports.SourceDescription
-	LastSync   *ports.SyncRecord `json:"lastSync"`
-	AliasCount int               `json:"aliasCount"`
+	LastSync    *ports.SyncRecord `json:"lastSync"`
+	LastRefresh *RefreshRecord    `json:"lastRefresh"`
+	// Observations describes the overlay in use (stale ones are not merged onto reads).
+	Observations *ObservationMeta `json:"observations"`
+	AliasCount   int              `json:"aliasCount"`
 }
 
 // SyncResult is an applied sync.
@@ -99,7 +118,8 @@ func (s *Service) SourceStatus(ctx context.Context) (*SourceStatus, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &SourceStatus{Source: ss.Source.Name(), SourceDescription: ss.Source.Describe(), LastSync: last, AliasCount: len(aliases)}, nil
+	return &SourceStatus{Source: ss.Source.Name(), SourceDescription: ss.Source.Describe(), LastSync: last, LastRefresh: ss.lastRefresh(),
+		Observations: s.observationMeta(), AliasCount: len(aliases)}, nil
 }
 
 // CheckSource runs the connection check.

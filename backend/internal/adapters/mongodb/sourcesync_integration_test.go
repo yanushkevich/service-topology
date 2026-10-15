@@ -94,3 +94,31 @@ func TestIntegrationRepositoryOnTheDatabase(t *testing.T) {
 		t.Errorf("unknown source: %+v %v", none, err)
 	}
 }
+
+// The observation overlay round-trips, including entity IDs with dots.
+func TestObservationsOnTheDatabase(t *testing.T) {
+	s, ctx := ready(t)
+	repo := mongodb.NewIntegrationRepository(s)
+	if none, err := repo.LoadObservations(ctx, "dynatrace"); none != nil || err != nil {
+		t.Fatalf("empty: %+v %v", none, err)
+	}
+	latency := 210.0
+	overlay := &ports.ObservationOverlay{Source: "dynatrace", ObservedAt: "2026-10-15T08:46:00Z", Entities: map[domain.EntityID]ports.ObservedState{
+		"payment-service.production":     {Health: "degraded", Problems: []string{"P-1"}, Metrics: &domain.Metrics{LatencyMs: &latency}},
+		"dt-main-db_database_postgres-1": {Health: "healthy"},
+	}}
+	if err := repo.SaveObservations(ctx, overlay); err != nil {
+		t.Fatal(err)
+	}
+	overlay.ObservedAt = "2026-10-15T08:47:00Z"
+	if err := repo.SaveObservations(ctx, overlay); err != nil {
+		t.Fatal(err)
+	}
+	got, err := repo.LoadObservations(ctx, "dynatrace")
+	if err != nil || got.ObservedAt != "2026-10-15T08:47:00Z" || len(got.Entities) != 2 {
+		t.Fatalf("read back: %+v %v", got, err)
+	}
+	if p := got.Entities["payment-service.production"]; p.Health != "degraded" || *p.Metrics.LatencyMs != 210 || p.Problems[0] != "P-1" {
+		t.Errorf("payment = %+v", p)
+	}
+}

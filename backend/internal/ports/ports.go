@@ -289,6 +289,19 @@ type IntegrationStore interface {
 	// LastSync returns the last applied sync, or nil.
 	LastSync(ctx context.Context, source string) (*SyncRecord, error)
 	SaveLastSync(ctx context.Context, source string, sync *SyncRecord) error
+	// LoadObservations returns the source's last observation overlay, or nil.
+	LoadObservations(ctx context.Context, source string) (*ObservationOverlay, error)
+	// SaveObservations replaces the source's observation overlay.
+	SaveObservations(ctx context.Context, overlay *ObservationOverlay) error
+}
+
+// ObservationOverlay is a source's observed health and metrics by canonical entity ID. It is merged
+// onto the topology on read and never stored in it, so a refresh is not a topology revision.
+type ObservationOverlay struct {
+	Source     string                            `json:"source"`
+	ObservedAt string                            `json:"observedAt"`
+	IsExample  bool                              `json:"isExample"`
+	Entities   map[domain.EntityID]ObservedState `json:"entities"`
 }
 
 // Discovery is a source's structure as canonical entities (environments, service definitions and
