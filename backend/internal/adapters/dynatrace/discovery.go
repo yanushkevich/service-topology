@@ -20,10 +20,13 @@ type tenantData struct {
 }
 
 // Resource types for Smartscape node types (spec §1). Other node types are not mapped.
-var k8sResourceTypes = map[string]string{
-	"K8S_CLUSTER": "cluster", "K8S_NAMESPACE": "namespace",
-	"K8S_DEPLOYMENT": "workload", "K8S_STATEFULSET": "workload", "K8S_DAEMONSET": "workload",
-	"K8S_CRONJOB": "workload", "K8S_JOB": "workload",
+var k8sResourceTypes = map[string]string{"K8S_CLUSTER": "cluster", "K8S_NAMESPACE": "namespace"}
+
+// k8sWorkloadKinds are the Kubernetes workloads a service belongs to. They are not resources: the
+// service instance is the workload (ADR-008); the workload is kept in the instance's link.
+var k8sWorkloadKinds = map[string]string{
+	"K8S_DEPLOYMENT": "Deployment", "K8S_STATEFULSET": "StatefulSet", "K8S_DAEMONSET": "DaemonSet",
+	"K8S_CRONJOB": "CronJob", "K8S_JOB": "Job",
 }
 
 // Protocols of database vendors (the suffix of DB_DATABASE_<VENDOR> and DB_INSTANCE_<VENDOR>).
@@ -139,6 +142,9 @@ func (m *discoveryMapper) addService(tenant string, svc serviceNode, env Environ
 	}
 	instanceID := defID + "." + env.ID
 	link := map[string]any{"tenant": tenant, "id": svc.id, "idClassic": svc.idClassic}
+	if workload := workloadOf(belongs, nodes); workload != nil {
+		link["workload"] = workload
+	}
 	if existing, ok := m.instances[instanceID]; ok {
 		m.duplicates = append(m.duplicates, svc.id)
 		meta := existing.Metadata["dynatrace"].(map[string]any)
@@ -180,8 +186,8 @@ func (m *discoveryMapper) containmentOf(tenant string, svc serviceNode, env doma
 	}
 }
 
-// addContainment adds the cluster, namespace, and workload a service belongs to, each the parent
-// of the next, and returns the innermost one.
+// addContainment adds the cluster and namespace a service belongs to, the cluster the parent of
+// the namespace, and returns the innermost one.
 func (m *discoveryMapper) addContainment(tenant string, env domain.EntityID, belongs []record, nodes map[string]smartscapeNode) *domain.EntityID {
 	byType := map[string]string{} // resource type → the first Dynatrace ID of that type, by ID
 	for _, b := range belongs {
@@ -195,7 +201,7 @@ func (m *discoveryMapper) addContainment(tenant string, env domain.EntityID, bel
 		}
 	}
 	var parent, innermost *domain.EntityID
-	for _, resourceType := range []string{"cluster", "namespace", "workload"} {
+	for _, resourceType := range []string{"cluster", "namespace"} {
 		target, ok := byType[resourceType]
 		if !ok {
 			continue
@@ -204,6 +210,25 @@ func (m *discoveryMapper) addContainment(tenant string, env domain.EntityID, bel
 		parent, innermost = &id, &id
 	}
 	return innermost
+}
+
+// workloadOf is the first Kubernetes workload (by ID) a service belongs to, for its link; nil if none.
+func workloadOf(belongs []record, nodes map[string]smartscapeNode) map[string]any {
+	var id, kind string
+	for _, b := range belongs {
+		k, ok := k8sWorkloadKinds[b.str("target_type")]
+		if target := b.str("target_id"); ok && target != "" && (id == "" || target < id) {
+			id, kind = target, k
+		}
+	}
+	if id == "" {
+		return nil
+	}
+	name := nodes[id].name
+	if name == "" {
+		name = id
+	}
+	return map[string]any{"id": id, "name": name, "kind": kind}
 }
 
 // addResource adds (or reuses) a resource for a Smartscape node and records env on it.

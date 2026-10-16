@@ -22,6 +22,15 @@ export interface SourceLink {
   missingSince: string | null;
   /** A topic or queue: its messaging system (kafka, rabbitmq, …) and destination name. */
   messaging: { system: string; destination: string } | null;
+  /** The Kubernetes workload a service instance runs as (the instance is the workload, ADR-008). */
+  workload: { name: string; kind: string } | null;
+}
+
+function workloadOf(raw: unknown): SourceLink['workload'] {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const w = raw as Record<string, unknown>;
+  const name = text(w.name);
+  return name ? { name, kind: text(w.kind) ?? 'workload' } : null;
 }
 
 const text = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null);
@@ -38,5 +47,6 @@ export function sourceLinkOf(metadata: Record<string, unknown> | undefined): Sou
     problems: Array.isArray(link.problems) ? link.problems.filter((p): p is string => typeof p === 'string') : [],
     missingSince: text(link.missingSince),
     messaging: text(link.destination) ? { system: text(link.system) ?? 'unknown system', destination: text(link.destination) ?? '' } : null,
+    workload: workloadOf(link.workload),
   };
 }

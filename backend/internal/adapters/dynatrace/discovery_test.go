@@ -81,7 +81,8 @@ func TestDiscoveryMapsTheExampleTenant(t *testing.T) {
 	}
 	// kube-system is in no mapped service's containment, so it is not mapped.
 	// One host (billing-legacy's; reporting runs on two), three topics, an exchange, and a queue.
-	if want := map[string]int{"cluster": 2, "namespace": 4, "workload": 7, "database": 5, "host": 1, "topic": 3, "exchange": 1, "queue": 1}; !mapsEqual(types, want) {
+	// No workload resources (ADR-008).
+	if want := map[string]int{"cluster": 2, "namespace": 4, "database": 5, "host": 1, "topic": 3, "exchange": 1, "queue": 1}; !mapsEqual(types, want) {
 		t.Errorf("resource types = %v, want %v", types, want)
 	}
 	if issues := domain.Validate(&data); len(issues) > 0 {
@@ -110,11 +111,14 @@ func TestDiscoveryOwnersTeamsAndLinks(t *testing.T) {
 	if inst.Health != "unknown" || inst.Provider != "unknown" {
 		t.Errorf("health/provider = %s/%s; observations fill health", inst.Health, inst.Provider)
 	}
-	workload := find(d.Data.Resources, func(r domain.InfrastructureResource) bool { return inst.ResourceID != nil && r.ID == *inst.ResourceID })
-	if workload == nil || workload.Type != "workload" || workload.Name != "payment" {
-		t.Fatalf("payment-service runs in %v", workload)
+	// The instance is the workload (ADR-008): it runs in its namespace, and the deployment is in its link.
+	namespace := find(d.Data.Resources, func(r domain.InfrastructureResource) bool { return inst.ResourceID != nil && r.ID == *inst.ResourceID })
+	if namespace == nil || namespace.Type != "namespace" {
+		t.Fatalf("payment-service runs in %v", namespace)
 	}
-	namespace := find(d.Data.Resources, func(r domain.InfrastructureResource) bool { return r.ID == *workload.ParentResourceID })
+	if w, _ := link["workload"].(map[string]any); w["name"] != "payment" || w["kind"] != "Deployment" || w["id"] == "" {
+		t.Errorf("workload in the link = %v", link["workload"])
+	}
 	cluster := find(d.Data.Resources, func(r domain.InfrastructureResource) bool { return r.ID == *namespace.ParentResourceID })
 	if namespace.Name != "payments" || cluster.Name != "prod-eu-1" || cluster.ParentResourceID != nil {
 		t.Errorf("containment = %s / %s", namespace.Name, cluster.Name)
@@ -270,8 +274,8 @@ func TestDiscoveryPlacesServicesOnHosts(t *testing.T) {
 	if got := notes[ports.NoteServiceOnSeveralHosts]; !slices.Equal(got, []string{"SERVICE-90B02F16A530C62E"}) {
 		t.Errorf("several-hosts note = %v", got)
 	}
-	// A Kubernetes service keeps its workload even though it also runs on a node host.
-	if checkout := find(d.Data.ServiceInstances, func(s domain.ServiceInstance) bool { return s.ID == "checkout-service.production" }); !strings.Contains(*checkout.ResourceID, "k8s_deployment") {
+	// A Kubernetes service stays in its namespace even though it also runs on a node host.
+	if checkout := find(d.Data.ServiceInstances, func(s domain.ServiceInstance) bool { return s.ID == "checkout-service.production" }); !strings.Contains(*checkout.ResourceID, "k8s_namespace") {
 		t.Errorf("checkout runs in %s", *checkout.ResourceID)
 	}
 }

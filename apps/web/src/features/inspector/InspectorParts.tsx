@@ -247,6 +247,7 @@ export function SourceLinkSection({ metadata, observable }: { metadata: Record<s
         {link.id && <KeyValue label="Entity" value={link.id} />}
         {link.name && <KeyValue label="Service name" value={link.name} />}
         {link.messaging && <KeyValue label="Messaging" value={`${link.messaging.system} · ${link.messaging.destination}`} />}
+        {link.workload && <KeyValue label="Workload" value={`${link.workload.name} (${link.workload.kind})`} />}
         {link.missingSince && (
           <p className="m-0 px-2 py-1 text-sm text-warn-fg">Not seen in Dynatrace since {formatTimestamp(link.missingSince)}. Kept because something here still uses it.</p>
         )}

@@ -20,7 +20,7 @@ This answers `docs/REAL_DATA_INTEGRATION.md` §6 for the **topology** (entities,
 | `SERVICE` node, in an environment (§3) | a service definition (logical, shared across environments) and one service instance per environment | definition: the alias (§4), else a slug of the service name; instance: `<definition>.<environment>` (the existing convention) |
 | `K8S_CLUSTER` | resource `cluster` | `dt-<tenant>-<Dynatrace ID, lowercase>` |
 | `K8S_NAMESPACE` | resource `namespace`, parent: its cluster | as above |
-| `K8S_DEPLOYMENT`, `K8S_STATEFULSET`, `K8S_DAEMONSET`, `K8S_CRONJOB`, `K8S_JOB` | resource `workload`, parent: its namespace; the instance's `resourceId` | as above |
+| `K8S_DEPLOYMENT`, `K8S_STATEFULSET`, `K8S_DAEMONSET`, `K8S_CRONJOB`, `K8S_JOB` | no resource: the service instance is the workload (ADR-008). The instance runs in its namespace (`resourceId`), and the workload is kept in its link as `metadata.dynatrace.workload = {id, name, kind}` (Milestone 15.2) | — |
 | `DB_DATABASE_<VENDOR>` and `DB_INSTANCE_<VENDOR>` (when a service calls the instance directly) | resource `database` | as above |
 | `HOST` that a service outside Kubernetes `runs_on` (exactly one) | resource `host` (containment only); the instance's `resourceId` | as above |
 | A messaging destination a service published to or received from (`dt.service.messaging.publish.count` / `.receive.count`) | resource `topic` (Kafka, SNS, Event Hubs, Pub/Sub, Pulsar, RocketMQ), `exchange` (a RabbitMQ publish), or `queue` (a RabbitMQ receive and other systems), one per environment | `dt-<tenant>-<system>-<destination slug>-<environment>` (`-exchange` appended for exchanges) |
@@ -30,7 +30,7 @@ This answers `docs/REAL_DATA_INTEGRATION.md` §6 for the **topology** (entities,
 | Open Davis problems on an entity | health (§5): `AVAILABILITY` → `unavailable`; `ERROR`, `SLOWDOWN`, `RESOURCE_CONTENTION`, `CUSTOM_ALERT` → `degraded`; `MONITORING_UNAVAILABLE` → `unknown`; none → `healthy` | — |
 | `dt.service.request.response_time`, `.count`, `.failure_count` | instance metrics: latency (ms), throughput (/s), error rate (%), `isSimulated: false`, `observedAt` | — |
 
-- **Containment** comes from the service's own `belongs_to` edges (to its cluster, namespace, and workload). The namespace's parent is the cluster the same service belongs to, and the workload's parent is its namespace.
+- **Containment** comes from the service's own `belongs_to` edges (to its cluster and namespace). The namespace's parent is the cluster the same service belongs to. Workloads are not resources (ADR-008); a sync deletes those an earlier version created.
 - **Owner and team** come from the service's `owner` and `team` tags, when present.
 - **Category** is `application` when the connector creates a definition; Dynatrace gives no reliable signal for `api`, `gateway`, or `worker`. Authors can change it, and syncs keep the change (§4).
 - **The Dynatrace link** is kept on every entity as `metadata.dynatrace`: `{tenant, id, idClassic}`. Metrics and problems are joined through it.

@@ -252,3 +252,23 @@ func TestReconcileLinksAuthoredChannelsThroughTheirBroker(t *testing.T) {
 		t.Errorf("result does not validate: %v", issues)
 	}
 }
+
+// A topology synced before ADR-008 was followed (an owned workload per instance) loses the workload
+// on the next sync: the instance moves to its namespace, and nothing uses the workload any more.
+func TestReconcileRetiresWorkloadsFromAnEarlierSync(t *testing.T) {
+	_, stored := run(empty(), nil, discovered())
+	prod := "production"
+	found := discovered()
+	found.Resources[0] = domain.InfrastructureResource{ID: "dt-main-ns", Name: "shop", Type: "namespace", Provider: "unknown", EnvironmentID: &prod, UpdatedAt: strPtr(now),
+		Metadata: map[string]any{"dynatrace": map[string]any{"tenant": "main", "id": "K8S_NAMESPACE-1"}}}
+	found.ServiceInstances[0].ResourceID = strPtr("dt-main-ns")
+
+	changes, result := run(stored, owned(stored), found)
+	got := ops(changes)
+	if !slices.Equal(got[SyncDelete], []domain.EntityID{"dt-main-wl"}) || !slices.Contains(got[SyncCreate], "dt-main-ns") || !slices.Contains(got[SyncUpdate], "checkout.production") {
+		t.Errorf("changes = %v", got)
+	}
+	if issues := domain.Validate(result); len(issues) > 0 {
+		t.Errorf("result does not validate: %v", issues)
+	}
+}
