@@ -23,8 +23,9 @@ import (
 
 const platformToken = "dt0s16.FAKE-TOKEN-NEVER-LOGGED"
 
-// fakeTenant serves the example tenant and returns it with a connector configured for it.
-func fakeTenant(t *testing.T, oauth bool) (*dynatracefake.Tenant, *dynatrace.Connector, *strings.Builder) {
+// fakeTenant serves the example tenant and returns it with a connector configured for it; adjust
+// changes the configuration before the connector is built.
+func fakeTenant(t *testing.T, oauth bool, adjust ...func(*dynatrace.Config)) (*dynatracefake.Tenant, *dynatrace.Connector, *strings.Builder) {
 	t.Helper()
 	dir, err := fixtures.Dir()
 	if err != nil {
@@ -57,6 +58,9 @@ func fakeTenant(t *testing.T, oauth bool) (*dynatracefake.Tenant, *dynatrace.Con
 		Refresh:   dynatrace.RefreshConfig{Interval: dur(time.Minute), MetricsWindow: dur(5 * time.Minute)},
 		Discovery: dynatrace.DiscoveryConfig{Window: dur(24 * time.Hour)},
 		Limits:    dynatrace.LimitsConfig{MaxRecords: 1000, QueryTimeout: dur(10 * time.Second)},
+	}
+	for _, a := range adjust {
+		a(cfg)
 	}
 	logs := &strings.Builder{}
 	conn, err := dynatrace.NewConnector(cfg, server.Client(), slog.New(slog.NewTextHandler(logs, &slog.HandlerOptions{Level: slog.LevelDebug})))

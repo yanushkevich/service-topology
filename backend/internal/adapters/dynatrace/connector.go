@@ -25,6 +25,7 @@ type Connector struct {
 	cfg     *Config
 	tenants []tenantClient
 	log     *slog.Logger
+	calls   callCache
 	// Now is the clock (tests replace it).
 	Now func() time.Time
 }
@@ -75,6 +76,9 @@ func (c *Connector) IsExample() bool {
 // Describe returns the configuration without secrets: tenant hosts, auth kinds, environment rules.
 func (c *Connector) Describe() ports.SourceDescription {
 	out := ports.SourceDescription{IsExample: c.IsExample(), RefreshIntervalSeconds: int(c.cfg.Refresh.Interval.Seconds())}
+	if c.cfg.CallMetrics.Enabled {
+		out.CallMetricsIntervalSeconds = int(c.cfg.CallMetrics.Interval.Seconds())
+	}
 	for _, t := range c.cfg.Tenants {
 		auth := "platform-token"
 		if t.Auth.OAuth != nil {
@@ -137,6 +141,9 @@ func (c *Connector) Observe(ctx context.Context) (*ports.Observation, error) {
 			Metrics:  results[queryServiceMetrics.Name].Records,
 			Problems: results[queryProblems.Name].Records,
 		}, c.cfg.Refresh.MetricsWindow.Duration, observedAt, t.cfg.Example)
+		if warning := c.observeCalls(ctx, t, now, out.Tenants[t.cfg.ID]); warning != "" {
+			out.Warnings = append(out.Warnings, warning)
+		}
 	}
 	return out, nil
 }
@@ -146,7 +153,7 @@ func (c *Connector) Check(ctx context.Context) []ports.SourceCheck {
 	now := c.Now()
 	var out []ports.SourceCheck
 	for _, t := range c.tenants {
-		for _, q := range allQueries {
+		for _, q := range checkQueries(c.cfg) {
 			start := time.Now()
 			res, err := t.client.run(ctx, q, c.cfg, now)
 			check := ports.SourceCheck{Tenant: t.cfg.ID, Query: q.Name, DurationMs: time.Since(start).Milliseconds()}

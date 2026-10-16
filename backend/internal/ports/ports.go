@@ -241,6 +241,8 @@ type SourceDescription struct {
 	Tenants                []SourceTenant      `json:"tenants"`
 	Environments           []SourceEnvironment `json:"environments"`
 	RefreshIntervalSeconds int                 `json:"refreshIntervalSeconds"`
+	// CallMetricsIntervalSeconds is how often metrics on calls are read from spans; 0 when off.
+	CallMetricsIntervalSeconds int `json:"callMetricsIntervalSeconds"`
 }
 
 // SourceTenant is one connected tenant.
@@ -336,9 +338,12 @@ type Observation struct {
 	ObservedAt string                              `json:"observedAt"`
 	IsExample  bool                                `json:"isExample"`
 	Tenants    map[string]map[string]ObservedState `json:"tenants"`
+	// Warnings name parts that could not be observed this time (e.g. call metrics); the rest is.
+	Warnings []string `json:"warnings,omitempty"`
 }
 
-// ObservedState is one entity's observed health, metrics (services only), and open problems.
+// ObservedState is one entity's observed health, metrics (services and calls), and open problems.
+// Health is empty for a call: a relationship has no observed health.
 type ObservedState struct {
 	Health   string          `json:"health"`
 	Metrics  *domain.Metrics `json:"metrics,omitempty"`

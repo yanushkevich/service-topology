@@ -3,7 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiError } from '../../data/http/apiClient';
 import { renderApp, resetUiStore } from '../../test/renderApp';
-import { createFakeIntegration, readyPreview, repositoryWithIntegration } from '../../test/fakeIntegration';
+import { connectedStatus, createFakeIntegration, readyPreview, repositoryWithIntegration } from '../../test/fakeIntegration';
 
 /** Settings → Data source → Dynatrace (ADR-034). */
 
@@ -33,6 +33,14 @@ describe('Dynatrace in Settings', () => {
     expect(details).toHaveTextContent('Production ← tag environment = production');
     expect(details).toHaveTextContent('Never applied');
     expect(details).toHaveTextContent(/12 entities observed at .*; refreshed every 60 s\./);
+    expect(details).toHaveTextContent(/Metrics on calls\s*Off\. Enable callMetrics in the backend configuration/);
+  });
+
+  it('says when metrics on calls are read, and when they could not be', async () => {
+    open(createFakeIntegration({ status: { ...connectedStatus, callMetricsIntervalSeconds: 300, lastRefresh: { at: '2026-10-15T08:46:00Z', ok: true, entities: 12, warnings: ['Metrics on calls (tenant main): the query timed out'] } } }));
+    const details = (await screen.findByText('abc12345.apps.dynatrace.com')).closest('dl') as HTMLElement;
+    expect(details).toHaveTextContent(/Metrics on calls\s*From spans, every 5 min\./);
+    expect(details).toHaveTextContent('Metrics on calls (tenant main): the query timed out');
   });
 
   it('checks the connection query by query', async () => {

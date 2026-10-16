@@ -57,9 +57,10 @@ func dynatraceService(t *testing.T) (http.Handler, *memory.Store, *dynatracefake
 			{ID: "production", Name: "Production", Kind: "production", Tenant: "example", Match: dynatrace.MatchRule{Tag: &dynatrace.TagRule{Key: "environment", Value: "production"}}},
 			{ID: "staging", Name: "Staging", Kind: "staging", Tenant: "example", Match: dynatrace.MatchRule{Tag: &dynatrace.TagRule{Key: "environment", Value: "staging"}}},
 		},
-		Refresh:   dynatrace.RefreshConfig{Interval: minute, MetricsWindow: dynatrace.Duration{Duration: 5 * time.Minute}},
-		Discovery: dynatrace.DiscoveryConfig{Window: dynatrace.Duration{Duration: 24 * time.Hour}},
-		Limits:    dynatrace.LimitsConfig{MaxRecords: 1000, QueryTimeout: dynatrace.Duration{Duration: 10 * time.Second}},
+		Refresh:     dynatrace.RefreshConfig{Interval: minute, MetricsWindow: dynatrace.Duration{Duration: 5 * time.Minute}},
+		Discovery:   dynatrace.DiscoveryConfig{Window: dynatrace.Duration{Duration: 24 * time.Hour}},
+		Limits:      dynatrace.LimitsConfig{MaxRecords: 1000, QueryTimeout: dynatrace.Duration{Duration: 10 * time.Second}},
+		CallMetrics: dynatrace.CallMetricsConfig{Enabled: true, Interval: dynatrace.Duration{Duration: 5 * time.Minute}},
 	}
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	conn, err := dynatrace.NewConnector(cfg, server.Client(), logger)
@@ -106,7 +107,7 @@ func TestIntegrationStatusAndCheck(t *testing.T) {
 		} `json:"items"`
 	}
 	check.json(t, &checks)
-	if check.code != 200 || len(checks.Items) != 11 || !checks.Items[0].OK {
+	if check.code != 200 || len(checks.Items) != 12 || !checks.Items[0].OK {
 		t.Fatalf("check: %d %s", check.code, check.body)
 	}
 }
@@ -245,6 +246,30 @@ func TestObservationsReachTopologyReadsAndMeta(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("payment-service.production is missing")
+	}
+	var calls struct {
+		Relationships []struct {
+			ID      string `json:"id"`
+			Metrics *struct {
+				ThroughputPerSecond float64 `json:"throughputPerSecond"`
+				LatencyMs           float64 `json:"latencyMs"`
+				IsSimulated         bool    `json:"isSimulated"`
+			} `json:"metrics"`
+		} `json:"relationships"`
+	}
+	call(h, "GET", "/api/v1/topology", "").json(t, &calls)
+	var storefrontToCheckout bool
+	for _, r := range calls.Relationships {
+		if r.ID == "rel:storefront-bff.production->checkout-service.production" {
+			storefrontToCheckout = true
+			// From spans: 36,000 calls in 5 minutes at 45 ms; the example tenant's stay simulated.
+			if r.Metrics == nil || r.Metrics.ThroughputPerSecond != 120 || r.Metrics.LatencyMs != 45 || !r.Metrics.IsSimulated {
+				t.Errorf("storefront → checkout = %+v", r.Metrics)
+			}
+		}
+	}
+	if !storefrontToCheckout {
+		t.Error("the storefront → checkout call is missing")
 	}
 	var meta struct {
 		Observations *struct {

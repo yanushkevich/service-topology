@@ -22,6 +22,7 @@ tenants:
 environments:
   - { id: production, name: Production, kind: production, tenant: example, match: { tag: { key: environment, value: production } } }
   - { id: staging, name: Staging, kind: staging, tenant: example, match: { tag: { key: environment, value: staging } } }
+callMetrics: { enabled: true, interval: 5m }
 YAML
 "$tmp/fakedynatrace" -addr "127.0.0.1:$FAKE_PORT" -token-file "$tmp/dynatrace_token.txt" 2>/dev/null &
 fake=$!

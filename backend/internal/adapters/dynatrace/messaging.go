@@ -39,9 +39,9 @@ func (m *discoveryMapper) addMessaging(tenant string, records []record, publish 
 			protocol = "other"
 		}
 		if publish {
-			m.addRelationship(tenant, instance, channel, protocol, "asynchronous")
+			m.addRelationship(tenant, instance, channel, protocol, "asynchronous", "")
 		} else {
-			m.addRelationship(tenant, channel, instance, protocol, "asynchronous")
+			m.addRelationship(tenant, channel, instance, protocol, "asynchronous", "")
 		}
 	}
 }

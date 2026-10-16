@@ -23,8 +23,10 @@ export interface IntegrationStatus {
   tenants: { id: string; host: string; auth: 'platform-token' | 'oauth'; isExample: boolean }[];
   environments: { id: string; name: string; kind: string; tenant: string; match: string }[];
   refreshIntervalSeconds: number;
+  /** How often metrics on calls are read from spans; 0 when off (opt-in on the backend). */
+  callMetricsIntervalSeconds: number;
   lastSync: { appliedAt: string; revision: string; summary: Partial<Record<SyncKind, Partial<Record<SyncOp, number>>>> } | null;
-  lastRefresh: { at: string; ok: boolean; entities: number; error?: string } | null;
+  lastRefresh: { at: string; ok: boolean; entities: number; error?: string; warnings?: string[] } | null;
   observations: ObservationMeta | null;
   aliasCount: number;
 }

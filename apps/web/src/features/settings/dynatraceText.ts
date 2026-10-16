@@ -44,12 +44,20 @@ export function summaryText(summary: SyncPreview['summary']): string {
   return totals.length ? totals.map(([op, n]) => `${n} ${OP_LABELS[op].toLowerCase()}`).join(', ') : 'no changes';
 }
 
+/** Whether metrics on calls are read from spans, and how often. */
+export function callMetricsText(status: IntegrationStatus): string {
+  if (status.callMetricsIntervalSeconds <= 0) return 'Off. Enable callMetrics in the backend configuration; it reads every span, which Dynatrace bills by data scanned.';
+  return `From spans, every ${Math.round(status.callMetricsIntervalSeconds / 60)} min.`;
+}
+
 /** How current the observed health and metrics are. */
 export function observationText(status: IntegrationStatus): string {
   const { observations: o, lastRefresh: r } = status;
   const every = `refreshed every ${status.refreshIntervalSeconds} s`;
   if (r && !r.ok) return `The last refresh failed at ${clockTime(r.at)}: ${r.error ?? 'no reason given'}.${o ? ` Showing ${o.stale ? 'nothing (out of date)' : `states from ${clockTime(o.observedAt)}`}.` : ''}`;
   if (!o) return `Not observed yet; ${every}.`;
+  const warnings = r?.warnings?.length ? ` ${r.warnings.join(' ')}` : '';
+  if (warnings && !o.stale) return `${o.entities} entities observed at ${clockTime(o.observedAt)}; ${every}.${warnings}`;
   if (o.stale) return `Out of date: last observed at ${clockTime(o.observedAt)}, so not shown; ${every}.`;
   return `${o.entities} entities observed at ${clockTime(o.observedAt)}; ${every}.`;
 }

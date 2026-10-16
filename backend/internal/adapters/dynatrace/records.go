@@ -3,6 +3,7 @@ package dynatrace
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -24,6 +25,10 @@ func (r record) num(field string) (float64, bool) {
 	switch v := r[field].(type) {
 	case float64:
 		return v, true
+	case string:
+		// Grail may send long values as strings to keep their precision.
+		f, err := strconv.ParseFloat(v, 64)
+		return f, err == nil
 	case []any:
 		// An unreduced timeseries: average the non-null points.
 		sum, n := 0.0, 0

@@ -80,6 +80,22 @@ var (
 		Fields: []string{"dt.smartscape.service", "rt", "n", "f"},
 		window: func(c *Config) time.Duration { return c.Refresh.MetricsWindow.Duration },
 	}
+	// Metrics on calls (Milestone 15.2): each server span joined to its parent client span gives a
+	// caller and a callee; counts are extrapolated with Dynatrace's documented multiplicity, latency
+	// is the client span's duration (nanoseconds, the call as the caller sees it), failures are server
+	// spans with status error. Opt-in: it scans every span in the window.
+	queryCallMetrics = Query{
+		Name: "call-metrics",
+		DQL: `fetch spans | filter span.kind == "server" and isNotNull(dt.smartscape.service) and isNotNull(span.parent_id)` +
+			` | fieldsAdd m = coalesce(sampling.multiplicity, 1) * coalesce(aggregation.count, 1) * dt.system.sampling_ratio` +
+			` | fields span.parent_id, callee = dt.smartscape.service, failed = span.status_code == "error", m` +
+			` | join [fetch spans | filter span.kind == "client" and isNotNull(dt.smartscape.service) | fields span.id, caller = dt.smartscape.service, call_duration = duration],` +
+			` on: { left[span.parent_id] == right[span.id] }, fields: { caller, call_duration }` +
+			` | filter caller != callee` +
+			` | summarize { n = sum(m), f = sum(if(failed, m, else: 0)), rt = avg(call_duration) }, by: { caller, callee }`,
+		Fields: []string{"caller", "callee", "n", "f", "rt"},
+		window: func(c *Config) time.Duration { return c.CallMetrics.Interval.Duration },
+	}
 	queryProblems = Query{
 		Name: "problems",
 		DQL: `fetch dt.davis.problems | filter not(dt.davis.is_duplicate) | dedup event.id, sort: { timestamp desc }` +
@@ -93,8 +109,16 @@ var (
 var (
 	structureQueries = []Query{queryServices, queryServiceCalls, queryServiceBelongsTo, queryK8sNodes, queryDatabases, queryHosts, queryServiceRunsOn, queryMessagingPublish, queryMessagingReceive}
 	observeQueries   = []Query{queryServices, queryK8sNodes, queryDatabases, queryHosts, queryServiceMetrics, queryProblems}
-	allQueries       = []Query{queryServices, queryServiceCalls, queryServiceBelongsTo, queryK8sNodes, queryDatabases, queryHosts, queryServiceRunsOn, queryMessagingPublish, queryMessagingReceive, queryServiceMetrics, queryProblems}
+	allQueries       = []Query{queryServices, queryServiceCalls, queryServiceBelongsTo, queryK8sNodes, queryDatabases, queryHosts, queryServiceRunsOn, queryMessagingPublish, queryMessagingReceive, queryServiceMetrics, queryProblems, queryCallMetrics}
 )
+
+// checkQueries are the queries a connection check runs: call metrics only when enabled.
+func checkQueries(c *Config) []Query {
+	if c.CallMetrics.Enabled {
+		return allQueries
+	}
+	return allQueries[:len(allQueries)-1]
+}
 
 func discoveryWindow(c *Config) time.Duration { return c.Discovery.Window.Duration }
 

@@ -24,3 +24,6 @@ environments:
 refresh: { interval: 60s, metricsWindow: 5m }
 discovery: { window: 24h }
 limits: { maxRecords: 10000, queryTimeout: 30s }
+# Metrics on calls read every span (Grail bills scanned data): off unless enabled. Each span is read
+# about once: the query runs every interval over a window of the same length.
+callMetrics: { enabled: true, interval: 5m }

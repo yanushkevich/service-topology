@@ -6,7 +6,7 @@ import { Button } from '../../shared/ui/primitives';
 import { cx, kickerClass } from '../../shared/ui/classes';
 import { DynatraceAliases } from './DynatraceAliases';
 import { DynatraceSync } from './DynatraceSync';
-import { AUTH_LABELS, dateTime, observationText, summaryText } from './dynatraceText';
+import { AUTH_LABELS, callMetricsText, dateTime, observationText, summaryText } from './dynatraceText';
 import { Row } from './SettingsRow';
 
 /**
@@ -94,6 +94,8 @@ function ConnectionDetails({ connection }: { connection: IntegrationStatus }) {
       <dd className="m-0">{connection.lastSync ? `${dateTime(connection.lastSync.appliedAt)}: ${summaryText(connection.lastSync.summary)}` : 'Never applied'}</dd>
       <dt className="text-fg-2">Health and metrics</dt>
       <dd className="m-0">{observationText(connection)}</dd>
+      <dt className="text-fg-2">Metrics on calls</dt>
+      <dd className="m-0">{callMetricsText(connection)}</dd>
     </dl>
   );
 }

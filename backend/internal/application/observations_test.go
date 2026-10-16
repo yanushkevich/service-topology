@@ -29,6 +29,8 @@ func syncedService(t *testing.T) (*Service, *stubSource, *time.Time) {
 		"SERVICE-2": {Health: "degraded", Problems: []string{"P-1"}, Metrics: &domain.Metrics{LatencyMs: &latency, ErrorRatePercent: &rate, IsSimulated: false, ObservedAt: strPtr(now)}},
 		"SERVICE-1": {Health: "healthy"},
 		"DB-1":      {Health: "unavailable", Problems: []string{"P-2"}},
+		// Metrics on calls (Milestone 15.2): a relationship has no observed health.
+		"calls:SERVICE-1->SERVICE-2": {Metrics: &domain.Metrics{ThroughputPerSecond: &rate, IsSimulated: false, ObservedAt: strPtr(now)}},
 	}}}
 	return svc, src, &clock
 }
@@ -74,8 +76,34 @@ func TestObservationsOverlayReadsWithoutARevision(t *testing.T) {
 		t.Errorf("entity = %+v, %v", got, err)
 	}
 	status, _ := svc.SourceStatus(ctx)
-	if status.LastRefresh == nil || !status.LastRefresh.OK || status.LastRefresh.Entities != 3 || status.Observations == nil || status.Observations.Stale {
+	if status.LastRefresh == nil || !status.LastRefresh.OK || status.LastRefresh.Entities != 4 || status.Observations == nil || status.Observations.Stale {
 		t.Errorf("status = %+v %+v", status.LastRefresh, status.Observations)
+	}
+}
+
+func TestCallMetricsReachRelationships(t *testing.T) {
+	ctx := context.Background()
+	svc, src, _ := syncedService(t)
+	src.obs.Warnings = []string{"Metrics on calls (tenant main): the query timed out"}
+	if err := svc.RefreshObservations(ctx); err != nil {
+		t.Fatal(err)
+	}
+	data, _, _ := svc.TopologyRevision(ctx, "")
+	for _, r := range data.Relationships {
+		switch r.ID {
+		case "rel:checkout.production->payment.production":
+			if r.Metrics == nil || r.Metrics.IsSimulated || *r.Metrics.ThroughputPerSecond != 0.5 || r.Status != "active" {
+				t.Errorf("call = %+v (status stays as stored)", r)
+			}
+		case "rel:payment.production->dt-main-db":
+			if r.Metrics != nil {
+				t.Errorf("a database call has no span metrics: %+v", r.Metrics)
+			}
+		}
+	}
+	status, _ := svc.SourceStatus(ctx)
+	if !status.LastRefresh.OK || len(status.LastRefresh.Warnings) != 1 {
+		t.Errorf("refresh = %+v", status.LastRefresh)
 	}
 }
 

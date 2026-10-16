@@ -582,6 +582,50 @@
           "HOST-0000000000000ABC"
         ]
       }
+    ],
+    "call-metrics": [
+      {
+        "caller": "SERVICE-BDAF1ECA33D4619E",
+        "callee": "SERVICE-F0B89EE9977FB93B",
+        "n": 36000,
+        "f": 18,
+        "rt": "45000000"
+      },
+      {
+        "caller": "SERVICE-F0B89EE9977FB93B",
+        "callee": "SERVICE-30E45F0274EFB653",
+        "n": 6000,
+        "f": 30,
+        "rt": 210000000
+      },
+      {
+        "caller": "SERVICE-F0B89EE9977FB93B",
+        "callee": "SERVICE-C10F5A2E123650C6",
+        "n": 12000,
+        "f": 6,
+        "rt": 25000000
+      },
+      {
+        "caller": "SERVICE-30E45F0274EFB653",
+        "callee": "SERVICE-8E5C07EECB7B6ADD",
+        "n": 6000,
+        "f": 0,
+        "rt": 35000000
+      },
+      {
+        "caller": "SERVICE-1C12FA511D52194A",
+        "callee": "SERVICE-474C9BC027EE3EF2",
+        "n": 240,
+        "f": 0,
+        "rt": 160000000
+      },
+      {
+        "caller": "SERVICE-0699DCD58EBF8BD4",
+        "callee": "SERVICE-30E45F0274EFB653",
+        "n": 600,
+        "f": 0,
+        "rt": 200000000
+      }
     ]
   }
 }

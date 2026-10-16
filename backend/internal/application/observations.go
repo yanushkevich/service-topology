@@ -23,6 +23,8 @@ type RefreshRecord struct {
 	OK       bool   `json:"ok"`
 	Entities int    `json:"entities"`
 	Error    string `json:"error,omitempty"`
+	// Warnings name parts that were not observed this time (e.g. metrics on calls).
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 // ObservationMeta describes the current overlay (GET /meta, GET /integrations/{source}).
@@ -42,8 +44,8 @@ func (s *Service) RefreshObservations(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	overlay, err := s.observe(ctx, ss)
-	record := &RefreshRecord{At: s.now().UTC().Format(time.RFC3339), OK: err == nil}
+	overlay, warnings, err := s.observe(ctx, ss)
+	record := &RefreshRecord{At: s.now().UTC().Format(time.RFC3339), OK: err == nil, Warnings: warnings}
 	if err != nil {
 		record.Error = err.Error()
 		ss.setRefresh(record)
@@ -55,16 +57,16 @@ func (s *Service) RefreshObservations(ctx context.Context) error {
 	return ss.Store.SaveObservations(ctx, overlay)
 }
 
-func (s *Service) observe(ctx context.Context, ss *SourceSync) (*ports.ObservationOverlay, error) {
+func (s *Service) observe(ctx context.Context, ss *SourceSync) (*ports.ObservationOverlay, []string, error) {
 	obs, err := ss.Source.Observe(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	data, err := s.TopologyRepo.GetTopology(ctx, "")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return overlayFor(data, obs, ss.Source.Name()), nil
+	return overlayFor(data, obs, ss.Source.Name()), obs.Warnings, nil
 }
 
 // LoadObservations restores the stored overlay (at start-up), so a restart shows recent states.
@@ -96,6 +98,9 @@ func overlayFor(data *domain.TopologyData, obs *ports.Observation, source string
 		lookup(e.ID, e.Metadata)
 	}
 	for _, e := range data.Resources {
+		lookup(e.ID, e.Metadata)
+	}
+	for _, e := range data.Relationships {
 		lookup(e.ID, e.Metadata)
 	}
 	return out
@@ -132,8 +137,9 @@ func (s *Service) observationMeta() *ObservationMeta {
 		RefreshIntervalSeconds: s.Sync.Source.Describe().RefreshIntervalSeconds}
 }
 
-// observed returns data with the current overlay merged on: health, metrics (instances), and the
-// open problems and observation time in metadata[source]. data is shared and never modified.
+// observed returns data with the current overlay merged on: health, metrics (instances and
+// relationships), and the open problems and observation time in metadata[source]. data is shared
+// and never modified.
 func (s *Service) observed(data *domain.TopologyData) *domain.TopologyData {
 	overlay := s.currentOverlay()
 	if overlay == nil || len(overlay.Entities) == 0 {
@@ -142,7 +148,7 @@ func (s *Service) observed(data *domain.TopologyData) *domain.TopologyData {
 	out := *data
 	out.ServiceInstances = slices.Clone(data.ServiceInstances)
 	for i, e := range out.ServiceInstances {
-		if state, ok := overlay.Entities[e.ID]; ok {
+		if state, ok := overlay.Entities[e.ID]; ok && state.Health != "" {
 			out.ServiceInstances[i].Health = state.Health
 			if state.Metrics != nil {
 				m := *state.Metrics
@@ -153,10 +159,19 @@ func (s *Service) observed(data *domain.TopologyData) *domain.TopologyData {
 	}
 	out.Resources = slices.Clone(data.Resources)
 	for i, e := range out.Resources {
-		if state, ok := overlay.Entities[e.ID]; ok {
+		if state, ok := overlay.Entities[e.ID]; ok && state.Health != "" {
 			health := state.Health
 			out.Resources[i].Health = &health
 			out.Resources[i].Metadata = observedMetadata(e.Metadata, overlay, state)
+		}
+	}
+	// Calls (Milestone 15.2): metrics only; a relationship's status stays as stored.
+	out.Relationships = slices.Clone(data.Relationships)
+	for i, e := range out.Relationships {
+		if state, ok := overlay.Entities[e.ID]; ok && state.Metrics != nil {
+			m := *state.Metrics
+			out.Relationships[i].Metrics = &m
+			out.Relationships[i].Metadata = observedMetadata(e.Metadata, overlay, state)
 		}
 	}
 	return &out

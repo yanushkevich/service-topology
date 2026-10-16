@@ -2186,7 +2186,8 @@
                         "entities": 12,
                         "stale": false,
                         "refreshIntervalSeconds": 60
-                      }
+                      },
+                      "callMetricsIntervalSeconds": 300
                     }
                   }
                 }
@@ -3942,7 +3943,8 @@
           "lastSync",
           "aliasCount",
           "lastRefresh",
-          "observations"
+          "observations",
+          "callMetricsIntervalSeconds"
         ],
         "properties": {
           "source": {
@@ -4080,6 +4082,13 @@
                   },
                   "error": {
                     "type": "string"
+                  },
+                  "warnings": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Parts not observed this time (for example metrics on calls); health and service metrics still refreshed."
                   }
                 }
               },
@@ -4098,6 +4107,11 @@
                 "type": "null"
               }
             ]
+          },
+          "callMetricsIntervalSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "How often metrics on calls are read from spans (Milestone 15.2); 0 when off. Opt-in: the query scans every span."
           }
         }
       },
@@ -4128,7 +4142,8 @@
               "messaging-publish",
               "messaging-receive",
               "service-metrics",
-              "problems"
+              "problems",
+              "call-metrics"
             ]
           },
           "ok": {

@@ -267,22 +267,28 @@ func (m *discoveryMapper) addCall(tenant string, call record, instanceOf map[str
 			m.crossEnv = append(m.crossEnv, call.str("source_id")+" → "+target)
 			return
 		}
-		m.addRelationship(tenant, source, dest, "other", "synchronous")
+		m.addRelationship(tenant, source, dest, "other", "synchronous", callKey(call.str("source_id"), target))
 	case strings.HasPrefix(targetType, "DB_"):
 		db := m.addResource(tenant, target, "database", nodes[target], nil, sourceEnv)
-		m.addRelationship(tenant, source, db, vendorProtocol(targetType), "database")
+		m.addRelationship(tenant, source, db, vendorProtocol(targetType), "database", "")
 	}
 }
 
-func (m *discoveryMapper) addRelationship(tenant string, source, target domain.EntityID, protocol, pattern string) {
+// addRelationship adds a relationship once. linkID, when set, is the key its observed call metrics
+// arrive under (callKey); the first call between two merged services keeps it.
+func (m *discoveryMapper) addRelationship(tenant string, source, target domain.EntityID, protocol, pattern, linkID string) {
 	id := "rel:" + source + "->" + target
 	if _, ok := m.rels[id]; ok {
 		return
 	}
+	link := map[string]any{"tenant": tenant}
+	if linkID != "" {
+		link["id"] = linkID
+	}
 	m.rels[id] = &domain.CommunicationRelationship{
 		ID: id, SourceEntityID: source, TargetEntityID: target, Protocol: protocol, Pattern: pattern,
 		Direction: "unidirectional", Status: "active", UpdatedAt: m.now,
-		Metadata: map[string]any{"dynatrace": map[string]any{"tenant": tenant}},
+		Metadata: map[string]any{"dynatrace": link},
 	}
 }
 

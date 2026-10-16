@@ -17,6 +17,7 @@ export const connectedStatus: IntegrationStatus = {
     { id: 'staging', name: 'Staging', kind: 'staging', tenant: 'main', match: 'tag environment = staging' },
   ],
   refreshIntervalSeconds: 60,
+  callMetricsIntervalSeconds: 0,
   lastSync: null,
   lastRefresh: { at: '2026-10-15T08:46:00Z', ok: true, entities: 12 },
   observations: { source: 'dynatrace', observedAt: '2026-10-15T08:46:00Z', isExample: false, entities: 12, stale: false, refreshIntervalSeconds: 60 },

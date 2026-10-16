@@ -33,7 +33,7 @@ func discovered() *domain.TopologyData {
 			{ID: "dt-main-db", Name: "orders", Type: "database", Provider: "unknown", EnvironmentID: &prod, UpdatedAt: strPtr(now), Metadata: link("DB-1")},
 		},
 		Relationships: []domain.CommunicationRelationship{
-			{ID: "rel:checkout.production->payment.production", SourceEntityID: "checkout.production", TargetEntityID: "payment.production", Protocol: "other", Pattern: "synchronous", Direction: "unidirectional", Status: "active", UpdatedAt: now, Metadata: map[string]any{"dynatrace": map[string]any{"tenant": "main"}}},
+			{ID: "rel:checkout.production->payment.production", SourceEntityID: "checkout.production", TargetEntityID: "payment.production", Protocol: "other", Pattern: "synchronous", Direction: "unidirectional", Status: "active", UpdatedAt: now, Metadata: map[string]any{"dynatrace": map[string]any{"tenant": "main", "id": "calls:SERVICE-1->SERVICE-2"}}},
 			{ID: "rel:payment.production->dt-main-db", SourceEntityID: "payment.production", TargetEntityID: "dt-main-db", Protocol: "postgresql", Pattern: "database", Direction: "unidirectional", Status: "active", UpdatedAt: now, Metadata: map[string]any{"dynatrace": map[string]any{"tenant": "main"}}},
 		},
 	}

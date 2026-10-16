@@ -1,6 +1,6 @@
 # Dynatrace connector: topology from Smartscape on Grail (Milestone 15, backend B12)
 
-**Status:** implemented 2026-10-15 (closeout in `docs/IMPLEMENTATION_PLAN.md`); Revision 2 (Milestone 15.1: hosts, topics and queues, the documented metric join). Not yet verified against a real tenant. Decision: ADR-034. Milestone: `docs/milestones/MILESTONE_15_DYNATRACE.md`.
+**Status:** implemented 2026-10-15 (closeout in `docs/IMPLEMENTATION_PLAN.md`); Revision 2 (Milestone 15.1: hosts, topics and queues, the documented metric join); Revision 3 (Milestone 15.2: metrics on calls from spans, no workload resources). Not yet verified against a real tenant. Decision: ADR-034. Milestone: `docs/milestones/MILESTONE_15_DYNATRACE.md`.
 
 **Source:** the product owner asked for "a feature that would allow us to get data, services, databases, etc. from dynatrace, and lets say i can connect it to dynatrace". Their answers:
 1. **API:** Grail / Smartscape (the SaaS platform), not the classic Environment API v2.
@@ -42,7 +42,7 @@ This answers `docs/REAL_DATA_INTEGRATION.md` §6 for the **topology** (entities,
 - **Processes, containers, and pods.** Below the workload and the host the domain has no containment level.
 - **Event types.** They stay authored; channels and their producers and consumers come from Dynatrace.
 - **Calls across environments.** Validation rejects them (`cross-environment-relationship`); the preview lists them as dropped.
-- **Edge metrics.** Relationships get no metrics. Per-call counts need spans (`fetch spans`); no documented metric splits requests by caller.
+- **Calls to databases and across tenants** get no metrics: a database call has a client span but no server span, and a tenant's spans only join within it.
 
 ## 2. Queries
 
@@ -60,10 +60,11 @@ All queries are constants: no configuration value or user input is ever put into
 | `messaging-publish` | `timeseries n = sum(dt.service.messaging.publish.count), by: { dt.smartscape.service, messaging.destination.name, messaging.system } \| fieldsAdd n = arraySum(n)` | structure |
 | `messaging-receive` | the same with `dt.service.messaging.receive.count` | structure |
 | `service-metrics` | `timeseries { rt = avg(dt.service.request.response_time), n = sum(dt.service.request.count), f = sum(dt.service.request.failure_count) }, by: { dt.smartscape.service } \| fieldsAdd rt = arrayAvg(rt), n = arraySum(n), f = arraySum(f)` | refresh |
+| `call-metrics` (opt-in, Milestone 15.2) | `fetch spans \| filter span.kind == "server" …` joined to its parent `span.kind == "client"` span on `span.parent_id` = `span.id`, then `summarize { n = sum(m), f = sum(if(failed, m, else: 0)), rt = avg(call_duration) }, by: { caller, callee }` with `m = coalesce(sampling.multiplicity, 1) * coalesce(aggregation.count, 1) * dt.system.sampling_ratio` (full text in `queries.go`) | refresh, every `callMetrics.interval` |
 | `problems` | `fetch dt.davis.problems \| filter not(dt.davis.is_duplicate) \| dedup event.id, sort: { timestamp desc } \| filter event.status == "ACTIVE" \| fields event.id, display_id, event.name, event.category, affected_entity_ids` | refresh |
 
 - **Windows:** structure uses the last 24 hours (`discoveryWindow`), metrics the last 5 minutes (`metricsWindow`), and problems the last 7 days.
-- **Units:** response time is in microseconds. Throughput is `n` divided by the window in seconds. The error rate is `f / n` × 100, and absent when `n` is 0.
+- **Units:** response time is in microseconds; span `duration` is in nanoseconds. Throughput is `n` divided by the window in seconds. The error rate is `f / n` × 100, and absent when `n` is 0.
 - **Joining.** Metrics are keyed by the Smartscape ID (`dt.smartscape.service`), as Dynatrace's service docs join them (Milestone 15.1); a record keyed by the classic `dt.entity.service` still joins through `id_classic`. Problems are keyed by classic IDs (`affected_entity_ids`), matched against `id_classic`, falling back to `id`.
 - **Cost.** Smartscape queries are included in the DPS licence. Metric and problem queries scan data, so their windows are short. Every query's scanned bytes are logged and shown in the connection check.
 
@@ -96,6 +97,7 @@ environments:
 refresh: { interval: 60s, metricsWindow: 5m }
 discovery: { window: 24h }
 limits: { maxRecords: 10000, queryTimeout: 30s }
+callMetrics: { enabled: false, interval: 5m }   # opt-in: reads every span (Milestone 15.2)
 ```
 
 - **Environments.** Each environment names a tenant and one rule, so one tenant split by tags and one tenant per environment both work:
@@ -134,6 +136,12 @@ limits: { maxRecords: 10000, queryTimeout: 30s }
 - **Provenance.** Observed metrics have `isSimulated: false` and `observedAt`. The topology meta gains `observedAt` and the source label "Dynatrace".
 - **What a read shows.** Service instances and resources take the observed health; instances take the metrics. `metadata.dynatrace` gains `problems` (Davis display IDs) and `observedAt`. Reads through the index (registry, traversal, impact, single entities) see the same values. `GET /meta` and `GET /integrations/dynatrace` describe the overlay (`observedAt`, `entities`, `isExample`, `stale`).
 - **Writes never store observations.** An edit of a linked entity keeps its stored health and its stored `metadata.dynatrace` link, whatever the client sends; metrics were never writable.
+- **Metrics on calls** (Milestone 15.2, opt-in with `callMetrics.enabled`):
+  - The `call-metrics` query runs every `callMetrics.interval` (default 5 minutes, at least the refresh interval) over a window of the same length, so each span is read about once; refreshes in between reuse the last result.
+  - A service-to-service relationship's link holds `id: "calls:<caller>-><callee>"` (Smartscape IDs). Its observed metrics are throughput, error rate (server spans with `span.status_code == "error"`), and latency (the client span's duration).
+  - A relationship's status is never changed by observations.
+  - If the query fails (for example, Grail's 128 MB join limit), the refresh still updates health and service metrics. The failure appears as a warning in `lastRefresh.warnings`, and call metrics older than three intervals are dropped.
+  - Merged duplicate services contribute only the first service's calls.
 - **Restarts.** The overlay is also stored (`observations`, one document per source) and restored at start-up, so recent states survive a restart. Each API process refreshes on its own.
 - **Example tenants.** Their metrics keep `isSimulated: true`.
 - **Clients.** With `?source=api`, the frontend refetches the topology every refresh interval.

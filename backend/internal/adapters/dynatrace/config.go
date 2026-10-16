@@ -34,6 +34,15 @@ type Config struct {
 	Refresh      RefreshConfig       `yaml:"refresh"`
 	Discovery    DiscoveryConfig     `yaml:"discovery"`
 	Limits       LimitsConfig        `yaml:"limits"`
+	CallMetrics  CallMetricsConfig   `yaml:"callMetrics"`
+}
+
+// CallMetricsConfig turns on metrics on calls from spans (Milestone 15.2). Off by default: the
+// query scans every span, and Grail bills scanned data. It runs every Interval over a window of
+// the same length, so each span is read about once.
+type CallMetricsConfig struct {
+	Enabled  bool     `yaml:"enabled"`
+	Interval Duration `yaml:"interval"`
 }
 
 // TenantConfig is one Dynatrace environment ("tenant", to avoid a clash with ours).
@@ -146,6 +155,7 @@ func (c *Config) applyDefaults() {
 		{&c.Refresh.MetricsWindow, 5 * time.Minute},
 		{&c.Discovery.Window, 24 * time.Hour},
 		{&c.Limits.QueryTimeout, 30 * time.Second},
+		{&c.CallMetrics.Interval, 5 * time.Minute},
 	}
 	for _, d := range defaults {
 		if d.field.Duration == 0 {
@@ -220,6 +230,9 @@ func (c *Config) validate() error {
 		if t := e.Match.Tag; t != nil && (t.Key == "" || t.Value == "") {
 			bad("%s.match.tag: needs a key and a value", at)
 		}
+	}
+	if c.CallMetrics.Interval.Duration < c.Refresh.Interval.Duration {
+		bad("callMetrics.interval: %s must be at least refresh.interval (%s)", c.CallMetrics.Interval, c.Refresh.Interval)
 	}
 	if c.Limits.MaxRecords < 1 || c.Limits.MaxRecords > 100000 {
 		bad("limits.maxRecords: %d must be between 1 and 100000", c.Limits.MaxRecords)
