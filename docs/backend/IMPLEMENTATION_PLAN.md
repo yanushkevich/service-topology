@@ -262,3 +262,15 @@ Delivered with frontend Milestone 15 (closeout in `docs/IMPLEMENTATION_PLAN.md`)
 | Database behaviour (batch, ownership, aliases, observations) | Pass (2026-10-15) | `make test-integration`; `sourcesync_integration_test.go` on MongoDB 8.0.30 |
 | Contract check against a running API with the fake tenant | Pass (2026-10-15) | `make contract-check` 110/110 |
 
+## Milestone B12.1 closeout — Dynatrace hosts, channels, metric join (2026-10-15, ADR-034 amendment)
+Delivered with frontend Milestone 15.1 (closeout in `docs/IMPLEMENTATION_PLAN.md`):
+- **Domain:** the `host` resource type, containment only (`fields.go`, `types.go`, schema).
+- **Adapter:** queries `hosts`, `service-runs-on`, `messaging-publish`, `messaging-receive`; `service-metrics` by `dt.smartscape.service`; `messaging.go` (channels); at most four queries at once per tenant.
+- **Application:** channel matching by type, name, and effective environment; re-derived relationship IDs; an empty change list is `[]`.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Unit, conformance, API tests | Pass | `make check` |
+| Database | Pass | `make test-integration` |
+| Contract with the fake tenant | Pass | `make contract-check` 111/111 |
+

@@ -221,7 +221,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 13.1 | Removed (2026-10-13) | 3D drill-down refinement: the flow's lines only, planes under their steps, pads for services without a board, the 2D board's visual language; `docs/milestones/MILESTONE_13_1_DRILLDOWN_REFINEMENT.md`. |
 | 13.2 | Implemented (2026-10-13) | Which lines each step uses: a Lines strip on the flow board and an Inside-the-service block in the step card (the 2D step-to-service drill-down); `docs/milestones/MILESTONE_13_2_FLOW_LINES.md`. |
 | 13.3 | Implemented (2026-10-13) | The 3D drill-down removed from business flows (product owner: "i dont need 3d in business flows"); the 2D Lines strip and step card replace it. ADR-026 withdrawn. |
-| 15.1 | In progress (2026-10-15) | Dynatrace gaps: hosts (a `host` containment level), topics and queues from messaging metrics, and the documented `dt.smartscape.service` metric join; `docs/milestones/MILESTONE_15_1_DYNATRACE_GAPS.md`. |
+| 15.1 | Implemented (2026-10-15); not yet verified against a real tenant | Dynatrace gaps: hosts (a `host` containment level), topics and queues from messaging metrics, and the documented `dt.smartscape.service` metric join; `docs/milestones/MILESTONE_15_1_DYNATRACE_GAPS.md`. |
 | 15 | Implemented (2026-10-15); not yet verified against a real tenant | Dynatrace connector: services, databases, Kubernetes containment, calls, health, and metrics from Smartscape on Grail; preview and apply, observation overlay, backend B12 (ADR-034); `docs/milestones/MILESTONE_15_DYNATRACE.md`, `docs/DYNATRACE_CONNECTOR.md`. |
 | 9 | Implemented (2026-10-12) | Transit board on example data (ADR-021): spec Phase 1 plus the Phase 4 replay UI, hover tooltips, windows, and per-step stats; see the Milestone 9 closeout and follow-up below. Real data sources (phases 2, 3, and 5) are not started. |
 | B1 (backend) | Implemented (2026-10-11) | Go foundation in `backend/`; closeout in `docs/backend/IMPLEMENTATION_PLAN.md`. |
@@ -913,7 +913,7 @@ Services, databases, Kubernetes containment, calls, health, and metrics from Dyn
 | A refresh updates health and metrics without a revision; observed metrics are `isSimulated: false`; stale observations are dropped | Pass | `TestObservationsOverlayReadsWithoutARevision`; `TestStaleObservationsAreNotShown` |
 | No secret in logs, responses, or errors; DQL never holds configuration | Pass | `TestDiscoverThroughTheQueryAPI` (logs); `TestIntegrationStatusAndCheck`; `TestIntegrationSourceFailureIsABadGateway`; constant queries, matched by the fake |
 | The UI never calls example-tenant data observed; axe passes in jsdom; `npm run check` and `make check` pass | Pass | `describeSource` tests; `a11y.test.tsx` |
-| axe in the real browser, both themes | Not run | the rows appear only with the backend, which needs MongoDB (Rancher VM stopped) |
+| axe in the real browser, both themes | Pass (2026-10-15) | `npm run audit:a11y -- --api yes` against the API with the fake tenant (see the Milestone 15.1 closeout) |
 | `make test-integration`, `make contract-check` | Pass (2026-10-15) | `sourcesync_integration_test.go` on MongoDB 8.0.30 (atomic batch with rollback, ownership kept on replace, aliases with `.` and `$`, observations with dotted IDs); `make contract-check` 110/110, including every `/integrations/dynatrace` operation against the fake tenant |
 
 **Found and fixed on the way:** the browser simulation and its Go port turned every metric into a drifting simulated value at load, which would have relabelled Dynatrace metrics simulated. Observed metrics now stay observed unless a simulated failure changes the entity.
@@ -923,3 +923,42 @@ Services, databases, Kubernetes containment, calls, health, and metrics from Dyn
 - Hosts, processes, containers, pods, queues, and topics are not mapped; relationships get no metrics; calls across environments are dropped.
 - Each API process refreshes on its own (no leader election); the observation overlay is per source.
 - Transit boards, flow statistics, and traces from Dynatrace remain Milestone 14 (on hold).
+
+### Milestone 15.1 closeout (2026-10-15): hosts, topics and queues, the documented metric join
+`docs/milestones/MILESTONE_15_1_DYNATRACE_GAPS.md`, ADR-034 amendment, `docs/DYNATRACE_CONNECTOR.md` Revision 2.
+
+**Commits:** `313bb25` database and contract checks recorded for Milestones 12 and 15; `0168d6f` spec; `89ed2c9` the `host` resource type; `be11189` hosts, channels, metric join; `dfcbb3b` empty-preview fix and audit pages; the close-out commit.
+
+**Checks run:**
+- `make check`; `make test-integration` (MongoDB 8.0.30; the source-sync tests ran, verified with `-v`); `make contract-check` 111/111, now including a preview of a topology already in sync.
+- `npm run check`: 92 files, 1,221 passed, 1 skipped; build passes.
+- **Live run:** the API on a seeded throwaway database with `DYNATRACE_CONFIG_FILE=dynatrace.example.yaml` and `make fake-dynatrace`. Preview (57 changes, 4 notes), apply, then:
+  - an in-sync preview;
+  - 28 linked entities observed;
+  - payment-service degraded by problem P-24101501, with the example tenant's metrics still simulated;
+  - billing-legacy in host `vm-billing-01`, unavailable by problem P-24101503.
+
+  The database was dropped afterwards.
+- **Real-browser audit with `--api yes`:** 34 pages × 2 themes and reduced motion, all pass. New pages:
+  - Settings with a check, a preview, and an alias;
+  - the inspector of a linked instance and of a Dynatrace host;
+  - the synced map.
+- **Screenshots** (1440 px dark, 390 px light): the Settings rows, the inspectors, and the map. At 390 px the check and summary tables scroll inside their container; the page does not.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| A single-host service runs in its host; a several-host service has none and is noted; a host problem makes the host unavailable | Pass | `TestDiscoveryPlacesServicesOnHosts`; `TestObserveHealthAndMetrics`; live run |
+| Kafka destinations are topics; RabbitMQ publish destinations are exchanges and receive destinations queues; producer → channel → consumer | Pass | `TestDiscoveryMapsMessagingToChannels` |
+| An authored channel with the same name in the same (inherited) environment is linked, not duplicated | Pass | `TestReconcileLinksAuthoredChannelsThroughTheirBroker`; preview over the mock data links all five channels |
+| Metrics join on `dt.smartscape.service`; a classic-ID record still joins | Pass | `TestObserveHealthAndMetrics` (staging payment-service record) |
+| `host` is containment only; enumerations match the schema in both stacks | Pass | `invalid-relationship-endpoint-host` conformance case; `fields_test.go`; contract test |
+
+**Found and fixed:** an empty preview returned `"changes": null` (`dfcbb3b`). Relationship IDs derived from endpoints are re-derived when the reconcile links an endpoint to an authored entity, so an ID never names a channel that does not exist.
+
+**Known limitations:**
+- Not verified against a real tenant.
+- No metrics on calls (they need spans).
+- A destination with no messages in the discovery window is not a channel.
+- Destinations whose names slug alike (`orders.events`, `orders_events`) share a channel.
+- Discovered Kubernetes workloads appear as registry rows, because the domain treats `workload` as a resource that can communicate.
+

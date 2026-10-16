@@ -676,3 +676,8 @@ ADR-034; spec `docs/DYNATRACE_CONNECTOR.md`.
 - **Declared vs observed:** structure goes through previews and revisions; health and metrics are an observation overlay merged on read while fresh, never a revision and never writable. This extends ADR-031's rule (observed data merges onto declared data by ID) to the topology.
 - **Frontend:** the HTTP topology repository exposes `integration` and `refreshMs`; the data provider refetches and continues the simulation (`rebase`). The engine leaves observed metrics alone unless a simulated failure changes the entity.
 
+## Revision 22 — Hosts and channels from Dynatrace (2026-10-15, Milestone 15.1)
+- **Domain:** `host` is a containment-only resource type (TypeScript, Go, schema), the home of services outside Kubernetes.
+- **Channels without nodes:** Smartscape has no topic or queue nodes, so the adapter derives channels from messaging metrics (destination × system × environment). The reconcile links them to authored channels by type, name, and effective environment, which keeps event types (ADR-014) working on discovered data.
+- **Metric join:** service metrics join on `dt.smartscape.service`, the Smartscape node ID.
+

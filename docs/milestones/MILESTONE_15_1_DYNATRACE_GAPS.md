@@ -1,6 +1,6 @@
 # Milestone 15.1 — Dynatrace: hosts, topics and queues, and the documented metric join
 
-**Status:** in progress (2026-10-15). Backend: B12.1. Amends ADR-034. Spec: `docs/DYNATRACE_CONNECTOR.md` (Revision 2).
+**Status:** implemented 2026-10-15 (closeout in `docs/IMPLEMENTATION_PLAN.md`); not yet verified against a real tenant. Backend: B12.1. Amends ADR-034. Spec: `docs/DYNATRACE_CONNECTOR.md` (Revision 2).
 
 **Source:** product owner, "continue implementation" after Milestone 15, whose closeout listed these gaps.
 

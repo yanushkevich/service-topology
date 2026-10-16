@@ -490,3 +490,8 @@ Those of `docs/milestones/MILESTONE_11_FLOW_SWIMLANES_PATTERNS.md`, `MILESTONE_1
 - Services, their deployments per environment, Kubernetes clusters, namespaces, and workloads, databases, and calls come from Dynatrace. Flows, event types, boards, owners, and descriptions authored here are kept; a service still used by a flow is never deleted, only flagged.
 - Health (from open Davis problems) and metrics refresh about every minute. They are labelled observed with their time; out-of-date observations are not shown; an example tenant's data is never called observed. Simulated failures still work on top of observed data and are labelled simulated.
 
+## Revision Z — Hosts, topics, and queues from Dynatrace (2026-10-15, Milestone 15.1)
+**Source:** product owner, "continue implementation".
+- Services on VMs appear inside their host, and hosts take health from Davis problems.
+- Topics, queues, and RabbitMQ exchanges appear with their producers and consumers. When one already exists here (same name, type, and environment), Dynatrace links to it instead of adding a copy.
+

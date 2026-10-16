@@ -222,6 +222,8 @@ The Events page and inspector explain the new rule automatically.
 - **Backend:** queries and field names in `internal/adapters/dynatrace/queries.go` (the only place to correct them), mapping in `discovery.go` and `observe.go`, reconcile rules in `internal/application/reconcile_kinds.go`. The fixture is `fixtures/dynatrace/example-tenant.json`; the fake answers only the connector's own queries.
 - **Frontend:** `data/http/httpIntegration.ts` (client), `features/settings/Dynatrace*.tsx`, `domain/sourceLink.ts` (reads `metadata.dynatrace`), the inspector's `SourceLinkSection`. Tests use `test/fakeIntegration.ts`.
 - **Provenance rules:** observed metrics keep `isSimulated: false` and are never drifted; writes never store observed health or the link's observation fields; an example tenant is never called observed.
+- **Hosts and channels** (Milestone 15.1): hosts from `runs_on` (`discovery.go`, `containmentOf`), channels from the messaging metrics (`messaging.go`); authored channels link by type, name, and effective environment (`reconcile_kinds.go`).
+- **Real-browser audit of the backend pages:** run the API on a seeded throwaway database (`make seed MONGODB_DATABASE=…`) with `DYNATRACE_CONFIG_FILE=dynatrace.example.yaml`, run `make fake-dynatrace`, and apply one sync. Save an alias so the next preview has changes, then run `npm run audit:a11y -- --url http://localhost:4173 --api yes`. Drop the database afterwards.
 
 ## 8. Known limitations (current)
 - No authentication provider or tenancy. One real integration: the Dynatrace connector (ADR-034), not yet verified against a real tenant. Without it, all data is mock and all telemetry is simulated.
