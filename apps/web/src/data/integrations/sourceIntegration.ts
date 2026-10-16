@@ -50,7 +50,7 @@ export interface SyncChange {
 }
 
 export interface SyncNote {
-  code: 'service-without-environment' | 'duplicate-service' | 'cross-environment-call' | 'truncated-result';
+  code: 'service-without-environment' | 'duplicate-service' | 'cross-environment-call' | 'truncated-result' | 'service-on-several-hosts';
   message: string;
   ids?: string[];
 }

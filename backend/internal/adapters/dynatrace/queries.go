@@ -46,11 +46,38 @@ var (
 		Fields: []string{"id", "name", "type"},
 		window: discoveryWindow,
 	}
+	queryHosts = Query{
+		Name:   "hosts",
+		DQL:    `smartscapeNodes HOST | fields id, name, id_classic`,
+		Fields: []string{"id", "name"},
+		window: discoveryWindow,
+	}
+	queryServiceRunsOn = Query{
+		Name:   "service-runs-on",
+		DQL:    `smartscapeEdges runs_on | filter source_type == "SERVICE" and target_type == "HOST" | fields source_id, target_id`,
+		Fields: []string{"source_id", "target_id"},
+		window: discoveryWindow,
+	}
+	// Smartscape has no topic or queue nodes; channels come from the messaging metrics, by
+	// destination and system (Milestone 15.1).
+	queryMessagingPublish = Query{
+		Name:   "messaging-publish",
+		DQL:    `timeseries n = sum(dt.service.messaging.publish.count), by: { dt.smartscape.service, messaging.destination.name, messaging.system } | fieldsAdd n = arraySum(n)`,
+		Fields: []string{"dt.smartscape.service", "messaging.destination.name", "messaging.system", "n"},
+		window: discoveryWindow,
+	}
+	queryMessagingReceive = Query{
+		Name:   "messaging-receive",
+		DQL:    `timeseries n = sum(dt.service.messaging.receive.count), by: { dt.smartscape.service, messaging.destination.name, messaging.system } | fieldsAdd n = arraySum(n)`,
+		Fields: []string{"dt.smartscape.service", "messaging.destination.name", "messaging.system", "n"},
+		window: discoveryWindow,
+	}
+	// Joined on dt.smartscape.service (the node ID), as Dynatrace's service docs do.
 	queryServiceMetrics = Query{
 		Name: "service-metrics",
-		DQL: `timeseries { rt = avg(dt.service.request.response_time), n = sum(dt.service.request.count), f = sum(dt.service.request.failure_count) }, by: { dt.entity.service }` +
+		DQL: `timeseries { rt = avg(dt.service.request.response_time), n = sum(dt.service.request.count), f = sum(dt.service.request.failure_count) }, by: { dt.smartscape.service }` +
 			` | fieldsAdd rt = arrayAvg(rt), n = arraySum(n), f = arraySum(f)`,
-		Fields: []string{"dt.entity.service", "rt", "n", "f"},
+		Fields: []string{"dt.smartscape.service", "rt", "n", "f"},
 		window: func(c *Config) time.Duration { return c.Refresh.MetricsWindow.Duration },
 	}
 	queryProblems = Query{
@@ -64,9 +91,9 @@ var (
 
 // structureQueries feed a discovery; observeQueries feed a refresh. The check runs all of them.
 var (
-	structureQueries = []Query{queryServices, queryServiceCalls, queryServiceBelongsTo, queryK8sNodes, queryDatabases}
-	observeQueries   = []Query{queryServices, queryK8sNodes, queryDatabases, queryServiceMetrics, queryProblems}
-	allQueries       = []Query{queryServices, queryServiceCalls, queryServiceBelongsTo, queryK8sNodes, queryDatabases, queryServiceMetrics, queryProblems}
+	structureQueries = []Query{queryServices, queryServiceCalls, queryServiceBelongsTo, queryK8sNodes, queryDatabases, queryHosts, queryServiceRunsOn, queryMessagingPublish, queryMessagingReceive}
+	observeQueries   = []Query{queryServices, queryK8sNodes, queryDatabases, queryHosts, queryServiceMetrics, queryProblems}
+	allQueries       = []Query{queryServices, queryServiceCalls, queryServiceBelongsTo, queryK8sNodes, queryDatabases, queryHosts, queryServiceRunsOn, queryMessagingPublish, queryMessagingReceive, queryServiceMetrics, queryProblems}
 )
 
 func discoveryWindow(c *Config) time.Duration { return c.Discovery.Window.Duration }

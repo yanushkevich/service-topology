@@ -149,14 +149,24 @@ func (r *reconciler) remapInstances(instances []domain.ServiceInstance) []domain
 	return out
 }
 
-// remapRelationships points discovered relationships at the stored instances they matched.
+// remapRelationships points discovered relationships at the stored entities they matched. An ID
+// derived from the endpoints ("rel:<source>-><target>") is derived again, so it never names an
+// entity that does not exist.
 func (r *reconciler) remapRelationships(rels []domain.CommunicationRelationship) []domain.CommunicationRelationship {
 	out := slices.Clone(rels)
 	for i := range out {
+		derived := out[i].ID == relationshipID(out[i].SourceEntityID, out[i].TargetEntityID)
 		out[i].SourceEntityID = r.resolve(out[i].SourceEntityID)
 		out[i].TargetEntityID = r.resolve(out[i].TargetEntityID)
+		if derived {
+			out[i].ID = relationshipID(out[i].SourceEntityID, out[i].TargetEntityID)
+		}
 	}
 	return out
+}
+
+func relationshipID(source, target domain.EntityID) domain.EntityID {
+	return "rel:" + source + "->" + target
 }
 
 func (r *reconciler) resolve(id domain.EntityID) domain.EntityID {

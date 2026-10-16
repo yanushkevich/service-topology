@@ -1,6 +1,6 @@
 # Dynatrace connector: topology from Smartscape on Grail (Milestone 15, backend B12)
 
-**Status:** implemented 2026-10-15 (closeout in `docs/IMPLEMENTATION_PLAN.md`); not yet verified against a real tenant. Decision: ADR-034. Milestone: `docs/milestones/MILESTONE_15_DYNATRACE.md`.
+**Status:** implemented 2026-10-15 (closeout in `docs/IMPLEMENTATION_PLAN.md`); Revision 2 (Milestone 15.1: hosts, topics and queues, the documented metric join). Not yet verified against a real tenant. Decision: ADR-034. Milestone: `docs/milestones/MILESTONE_15_DYNATRACE.md`.
 
 **Source:** the product owner asked for "a feature that would allow us to get data, services, databases, etc. from dynatrace, and lets say i can connect it to dynatrace". Their answers:
 1. **API:** Grail / Smartscape (the SaaS platform), not the classic Environment API v2.
@@ -22,6 +22,9 @@ This answers `docs/REAL_DATA_INTEGRATION.md` §6 for the **topology** (entities,
 | `K8S_NAMESPACE` | resource `namespace`, parent: its cluster | as above |
 | `K8S_DEPLOYMENT`, `K8S_STATEFULSET`, `K8S_DAEMONSET`, `K8S_CRONJOB`, `K8S_JOB` | resource `workload`, parent: its namespace; the instance's `resourceId` | as above |
 | `DB_DATABASE_<VENDOR>` and `DB_INSTANCE_<VENDOR>` (when a service calls the instance directly) | resource `database` | as above |
+| `HOST` that a service outside Kubernetes `runs_on` (exactly one) | resource `host` (containment only); the instance's `resourceId` | as above |
+| A messaging destination a service published to or received from (`dt.service.messaging.publish.count` / `.receive.count`) | resource `topic` (Kafka, SNS, Event Hubs, Pub/Sub, Pulsar, RocketMQ), `exchange` (a RabbitMQ publish), or `queue` (a RabbitMQ receive and other systems), one per environment | `dt-<tenant>-<system>-<destination slug>-<environment>` (`-exchange` appended for exchanges) |
+| A publish / a receive | relationship producer → channel / channel → consumer, `asynchronous`, protocol `kafka`, `rabbitmq`, or `other` | as above |
 | `SERVICE` `calls` `SERVICE` (in the same environment) | relationship, `synchronous`, protocol `other` unless an authored relationship says otherwise | `rel:<source>-><target>` (the existing convention) |
 | `SERVICE` `calls` `DB_*` | relationship, `database`; protocol from the vendor (`POSTGRES` → `postgresql`; `MYSQL`, `MARIADB` → `mysql`; others → `other`) | as above |
 | Open Davis problems on an entity | health (§5): `AVAILABILITY` → `unavailable`; `ERROR`, `SLOWDOWN`, `RESOURCE_CONTENTION`, `CUSTOM_ALERT` → `degraded`; `MONITORING_UNAVAILABLE` → `unknown`; none → `healthy` | — |
@@ -32,11 +35,14 @@ This answers `docs/REAL_DATA_INTEGRATION.md` §6 for the **topology** (entities,
 - **Category** is `application` when the connector creates a definition; Dynatrace gives no reliable signal for `api`, `gateway`, or `worker`. Authors can change it, and syncs keep the change (§4).
 - **The Dynatrace link** is kept on every entity as `metadata.dynatrace`: `{tenant, id, idClassic}`. Metrics and problems are joined through it.
 
+- **Hosts** (Milestone 15.1): a service with no Kubernetes containment that runs on exactly one host runs in it. On several hosts it gets no `resourceId`, and the preview notes `service-on-several-hosts`.
+- **Channels** (Milestone 15.1): Smartscape has no topic or queue nodes, so channels come from the messaging metrics over the discovery window. A destination with no messages in the window is not a channel. An authored channel with the same type and name in the same environment (also when inherited from its broker) is linked instead, so event types keep working. A relationship whose ID derives from its endpoints (`rel:<source>-><target>`) is renamed when an endpoint is linked.
+
 **Not mapped (documented gaps):**
-- **Hosts, processes, containers, and pods.** Below the workload the domain has no containment level, and VM hosts have no resource type. Services on VMs have no containment until a `host` resource type is added (a domain change in TypeScript, Go, schemas, and fixtures).
-- **Queues and topics.** Smartscape's core model documents no messaging node types. Channels and event types stay authored.
+- **Processes, containers, and pods.** Below the workload and the host the domain has no containment level.
+- **Event types.** They stay authored; channels and their producers and consumers come from Dynatrace.
 - **Calls across environments.** Validation rejects them (`cross-environment-relationship`); the preview lists them as dropped.
-- **Edge metrics.** Relationships get no metrics yet.
+- **Edge metrics.** Relationships get no metrics. Per-call counts need spans (`fetch spans`); no documented metric splits requests by caller.
 
 ## 2. Queries
 
@@ -49,12 +55,16 @@ All queries are constants: no configuration value or user input is ever put into
 | `service-belongs-to` | `smartscapeEdges belongs_to \| filter source_type == "SERVICE" \| fields source_id, target_id, target_type` | structure |
 | `k8s-nodes` | `smartscapeNodes "K8S_*" \| fields id, name, type, id_classic` | structure, refresh |
 | `databases` | `smartscapeNodes "DB_*" \| fields id, name, type, id_classic` | structure, refresh |
-| `service-metrics` | `timeseries { rt = avg(dt.service.request.response_time), n = sum(dt.service.request.count), f = sum(dt.service.request.failure_count) }, by: { dt.entity.service } \| fieldsAdd rt = arrayAvg(rt), n = arraySum(n), f = arraySum(f)` | refresh |
+| `hosts` | `smartscapeNodes HOST \| fields id, name, id_classic` | structure, refresh |
+| `service-runs-on` | `smartscapeEdges runs_on \| filter source_type == "SERVICE" and target_type == "HOST" \| fields source_id, target_id` | structure |
+| `messaging-publish` | `timeseries n = sum(dt.service.messaging.publish.count), by: { dt.smartscape.service, messaging.destination.name, messaging.system } \| fieldsAdd n = arraySum(n)` | structure |
+| `messaging-receive` | the same with `dt.service.messaging.receive.count` | structure |
+| `service-metrics` | `timeseries { rt = avg(dt.service.request.response_time), n = sum(dt.service.request.count), f = sum(dt.service.request.failure_count) }, by: { dt.smartscape.service } \| fieldsAdd rt = arrayAvg(rt), n = arraySum(n), f = arraySum(f)` | refresh |
 | `problems` | `fetch dt.davis.problems \| filter not(dt.davis.is_duplicate) \| dedup event.id, sort: { timestamp desc } \| filter event.status == "ACTIVE" \| fields event.id, display_id, event.name, event.category, affected_entity_ids` | refresh |
 
 - **Windows:** structure uses the last 24 hours (`discoveryWindow`), metrics the last 5 minutes (`metricsWindow`), and problems the last 7 days.
 - **Units:** response time is in microseconds. Throughput is `n` divided by the window in seconds. The error rate is `f / n` × 100, and absent when `n` is 0.
-- **Joining.** Metrics are keyed by the classic service ID (`dt.entity.service`) and problems by classic IDs (`affected_entity_ids`). Both are matched against `id_classic`, falling back to `id`.
+- **Joining.** Metrics are keyed by the Smartscape ID (`dt.smartscape.service`), as Dynatrace's service docs join them (Milestone 15.1); a record keyed by the classic `dt.entity.service` still joins through `id_classic`. Problems are keyed by classic IDs (`affected_entity_ids`), matched against `id_classic`, falling back to `id`.
 - **Cost.** Smartscape queries are included in the DPS licence. Metric and problem queries scan data, so their windows are short. Every query's scanned bytes are logged and shown in the connection check.
 
 ## 3. Configuration

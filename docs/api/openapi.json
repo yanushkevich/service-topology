@@ -4123,6 +4123,10 @@
               "service-belongs-to",
               "k8s-nodes",
               "databases",
+              "hosts",
+              "service-runs-on",
+              "messaging-publish",
+              "messaging-receive",
               "service-metrics",
               "problems"
             ]
@@ -4279,7 +4283,8 @@
                     "service-without-environment",
                     "duplicate-service",
                     "cross-environment-call",
-                    "truncated-result"
+                    "truncated-result",
+                    "service-on-several-hosts"
                   ]
                 },
                 "message": {

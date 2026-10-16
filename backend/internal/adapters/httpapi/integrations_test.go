@@ -106,7 +106,7 @@ func TestIntegrationStatusAndCheck(t *testing.T) {
 		} `json:"items"`
 	}
 	check.json(t, &checks)
-	if check.code != 200 || len(checks.Items) != 7 || !checks.Items[0].OK {
+	if check.code != 200 || len(checks.Items) != 11 || !checks.Items[0].OK {
 		t.Fatalf("check: %d %s", check.code, check.body)
 	}
 }

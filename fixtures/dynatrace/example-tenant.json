@@ -3,23 +3,22 @@
   "results": {
     "services": [
       {
-        "id": "SERVICE-BDAF1ECA33D4619E",
-        "name": "storefront-bff",
-        "tags": {
-          "environment": "production",
-          "owner": "Commerce",
-          "team": "Storefront"
-        },
-        "id_classic": "SERVICE-9F9C4770EFDBCE71"
-      },
-      {
-        "id": "SERVICE-F0B89EE9977FB93B",
+        "id": "SERVICE-0699DCD58EBF8BD4",
         "name": "checkout-service",
         "tags": {
           "environment": "production",
           "team": "Checkout"
         },
-        "id_classic": "SERVICE-F19D667B71C30B59"
+        "id_classic": "SERVICE-286E632657FBDDA8"
+      },
+      {
+        "id": "SERVICE-1C12FA511D52194A",
+        "name": "checkout-service",
+        "tags": {
+          "environment": "staging",
+          "team": "Checkout"
+        },
+        "id_classic": "SERVICE-C0C13CE43CF97A9C"
       },
       {
         "id": "SERVICE-30E45F0274EFB653",
@@ -32,6 +31,15 @@
         "id_classic": "SERVICE-98D9199D08C8BBAD"
       },
       {
+        "id": "SERVICE-474C9BC027EE3EF2",
+        "name": "payment-service",
+        "tags": {
+          "environment": "staging",
+          "team": "Payments Core"
+        },
+        "id_classic": "SERVICE-6B787E433D542C07"
+      },
+      {
         "id": "SERVICE-8E5C07EECB7B6ADD",
         "name": "FraudScoring",
         "tags": {
@@ -39,6 +47,24 @@
           "team": "Risk"
         },
         "id_classic": "SERVICE-B9FFB37C90A53193"
+      },
+      {
+        "id": "SERVICE-90B02F16A530C62E",
+        "name": "reporting",
+        "tags": {
+          "environment": "production"
+        },
+        "id_classic": "SERVICE-D4ED844675C01A20"
+      },
+      {
+        "id": "SERVICE-BDAF1ECA33D4619E",
+        "name": "storefront-bff",
+        "tags": {
+          "environment": "production",
+          "owner": "Commerce",
+          "team": "Storefront"
+        },
+        "id_classic": "SERVICE-9F9C4770EFDBCE71"
       },
       {
         "id": "SERVICE-C10F5A2E123650C6",
@@ -49,37 +75,28 @@
         "id_classic": "SERVICE-75A801DAD89803EB"
       },
       {
-        "id": "SERVICE-0699DCD58EBF8BD4",
-        "name": "checkout-service",
-        "tags": {
-          "environment": "production",
-          "team": "Checkout"
-        },
-        "id_classic": "SERVICE-286E632657FBDDA8"
-      },
-      {
         "id": "SERVICE-D23519D9A286F5D5",
         "name": "legacy-batch",
         "tags": {},
         "id_classic": "SERVICE-7C09B9033345023F"
       },
       {
-        "id": "SERVICE-1C12FA511D52194A",
-        "name": "checkout-service",
+        "id": "SERVICE-E2DB12E551E024BA",
+        "name": "billing-legacy",
         "tags": {
-          "environment": "staging",
-          "team": "Checkout"
+          "environment": "production",
+          "team": "Billing"
         },
-        "id_classic": "SERVICE-C0C13CE43CF97A9C"
+        "id_classic": "SERVICE-935BA4D8800F224D"
       },
       {
-        "id": "SERVICE-474C9BC027EE3EF2",
-        "name": "payment-service",
+        "id": "SERVICE-F0B89EE9977FB93B",
+        "name": "checkout-service",
         "tags": {
-          "environment": "staging",
-          "team": "Payments Core"
+          "environment": "production",
+          "team": "Checkout"
         },
-        "id_classic": "SERVICE-6B787E433D542C07"
+        "id_classic": "SERVICE-F19D667B71C30B59"
       }
     ],
     "service-calls": [
@@ -389,39 +406,137 @@
         "type": "DB_INSTANCE_ORACLE"
       }
     ],
+    "hosts": [
+      {
+        "id": "HOST-0000000000000ABC",
+        "name": "vm-billing-01",
+        "id_classic": "HOST-0000000000000ABC"
+      },
+      {
+        "id": "HOST-0000000000000DEF",
+        "name": "vm-report-01",
+        "id_classic": "HOST-0000000000000DEF"
+      },
+      {
+        "id": "HOST-0000000000000123",
+        "name": "vm-report-02",
+        "id_classic": "HOST-0000000000000123"
+      },
+      {
+        "id": "HOST-00000000000K8S01",
+        "name": "k8s-node-01",
+        "id_classic": "HOST-00000000000K8S01"
+      }
+    ],
+    "service-runs-on": [
+      {
+        "source_id": "SERVICE-E2DB12E551E024BA",
+        "target_id": "HOST-0000000000000ABC"
+      },
+      {
+        "source_id": "SERVICE-90B02F16A530C62E",
+        "target_id": "HOST-0000000000000DEF"
+      },
+      {
+        "source_id": "SERVICE-90B02F16A530C62E",
+        "target_id": "HOST-0000000000000123"
+      },
+      {
+        "source_id": "SERVICE-F0B89EE9977FB93B",
+        "target_id": "HOST-00000000000K8S01"
+      }
+    ],
+    "messaging-publish": [
+      {
+        "dt.smartscape.service": "SERVICE-F0B89EE9977FB93B",
+        "messaging.destination.name": "orders.events",
+        "messaging.system": "kafka",
+        "n": 900
+      },
+      {
+        "dt.smartscape.service": "SERVICE-30E45F0274EFB653",
+        "messaging.destination.name": "payments.events",
+        "messaging.system": "kafka",
+        "n": 300
+      },
+      {
+        "dt.smartscape.service": "SERVICE-30E45F0274EFB653",
+        "messaging.destination.name": "notifications",
+        "messaging.system": "rabbitmq",
+        "n": 120
+      },
+      {
+        "dt.smartscape.service": "SERVICE-1C12FA511D52194A",
+        "messaging.destination.name": "orders.events",
+        "messaging.system": "kafka",
+        "n": 10
+      },
+      {
+        "dt.smartscape.service": "SERVICE-BDAF1ECA33D4619E",
+        "messaging.destination.name": "orders.events",
+        "messaging.system": "kafka",
+        "n": 0
+      },
+      {
+        "dt.smartscape.service": "SERVICE-D23519D9A286F5D5",
+        "messaging.destination.name": "audit.log",
+        "messaging.system": "kafka",
+        "n": 50
+      }
+    ],
+    "messaging-receive": [
+      {
+        "dt.smartscape.service": "SERVICE-C10F5A2E123650C6",
+        "messaging.destination.name": "orders.events",
+        "messaging.system": "kafka",
+        "n": 880
+      },
+      {
+        "dt.smartscape.service": "SERVICE-8E5C07EECB7B6ADD",
+        "messaging.destination.name": "payments.events",
+        "messaging.system": "kafka",
+        "n": 290
+      },
+      {
+        "dt.smartscape.service": "SERVICE-E2DB12E551E024BA",
+        "messaging.destination.name": "notifications.email",
+        "messaging.system": "rabbitmq",
+        "n": 115
+      }
+    ],
     "service-metrics": [
       {
-        "dt.entity.service": "SERVICE-9F9C4770EFDBCE71",
+        "dt.smartscape.service": "SERVICE-BDAF1ECA33D4619E",
         "rt": 42000,
         "n": 36000,
         "f": 18
       },
       {
-        "dt.entity.service": "SERVICE-F19D667B71C30B59",
+        "dt.smartscape.service": "SERVICE-F0B89EE9977FB93B",
         "rt": 180000,
         "n": 9000,
         "f": 45
       },
       {
-        "dt.entity.service": "SERVICE-98D9199D08C8BBAD",
+        "dt.smartscape.service": "SERVICE-30E45F0274EFB653",
         "rt": 210000,
         "n": 6000,
         "f": 30
       },
       {
-        "dt.entity.service": "SERVICE-B9FFB37C90A53193",
+        "dt.smartscape.service": "SERVICE-8E5C07EECB7B6ADD",
         "rt": 35000,
         "n": 6000,
         "f": 0
       },
       {
-        "dt.entity.service": "SERVICE-75A801DAD89803EB",
+        "dt.smartscape.service": "SERVICE-C10F5A2E123650C6",
         "rt": 25000,
         "n": 12000,
         "f": 6
       },
       {
-        "dt.entity.service": "SERVICE-C0C13CE43CF97A9C",
+        "dt.smartscape.service": "SERVICE-1C12FA511D52194A",
         "rt": 150000,
         "n": 300,
         "f": 3
@@ -431,6 +546,12 @@
         "rt": 160000,
         "n": 240,
         "f": 0
+      },
+      {
+        "dt.smartscape.service": "SERVICE-E2DB12E551E024BA",
+        "rt": 95000,
+        "n": 1500,
+        "f": 3
       }
     ],
     "problems": [

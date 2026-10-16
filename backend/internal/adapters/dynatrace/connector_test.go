@@ -76,11 +76,11 @@ func TestDiscoverThroughTheQueryAPI(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if len(d.Data.ServiceInstances) != 7 || len(d.Data.Relationships) != 10 || d.IsExample {
+			if len(d.Data.ServiceInstances) != 9 || len(d.Data.Relationships) != 17 || d.IsExample {
 				t.Errorf("instances=%d relationships=%d example=%v", len(d.Data.ServiceInstances), len(d.Data.Relationships), d.IsExample)
 			}
 			// The queries run in parallel; each runs once.
-			if executed := slices.Sorted(slices.Values(tenant.Executed)); !slices.Equal(executed, []string{"databases", "k8s-nodes", "service-belongs-to", "service-calls", "services"}) {
+			if executed := slices.Sorted(slices.Values(tenant.Executed)); !slices.Equal(executed, []string{"databases", "hosts", "k8s-nodes", "messaging-publish", "messaging-receive", "service-belongs-to", "service-calls", "service-runs-on", "services"}) {
 				t.Errorf("executed = %v", tenant.Executed)
 			}
 			if strings.Contains(logs.String(), platformToken) || strings.Contains(logs.String(), "fake-client-secret") {
@@ -135,14 +135,14 @@ func TestCheckReportsEveryQuery(t *testing.T) {
 	tenant.Fail = map[string]int{"problems": http.StatusForbidden}
 	delete(tenant.Results, "databases")
 	checks := conn.Check(context.Background())
-	if len(checks) != 7 {
-		t.Fatalf("checks = %d, want 7", len(checks))
+	if len(checks) != 11 {
+		t.Fatalf("checks = %d, want 11", len(checks))
 	}
 	byQuery := map[string]int{}
 	for i, c := range checks {
 		byQuery[c.Query] = i
 	}
-	if c := checks[byQuery["services"]]; !c.OK || c.Records != 9 || len(c.MissingFields) != 0 || c.ScannedBytes == 0 {
+	if c := checks[byQuery["services"]]; !c.OK || c.Records != 11 || len(c.MissingFields) != 0 || c.ScannedBytes == 0 {
 		t.Errorf("services = %+v", c)
 	}
 	if c := checks[byQuery["databases"]]; !c.OK || c.Records != 0 {

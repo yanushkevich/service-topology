@@ -15,6 +15,7 @@ import (
 // tenantData is one tenant's structure query results.
 type tenantData struct {
 	Services, Calls, BelongsTo, K8s, Databases []record
+	Hosts, RunsOn, Publish, Receive            []record
 	Truncated                                  []string
 }
 
@@ -44,7 +45,7 @@ type discoveryMapper struct {
 	// resourceEnvs collects the environments of the services in or calling each resource.
 	resourceEnvs map[domain.EntityID]map[domain.EntityID]bool
 
-	unmatched, duplicates, crossEnv, truncated []string
+	unmatched, duplicates, crossEnv, truncated, severalHosts []string
 }
 
 // serviceNode is a decoded SERVICE record.
@@ -69,22 +70,30 @@ func newDiscoveryMapper(cfg *Config, aliases map[string]domain.EntityID, now str
 	}
 }
 
-// addTenant maps one tenant: its services into environments, their containment, then their calls.
+// addTenant maps one tenant: its services into environments, their containment, their calls, then
+// the topics and queues they publish to and receive from.
 func (m *discoveryMapper) addTenant(tenant string, data tenantData) {
-	nodes := indexNodes(data.K8s, data.Databases)
+	nodes := indexNodes(data.K8s, data.Databases, data.Hosts)
 	belongs := edgesBySource(data.BelongsTo)
-	instanceOf := map[string]domain.EntityID{} // Dynatrace service ID → instance ID
-	for _, svc := range decodeServices(data.Services) {
+	runsOn := edgesBySource(data.RunsOn)
+	services := decodeServices(data.Services)
+	instanceOf := map[string]domain.EntityID{} // Dynatrace service ID (Smartscape and classic) → instance ID
+	for _, svc := range services {
 		env, ok := m.environmentFor(tenant, svc, belongs[svc.id], nodes)
 		if !ok {
 			m.unmatched = append(m.unmatched, svc.id)
 			continue
 		}
-		instanceOf[svc.id] = m.addService(tenant, svc, env, belongs[svc.id], nodes)
+		instanceOf[svc.id] = m.addService(tenant, svc, env, belongs[svc.id], runsOn[svc.id], nodes)
+		if svc.idClassic != "" {
+			instanceOf[svc.idClassic] = instanceOf[svc.id]
+		}
 	}
 	for _, call := range data.Calls {
 		m.addCall(tenant, call, instanceOf, nodes)
 	}
+	m.addMessaging(tenant, data.Publish, true, instanceOf)
+	m.addMessaging(tenant, data.Receive, false, instanceOf)
 	for _, q := range data.Truncated {
 		m.truncated = append(m.truncated, tenant+": "+q)
 	}
@@ -119,7 +128,7 @@ func (m *discoveryMapper) environmentFor(tenant string, svc serviceNode, belongs
 
 // addService adds the service's definition, its instance in env, and its containment, and returns
 // the instance ID. A second Dynatrace service with the same name in env merges into the first.
-func (m *discoveryMapper) addService(tenant string, svc serviceNode, env EnvironmentConfig, belongs []record, nodes map[string]smartscapeNode) domain.EntityID {
+func (m *discoveryMapper) addService(tenant string, svc serviceNode, env EnvironmentConfig, belongs, runsOn []record, nodes map[string]smartscapeNode) domain.EntityID {
 	defID := m.definitionID(svc)
 	if _, ok := m.defs[defID]; !ok {
 		m.defs[defID] = &domain.ServiceDefinition{
@@ -140,10 +149,35 @@ func (m *discoveryMapper) addService(tenant string, svc serviceNode, env Environ
 	m.instances[instanceID] = &domain.ServiceInstance{
 		ID: instanceID, ServiceDefinitionID: defID, EnvironmentID: &envID,
 		Provider: "unknown", Health: "unknown", UpdatedAt: m.now,
-		ResourceID: m.addContainment(tenant, env.ID, belongs, nodes),
+		ResourceID: m.containmentOf(tenant, svc, env.ID, belongs, runsOn, nodes),
 		Metadata:   map[string]any{"dynatrace": link},
 	}
 	return instanceID
+}
+
+// containmentOf is where a service runs: its Kubernetes workload (or namespace, or cluster), else
+// its host when it runs on exactly one. On several hosts it has none: an instance has one resource.
+func (m *discoveryMapper) containmentOf(tenant string, svc serviceNode, env domain.EntityID, belongs, runsOn []record, nodes map[string]smartscapeNode) *domain.EntityID {
+	if k8s := m.addContainment(tenant, env, belongs, nodes); k8s != nil {
+		return k8s
+	}
+	hosts := map[string]bool{}
+	for _, edge := range runsOn {
+		if target := edge.str("target_id"); target != "" {
+			hosts[target] = true
+		}
+	}
+	switch len(hosts) {
+	case 0:
+		return nil
+	case 1:
+		host := sortedKeys(hosts)[0]
+		id := m.addResource(tenant, host, "host", nodes[host], nil, env)
+		return &id
+	default:
+		m.severalHosts = append(m.severalHosts, svc.id)
+		return nil
+	}
 }
 
 // addContainment adds the cluster, namespace, and workload a service belongs to, each the parent
@@ -279,6 +313,8 @@ func (m *discoveryMapper) notes() []ports.DiscoveryNote {
 		"%d services share a name with another service in the same environment and were merged into it.")
 	add(ports.NoteCrossEnvironmentCall, m.crossEnv, "1 call crosses environments and was dropped.", "%d calls cross environments and were dropped.")
 	add(ports.NoteTruncatedResult, m.truncated, "1 query result hit limits.maxRecords and may be incomplete.", "%d query results hit limits.maxRecords and may be incomplete.")
+	add(ports.NoteServiceOnSeveralHosts, m.severalHosts,
+		"1 service runs on several hosts; its instance is not placed in one.", "%d services run on several hosts; their instances are not placed in one.")
 	return notes
 }
 

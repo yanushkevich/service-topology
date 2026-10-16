@@ -9,7 +9,7 @@ import (
 
 // observeData is one tenant's refresh query results.
 type observeData struct {
-	Services, K8s, Databases, Metrics, Problems []record
+	Services, K8s, Databases, Hosts, Metrics, Problems []record
 }
 
 // problemHealth maps a Davis problem category to health (spec §1). Unlisted categories degrade.
@@ -30,7 +30,7 @@ var healthRank = map[string]int{"healthy": 0, "unknown": 1, "degraded": 2, "unav
 func observeTenant(data observeData, window time.Duration, observedAt string, example bool) map[string]ports.ObservedState {
 	out := map[string]ports.ObservedState{}
 	byClassic := map[string]string{} // classic ID → Smartscape ID
-	for _, group := range [][]record{data.Services, data.K8s, data.Databases} {
+	for _, group := range [][]record{data.Services, data.K8s, data.Databases, data.Hosts} {
 		for _, r := range group {
 			id := r.str("id")
 			if id == "" {
@@ -49,7 +49,11 @@ func observeTenant(data observeData, window time.Duration, observedAt string, ex
 		return id
 	}
 	for _, r := range data.Metrics {
-		id := smartscapeID(r.str("dt.entity.service"))
+		// The documented join is the Smartscape ID; a classic ID still maps through id_classic.
+		id := r.str("dt.smartscape.service")
+		if id == "" {
+			id = smartscapeID(r.str("dt.entity.service"))
+		}
 		if id == "" {
 			continue
 		}

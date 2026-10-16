@@ -45,6 +45,19 @@ var definitionKind = entityKind[domain.ServiceDefinition]{
 var resourceKind = entityKind[domain.InfrastructureResource]{
 	id:   func(e *domain.InfrastructureResource) domain.EntityID { return e.ID },
 	name: func(e *domain.InfrastructureResource) string { return e.Name },
+	// An authored topic, queue, or exchange with the same name in the same environment (often
+	// inherited from its broker) is the same channel, so event types keep working.
+	match: func(stored []domain.InfrastructureResource, d *domain.InfrastructureResource) (int, bool) {
+		if !channelTypes[d.Type] || d.EnvironmentID == nil {
+			return 0, false
+		}
+		for i, s := range stored {
+			if s.Type == d.Type && s.Name == d.Name && effectiveEnvironment(stored, i) == *d.EnvironmentID {
+				return i, true
+			}
+		}
+		return 0, false
+	},
 	owned: func(s, d domain.InfrastructureResource, source string) domain.InfrastructureResource {
 		s.Name, s.Type, s.ParentResourceID, s.EnvironmentID, s.Health = d.Name, d.Type, d.ParentResourceID, d.EnvironmentID, d.Health
 		s.Metadata = withLink(s.Metadata, d.Metadata, source)
@@ -126,4 +139,31 @@ var relationshipKind = entityKind[domain.CommunicationRelationship]{
 		s.Metadata = markMissing(s.Metadata, source, now)
 		return s
 	},
+}
+
+// channelTypes are the resource types that carry messages.
+var channelTypes = map[string]bool{"topic": true, "queue": true, "exchange": true}
+
+// effectiveEnvironment is a resource's environment, set on it or inherited from its nearest
+// ancestor; "" when none. Bounded by the number of resources, so a cycle cannot loop.
+func effectiveEnvironment(resources []domain.InfrastructureResource, at int) domain.EntityID {
+	byID := make(map[domain.EntityID]int, len(resources))
+	for i, r := range resources {
+		byID[r.ID] = i
+	}
+	for steps := 0; steps <= len(resources); steps++ {
+		r := resources[at]
+		if r.EnvironmentID != nil {
+			return *r.EnvironmentID
+		}
+		if r.ParentResourceID == nil {
+			return ""
+		}
+		parent, ok := byID[*r.ParentResourceID]
+		if !ok {
+			return ""
+		}
+		at = parent
+	}
+	return ""
 }

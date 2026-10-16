@@ -320,6 +320,7 @@ const (
 	NoteDuplicateService          = "duplicate-service"
 	NoteCrossEnvironmentCall      = "cross-environment-call"
 	NoteTruncatedResult           = "truncated-result"
+	NoteServiceOnSeveralHosts     = "service-on-several-hosts"
 )
 
 // DiscoveryNote explains something a discovery skipped or merged. IDs are source IDs.

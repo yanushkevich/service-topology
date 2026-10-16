@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -50,7 +51,8 @@ func discoverExample(t *testing.T, cfg *Config, aliases map[string]domain.Entity
 	t.Helper()
 	r := exampleTenant(t)
 	m := newDiscoveryMapper(cfg, aliases, "2026-10-15T08:45:00Z")
-	m.addTenant("main", tenantData{Services: r["services"], Calls: r["service-calls"], BelongsTo: r["service-belongs-to"], K8s: r["k8s-nodes"], Databases: r["databases"]})
+	m.addTenant("main", tenantData{Services: r["services"], Calls: r["service-calls"], BelongsTo: r["service-belongs-to"], K8s: r["k8s-nodes"], Databases: r["databases"],
+		Hosts: r["hosts"], RunsOn: r["service-runs-on"], Publish: r["messaging-publish"], Receive: r["messaging-receive"]})
 	return m.result()
 }
 
@@ -66,10 +68,10 @@ func TestDiscoveryMapsTheExampleTenant(t *testing.T) {
 	d := discoverExample(t, exampleConfig(), map[string]domain.EntityID{"FraudScoring": "fraud-scoring"})
 	data := d.Data
 
-	if got := ids(data.ServiceDefinitions, func(s domain.ServiceDefinition) string { return s.ID }); !slices.Equal(got, []string{"checkout-service", "fraud-scoring", "inventory-service", "payment-service", "storefront-bff"}) {
+	if got := ids(data.ServiceDefinitions, func(s domain.ServiceDefinition) string { return s.ID }); !slices.Equal(got, []string{"billing-legacy", "checkout-service", "fraud-scoring", "inventory-service", "payment-service", "reporting", "storefront-bff"}) {
 		t.Errorf("definitions = %v", got)
 	}
-	wantInstances := []string{"checkout-service.production", "checkout-service.staging", "fraud-scoring.production", "inventory-service.production", "payment-service.production", "payment-service.staging", "storefront-bff.production"}
+	wantInstances := []string{"billing-legacy.production", "checkout-service.production", "checkout-service.staging", "fraud-scoring.production", "inventory-service.production", "payment-service.production", "payment-service.staging", "reporting.production", "storefront-bff.production"}
 	if got := ids(data.ServiceInstances, func(s domain.ServiceInstance) string { return s.ID }); !slices.Equal(got, wantInstances) {
 		t.Errorf("instances = %v", got)
 	}
@@ -78,7 +80,8 @@ func TestDiscoveryMapsTheExampleTenant(t *testing.T) {
 		types[r.Type]++
 	}
 	// kube-system is in no mapped service's containment, so it is not mapped.
-	if want := map[string]int{"cluster": 2, "namespace": 4, "workload": 7, "database": 5}; !mapsEqual(types, want) {
+	// One host (billing-legacy's; reporting runs on two), three topics, an exchange, and a queue.
+	if want := map[string]int{"cluster": 2, "namespace": 4, "workload": 7, "database": 5, "host": 1, "topic": 3, "exchange": 1, "queue": 1}; !mapsEqual(types, want) {
 		t.Errorf("resource types = %v, want %v", types, want)
 	}
 	if issues := domain.Validate(&data); len(issues) > 0 {
@@ -148,10 +151,11 @@ func TestDiscoveryRelationshipsAndNotes(t *testing.T) {
 	if databases != 5 {
 		t.Errorf("database relationships = %d, want 5", databases)
 	}
-	// 4 service calls + 1 staging + 5 database; the duplicate checkout's call merges, the host
-	// call and the unmatched caller are ignored, and the cross-environment call is dropped.
-	if len(d.Data.Relationships) != 10 {
-		t.Errorf("relationships = %d, want 10: %v", len(d.Data.Relationships), sortedKeys(byID))
+	// 4 service calls + 1 staging + 5 database + 4 publish + 3 receive; the duplicate checkout's
+	// call merges, the host call and the unmatched caller are ignored, the cross-environment call
+	// is dropped, and so are a zero-count publish and an unmapped service's.
+	if len(d.Data.Relationships) != 17 {
+		t.Errorf("relationships = %d, want 17: %v", len(d.Data.Relationships), sortedKeys(byID))
 	}
 	codes := map[string][]string{}
 	for _, n := range d.Notes {
@@ -175,6 +179,7 @@ func TestDiscoveryEnvironmentRules(t *testing.T) {
 		{ID: "production", Name: "Production", Kind: "production", Tenant: "main", Match: MatchRule{K8sNamespaces: []string{"shop", "payments"}}},
 	}
 	d := discoverExample(t, cluster, nil)
+	// billing-legacy and reporting run on VMs, outside every cluster and namespace rule.
 	if n := len(d.Data.ServiceInstances); n != 7 {
 		t.Errorf("by cluster and namespaces: %d instances, want 7", n)
 	}
@@ -204,7 +209,7 @@ func TestSlug(t *testing.T) {
 
 func TestObserveHealthAndMetrics(t *testing.T) {
 	r := exampleTenant(t)
-	states := observeTenant(observeData{Services: r["services"], K8s: r["k8s-nodes"], Databases: r["databases"], Metrics: r["service-metrics"], Problems: r["problems"]},
+	states := observeTenant(observeData{Services: r["services"], K8s: r["k8s-nodes"], Databases: r["databases"], Hosts: r["hosts"], Metrics: r["service-metrics"], Problems: r["problems"]},
 		5*time.Minute, "2026-10-15T08:45:00Z", false)
 
 	payment := states["SERVICE-30E45F0274EFB653"]
@@ -228,12 +233,92 @@ func TestObserveHealthAndMetrics(t *testing.T) {
 		t.Errorf("payments database = %+v", db)
 	}
 	if host := states["HOST-0000000000000ABC"]; host.Health != "unavailable" {
-		t.Errorf("an unmapped host still gets its problem: %+v", host)
+		t.Errorf("billing-legacy's host = %+v (AVAILABILITY problem)", host)
+	}
+	if k8sNode := states["HOST-00000000000K8S01"]; k8sNode.Health != "healthy" {
+		t.Errorf("a host without problems = %+v", k8sNode)
+	}
+	// Metrics join on dt.smartscape.service; a record keyed by the classic ID still joins.
+	if stg := states["SERVICE-474C9BC027EE3EF2"]; stg.Metrics == nil || *stg.Metrics.LatencyMs != 160 {
+		t.Errorf("payment-service in staging (classic-keyed record) = %+v", stg)
 	}
 	example := observeTenant(observeData{Metrics: r["service-metrics"]}, 5*time.Minute, "t", true)
 	for id, s := range example {
 		if s.Metrics == nil || !s.Metrics.IsSimulated {
 			t.Errorf("%s: example tenant metrics must be simulated", id)
+		}
+	}
+}
+
+func TestDiscoveryPlacesServicesOnHosts(t *testing.T) {
+	d := discoverExample(t, exampleConfig(), nil)
+	billing := find(d.Data.ServiceInstances, func(s domain.ServiceInstance) bool { return s.ID == "billing-legacy.production" })
+	if billing == nil || billing.ResourceID == nil || *billing.ResourceID != "dt-main-host-0000000000000abc" {
+		t.Fatalf("billing-legacy = %+v", billing)
+	}
+	host := find(d.Data.Resources, func(r domain.InfrastructureResource) bool { return r.ID == *billing.ResourceID })
+	if host.Type != "host" || host.Name != "vm-billing-01" || host.EnvironmentID == nil || *host.EnvironmentID != "production" {
+		t.Errorf("host = %+v", host)
+	}
+	if reporting := find(d.Data.ServiceInstances, func(s domain.ServiceInstance) bool { return s.ID == "reporting.production" }); reporting.ResourceID != nil {
+		t.Errorf("a service on two hosts must not be placed in one: %v", *reporting.ResourceID)
+	}
+	notes := map[string][]string{}
+	for _, n := range d.Notes {
+		notes[n.Code] = n.IDs
+	}
+	if got := notes[ports.NoteServiceOnSeveralHosts]; !slices.Equal(got, []string{"SERVICE-90B02F16A530C62E"}) {
+		t.Errorf("several-hosts note = %v", got)
+	}
+	// A Kubernetes service keeps its workload even though it also runs on a node host.
+	if checkout := find(d.Data.ServiceInstances, func(s domain.ServiceInstance) bool { return s.ID == "checkout-service.production" }); !strings.Contains(*checkout.ResourceID, "k8s_deployment") {
+		t.Errorf("checkout runs in %s", *checkout.ResourceID)
+	}
+}
+
+func TestDiscoveryMapsMessagingToChannels(t *testing.T) {
+	d := discoverExample(t, exampleConfig(), map[string]domain.EntityID{"FraudScoring": "fraud-scoring"})
+	isChannel := map[string]bool{"topic": true, "queue": true, "exchange": true}
+	channels := map[string]string{}
+	for _, r := range d.Data.Resources {
+		if isChannel[r.Type] {
+			channels[r.ID] = r.Type + " " + r.Name + " " + *r.EnvironmentID
+		}
+	}
+	want := map[string]string{
+		"dt-main-kafka-orders-events-production":             "topic orders.events production",
+		"dt-main-kafka-orders-events-staging":                "topic orders.events staging",
+		"dt-main-kafka-payments-events-production":           "topic payments.events production",
+		"dt-main-rabbitmq-notifications-production-exchange": "exchange notifications production",
+		"dt-main-rabbitmq-notifications-email-production":    "queue notifications.email production",
+	}
+	if len(channels) != len(want) {
+		t.Errorf("channels = %v", channels)
+	}
+	for id, w := range want {
+		if channels[id] != w {
+			t.Errorf("%s = %q, want %q", id, channels[id], w)
+		}
+	}
+	rels := map[string]domain.CommunicationRelationship{}
+	for _, r := range d.Data.Relationships {
+		rels[r.ID] = r
+	}
+	for id, protocol := range map[string]string{
+		"rel:checkout-service.production->dt-main-kafka-orders-events-production":            "kafka",
+		"rel:dt-main-kafka-orders-events-production->inventory-service.production":           "kafka",
+		"rel:payment-service.production->dt-main-rabbitmq-notifications-production-exchange": "rabbitmq",
+		"rel:dt-main-rabbitmq-notifications-email-production->billing-legacy.production":     "rabbitmq",
+		"rel:dt-main-kafka-payments-events-production->fraud-scoring.production":             "kafka",
+		"rel:checkout-service.staging->dt-main-kafka-orders-events-staging":                  "kafka",
+	} {
+		if r, ok := rels[id]; !ok || r.Protocol != protocol || r.Pattern != "asynchronous" {
+			t.Errorf("%s = %+v (present %v)", id, r, ok)
+		}
+	}
+	for id := range rels {
+		if strings.Contains(id, "storefront-bff.production->dt-") || strings.Contains(id, "audit") {
+			t.Errorf("a zero-count or unmapped publish made %s", id)
 		}
 	}
 }

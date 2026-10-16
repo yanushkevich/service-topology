@@ -20,6 +20,8 @@ export interface SourceLink {
   problems: string[];
   /** When Dynatrace stopped seeing the entity; null while it is seen. */
   missingSince: string | null;
+  /** A topic or queue: its messaging system (kafka, rabbitmq, …) and destination name. */
+  messaging: { system: string; destination: string } | null;
 }
 
 const text = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null);
@@ -35,5 +37,6 @@ export function sourceLinkOf(metadata: Record<string, unknown> | undefined): Sou
     observedAt: text(link.observedAt),
     problems: Array.isArray(link.problems) ? link.problems.filter((p): p is string => typeof p === 'string') : [],
     missingSince: text(link.missingSince),
+    messaging: text(link.destination) ? { system: text(link.system) ?? 'unknown system', destination: text(link.destination) ?? '' } : null,
   };
 }

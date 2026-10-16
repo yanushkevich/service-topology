@@ -4,7 +4,7 @@ import { sourceLinkOf } from './sourceLink';
 describe('sourceLinkOf', () => {
   it('reads the Dynatrace link, problems, and observation time', () => {
     expect(sourceLinkOf({ dynatrace: { tenant: 'main', id: 'SERVICE-1', observedAt: '2026-10-15T08:46:00Z', problems: ['P-1', 7] }, owner: 'x' })).toEqual({
-      tenant: 'main', id: 'SERVICE-1', name: null, observedAt: '2026-10-15T08:46:00Z', problems: ['P-1'], missingSince: null,
+      tenant: 'main', id: 'SERVICE-1', name: null, observedAt: '2026-10-15T08:46:00Z', problems: ['P-1'], missingSince: null, messaging: null,
     });
   });
 
@@ -13,6 +13,10 @@ describe('sourceLinkOf', () => {
     expect(sourceLinkOf({ owner: 'x' })).toBeNull();
     expect(sourceLinkOf({ dynatrace: 'SERVICE-1' })).toBeNull();
     expect(sourceLinkOf({ dynatrace: ['SERVICE-1'] })).toBeNull();
+  });
+
+  it('reads a channel\'s messaging system and destination (Milestone 15.1)', () => {
+    expect(sourceLinkOf({ dynatrace: { tenant: 'main', system: 'kafka', destination: 'orders.events' } })?.messaging).toEqual({ system: 'kafka', destination: 'orders.events' });
   });
 
   it('marks an entity Dynatrace no longer sees', () => {

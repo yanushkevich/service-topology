@@ -212,3 +212,43 @@ func TestReconcileKeepsWhatABoardLinks(t *testing.T) {
 		t.Errorf("changes = %v", got)
 	}
 }
+
+func TestReconcileLinksAuthoredChannelsThroughTheirBroker(t *testing.T) {
+	prod := "production"
+	stored := empty()
+	stored.Environments = []domain.Environment{{ID: "production", Name: "Production", Kind: "production"}}
+	broker := strPtr("kafka-prod")
+	stored.Resources = []domain.InfrastructureResource{
+		{ID: "kafka-prod", Name: "kafka", Type: "broker", Provider: "aws", EnvironmentID: &prod},
+		// Its environment is inherited from the broker.
+		{ID: "topic-orders", Name: "orders.events", Type: "topic", Provider: "aws", ParentResourceID: broker},
+		{ID: "notifications", Name: "notifications", Type: "exchange", Provider: "aws", ParentResourceID: broker},
+	}
+	sources := map[domain.EntityID]string{"production": "fixture", "kafka-prod": "fixture", "topic-orders": "fixture", "notifications": "fixture"}
+	found := discovered()
+	found.Resources = append(found.Resources,
+		domain.InfrastructureResource{ID: "dt-main-kafka-orders-events-production", Name: "orders.events", Type: "topic", Provider: "unknown", EnvironmentID: &prod,
+			Metadata: map[string]any{"dynatrace": map[string]any{"tenant": "main", "system": "kafka", "destination": "orders.events"}}},
+		// Same name as the authored exchange, but a queue: a different channel.
+		domain.InfrastructureResource{ID: "dt-main-rabbitmq-notifications-production", Name: "notifications", Type: "queue", Provider: "unknown", EnvironmentID: &prod})
+	found.Relationships = append(found.Relationships, domain.CommunicationRelationship{
+		ID: "rel:checkout.production->dt-main-kafka-orders-events-production", SourceEntityID: "checkout.production", TargetEntityID: "dt-main-kafka-orders-events-production",
+		Protocol: "kafka", Pattern: "asynchronous", Direction: "unidirectional", Status: "active", UpdatedAt: now})
+
+	changes, result := run(stored, sources, found)
+	got := ops(changes)
+	if !slices.Contains(got[SyncLink], "topic-orders") || slices.Contains(got[SyncCreate], "dt-main-kafka-orders-events-production") {
+		t.Errorf("the authored topic must be linked, not duplicated: %v", got)
+	}
+	if !slices.Contains(got[SyncCreate], "dt-main-rabbitmq-notifications-production") {
+		t.Errorf("a queue named like an exchange is another channel: %v", got)
+	}
+	if !slices.ContainsFunc(result.Relationships, func(r domain.CommunicationRelationship) bool {
+		return r.ID == "rel:checkout.production->topic-orders" && r.SourceEntityID == "checkout.production" && r.TargetEntityID == "topic-orders"
+	}) {
+		t.Errorf("the producer must point at the authored topic, under a matching ID: %+v", result.Relationships)
+	}
+	if issues := domain.Validate(result); len(issues) > 0 {
+		t.Errorf("result does not validate: %v", issues)
+	}
+}

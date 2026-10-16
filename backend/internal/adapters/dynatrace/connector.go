@@ -17,6 +17,9 @@ import (
 // SourceName is the source type recorded on the entities the connector creates.
 const SourceName = "dynatrace"
 
+// maxParallelQueries bounds the queries one tenant runs at once.
+const maxParallelQueries = 4
+
 // Connector implements ports.TopologySource for every configured tenant.
 type Connector struct {
 	cfg     *Config
@@ -102,7 +105,9 @@ func (c *Connector) Discover(ctx context.Context, aliases map[string]domain.Enti
 		data := tenantData{
 			Services: results[queryServices.Name].Records, Calls: results[queryServiceCalls.Name].Records,
 			BelongsTo: results[queryServiceBelongsTo.Name].Records, K8s: results[queryK8sNodes.Name].Records,
-			Databases: results[queryDatabases.Name].Records,
+			Databases: results[queryDatabases.Name].Records, Hosts: results[queryHosts.Name].Records,
+			RunsOn: results[queryServiceRunsOn.Name].Records, Publish: results[queryMessagingPublish.Name].Records,
+			Receive: results[queryMessagingReceive.Name].Records,
 		}
 		for _, q := range structureQueries {
 			if results[q.Name].Truncated {
@@ -128,7 +133,8 @@ func (c *Connector) Observe(ctx context.Context) (*ports.Observation, error) {
 		}
 		out.Tenants[t.cfg.ID] = observeTenant(observeData{
 			Services: results[queryServices.Name].Records, K8s: results[queryK8sNodes.Name].Records,
-			Databases: results[queryDatabases.Name].Records, Metrics: results[queryServiceMetrics.Name].Records,
+			Databases: results[queryDatabases.Name].Records, Hosts: results[queryHosts.Name].Records,
+			Metrics:  results[queryServiceMetrics.Name].Records,
 			Problems: results[queryProblems.Name].Records,
 		}, c.cfg.Refresh.MetricsWindow.Duration, observedAt, t.cfg.Example)
 	}
@@ -172,8 +178,11 @@ func (c *Connector) runAll(ctx context.Context, t tenantClient, queries []Query,
 	results := make([]*queryResult, len(queries))
 	errs := make([]error, len(queries))
 	var wg sync.WaitGroup
+	slots := make(chan struct{}, maxParallelQueries)
 	for i, q := range queries {
 		wg.Go(func() {
+			slots <- struct{}{}
+			defer func() { <-slots }()
 			start := time.Now()
 			results[i], errs[i] = t.client.run(ctx, q, c.cfg, now)
 			if errs[i] != nil {
