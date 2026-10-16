@@ -288,6 +288,7 @@ if (dynatrace?.source === 'dynatrace') {
   await check('apply dynatrace sync, stale If-Match', 'post', '/integrations/dynatrace/apply', '/integrations/dynatrace/apply', { status: 412, body: { previewId: preview?.id }, headers: { 'If-Match': '"stale"' } });
   const again = await check('preview dynatrace sync again', 'post', '/integrations/dynatrace/preview', '/integrations/dynatrace/preview', { status: 200 });
   await check('apply dynatrace sync', 'post', '/integrations/dynatrace/apply', '/integrations/dynatrace/apply', { status: 200, body: { previewId: again?.id }, headers: { 'If-Match': base } });
+  await check('preview dynatrace sync, in sync', 'post', '/integrations/dynatrace/preview', '/integrations/dynatrace/preview', { status: 200 });
   await check('apply dynatrace sync, used preview', 'post', '/integrations/dynatrace/apply', '/integrations/dynatrace/apply', { status: 404, body: { previewId: again?.id } });
   await check('apply dynatrace sync, no preview ID', 'post', '/integrations/dynatrace/apply', '/integrations/dynatrace/apply', { status: 400, body: {} });
 } else {

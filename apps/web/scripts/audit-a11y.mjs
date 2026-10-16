@@ -4,6 +4,10 @@
 //   npm run build && npx vite preview --port 4173 &
 //   npm run audit:a11y -- --url http://localhost:4173
 //
+// With `--api yes`, also the pages that need the backend with the Dynatrace connector (ADR-034):
+// run the API on a seeded database with DYNATRACE_CONFIG_FILE=dynatrace.example.yaml and the fake
+// tenant (make fake-dynatrace), and apply one sync first.
+//
 // For every page in both themes: axe-core (WCAG 2.x A/AA incl. color-contrast, which needs real
 // layout), a keyboard pass that checks each focused element shows a visible focus indicator, and a
 // reduced-motion check. Exits non-zero on violations.
@@ -63,6 +67,23 @@ const PAGES = [
   { name: 'Flow board (transaction replay)', path: '/flows/flow-checkout?v=1&env=production&mode=replay&tx=order%204466', ready: '[aria-label^="Steps of order"]' },
 ];
 
+// Backend pages (ADR-034): Settings with the Dynatrace connection, a check, a preview, and an alias
+// row; the inspector of a linked instance and of a Dynatrace host; the map of synced data.
+const clickText = (text) => `[...document.querySelectorAll('button')].find((b) => b.textContent.trim() === ${JSON.stringify(text)}).click()`;
+const API_PAGES = [
+  {
+    name: 'Settings (Dynatrace: check, preview, alias)',
+    path: '/settings?v=1&source=api',
+    ready: '[data-dynatrace-connection]',
+    then: `(async () => { const wait = (ms) => new Promise((r) => setTimeout(r, ms)); ${clickText('Check connection')}; await wait(600); ${clickText('Preview sync')}; await wait(900); document.querySelector('[data-sync-preview] summary')?.click(); ${clickText('Add alias')}; })()`,
+    after: '[data-sync-preview] [aria-label="Changes by kind"], [data-sync-preview] [aria-label="Every change"]',
+  },
+  { name: 'Registry (Dynatrace-linked instance)', path: '/registry?v=1&env=production&source=api&sel=service-instance:payment-service.production', ready: '[data-source-link]' },
+  { name: 'Infrastructure (Dynatrace host)', path: '/infrastructure?v=1&env=production&source=api&sel=resource:dt-example-host-0000000000000abc', ready: '[data-source-link]' },
+  { name: 'Service map (synced from Dynatrace)', path: '/map?v=1&env=production&source=api', ready: '.react-flow__node-entity' },
+];
+if (args.api === 'yes') PAGES.push(...API_PAGES);
+
 async function main() {
   const profile = mkdtempSync(join(tmpdir(), 'a11y-chrome-'));
   const chrome = spawn(CHROME, ['--headless=new', '--hide-scrollbars', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', `--remote-debugging-port=${PORT}`, `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' });
@@ -103,7 +124,7 @@ async function main() {
       for (const page of PAGES) {
         await send('Page.navigate', { url: BASE + page.path });
         await sleep(400);
-        const waitFor = (selector) => evaluate(`new Promise((resolve, reject) => { const t0 = performance.now(); const tick = () => document.querySelector(${JSON.stringify(selector)}) ? setTimeout(resolve, 1200) : performance.now() - t0 > 30000 ? reject(new Error('page not ready')) : requestAnimationFrame(tick); tick(); })`);
+        const waitFor = (selector) => evaluate(`new Promise((resolve, reject) => { const t0 = performance.now(); const tick = () => document.querySelector(${JSON.stringify(selector)}) ? setTimeout(resolve, 1200) : performance.now() - t0 > 30000 ? reject(new Error(${JSON.stringify(`${page.name}: not ready (${selector})`)})) : requestAnimationFrame(tick); tick(); })`);
         await waitFor(page.ready);
         if (page.then) {
           await evaluate(page.then);

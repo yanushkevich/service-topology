@@ -162,8 +162,8 @@ func TestIntegrationPreviewAndApplyOverTheMockTopology(t *testing.T) {
 	}
 	res = call(h, "POST", "/api/v1/integrations/dynatrace/preview", "")
 	res.json(t, &preview)
-	if len(preview.Changes) != 0 {
-		t.Errorf("a second preview should be empty: %+v", preview.Changes)
+	if len(preview.Changes) != 0 || !strings.Contains(string(res.body), `"changes":[]`) {
+		t.Errorf("a second preview should be an empty list: %s", res.body)
 	}
 }
 

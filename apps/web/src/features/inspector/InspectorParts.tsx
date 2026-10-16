@@ -242,16 +242,18 @@ export function SourceLinkSection({ metadata, observable }: { metadata: Record<s
   const link = sourceLinkOf(metadata);
   if (!link) return null;
   return (
-    <Section title="Dynatrace">
-      {link.id && <KeyValue label="Entity" value={link.id} />}
-      {link.name && <KeyValue label="Service name" value={link.name} />}
-      {link.messaging && <KeyValue label="Messaging" value={`${link.messaging.system} · ${link.messaging.destination}`} />}
-      {link.missingSince && (
-        <p className="m-0 px-2 py-1 text-sm text-warn-fg">Not seen in Dynatrace since {formatTimestamp(link.missingSince)}. Kept because something here still uses it.</p>
-      )}
-      {/* Topics and queues come from metrics, not Smartscape nodes: they have no observed health. */}
-      {observable && link.id && !link.missingSince && <ObservedLine link={link} />}
-    </Section>
+    <div data-source-link>
+      <Section title="Dynatrace">
+        {link.id && <KeyValue label="Entity" value={link.id} />}
+        {link.name && <KeyValue label="Service name" value={link.name} />}
+        {link.messaging && <KeyValue label="Messaging" value={`${link.messaging.system} · ${link.messaging.destination}`} />}
+        {link.missingSince && (
+          <p className="m-0 px-2 py-1 text-sm text-warn-fg">Not seen in Dynatrace since {formatTimestamp(link.missingSince)}. Kept because something here still uses it.</p>
+        )}
+        {/* Topics and queues come from metrics, not Smartscape nodes: they have no observed health. */}
+        {observable && link.id && !link.missingSince && <ObservedLine link={link} />}
+      </Section>
+    </div>
   );
 }
 

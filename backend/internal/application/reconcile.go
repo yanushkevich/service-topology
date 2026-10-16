@@ -55,7 +55,8 @@ type reconciler struct {
 
 // reconcile returns the changes and the topology they produce.
 func reconcile(in reconcileInput) ([]SyncChange, *domain.TopologyData) {
-	r := &reconciler{in: in, result: cloneTopology(in.stored), seen: map[domain.EntityID]bool{}, renamed: map[domain.EntityID]domain.EntityID{}}
+	// changes is never nil: an empty sync is an empty list in the API, not null.
+	r := &reconciler{in: in, result: cloneTopology(in.stored), changes: []SyncChange{}, seen: map[domain.EntityID]bool{}, renamed: map[domain.EntityID]domain.EntityID{}}
 	d := in.discovered
 	reconcileKind(r, domain.KindEnvironment, &r.result.Environments, d.Environments, environmentKind)
 	reconcileKind(r, domain.KindServiceDefinition, &r.result.ServiceDefinitions, d.ServiceDefinitions, definitionKind)
