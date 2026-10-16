@@ -174,7 +174,7 @@ A Go fake of the platform endpoints (`/platform/storage/query/v1/query:execute`,
 ## 9. Hard parts
 
 - **Names.** One service can have different names per environment or tenant. Aliases make the join explicit.
-- **Duplicate names in one environment** (for example, two process groups exposing `checkout`) map to one instance. The preview notes it and keeps both Dynatrace IDs in `metadata.dynatrace`.
+- **Duplicate names in one environment** (for example, two process groups exposing `checkout`) map to one instance. The preview notes it and keeps both Dynatrace IDs in `metadata.dynatrace` (`also`). The instance's observed state merges theirs: the worst health, every open problem, and the first metrics found (Milestone 15.2).
 - **Unverified field names** (see the note at the top). The connection check exists for this.
 - **After a bundle import,** every entity is authored (source `import`). Dynatrace links to it but never deletes it.
 

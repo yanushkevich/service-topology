@@ -1,6 +1,6 @@
 # Milestone 15.2 — Metrics on calls from spans, and no workload resources (ADR-008)
 
-**Status:** in progress (2026-10-15). Backend: B12.2. Amends ADR-034. Spec: `docs/DYNATRACE_CONNECTOR.md` (Revision 3).
+**Status:** implemented 2026-10-15 (closeout in `docs/IMPLEMENTATION_PLAN.md`); not yet verified against a real tenant. Backend: B12.2. Amends ADR-034. Spec: `docs/DYNATRACE_CONNECTOR.md` (Revision 3).
 
 **Source:** product owner: "continue with Metrics on calls … and Workloads in the registry".
 

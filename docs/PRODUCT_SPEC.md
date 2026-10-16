@@ -495,3 +495,8 @@ Those of `docs/milestones/MILESTONE_11_FLOW_SWIMLANES_PATTERNS.md`, `MILESTONE_1
 - Services on VMs appear inside their host, and hosts take health from Davis problems.
 - Topics, queues, and RabbitMQ exchanges appear with their producers and consumers. When one already exists here (same name, type, and environment), Dynatrace links to it instead of adding a copy.
 
+## Revision AA — Call metrics from Dynatrace, and a cleaner registry (2026-10-15, Milestone 15.2)
+**Source:** product owner: "continue with Metrics on calls … Workloads in the registry".
+- With call metrics turned on in the backend configuration, connections between services show calls per second, error rate, and latency measured from Dynatrace traces. They are labelled observed with their time. Settings says whether call metrics are on, and why they are missing when a read failed.
+- The registry no longer lists a Kubernetes workload next to each discovered service; the service is the workload. Its deployment shows in the inspector's Dynatrace section.
+

@@ -681,3 +681,7 @@ ADR-034; spec `docs/DYNATRACE_CONNECTOR.md`.
 - **Channels without nodes:** Smartscape has no topic or queue nodes, so the adapter derives channels from messaging metrics (destination × system × environment). The reconcile links them to authored channels by type, name, and effective environment, which keeps event types (ADR-014) working on discovered data.
 - **Metric join:** service metrics join on `dt.smartscape.service`, the Smartscape node ID.
 
+## Revision 23 — Calls from spans, and ADR-008 for discovered workloads (2026-10-15, Milestone 15.2)
+- **Relationships are observable:** the overlay merges metrics (never status) onto relationships whose link carries a call key. The span query is opt-in and isolated, so it can never stop the node refresh.
+- **ADR-008 holds for discovered data:** a discovered instance is the workload. Kubernetes deployments are kept as provenance in the link, not as resources.
+

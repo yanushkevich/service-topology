@@ -221,7 +221,7 @@ Track both milestones and original phases. A milestone is not complete until its
 | 13.1 | Removed (2026-10-13) | 3D drill-down refinement: the flow's lines only, planes under their steps, pads for services without a board, the 2D board's visual language; `docs/milestones/MILESTONE_13_1_DRILLDOWN_REFINEMENT.md`. |
 | 13.2 | Implemented (2026-10-13) | Which lines each step uses: a Lines strip on the flow board and an Inside-the-service block in the step card (the 2D step-to-service drill-down); `docs/milestones/MILESTONE_13_2_FLOW_LINES.md`. |
 | 13.3 | Implemented (2026-10-13) | The 3D drill-down removed from business flows (product owner: "i dont need 3d in business flows"); the 2D Lines strip and step card replace it. ADR-026 withdrawn. |
-| 15.2 | In progress (2026-10-15) | Metrics on calls from spans (opt-in), and no workload resources (ADR-008); `docs/milestones/MILESTONE_15_2_CALLS_AND_WORKLOADS.md`. |
+| 15.2 | Implemented (2026-10-15); not yet verified against a real tenant | Metrics on calls from spans (opt-in), and no workload resources (ADR-008); `docs/milestones/MILESTONE_15_2_CALLS_AND_WORKLOADS.md`. |
 | 15.1 | Implemented (2026-10-15); not yet verified against a real tenant | Dynatrace gaps: hosts (a `host` containment level), topics and queues from messaging metrics, and the documented `dt.smartscape.service` metric join; `docs/milestones/MILESTONE_15_1_DYNATRACE_GAPS.md`. |
 | 15 | Implemented (2026-10-15); not yet verified against a real tenant | Dynatrace connector: services, databases, Kubernetes containment, calls, health, and metrics from Smartscape on Grail; preview and apply, observation overlay, backend B12 (ADR-034); `docs/milestones/MILESTONE_15_DYNATRACE.md`, `docs/DYNATRACE_CONNECTOR.md`. |
 | 9 | Implemented (2026-10-12) | Transit board on example data (ADR-021): spec Phase 1 plus the Phase 4 replay UI, hover tooltips, windows, and per-step stats; see the Milestone 9 closeout and follow-up below. Real data sources (phases 2, 3, and 5) are not started. |
@@ -962,4 +962,35 @@ Services, databases, Kubernetes containment, calls, health, and metrics from Dyn
 - A destination with no messages in the discovery window is not a channel.
 - Destinations whose names slug alike (`orders.events`, `orders_events`) share a channel.
 - Discovered Kubernetes workloads appear as registry rows, because the domain treats `workload` as a resource that can communicate.
+
+### Milestone 15.2 closeout (2026-10-15): metrics on calls from spans, and no workload resources
+`docs/milestones/MILESTONE_15_2_CALLS_AND_WORKLOADS.md`, ADR-034 amendment, `docs/DYNATRACE_CONNECTOR.md` Revision 3.
+
+**Commits:** `60dbe60` spec; `ffbadd0` no workload resources (ADR-008); `b7da689` call metrics from spans; `f5f1a36` merged services share observations, and calls read as span metrics; the close-out commit.
+
+**Checks run:**
+- `make check`; `make test-integration`; `make contract-check` 111/111 (its configuration now enables call metrics, so the check includes `call-metrics`).
+- `npm run check`: 92 files, 1,224 passed, 1 skipped; build passes.
+- **Migration on MongoDB with the real previous build.**
+  1. A throwaway database was synced by the API built from `dfcbb3b`, which created 7 workload resources.
+  2. The current API's preview deleted all 7, moved 4 owned instances to their namespaces, linked 3 authored ones (which gain the workload in their link), and gave 5 calls their call key.
+  3. After the apply, the next preview was empty. The registry has no workload rows.
+- **Live call metrics:** all five service-to-service calls carry span metrics. For example, storefront → checkout: 36,000 calls in 5 minutes → 120/s, 0.05% errors, 45 ms; the 45 ms latency was sent as a numeric string. The example tenant's values stay simulated.
+- **Found on the live stack and fixed (`f5f1a36`):**
+  - checkout-service, merged from two Dynatrace services, showed no telemetry. Merged services now share their observations.
+  - A call's Dynatrace section showed its internal key as an entity.
+- Real-browser audit with `--api yes`: 35 pages × 2 themes and reduced motion, 71 pass; new page: the inspector of a call with span metrics. Screenshots reviewed.
+- The throwaway database, the temporary worktree, and the binaries were removed.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| A Kubernetes service runs in its namespace, no workload resources exist, and the deployment is in the link; an earlier sync's workloads are retired | Pass | `TestDiscoveryOwnersTeamsAndLinks`; `TestReconcileRetiresWorkloadsFromAnEarlierSync`; migration run |
+| With call metrics on, a call shows throughput, error rate, and latency as observed; off, the query never runs | Pass | `TestCallMetricsAreObservedOncePerInterval`; `TestCallMetricsAreOffByDefault`; `TestCallMetricsReachRelationships`; `TestObservationsReachTopologyReadsAndMeta` |
+| A failing call-metrics query leaves the refresh running and is reported | Pass | `TestACallMetricsFailureLeavesTheRefreshRunning`; `lastRefresh.warnings` in Settings (`DynatraceRows.test.tsx`) |
+| Example-tenant call metrics stay simulated | Pass | `TestExampleTenantCallMetricsStaySimulated`; live run |
+
+**Known limitations:**
+- Not verified against a real tenant; the span query has not run on Grail, so its cost and the 128 MB join limit are untested at scale.
+- Calls to databases and across tenants get no metrics.
+- Merged duplicate services contribute only the first service's calls.
 

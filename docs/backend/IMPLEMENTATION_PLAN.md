@@ -274,3 +274,20 @@ Delivered with frontend Milestone 15.1 (closeout in `docs/IMPLEMENTATION_PLAN.md
 | Database | Pass | `make test-integration` |
 | Contract with the fake tenant | Pass | `make contract-check` 111/111 |
 
+## Milestone B12.2 closeout — calls from spans, no workload resources (2026-10-15, ADR-034 amendment)
+Delivered with frontend Milestone 15.2 (closeout in `docs/IMPLEMENTATION_PLAN.md`):
+- **Adapter:**
+  - no workload resources: the instance runs in its namespace, and the workload is in its link (ADR-008);
+  - `calls.go`: the `call-metrics` span query, read every `callMetrics.interval` and cached between reads, with failures reported as warnings;
+  - relationship links `calls:<caller>-><callee>`;
+  - numeric strings accepted.
+- **Application:** the overlay merges metrics onto relationships and merges the states of services merged into one instance; `lastRefresh.warnings`.
+- **API:** `callMetricsIntervalSeconds` and `lastRefresh.warnings` on `GET /integrations/dynatrace`; `call-metrics` in the check.
+
+| Criterion | Result | Evidence |
+|---|---|---|
+| Unit, conformance, and API tests | Pass | `make check` |
+| Database | Pass | `make test-integration` |
+| Contract with the fake tenant and call metrics on | Pass | `make contract-check` 111/111 |
+| Migration from an earlier sync on MongoDB | Pass | the previous build's sync, then the current preview and apply |
+
