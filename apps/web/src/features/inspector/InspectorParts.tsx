@@ -248,6 +248,11 @@ export function SourceLinkSection({ metadata, observable }: { metadata: Record<s
         {link.name && <KeyValue label="Service name" value={link.name} />}
         {link.messaging && <KeyValue label="Messaging" value={`${link.messaging.system} · ${link.messaging.destination}`} />}
         {link.workload && <KeyValue label="Workload" value={`${link.workload.name} (${link.workload.kind})`} />}
+        {link.fromSpans && (
+          <p className="m-0 px-2 py-1 text-sm text-fg-2">
+            {link.observedAt ? `Metrics from Dynatrace spans, observed at ${formatTimestamp(link.observedAt)}.` : 'Metrics from Dynatrace spans; none observed yet, or out of date.'}
+          </p>
+        )}
         {link.missingSince && (
           <p className="m-0 px-2 py-1 text-sm text-warn-fg">Not seen in Dynatrace since {formatTimestamp(link.missingSince)}. Kept because something here still uses it.</p>
         )}

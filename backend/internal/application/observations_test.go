@@ -170,3 +170,20 @@ func TestRefreshFailureIsRecordedAndOverlayRestored(t *testing.T) {
 		t.Error("the stored overlay was not restored")
 	}
 }
+
+// Two Dynatrace services with one name are one instance: its state merges theirs.
+func TestMergedServicesShareTheirObservations(t *testing.T) {
+	latency := 120.0
+	obs := &ports.Observation{Tenants: map[string]map[string]ports.ObservedState{"main": {
+		"SERVICE-A": {Health: "healthy"},
+		"SERVICE-B": {Health: "degraded", Problems: []string{"P-9"}, Metrics: &domain.Metrics{LatencyMs: &latency}},
+	}}}
+	link := map[string]any{"tenant": "main", "id": "SERVICE-A", "also": []any{map[string]any{"tenant": "main", "id": "SERVICE-B"}}}
+	state, ok := mergedState(obs, link)
+	if !ok || state.Health != "degraded" || state.Metrics == nil || *state.Metrics.LatencyMs != 120 || len(state.Problems) != 1 {
+		t.Errorf("merged = %+v", state)
+	}
+	if _, ok := mergedState(obs, map[string]any{"tenant": "main", "id": "SERVICE-Z"}); ok {
+		t.Error("an unobserved link has no state")
+	}
+}

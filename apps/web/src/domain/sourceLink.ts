@@ -24,6 +24,8 @@ export interface SourceLink {
   messaging: { system: string; destination: string } | null;
   /** The Kubernetes workload a service instance runs as (the instance is the workload, ADR-008). */
   workload: { name: string; kind: string } | null;
+  /** A service-to-service call whose metrics come from spans (its link key is `calls:…`). */
+  fromSpans: boolean;
 }
 
 function workloadOf(raw: unknown): SourceLink['workload'] {
@@ -39,14 +41,17 @@ export function sourceLinkOf(metadata: Record<string, unknown> | undefined): Sou
   const raw = metadata?.[DYNATRACE_LINK_KEY];
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const link = raw as Record<string, unknown>;
+  // A call's key (calls:<caller>-><callee>) names no Dynatrace entity.
+  const fromSpans = text(link.id)?.startsWith('calls:') ?? false;
   return {
     tenant: text(link.tenant),
-    id: text(link.id),
+    id: fromSpans ? null : text(link.id),
     name: text(link.name),
     observedAt: text(link.observedAt),
     problems: Array.isArray(link.problems) ? link.problems.filter((p): p is string => typeof p === 'string') : [],
     missingSince: text(link.missingSince),
     messaging: text(link.destination) ? { system: text(link.system) ?? 'unknown system', destination: text(link.destination) ?? '' } : null,
     workload: workloadOf(link.workload),
+    fromSpans,
   };
 }

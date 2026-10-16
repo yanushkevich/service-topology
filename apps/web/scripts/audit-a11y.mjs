@@ -81,6 +81,7 @@ const API_PAGES = [
   { name: 'Registry (Dynatrace-linked instance)', path: '/registry?v=1&env=production&source=api&sel=service-instance:payment-service.production', ready: '[data-source-link]' },
   { name: 'Infrastructure (Dynatrace host)', path: '/infrastructure?v=1&env=production&source=api&sel=resource:dt-example-host-0000000000000abc', ready: '[data-source-link]' },
   { name: 'Service map (synced from Dynatrace)', path: '/map?v=1&env=production&source=api', ready: '.react-flow__node-entity' },
+  { name: 'Inspector (call with metrics from spans)', path: `/registry?v=1&env=production&source=api&sel=${encodeURIComponent('relationship:rel:storefront-bff.production->checkout-service.production')}`, ready: '[data-source-link]' },
 ];
 if (args.api === 'yes') PAGES.push(...API_PAGES);
 

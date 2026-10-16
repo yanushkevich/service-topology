@@ -4,7 +4,7 @@ import { sourceLinkOf } from './sourceLink';
 describe('sourceLinkOf', () => {
   it('reads the Dynatrace link, problems, and observation time', () => {
     expect(sourceLinkOf({ dynatrace: { tenant: 'main', id: 'SERVICE-1', observedAt: '2026-10-15T08:46:00Z', problems: ['P-1', 7] }, owner: 'x' })).toEqual({
-      tenant: 'main', id: 'SERVICE-1', name: null, observedAt: '2026-10-15T08:46:00Z', problems: ['P-1'], missingSince: null, messaging: null, workload: null,
+      tenant: 'main', id: 'SERVICE-1', name: null, observedAt: '2026-10-15T08:46:00Z', problems: ['P-1'], missingSince: null, messaging: null, workload: null, fromSpans: false,
     });
   });
 
@@ -22,6 +22,11 @@ describe('sourceLinkOf', () => {
   it('reads the Kubernetes workload an instance runs as (ADR-008)', () => {
     expect(sourceLinkOf({ dynatrace: { id: 'SERVICE-1', workload: { id: 'K8S_DEPLOYMENT-1', name: 'payment', kind: 'Deployment' } } })?.workload).toEqual({ name: 'payment', kind: 'Deployment' });
     expect(sourceLinkOf({ dynatrace: { id: 'SERVICE-1', workload: 'payment' } })?.workload).toBeNull();
+  });
+
+  it('reads a call whose metrics come from spans, without showing its key as an entity (Milestone 15.2)', () => {
+    const link = sourceLinkOf({ dynatrace: { tenant: 'main', id: 'calls:SERVICE-1->SERVICE-2', observedAt: '2026-10-15T08:46:00Z' } });
+    expect(link).toMatchObject({ fromSpans: true, id: null, observedAt: '2026-10-15T08:46:00Z' });
   });
 
   it('marks an entity Dynatrace no longer sees', () => {

@@ -88,9 +88,7 @@ func overlayFor(data *domain.TopologyData, obs *ports.Observation, source string
 	out := &ports.ObservationOverlay{Source: source, ObservedAt: obs.ObservedAt, IsExample: obs.IsExample, Entities: map[domain.EntityID]ports.ObservedState{}}
 	lookup := func(id domain.EntityID, meta map[string]any) {
 		link, _ := meta[source].(map[string]any)
-		tenant, _ := link["tenant"].(string)
-		sourceID, _ := link["id"].(string)
-		if state, ok := obs.Tenants[tenant][sourceID]; ok && sourceID != "" {
+		if state, ok := mergedState(obs, link); ok {
 			out.Entities[id] = state
 		}
 	}
@@ -104,6 +102,43 @@ func overlayFor(data *domain.TopologyData, obs *ports.Observation, source string
 		lookup(e.ID, e.Metadata)
 	}
 	return out
+}
+
+// mergedState is the observed state of a link: its own, merged with those of the source entities
+// merged into it (link["also"], e.g. two Dynatrace services with one name): the worst health, the
+// open problems of all, and the first metrics found.
+func mergedState(obs *ports.Observation, link map[string]any) (ports.ObservedState, bool) {
+	tenant, _ := link["tenant"].(string)
+	links := []map[string]any{link}
+	if also, ok := link["also"].([]any); ok {
+		for _, a := range also {
+			if m, ok := a.(map[string]any); ok {
+				links = append(links, m)
+			}
+		}
+	}
+	var out ports.ObservedState
+	found := false
+	for _, l := range links {
+		sourceID, _ := l["id"].(string)
+		state, ok := obs.Tenants[tenant][sourceID]
+		if !ok || sourceID == "" {
+			continue
+		}
+		if !found {
+			out, found = state, true
+			out.Problems = slices.Clone(state.Problems)
+			continue
+		}
+		if state.Health != "" {
+			out.Health = domain.WorseHealth(out.Health, state.Health)
+		}
+		out.Problems = append(out.Problems, state.Problems...)
+		if out.Metrics == nil {
+			out.Metrics = state.Metrics
+		}
+	}
+	return out, found
 }
 
 // currentOverlay returns the overlay if it is fresh, else nil.
